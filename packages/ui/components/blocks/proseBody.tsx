@@ -13,25 +13,16 @@ export function renderProseBody(args: {
   body: string;
   paragraphClassName?: string;
   listClassName?: string;
-  imageBaseDir?: string;
-  onImageClick?: (src: string, alt: string) => void;
-  onNavigateAnchor?: (hash: string) => void;
 }): React.ReactNode {
   const {
     body,
     paragraphClassName = "text-[15px] leading-relaxed text-foreground/90",
     listClassName = "text-[15px] leading-relaxed text-foreground/90",
-    imageBaseDir,
-    onImageClick,
-    onNavigateAnchor,
   } = args;
 
   const inline = (text: string) => (
     <InlineMarkdown
-      imageBaseDir={imageBaseDir}
-      onImageClick={onImageClick}
       text={text}
-      onNavigateAnchor={onNavigateAnchor}
     />
   );
 

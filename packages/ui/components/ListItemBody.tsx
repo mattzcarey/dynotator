@@ -1,51 +1,58 @@
 import React from "react";
-import { ListMarker } from "./ListMarker";
 
 /**
- * Shared list-item body: the marker plus the item's text content. Used by the
- * main Viewer (BlockRenderer) and the plan-diff clean view (both the inline
- * modified-block render and SimpleBlockRenderer).
+ * A list item's marker and text. Ordered items show their number, task items
+ * a circle or a check (both, for `1. [ ] task`), others a bullet.
  *
- * Callers own the surrounding row element so each surface keeps its own
- * concerns (indent, data attributes, hover-prop spread, diff wrapper classes).
- * This component owns the parts that must stay identical: marker selection and
- * the single-paragraph `<span>` vs multi-paragraph `<div><p>...</p></div>`
- * split, so a fix to either never has to be repeated per surface.
+ * The marker is `annotation-exclude` and `select-none`: it is never part of a
+ * selection, so it must not be painted into a highlight either, or a
+ * highlight across two items would not match its stored text on restore.
  */
-interface ListItemBodyProps {
-  level: number;
+export const ListItemBody: React.FC<{
   ordered?: boolean;
   orderedIndex?: number | null;
-  checked?: boolean; // undefined = not a checkbox
-  interactive?: boolean;
-  onToggle?: () => void;
+  /** undefined: not a task item. */
+  checked?: boolean;
   textClassName: string;
   content: string;
   renderInline: (text: string) => React.ReactNode;
-}
-
-export const ListItemBody: React.FC<ListItemBodyProps> = ({
-  level,
-  ordered,
-  orderedIndex,
-  checked,
-  interactive,
-  onToggle,
-  textClassName,
-  content,
-  renderInline,
-}) => {
+}> = ({ ordered, orderedIndex, checked, textClassName, content, renderInline }) => {
+  const numbered = !!ordered && orderedIndex != null;
   const paragraphs = content.split(/\n\n+/);
   return (
     <>
-      <ListMarker
-        level={level}
-        ordered={ordered}
-        orderedIndex={orderedIndex}
-        checked={checked}
-        interactive={interactive}
-        onToggle={onToggle}
-      />
+      <span className="annotation-exclude flex shrink-0 select-none items-center gap-1 self-start">
+        {numbered && (
+          <span
+            className="min-w-6 text-right font-mono text-[0.8em] leading-[1.9] text-muted-foreground tabular-nums"
+            data-list-numeral=""
+          >
+            {orderedIndex}.
+          </span>
+        )}
+        {checked !== undefined ? (
+          <svg
+            data-list-check=""
+            className={`mt-[3px] h-4 w-4 ${checked ? "text-primary" : "text-muted-foreground/50"}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={checked ? 2.5 : 2}
+          >
+            {checked ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            ) : (
+              <circle cx="12" cy="12" r="9" />
+            )}
+          </svg>
+        ) : (
+          !numbered && <span className="text-primary/60">{"•"}</span>
+        )}
+      </span>
       {paragraphs.length === 1 ? (
         <span className={textClassName}>{renderInline(content)}</span>
       ) : (

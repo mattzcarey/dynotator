@@ -1,5 +1,5 @@
 import { HttpError } from "./http";
-import { currentRevision, currentVersion, type SessionMeta } from "./plan";
+import { addVersion, currentRevision, currentVersion, type SessionMeta } from "./plan";
 import type { Store } from "./store";
 
 /**
@@ -147,14 +147,33 @@ export function settle(
   return { ok: true, decision };
 }
 
+export interface Revision {
+  version: number;
+  revision: number;
+  unchanged: boolean;
+}
+
+/** Submits a new version for review and reopens the decision. Refused once a session is over. */
+export function revise(store: Store, markdown: string, now = new Date()): Revision {
+  const decision = getDecision(store);
+  if (decision && (decision.approved || decision.exit)) {
+    throw new HttpError(409, "This review session has finished.");
+  }
+  const { version, unchanged } = addVersion(store, markdown, now);
+  clearDecision(store);
+  return { version, revision: currentRevision(store), unchanged };
+}
+
 export const DEFAULT_WAIT_SECONDS = 25;
 export const MAX_WAIT_SECONDS = 55;
 
-export function parseWaitSeconds(raw: string | null): number {
-  if (raw === null || raw === "") return DEFAULT_WAIT_SECONDS;
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n < 0) return DEFAULT_WAIT_SECONDS;
+export function clampWaitSeconds(n: number | undefined): number {
+  if (n === undefined || !Number.isFinite(n) || n < 0) return DEFAULT_WAIT_SECONDS;
   return Math.min(n, MAX_WAIT_SECONDS);
+}
+
+export function parseWaitSeconds(raw: string | null): number {
+  return clampWaitSeconds(raw === null || raw === "" ? undefined : Number(raw));
 }
 
 /** In-memory long-poll waiters. They live as long as the facet instance does. */

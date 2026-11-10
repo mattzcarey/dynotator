@@ -3,3 +3,7 @@ declare module "virtual:session-server" {
   const bundle: { code: string; id: string };
   export default bundle;
 }
+
+interface ImportMeta {
+  readonly env: { readonly DEV: boolean };
+}

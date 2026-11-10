@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import bundle from "virtual:session-server";
+import type { Decision, Revision } from "../session/decision";
 import type { SessionServer } from "../session/index";
 import type { SessionInit } from "../session/plan";
 import { BASE_URL_HEADER } from "../session/router";
@@ -27,6 +28,25 @@ export class SessionSupervisor extends DurableObject<Env> {
 
   exists(): boolean {
     return this.live() !== undefined;
+  }
+
+  // Pass-throughs for the host's RPC entrypoint: a facet stub cannot leave this object.
+
+  decision(): Promise<Decision | null> {
+    return this.session().decision();
+  }
+
+  wait(seconds?: number): Promise<Decision | null> {
+    return this.session().wait(seconds);
+  }
+
+  revise(markdown: string): Promise<Revision> {
+    return this.session().revise(markdown);
+  }
+
+  private session() {
+    if (!this.live()) throw new Error("This review does not exist or has expired");
+    return this.server();
   }
 
   async fetch(request: Request): Promise<Response> {

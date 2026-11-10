@@ -1,7 +1,7 @@
 /**
  * Diagram anchors: the pure, browser-safe half of the diagram comment codec
  * (the DOM half — the finders that walk a rendered svg — lives in
- * `@dynotator/ui/utils/diagram-anchor` and `diagram-anchor-graphviz`).
+ * `@dynotator/ui/utils/diagram-anchor`).
  *
  * A comment on a rendered diagram part is stored as ONE additive field on
  * the annotation, `diagramAnchor`:
@@ -39,8 +39,7 @@ export type DiagramFamily =
   // `note-<n>`, a loop/alt/opt frame `frame-<n>`, each by document order.
   | "sequence"
   | "other"
-  // A Graphviz graph: the id is the DOT node name.
-  | "graphviz";
+;
 
 /** `diagram` is the WHOLE diagram: no id, the label is the diagram's first
  * source line and `sourceLine` is the fence's full range. It is what a click
@@ -70,7 +69,7 @@ export interface DiagramAnchor extends DiagramTarget {
 }
 
 /** The diagram kinds the renderer slot knows. */
-export type DiagramKind = "mermaid" | "graphviz";
+export type DiagramKind = "mermaid";
 
 const FAMILIES: ReadonlySet<string> = new Set<DiagramFamily>([
   "flowchart",
@@ -80,7 +79,6 @@ const FAMILIES: ReadonlySet<string> = new Set<DiagramFamily>([
   "requirement",
   "sequence",
   "other",
-  "graphviz",
 ]);
 const KINDS: ReadonlySet<string> = new Set<DiagramTargetKind>([
   "node",

@@ -8,9 +8,6 @@ interface CalloutProps {
   containerClassName: string;
   blockType: "alert" | "directive";
   kindAttribute: string;
-  imageBaseDir?: string;
-  onImageClick?: (src: string, alt: string) => void;
-  onNavigateAnchor?: (hash: string) => void;
 }
 
 export const Callout: React.FC<CalloutProps> = ({
@@ -20,9 +17,6 @@ export const Callout: React.FC<CalloutProps> = ({
   containerClassName,
   blockType,
   kindAttribute,
-  imageBaseDir,
-  onImageClick,
-  onNavigateAnchor,
 }) => {
   const kindAttr =
     blockType === "alert"
@@ -44,9 +38,6 @@ export const Callout: React.FC<CalloutProps> = ({
         // kind). Only pass size/leading classes, not a text-foreground value.
         paragraphClassName: "text-[15px] leading-relaxed",
         listClassName: "text-[15px] leading-relaxed",
-        imageBaseDir,
-        onImageClick,
-        onNavigateAnchor,
       })}
     </div>
   );

@@ -58,9 +58,6 @@ export const useAtQuoteDepthCap = (): boolean =>
 
 export interface BlockquoteBlockProps {
   block: Block;
-  imageBaseDir?: string;
-  onImageClick?: (src: string, alt: string) => void;
-  onNavigateAnchor?: (hash: string) => void;
 }
 
 /**

@@ -8,7 +8,6 @@ import { Callout } from "./blocks/Callout";
 import { AlertBlock } from "./blocks/AlertBlock";
 import { BlockquoteBlock } from "./blocks/BlockquoteBlock";
 import { TableBlock } from "./blocks/TableBlock";
-import { MathBlock } from "./blocks/MathBlock";
 import { QuestionBlock, type QuestionBlockProps } from "./blocks/QuestionBlock";
 import {
   indexQuestionBlocks,
@@ -17,95 +16,25 @@ import {
   type QuestionAnswer,
 } from "@dynotator/core/question-block";
 
-/** A question block rendered outside a Viewer's document index (plan diff,
- *  other markdown surfaces): parsed alone, unnumbered. Its contract lines
- *  show as context unless the host asks for them (`questionContractLines`). */
-const standaloneQuestion = (block: Block, contractLines: boolean): IndexedQuestion | undefined => {
-  const [indexed] = indexQuestionBlocks([block], { contractLines });
+/** A question block outside the document's index (the plan diff): parsed
+ *  alone, unnumbered. */
+const standaloneQuestion = (block: Block): IndexedQuestion | undefined => {
+  const [indexed] = indexQuestionBlocks([block]);
   return indexed ? { ...indexed, number: 0 } : undefined;
 };
 
 export const BlockRenderer: React.FC<{
   block: Block;
-  imageBaseDir?: string;
-  onImageClick?: (src: string, alt: string) => void;
-  onToggleCheckbox?: (blockId: string, checked: boolean) => void;
-  checkboxOverrides?: Map<string, boolean>;
   orderedIndex?: number | null;
   headingAnchorId?: string;
-  onNavigateAnchor?: (hash: string) => void;
   /** `:::question` blocks: this block's entry in the document's question
-   *  index (numbering, key, prompt line) and the document's question count.
-   *  Absent, a question block is parsed on its own and shows no "N of M". */
+   *  index and the document's question count. Absent, a question block is
+   *  parsed on its own and shows no "N of M". */
   question?: IndexedQuestion;
   questionTotal?: number;
-  /** The answer to draw (from the annotation carrying `questionAnswer`). */
   questionAnswer?: QuestionAnswer;
-  /** Absent: question blocks render read-only. */
-  onAnswerQuestion?: (blockId: string, answer: QuestionAnswer | null, key: string) => void;
-  /** Explicit save mode for question cards (see `QuestionBlock`). */
-  onSaveQuestionAnswer?: QuestionBlockProps["onSaveAnswer"];
-  /** Label of the explicit-save-mode Save button (see `QuestionBlock`). */
-  saveQuestionAnswerLabel?: QuestionBlockProps["saveLabel"];
-  /** Host actions in a question card's footer (see `QuestionBlock`). */
-  renderQuestionFooter?: QuestionBlockProps["renderFooter"];
-  /** Whether answering this question records a decision (see `QuestionBlock`). */
-  questionDecisionRecording?: QuestionBlockProps["decisionRecording"];
-  /** `'any'` lets a question without a decision line carry the tag (see `QuestionBlock`). */
-  questionDecisionScope?: QuestionBlockProps["decisionScope"];
-  /** Makes the "Records a decision" tag a toggle (see `QuestionBlock`). */
-  onToggleQuestionDecisionRecording?: QuestionBlockProps["onToggleDecisionRecording"];
-  /** Opens the host's decision card from the tag's words (see `QuestionBlock`). */
-  onOpenQuestionDecision?: QuestionBlockProps["onOpenDecision"];
-  /** `'none'` hides the card's own status tag (see `QuestionBlock`). */
-  questionStatusTag?: QuestionBlockProps["statusTag"];
-  /** The host's words for a question's status tag (see `QuestionBlock`). */
-  questionStatusLabel?: QuestionBlockProps["statusLabel"];
-  /** Host content under a question's prompt (see `QuestionBlock`). */
-  renderQuestionBelowPrompt?: QuestionBlockProps["renderBelowPrompt"];
-  /** Host content right after a question's choices (see `QuestionBlock` `renderAfterChoices`). */
-  renderQuestionAfterChoices?: QuestionBlockProps["renderAfterChoices"];
-  /** Read a standalone question's contract lines into the card (default
-   *  false: context). A `question` the host passes was parsed by the host. */
-  questionContractLines?: boolean;
-  /** Picture choices as tiles (see `QuestionBlock` `pictureChoices`). */
-  questionPictureChoices?: QuestionBlockProps["pictureChoices"];
-  /** A label over each picture tile (see `QuestionBlock` `pictureBadge`). */
-  questionPictureBadge?: QuestionBlockProps["pictureBadge"];
-  /** A picture tile's zoom, with its question and choice (see `QuestionBlock` `onZoomChoice`). */
-  onQuestionPictureZoom?: QuestionBlockProps["onZoomChoice"];
-  /** A picture choice's size before it loads (see `QuestionBlock` `pictureSize`). */
-  questionPictureSize?: QuestionBlockProps["pictureSize"];
-}> = ({
-  block,
-  imageBaseDir,
-  onImageClick,
-  onToggleCheckbox,
-  checkboxOverrides,
-  orderedIndex,
-  headingAnchorId,
-  onNavigateAnchor,
-  question,
-  questionTotal,
-  questionAnswer,
-  onAnswerQuestion,
-  onSaveQuestionAnswer,
-  saveQuestionAnswerLabel,
-  renderQuestionFooter,
-  questionDecisionRecording,
-  questionDecisionScope,
-  onToggleQuestionDecisionRecording,
-  onOpenQuestionDecision,
-  questionStatusTag,
-  questionStatusLabel,
-  renderQuestionBelowPrompt,
-  renderQuestionAfterChoices,
-  questionContractLines = false,
-  questionPictureChoices,
-  questionPictureBadge,
-  onQuestionPictureZoom,
-  questionPictureSize,
-}) => {
+  onAnswerQuestion?: QuestionBlockProps["onAnswer"];
+}> = ({ block, orderedIndex, headingAnchorId, question, questionTotal, questionAnswer, onAnswerQuestion }) => {
   switch (block.type) {
     case "heading": {
       const Tag = `h${block.level || 1}` as React.ElementType;
@@ -123,10 +52,7 @@ export const BlockRenderer: React.FC<{
           data-block-type="heading"
         >
           <InlineMarkdown
-            imageBaseDir={imageBaseDir}
-            onImageClick={onImageClick}
             text={block.content}
-            onNavigateAnchor={onNavigateAnchor}
           />
         </Tag>
       );
@@ -139,9 +65,6 @@ export const BlockRenderer: React.FC<{
             blockId={block.id}
             kind={block.alertKind}
             body={block.content}
-            imageBaseDir={imageBaseDir}
-            onImageClick={onImageClick}
-            onNavigateAnchor={onNavigateAnchor}
           />
         );
       }
@@ -150,26 +73,13 @@ export const BlockRenderer: React.FC<{
       return (
         <BlockquoteBlock
           block={block}
-          imageBaseDir={imageBaseDir}
-          onImageClick={onImageClick}
-          onNavigateAnchor={onNavigateAnchor}
         />
       );
     }
 
     case "list-item": {
-      const indent = (block.level || 0) * 1.25; // 1.25rem per level
-      const isCheckbox = block.checked !== undefined;
-      const isChecked = checkboxOverrides?.has(block.id)
-        ? checkboxOverrides.get(block.id)!
-        : block.checked;
-      const isInteractive = isCheckbox && !!onToggleCheckbox;
-      const textClass = `text-sm leading-relaxed ${isCheckbox && isChecked ? "text-muted-foreground line-through" : "text-foreground/90"}`;
-      const inlineProps = {
-        imageBaseDir,
-        onImageClick,
-        onNavigateAnchor,
-      };
+      const checked = block.checked;
+      const done = checked === true;
       return (
         <div
           className="flex items-start gap-3 my-1.5"
@@ -177,19 +87,16 @@ export const BlockRenderer: React.FC<{
           data-rich-list-level={block.level || 0}
           data-rich-list-kind={block.ordered ? "ol" : "ul"}
           data-rich-list-index={orderedIndex ?? undefined}
-          data-rich-list-checked={isCheckbox ? String(isChecked) : undefined}
-          style={{ marginLeft: `${indent}rem` }}
+          data-rich-list-checked={checked === undefined ? undefined : String(checked)}
+          style={{ marginLeft: `${(block.level || 0) * 1.25}rem` }}
         >
           <ListItemBody
-            level={block.level || 0}
             ordered={block.ordered}
             orderedIndex={orderedIndex}
-            checked={isChecked}
-            interactive={isInteractive}
-            onToggle={isInteractive ? () => onToggleCheckbox!(block.id, !isChecked) : undefined}
-            textClassName={textClass}
+            checked={checked}
+            textClassName={`text-sm leading-relaxed ${done ? "text-muted-foreground line-through" : "text-foreground/90"}`}
             content={block.content}
-            renderInline={(text) => <InlineMarkdown {...inlineProps} text={text} />}
+            renderInline={(text) => <InlineMarkdown text={text} />}
           />
         </div>
       );
@@ -202,14 +109,18 @@ export const BlockRenderer: React.FC<{
       return (
         <TableBlock
           block={block}
-          imageBaseDir={imageBaseDir}
-          onImageClick={onImageClick}
-          onNavigateAnchor={onNavigateAnchor}
         />
       );
 
     case "math":
-      return <MathBlock block={block} />;
+      return (
+        <pre
+          className="my-5 overflow-x-auto font-mono text-sm text-foreground"
+          data-block-id={block.id}
+        >
+          {block.content.trim()}
+        </pre>
+      );
 
     case "hr":
       return (
@@ -218,14 +129,14 @@ export const BlockRenderer: React.FC<{
 
     case "html":
       return (
-        <HtmlBlock block={block} imageBaseDir={imageBaseDir} onNavigateAnchor={onNavigateAnchor} />
+        <HtmlBlock block={block} />
       );
 
     case "directive": {
       const kind = block.directiveKind || "note";
       if (isQuestionDirectiveKind(kind)) {
         // An unparseable question (no prompt) falls through to the callout.
-        const indexed = question ?? standaloneQuestion(block, questionContractLines);
+        const indexed = question ?? standaloneQuestion(block);
         if (indexed) {
           return (
             <QuestionBlock
@@ -234,24 +145,6 @@ export const BlockRenderer: React.FC<{
               total={questionTotal ?? 0}
               answer={questionAnswer}
               onAnswer={onAnswerQuestion}
-              onSaveAnswer={onSaveQuestionAnswer}
-              saveLabel={saveQuestionAnswerLabel}
-              renderFooter={renderQuestionFooter}
-              decisionRecording={questionDecisionRecording}
-              decisionScope={questionDecisionScope}
-              onToggleDecisionRecording={onToggleQuestionDecisionRecording}
-              onOpenDecision={onOpenQuestionDecision}
-              statusTag={questionStatusTag}
-              statusLabel={questionStatusLabel}
-              renderBelowPrompt={renderQuestionBelowPrompt}
-              renderAfterChoices={renderQuestionAfterChoices}
-              pictureChoices={questionPictureChoices}
-              pictureBadge={questionPictureBadge}
-              onZoomChoice={onQuestionPictureZoom}
-              pictureSize={questionPictureSize}
-              imageBaseDir={imageBaseDir}
-              onImageClick={onImageClick}
-              onNavigateAnchor={onNavigateAnchor}
             />
           );
         }
@@ -264,9 +157,6 @@ export const BlockRenderer: React.FC<{
           containerClassName={`directive directive-${kind} my-4 px-4 py-3 rounded-md border`}
           blockType="directive"
           kindAttribute={kind}
-          imageBaseDir={imageBaseDir}
-          onImageClick={onImageClick}
-          onNavigateAnchor={onNavigateAnchor}
         />
       );
     }
@@ -282,10 +172,7 @@ export const BlockRenderer: React.FC<{
           data-blank-lines={block.blankLinesBefore}
         >
           <InlineMarkdown
-            imageBaseDir={imageBaseDir}
-            onImageClick={onImageClick}
             text={block.content}
-            onNavigateAnchor={onNavigateAnchor}
           />
         </p>
       );

@@ -1,9 +1,5 @@
 import React, { createContext, useContext, useState, useMemo } from "react";
 import { transformPlainText } from "../utils/inlineTransforms";
-import { getImageSrc } from "./ImageThumbnail";
-import { UNAVAILABLE_IMAGE_CLASS, useImageResolver } from "./ImageResolverContext";
-import { normalizeMathTex, renderMathToHtml } from "../utils/math";
-import { useMathRenderer } from "../hooks/useMathRenderer";
 
 const DANGEROUS_PROTOCOL = /^\s*(javascript|data|vbscript|file)\s*:/i;
 /**
@@ -40,42 +36,15 @@ function sanitizeLinkUrl(url: string): string | null {
   return url;
 }
 
-const InlineMath: React.FC<{ tex: string }> = ({ tex }) => {
-  const normalizedTex = normalizeMathTex(tex);
-  const renderer = useMathRenderer();
-  const html = useMemo(
-    () => renderMathToHtml(normalizedTex, false, renderer),
-    [normalizedTex, renderer],
-  );
-
-  // Same wrapper in both branches (see MathBlock): the placeholder carries the
-  // attributes annotation restore keys on, with the TeX as a text child.
-  if (html === null) {
-    return (
-      <span
-        className="math-inline math-annotatable text-foreground"
-        data-math-tex={normalizedTex}
-        data-math-display="false"
-        aria-label={normalizedTex}
-      >
-        {normalizedTex}
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className="math-inline math-annotatable text-foreground"
-      data-math-tex={normalizedTex}
-      data-math-display="false"
-      aria-label={normalizedTex}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  );
-};
+/** TeX is shown as written: the review app does not typeset math. */
+const InlineMath: React.FC<{ tex: string }> = ({ tex }) => (
+  <code className="px-1 py-px rounded border border-border bg-surface-0 text-[0.84em] font-mono">
+    {tex.trim()}
+  </code>
+);
 
 function canRenderSpacedDollarMath(tex: string): boolean {
-  const trimmed = normalizeMathTex(tex);
+  const trimmed = tex.trim();
   if (!trimmed) return false;
   if (!/^\s|\s$/.test(tex)) return true;
   // Padding must be symmetric (`$ y $`). In `$write-better on the copy, and $`
@@ -195,62 +164,6 @@ function emitPlainTextWithBareUrls(
   }
 }
 
-/**
- * An image a host resolver chose; a load failure shows the placeholder.
- *
- * The `<img>` element itself never leaves the document: on failure the
- * placeholder is inserted BEFORE it (React's reference node is then the
- * `<img>`, which it owns) and the `<img>` is hidden. Replacing the `<img>`
- * would make React insert before the node that follows it, and when that is
- * a text node the annotation highlighter already moved into a `<mark>` (a
- * restored comment starting right after the image), `insertBefore` throws
- * and the whole document unmounts. A loaded image's DOM is unchanged.
- */
-const HostResolvedImage: React.FC<{
-  src: string;
-  alt: string;
-  /** The original's width when `src` is a smaller copy (`ImageResolution.width`). */
-  width?: number;
-  /** The src as written in the markdown (`data-image-src`, read by the image viewer's region comments). */
-  writtenSrc?: string;
-  onImageClick?: (src: string, alt: string) => void;
-}> = ({ src, alt, width, writtenSrc, onImageClick }) => {
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const failed = failedSrc === src;
-  return (
-    <>
-      {failed && (
-        <span
-          key="unavailable"
-          className={`${UNAVAILABLE_IMAGE_CLASS} annotation-exclude`}
-          title="Image could not be loaded"
-          data-image-unavailable=""
-        >
-          {alt || "Image"}
-        </span>
-      )}
-      <img
-        key="image"
-        src={src}
-        alt={failed ? "" : alt}
-        width={width}
-        data-image-src={writtenSrc}
-        data-image-failed={failed ? "" : undefined}
-        hidden={failed || undefined}
-        aria-hidden={failed || undefined}
-        className={failed ? undefined : "max-w-full rounded my-2 cursor-zoom-in"}
-        loading="lazy"
-        // Only for a host's smaller copy (`width`): the default stays as it was for every other host.
-        decoding={width ? "async" : undefined}
-        onError={() => setFailedSrc(src)}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (!failed) onImageClick?.(src, alt);
-        }}
-      />
-    </>
-  );
-};
 
 /**
  * Forge comment text (a GitHub issue, PR or comment body) shows every newline
@@ -269,18 +182,14 @@ export const SoftLineBreaksContext = createContext<boolean>(false);
  */
 export const InlineMarkdown: React.FC<{
   text: string;
-  onNavigateAnchor?: (hash: string) => void;
-  imageBaseDir?: string;
-  onImageClick?: (src: string, alt: string) => void;
   /**
    * The text is a link's label: code, emphasis, strikethrough, escapes, math
    * and images render, and nothing that is itself a link does, since a link
    * cannot hold another.
    */
   linkLabel?: boolean;
-}> = ({ text, onNavigateAnchor, imageBaseDir, onImageClick, linkLabel = false }) => {
+}> = ({ text, linkLabel = false }) => {
   const softLineBreaks = useContext(SoftLineBreaksContext);
-  const resolveImage = useImageResolver();
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
@@ -442,10 +351,7 @@ export const InlineMarkdown: React.FC<{
       parts.push(
         <del key={key++}>
           <InlineMarkdown
-            imageBaseDir={imageBaseDir}
-            onImageClick={onImageClick}
             text={match[1]}
-            onNavigateAnchor={onNavigateAnchor}
           />
         </del>,
       );
@@ -461,10 +367,7 @@ export const InlineMarkdown: React.FC<{
         <strong key={key++} className="font-semibold">
           <em>
             <InlineMarkdown
-              imageBaseDir={imageBaseDir}
-              onImageClick={onImageClick}
               text={match[1]}
-              onNavigateAnchor={onNavigateAnchor}
             />
           </em>
         </strong>,
@@ -480,10 +383,7 @@ export const InlineMarkdown: React.FC<{
       parts.push(
         <strong key={key++} className="font-semibold">
           <InlineMarkdown
-            imageBaseDir={imageBaseDir}
-            onImageClick={onImageClick}
             text={match[1]}
-            onNavigateAnchor={onNavigateAnchor}
           />
         </strong>,
       );
@@ -498,10 +398,7 @@ export const InlineMarkdown: React.FC<{
       parts.push(
         <em key={key++}>
           <InlineMarkdown
-            imageBaseDir={imageBaseDir}
-            onImageClick={onImageClick}
             text={match[1]}
-            onNavigateAnchor={onNavigateAnchor}
           />
         </em>,
       );
@@ -517,10 +414,7 @@ export const InlineMarkdown: React.FC<{
       parts.push(
         <em key={key++}>
           <InlineMarkdown
-            imageBaseDir={imageBaseDir}
-            onImageClick={onImageClick}
             text={match[1]}
-            onNavigateAnchor={onNavigateAnchor}
           />
         </em>,
       );
@@ -634,55 +528,14 @@ export const InlineMarkdown: React.FC<{
     if (match) {
       const alt = match[1];
       const src = match[2];
-      // A host's resolver (RenderedMarkdown `resolveImage`) decides first;
-      // null from it, or no resolver, keeps the default resolution.
-      const resolvedImage = resolveImage ? resolveImage(src) : null;
-      if (resolvedImage?.kind === "unavailable") {
-        parts.push(
-          <span
-            key={key++}
-            className={UNAVAILABLE_IMAGE_CLASS}
-            title={resolvedImage.title}
-            data-image-unavailable=""
-          >
-            {alt || "Image"}
-          </span>,
-        );
-        remaining = remaining.slice(match[0].length);
-        previousChar = match[0][match[0].length - 1] || previousChar;
-        continue;
-      }
-      const imgSrc =
-        resolvedImage?.kind === "src"
-          ? resolvedImage.src
-          : /^(https?:\/\/|data:|blob:)/i.test(src)
-            ? src
-            : getImageSrc(src, imageBaseDir);
+      // Only web images load; anything else shows its alt text.
       parts.push(
-        resolveImage ? (
-          // With a host resolver, an image that fails to load becomes the
-          // same placeholder instead of a broken-image icon.
-          <HostResolvedImage
-            key={key++}
-            src={imgSrc}
-            alt={alt}
-            width={resolvedImage?.kind === "src" ? resolvedImage.width : undefined}
-            writtenSrc={src}
-            onImageClick={onImageClick}
-          />
+        /^https?:\/\//i.test(src) ? (
+          <img key={key++} src={src} alt={alt} className="max-w-full rounded my-2" loading="lazy" />
         ) : (
-          <img
-            key={key++}
-            src={imgSrc}
-            alt={alt}
-            data-image-src={src}
-            className="max-w-full rounded my-2 cursor-zoom-in"
-            loading="lazy"
-            onClick={(e) => {
-              e.stopPropagation();
-              onImageClick?.(imgSrc, alt);
-            }}
-          />
+          <span key={key++} className="text-muted-foreground">
+            [{alt || "image"}]
+          </span>
         ),
       );
       remaining = remaining.slice(match[0].length);
@@ -734,7 +587,7 @@ export const InlineMarkdown: React.FC<{
     if (linkParsed) {
       const { linkText, linkUrl, consumed } = linkParsed;
       // Its label is markdown too (`` [`README.md`](…) ``), drawn without links.
-      const label = <InlineMarkdown text={linkText} linkLabel imageBaseDir={imageBaseDir} />;
+      const label = <InlineMarkdown text={linkText} linkLabel />;
       const safeLinkUrl = sanitizeLinkUrl(linkUrl);
 
       // Dangerous protocol stripped — render as plain text, not a dead link
@@ -746,37 +599,17 @@ export const InlineMarkdown: React.FC<{
       }
 
       const isInPageAnchor = safeLinkUrl.startsWith("#");
-      if (isInPageAnchor) {
-        parts.push(
-          <a
-            key={key++}
-            href={safeLinkUrl}
-            onClick={
-              onNavigateAnchor
-                ? (e) => {
-                    e.preventDefault();
-                    onNavigateAnchor(safeLinkUrl);
-                  }
-                : undefined
-            }
-            className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
-          >
-            {label}
-          </a>,
-        );
-      } else {
-        parts.push(
-          <a
-            key={key++}
-            href={safeLinkUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
-          >
-            {label}
-          </a>,
-        );
-      }
+      parts.push(
+        <a
+          key={key++}
+          href={safeLinkUrl}
+          target={isInPageAnchor ? undefined : "_blank"}
+          rel={isInPageAnchor ? undefined : "noopener noreferrer"}
+          className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
+        >
+          {label}
+        </a>,
+      );
       remaining = remaining.slice(consumed);
       previousChar = ")";
       continue;
@@ -799,9 +632,6 @@ export const InlineMarkdown: React.FC<{
           <InlineMarkdown
             key={key++}
             text={before}
-            onNavigateAnchor={onNavigateAnchor}
-            imageBaseDir={imageBaseDir}
-            onImageClick={onImageClick}
           />,
         );
       }

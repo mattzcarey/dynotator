@@ -14,9 +14,6 @@ interface AlertBlockProps {
   blockId: string;
   kind: AlertKind;
   body: string;
-  imageBaseDir?: string;
-  onImageClick?: (src: string, alt: string) => void;
-  onNavigateAnchor?: (hash: string) => void;
 }
 
 const TITLE: Record<AlertKind, string> = {
@@ -92,14 +89,8 @@ export const AlertBlock: React.FC<AlertBlockProps> = ({
   blockId,
   kind,
   body,
-  imageBaseDir,
-  onImageClick,
-  onNavigateAnchor,
 }) => {
   const proseProps = {
-    imageBaseDir,
-    onImageClick,
-    onNavigateAnchor,
   };
 
   // A bold-only first line (optionally led by one emoji, optionally trailed by

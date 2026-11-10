@@ -1,101 +1,91 @@
 # Dynotator
 
-A fork of [Plannotator](https://github.com/backnotprop/plannotator) (MIT OR Apache-2.0, forked at
-`38d4d7c`) that runs entirely on Cloudflare Workers. A coding agent submits a plan (or any markdown)
-over HTTP, a human reviews and annotates it in the browser, and the agent receives the decision.
-Upstream starts a local Bun server per review; here each review session's server is TypeScript loaded
-into a **Dynamic Worker** and run as a **Durable Object Facet**. No containers, no local server.
+Human review for agents that run on Cloudflare: an agent submits a plan (or any markdown), a person
+reads and annotates it in the browser, the agent receives the decision. It is a fork of
+[Plannotator](https://github.com/backnotprop/plannotator) (MIT OR Apache-2.0, forked at `38d4d7c`)
+reduced to that one job.
+
+Dynotator is a library-style service, not an end-user application: one Worker that other Workers
+bind to and call over RPC. Upstream starts a local Bun server per review; here each review's server
+is TypeScript loaded into a **Dynamic Worker** and run as a **Durable Object Facet**. No
+containers, no local server, no CLI.
 
 ## Layout
 
-| Path                                 | What                                                                                   |
-| ------------------------------------ | -------------------------------------------------------------------------------------- |
-| `index.html`, `app/`                 | Vite entry for the browser SPA.                                                        |
-| `packages/editor/`                   | The review app (`App.tsx`). Forked from upstream `packages/editor`.                    |
-| `packages/ui/`                       | Components, hooks, utils, theme. Forked from upstream `packages/ui`.                   |
-| `packages/core/`, `packages/shared/` | Framework-free shared logic and types.                                                 |
-| `worker/`                            | Host Worker: router, static assets, `SessionSupervisor` Durable Object, Worker Loader. |
-| `session/`                           | The per-session server. Bundled to a JS string and loaded as a Dynamic Worker.         |
-| `cloudflare.config.ts`               | Worker config for the `cf` CLI (bindings, Durable Object export, assets).              |
-| `scripts/build-session.ts`           | Vite plugin that bundles `session/` into `virtual:session-server`.                     |
-| `cli/`                               | `dynotator` CLI: the agent-side client (Claude Code hook, `annotate`).                 |
+| Path                                 | What                                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `worker/`                            | Host Worker: `Dynotator` RPC entrypoint (`api.ts`), HTTP router, `SessionSupervisor` Durable Object. |
+| `session/`                           | The per-review server. Bundled to a JS string and loaded as a Dynamic Worker.                        |
+| `index.html`, `app/`                 | Vite entry for the browser SPA.                                                                      |
+| `packages/editor/`                   | The review app. Forked from upstream `packages/editor`.                                              |
+| `packages/ui/`                       | Components, hooks, utils, theme. Forked from upstream `packages/ui`.                                 |
+| `packages/core/`, `packages/shared/` | Framework-free shared logic and types.                                                               |
+| `cloudflare.config.ts`               | Worker config for the `cf` CLI (bindings, exports, assets).                                          |
+| `scripts/build-session.ts`           | Vite plugin that bundles `session/` into `virtual:session-server`.                                   |
 
-Imports use `@dynotator/{ui,core,shared,editor}/...` (tsconfig `paths` + Vite aliases). The npm
-packages still published under `@plannotator/*` (`atomic-editor`, `markdown-editor`,
-`web-highlighter`) are upstream dependencies, not this repo.
+Imports use `@dynotator/{ui,core,shared,editor}/...` (tsconfig `paths` + Vite aliases). npm
+packages still published under `@plannotator/*` are upstream dependencies, not this repo.
 
 ## Architecture
 
 ```
-agent ──POST /api/sessions──▶ host Worker ──▶ SessionSupervisor DO (one per session id)
-browser ─GET /s/:id────────▶ host Worker ──▶ static SPA                │ ctx.facets.get("server")
-browser ─/s/:id/api/*──────▶ host Worker ──▶ SessionSupervisor.fetch ──┴▶ SessionServer facet
-agent ──GET /s/:id/api/wait▶ (long poll for the decision)                 (Dynamic Worker, own SQLite)
+agent Worker ─service binding (RPC)─▶ Dynotator entrypoint ─▶ SessionSupervisor DO (one per review)
+browser ─GET /s/:id────────────────▶ host Worker ─▶ static SPA        │ ctx.facets.get("server")
+browser ─/s/:id/api/*──────────────▶ host Worker ─▶ supervisor.fetch ─┴▶ SessionServer facet
+                                                                         (Dynamic Worker, own SQLite)
 ```
 
-- **Host Worker** (`worker/`): owns routing and serves the SPA assets.
-- **SessionSupervisor** (Durable Object, SQLite): named by session id. Stores only session
-  metadata and expiry. Loads the session-server bundle with `env.LOADER.get(bundleId, …)`
-  (`globalOutbound: null`), gets its `SessionServer` class via `getDurableObjectClass`, and runs it
-  as a facet. Forwards requests with the `/s/:id` prefix stripped.
-- **SessionServer** (`session/`, runs inside the Dynamic Worker): everything upstream's per-session
-  Bun server did that still makes sense without a local machine. It only uses its own facet
-  storage, has no bindings and no network.
+- **`Dynotator`** (`worker/api.ts`, a `WorkerEntrypoint`): the public API. `createReview`,
+  `getDecision`, `waitForDecision`, `revise`. Reachable only through a service binding, which is
+  the authorisation. This is the surface to keep small and stable.
+- **Host Worker** (`worker/index.ts`): routes `/s/:id` to the SPA and `/s/:id/api/*` to the
+  review's supervisor. `POST /api/sessions` exists only under `cf dev`, to try things locally.
+- **`SessionSupervisor`** (Durable Object, SQLite): named by review id. Stores only metadata and
+  expiry. Loads the session-server bundle with `env.LOADER.get(bundleId, …)`
+  (`globalOutbound: null`), takes its `SessionServer` class via `getDurableObjectClass`, and runs
+  it as a facet. A facet stub cannot leave the supervisor, so RPC calls go through explicit
+  pass-through methods.
+- **`SessionServer`** (`session/`, inside the Dynamic Worker): owns the document, versions, drafts
+  and the decision. It uses only its own facet storage: no bindings, no network.
 
-### HTTP contract
+Rules that follow from this:
 
-Host routes:
-
-- `POST /api/sessions` creates a session. Body:
-  `{ mode: "plan" | "annotate", markdown: string, title?: string, origin?: string, permissionMode?: string, filePath?: string, project?: string }`.
-  Response `201 { id, url, apiUrl }` where `url` is `<origin>/s/<id>` and `apiUrl` is `<origin>/s/<id>/api`.
-- `GET /s/:id` serves the SPA. `ANY /s/:id/api/*` goes to that session's server as `/api/*`.
-- The session id is an unguessable capability (>= 128 bits, URL-safe). Knowing it is the
-  authorisation for everything under `/s/:id`.
-- Authentication is not the Worker's job. The deployment sits behind Cloudflare Access; the
-  Worker holds no secrets and checks no tokens, and the CLI signs in through `cloudflared` when
-  Access challenges it (`cli/access.ts`). Do not add tokens, API keys or secret bindings.
-
-Session server routes (paths as the session server sees them):
-
-- The browser-facing `/api/*` routes the SPA uses (`/api/plan`, `/api/approve`, `/api/deny`,
-  `/api/feedback`, `/api/draft`, `/api/upload`, `/api/image`, `/api/config`, `/api/plan/versions`,
-  …) keep upstream's request and response shapes so the forked UI needs no protocol changes.
-- `GET /api/wait?timeout=<seconds>` (agent-facing, default 25, max 55) long-polls.
-  Returns `{ status: "pending" }` on timeout or
-  `{ status: "decided", decision: { approved: boolean, feedback?: string, permissionMode?: string, annotations?: unknown, … } }`.
-  Repeating the call after a decision returns the same decision.
-- `POST /api/revise` (agent-facing) submits a new revision of the plan after a denial:
-  `{ markdown: string }`. It clears the decision and adds a version so the UI can show the diff.
-
-Sessions expire (default 7 days, `SESSION_TTL_SECONDS`); the supervisor deletes the facet and its
-own storage in an alarm.
+- The Worker holds no secrets and checks no tokens. Agents authenticate by being bound; humans
+  by holding the unguessable review URL (>= 128 bits), optionally behind Cloudflare Access.
+  Do not add tokens, API keys or secret bindings.
+- Agents never talk HTTP to Dynotator. New agent-facing capability goes on the RPC entrypoint.
+- The browser's API is `/s/:id/api/*`: `GET /api/plan`, `GET /api/plan/revision`,
+  `GET /api/plan/versions`, `GET /api/plan/version`, `POST /api/approve`, `POST /api/deny`,
+  `POST /api/feedback`, `POST /api/exit`, `GET/POST/DELETE /api/draft`. Nothing else.
+- Reviews expire (default 7 days, `SESSION_TTL_SECONDS`); the supervisor deletes the facet and
+  its own storage in an alarm.
 
 ### Browser side
 
 The SPA is served at `/s/:id` and its API lives at `/s/:id/api`. Forked UI code calls `/api/...`;
-`packages/ui/utils/api.ts` exports `apiUrl(path)` that prefixes the session base, and
-`app/index.tsx` installs a `fetch`/`EventSource` shim that applies it to same-origin `/api/` URLs.
-Non-fetch uses (`<img src>`, `href`, `sendBeacon`) must call `apiUrl()` themselves.
+`packages/ui/utils/api.ts` exports `apiUrl(path)` that prefixes the review base, and
+`app/index.tsx` installs a `fetch` shim that applies it to same-origin `/api/` URLs.
 
-## What was removed from upstream, and the rule for more
+## What the browser app is
 
-Removed on purpose: the Inbox, code review, Guided Reviews, Shapes, Ask AI / "Ask this session",
-agent terminals, the local-file surfaces (linked docs, file browser, code-file popouts, source
-save, HTML and AsciiDoc documents, bundles), note-app integrations (Obsidian, Bear, Octarine),
-VS Code integration, the archive browser, update checks, telemetry, star/feedback prompts, the
-paste/share service, WebMCP, every harness plugin other than the Claude Code hook, the theme
-catalogue and the mascot sprites.
+Only: render the markdown (code highlighting, tables, Mermaid), table of contents, select text
+and annotate (comment, deletion, replacement, global comment), the annotation panel, question
+blocks, drafts, version history and diff after a revision, the decision, light and dark.
 
-The rule: a feature stays if it helps a human read and annotate a markdown plan in a browser and
-can be served by a Worker with per-session storage. It goes if it needs the user's machine, a
-local agent process, an LLM provider, or another Plannotator product surface.
+Everything else upstream had is removed on purpose, including: the Inbox, code review, Guided
+Reviews, Shapes, Ask AI, agent terminals, every local-file surface, note-app and editor
+integrations, the archive, sharing, WebMCP, every harness plugin and the CLI, settings and
+preferences, reviewer identity, keyboard-shortcut help, quick labels and templates, export,
+print, images and uploads, in-place editing, math rendering, the theme catalogue and the mascot.
+
+The rule for anything new: it stays out unless a human needs it to read and annotate a document
+and return a decision to an agent. Product features belong in the projects that embed Dynotator.
 
 ## Tooling
 
-- Runtime and package manager: `bun`. TypeScript only (no containers, no Python, no shell glue).
+- Runtime and package manager: `bun`. TypeScript only.
 - `bun run fmt` (oxfmt), `bun run lint` (oxlint), `bun run typecheck` (tsrs, the Rust port of
-  the TypeScript 7 compiler), `bun test`, `bun run build`, `bun run check` (all of them).
+  the TypeScript 7 compiler), `bun test`, `bun run check` (all of them).
 - Cloudflare tooling is the `cf` CLI with `cloudflare.config.ts` and the Cloudflare Vite plugin;
   there is no Wrangler config. `bun run dev` is `cf dev` (port 3000: SPA with HMR plus the real
   Worker, Dynamic Workers and facets included), `bun run build` is `cf build` (one Vite build for
@@ -108,9 +98,8 @@ local agent process, an LLM provider, or another Plannotator product surface.
 - This is a simplification fork. Prefer fewer files, fewer options and fewer abstractions over
   parity with upstream. Delete dead code, dead props and dead settings outright; no compatibility
   shims, no "removed in fork" comments, no feature flags for things that are gone.
-- Comments say why, not what, and are rare. Do not carry over upstream's long narrative comments
-  when the code they explain has been simplified.
+- Comments say why, not what, and are rare.
 - UI styling follows the Cloudflare Workers look (see `packages/ui/theme.css`): white and warm
   off-white surfaces, near-black text, `#ff5e1f` orange accent, pill buttons, hairline and dashed
-  borders, a mono face for labels. One light and one dark theme, nothing else. Never use
-  Cloudflare's logo or wordmark.
+  borders, a mono face for labels. One light and one dark theme. The logo is the emoji pair
+  🦖🥔. Never use Cloudflare's logo or wordmark.

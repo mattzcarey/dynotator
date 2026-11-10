@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
-import type { Origin } from "@dynotator/shared/agents";
-import type { VersionInfo } from "@dynotator/ui/hooks/usePlanDiff";
 
 /** What `GET /api/plan` tells the review app about its session. */
 export interface Session {
   mode: "plan" | "annotate";
   markdown: string;
-  origin: Origin | null;
   title: string | null;
   filePath: string | null;
   previousPlan: string | null;
@@ -18,12 +15,16 @@ export interface Session {
 interface PlanResponse {
   plan?: unknown;
   mode?: unknown;
-  origin?: unknown;
   title?: unknown;
   filePath?: unknown;
   previousPlan?: unknown;
   versionInfo?: unknown;
   planRevision?: unknown;
+}
+
+export interface VersionInfo {
+  version: number;
+  totalVersions: number;
 }
 
 const str = (value: unknown): string | null =>
@@ -34,7 +35,7 @@ function parseVersionInfo(value: unknown): VersionInfo | null {
   if (!info || typeof info.version !== "number" || typeof info.totalVersions !== "number") {
     return null;
   }
-  return { version: info.version, totalVersions: info.totalVersions, project: info.project ?? "" };
+  return { version: info.version, totalVersions: info.totalVersions };
 }
 
 export function parseSession(data: PlanResponse): Session {
@@ -43,7 +44,6 @@ export function parseSession(data: PlanResponse): Session {
     mode: data.mode === "annotate" ? "annotate" : "plan",
     // The text is compared line by line (versions, anchors): one line ending.
     markdown: data.plan.replace(/\r\n?/g, "\n"),
-    origin: (str(data.origin) as Origin | null) ?? null,
     title: str(data.title),
     filePath: str(data.filePath),
     previousPlan: str(data.previousPlan),

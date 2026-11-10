@@ -41,9 +41,6 @@ const QUESTION_CONTEXT_CSS = `
 export const QuestionContext: React.FC<{
   id: string;
   markdown: string;
-  imageBaseDir?: string;
-  onImageClick?: (src: string, alt: string) => void;
-  onNavigateAnchor?: (hash: string) => void;
 }> = ({ id, markdown, ...inlineProps }) => {
   const groups = useMemo((): Array<
     { list: Block[]; indices: (number | null)[] } | { block: Block }

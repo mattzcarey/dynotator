@@ -1,42 +1,13 @@
 import React, { useState } from "react";
+import { apiUrl } from "../utils/api";
 
-export type ImageSrcResolver = (path: string, base?: string) => string;
-
-/**
- * Default image URL resolver — Plannotator's local server behavior, verbatim.
- * Remote URLs pass through; local paths resolve through `/api/image`.
- */
-const defaultImageSrcResolver: ImageSrcResolver = (path, base) => {
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path; // Remote URL, use directly
-  }
+/** An image path as a URL: remote URLs as they are, anything else through `/api/image`. */
+export const getImageSrc = (path: string, base?: string): string => {
+  if (/^(https?:|data:|blob:)/i.test(path)) return path;
   let url = `/api/image?path=${encodeURIComponent(path)}`;
-  if (base && !path.startsWith("/")) {
-    url += `&base=${encodeURIComponent(base)}`;
-  }
-  return url;
+  if (base && !path.startsWith("/")) url += `&base=${encodeURIComponent(base)}`;
+  return apiUrl(url);
 };
-
-// Module-level resolver, stable identity. Defaults to Plannotator's behavior so
-// callers and consumers are unchanged. A host (e.g. Workspaces) calls
-// `setImageSrcResolver` once at startup to resolve images via its own backend.
-let imageSrcResolver: ImageSrcResolver = defaultImageSrcResolver;
-
-/** Override how image paths resolve to URLs. Call once at app startup. */
-export const setImageSrcResolver = (resolver: ImageSrcResolver): void => {
-  imageSrcResolver = resolver;
-};
-
-/** Reset to the default (Plannotator local) resolver. Mainly for tests. */
-export const resetImageSrcResolver = (): void => {
-  imageSrcResolver = defaultImageSrcResolver;
-};
-
-/**
- * Get the display URL for an image path or URL.
- * Delegates to the active resolver (default = Plannotator `/api/image`).
- */
-export const getImageSrc = (path: string, base?: string): string => imageSrcResolver(path, base);
 
 interface ImageThumbnailProps {
   path: string;

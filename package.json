@@ -2,18 +2,20 @@
   "name": "dynotator",
   "version": "0.1.0",
   "private": true,
-  "description": "Plan review and annotation for coding agents, hosted on Cloudflare Workers. Each review session's server runs in a Dynamic Worker.",
+  "description": "Human review of plans and markdown for agents on Cloudflare. A Worker with an RPC API; each review's server runs in a Dynamic Worker.",
   "license": "MIT OR Apache-2.0",
-  "bin": {
-    "dynotator": "cli/index.ts"
-  },
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./worker/api.ts"
+    }
+  },
   "scripts": {
     "dev": "cf dev",
     "build": "cf build",
     "deploy": "cf deploy",
     "types": "cf workers types",
-    "typecheck": "cf workers types && tsrs --noEmit -p tsconfig.json && tsrs --noEmit -p worker/tsconfig.json && tsrs --noEmit -p scripts/tsconfig.json && tsrs --noEmit -p cli/tsconfig.json",
+    "typecheck": "cf workers types && tsrs --noEmit -p tsconfig.json && tsrs --noEmit -p worker/tsconfig.json && tsrs --noEmit -p scripts/tsconfig.json",
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",

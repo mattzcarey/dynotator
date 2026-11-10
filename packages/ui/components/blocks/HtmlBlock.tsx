@@ -1,246 +1,26 @@
-import React, { useRef, useEffect, useContext } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import type { Block } from "../../types";
 import { sanitizeBlockHtml } from "../../utils/sanitizeHtml";
-import { parseSrcset, serializeSrcset, type SrcsetCandidate } from "../../utils/srcset";
-import { getImageSrc } from "../ImageThumbnail";
-import {
-  UNAVAILABLE_IMAGE_CLASS,
-  PreserveResolvedVideosContext,
-  ResolvedResponsiveImagesContext,
-  useImageResolver,
-  type ImageResolver,
-} from "../ImageResolverContext";
-
-interface HtmlBlockProps {
-  block: Block;
-  imageBaseDir?: string;
-  onNavigateAnchor?: (hash: string) => void;
-}
-
-function unavailableMedia(doc: Document, label: string, title: string): HTMLSpanElement {
-  const placeholder = doc.createElement("span");
-  placeholder.className = UNAVAILABLE_IMAGE_CLASS;
-  placeholder.title = title;
-  placeholder.setAttribute("data-image-unavailable", "");
-  placeholder.textContent = label;
-  return placeholder;
-}
 
 /**
- * With a host image resolver (RenderedMarkdown `resolveImage`), every media
- * URL is the host's call, decided on an INERT copy before anything is in the
- * document, so nothing is fetched from the page origin first:
- * - `<img src>` goes through the resolver (`src`, or a placeholder); its
- *   `srcset` / `sizes` are dropped, so the browser cannot pick a candidate
- *   the host never saw.
- * - `<picture><source>` is dropped; the `<img>` inside is the fallback.
- *   With `responsiveImages` (ResolvedResponsiveImagesContext) both are kept
- *   instead, every `srcset` candidate passed through the resolver.
- * - `<video>` (with its `src`, `poster` and `<source>`s) becomes a
- *   placeholder unless the host explicitly preserves videos: the resolver speaks
- *   for images only.
+ * A raw HTML block, sanitized. The inner HTML is set imperatively so React
+ * never replaces it on re-render (an open <details> stays open); web links
+ * open in a new tab.
  */
-function resolveHostMedia(
-  root: DocumentFragment,
-  doc: Document,
-  resolveImage: ImageResolver,
-  preserveVideos: boolean,
-  responsiveImages = false,
-): void {
-  if (!preserveVideos)
-    root.querySelectorAll("video").forEach((video) => {
-      video.replaceWith(unavailableMedia(doc, "Video", "Videos are not shown here"));
-    });
-  if (responsiveImages) {
-    root.querySelectorAll("img[srcset], picture source[srcset]").forEach((element) => {
-      const srcset = resolveSrcset(element.getAttribute("srcset") ?? "", resolveImage);
-      if (srcset !== null) {
-        element.setAttribute("srcset", srcset);
-      } else if (element.tagName === "SOURCE") {
-        element.remove();
-      } else {
-        element.removeAttribute("srcset");
-        element.removeAttribute("sizes");
+const HtmlBlockImpl: React.FC<{ block: Block }> = ({ block }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const html = useMemo(() => sanitizeBlockHtml(block.content), [block.content]);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    if (root.innerHTML !== html) root.innerHTML = html;
+    root.querySelectorAll("a").forEach((a) => {
+      if (/^(https?:|\/\/)/i.test(a.getAttribute("href") ?? "")) {
+        a.setAttribute("target", "_blank");
+        a.setAttribute("rel", "noopener noreferrer");
       }
     });
-    root.querySelectorAll("picture source:not([srcset])").forEach((source) => source.remove());
-  } else {
-    root.querySelectorAll("picture source").forEach((source) => source.remove());
-  }
-  root.querySelectorAll("img").forEach((img) => {
-    if (!responsiveImages) {
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-    }
-    const src = img.getAttribute("src");
-    const alt = img.getAttribute("alt") || "Image";
-    if (!src) {
-      img.replaceWith(unavailableMedia(doc, alt, "Image has no source"));
-      return;
-    }
-    const resolved = resolveImage(src);
-    if (resolved?.kind === "unavailable") {
-      img.replaceWith(unavailableMedia(doc, alt, resolved.title));
-      return;
-    }
-    if (resolved?.kind === "src") {
-      img.setAttribute("src", resolved.src);
-      // A smaller copy of the picture: laid out at the original's width, unless the HTML sized it itself.
-      if (resolved.width && !img.hasAttribute("width") && !img.hasAttribute("height"))
-        img.setAttribute("width", String(resolved.width));
-    } else if (!/^(https?:|data:|blob:)/i.test(src)) {
-      img.setAttribute("src", getImageSrc(src));
-    }
-    img.setAttribute("data-host-image", "");
-  });
-}
-
-/**
- * A `srcset` with every candidate URL put through the host's resolver (its
- * descriptors kept), or null when the resolver calls one `unavailable`, so the
- * browser never picks a candidate the host refused. A relative candidate the
- * resolver leaves alone loads like a relative `<img src>`. Candidates are split
- * the way the browser splits them (`parseSrcset`), so a `data:` URL's comma
- * stays inside its URL.
- */
-function resolveSrcset(srcset: string, resolveImage: ImageResolver): string | null {
-  const candidates: SrcsetCandidate[] = [];
-  for (const { url, descriptors } of parseSrcset(srcset)) {
-    const resolved = resolveImage(url);
-    if (resolved?.kind === "unavailable") return null;
-    const src =
-      resolved?.kind === "src"
-        ? resolved.src
-        : /^(https?:|data:|blob:)/i.test(url)
-          ? url
-          : getImageSrc(url);
-    candidates.push({ url: src, descriptors });
-  }
-  return candidates.length > 0 ? serializeSrcset(candidates) : null;
-}
-
-const IMAGE_NOT_FOUND_TITLE = "Image could not be loaded";
-
-// Walks the sanitized DOM and rewrites relative <img src> / <a href> so they
-// behave the same as their markdown counterparts:
-// - Relative image paths route through /api/image?path=... so they load from
-//   the plan's directory, not the plannotator server root.
-// - Relative .md / .mdx / .txt / .html links open in the linked-doc overlay when
-//   onOpenLinkedDoc is provided (same as [[wiki-links]] and [label](./x.md)).
-// Absolute http(s) URLs and mailto: are left untouched.
-function rewriteRelativeRefs(
-  root: HTMLElement,
-  imageBaseDir?: string,
-  onNavigateAnchor?: (hash: string) => void,
-  resolveImage?: ImageResolver | null,
-): () => void {
-  const cleanups: (() => void)[] = [];
-
-  if (resolveImage) {
-    // Media was already decided by the host before insertion (see
-    // resolveHostMedia); only the load-failure fallback is wired here.
-    root.querySelectorAll<HTMLImageElement>("img[data-host-image]").forEach((img) => {
-      // The raw HTML is not React's: replacing the <img> here cannot trip React's insertBefore.
-      // The placeholder's alt text is never quoted by a text comment (annotation-exclude).
-      const onError = () => {
-        const placeholder = unavailableMedia(
-          img.ownerDocument,
-          img.getAttribute("alt") || "Image",
-          IMAGE_NOT_FOUND_TITLE,
-        );
-        placeholder.classList.add("annotation-exclude");
-        img.replaceWith(placeholder);
-      };
-      img.addEventListener("error", onError);
-      cleanups.push(() => img.removeEventListener("error", onError));
-    });
-  } else {
-    root.querySelectorAll("img").forEach((img) => {
-      const src = img.getAttribute("src");
-      if (!src) return;
-      if (/^(https?:|data:|blob:)/i.test(src)) return;
-      img.setAttribute("src", getImageSrc(src, imageBaseDir));
-    });
-  }
-
-  root.querySelectorAll("a").forEach((a) => {
-    const href = a.getAttribute("href");
-    if (!href) return;
-    // External http(s) links: open in a new tab and close the tab-nabbing
-    // vector (opener reference back to the plannotator tab). Matches the
-    // markdown renderer's behavior for [label](https://...).
-    if (/^(https?:|\/\/)/i.test(href)) {
-      a.setAttribute("target", "_blank");
-      a.setAttribute("rel", "noopener noreferrer");
-      return;
-    }
-    if (/^(mailto:|tel:)/i.test(href)) return;
-    // In-page anchor: native browser jump doesn't target the scroll viewport,
-    // so route through onNavigateAnchor to match InlineMarkdown's behavior.
-    if (href.startsWith("#")) {
-      if (!onNavigateAnchor) return;
-      const handler = (e: Event) => {
-        e.preventDefault();
-        onNavigateAnchor(href);
-      };
-      a.addEventListener("click", handler);
-      cleanups.push(() => a.removeEventListener("click", handler));
-      return;
-    }
-  });
-
-  return () => cleanups.forEach((fn) => fn());
-}
-
-// The inner HTML is set imperatively (not via dangerouslySetInnerHTML) so that
-// React's reconciliation never replaces the rendered subtree on re-render.
-// That matters because <details open> is DOM-owned state — a stray innerHTML
-// re-set on every parent re-render would collapse any open <details> the
-// user just opened. Paired with React.memo below so the component itself
-// stops re-rendering unless the block content actually changes.
-const HtmlBlockImpl: React.FC<HtmlBlockProps> = ({
-  block,
-  imageBaseDir,
-  onNavigateAnchor,
-}) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const resolveImage = useImageResolver();
-  const preserveVideos = useContext(PreserveResolvedVideosContext);
-  const responsiveImages = useContext(ResolvedResponsiveImagesContext);
-  const sanitized = React.useMemo(() => sanitizeBlockHtml(block.content), [block.content]);
-  useEffect(() => {
-    if (!ref.current) return;
-    if (resolveImage) {
-      // Decide every media URL on an inert template first (nothing loads
-      // there), then insert the result.
-      const template = ref.current.ownerDocument.createElement("template");
-      template.innerHTML = sanitized;
-      resolveHostMedia(
-        template.content,
-        ref.current.ownerDocument,
-        resolveImage,
-        preserveVideos,
-        responsiveImages,
-      );
-      ref.current.replaceChildren(template.content);
-    } else if (ref.current.innerHTML !== sanitized) {
-      ref.current.innerHTML = sanitized;
-    }
-    const cleanup = rewriteRelativeRefs(
-      ref.current,
-      imageBaseDir,
-      onNavigateAnchor,
-      resolveImage,
-    );
-    return cleanup;
-  }, [
-    sanitized,
-    imageBaseDir,
-    onNavigateAnchor,
-    resolveImage,
-    preserveVideos,
-    responsiveImages,
-  ]);
+  }, [html]);
   return (
     <div
       ref={ref}
@@ -250,11 +30,8 @@ const HtmlBlockImpl: React.FC<HtmlBlockProps> = ({
     />
   );
 };
+
 export const HtmlBlock = React.memo(
   HtmlBlockImpl,
-  (prev, next) =>
-    prev.block.id === next.block.id &&
-    prev.block.content === next.block.content &&
-    prev.imageBaseDir === next.imageBaseDir &&
-    prev.onNavigateAnchor === next.onNavigateAnchor,
+  (prev, next) => prev.block.id === next.block.id && prev.block.content === next.block.content,
 );

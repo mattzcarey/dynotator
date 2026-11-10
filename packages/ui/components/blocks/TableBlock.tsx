@@ -6,9 +6,6 @@ interface TableBlockProps {
   block: Block;
   onHover?: (element: HTMLElement) => void;
   onLeave?: () => void;
-  onNavigateAnchor?: (hash: string) => void;
-  imageBaseDir?: string;
-  onImageClick?: (src: string, alt: string) => void;
 }
 
 // Parse pipe-delimited markdown table content into headers + rows.
@@ -78,9 +75,6 @@ export const TableBlock: React.FC<TableBlockProps> = ({
   block,
   onHover,
   onLeave,
-  onNavigateAnchor,
-  imageBaseDir,
-  onImageClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { headers, rows } = parseTableContent(block.content);
@@ -103,10 +97,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
             {headers.map((header, i) => (
               <th key={i} className="px-3 py-2 text-left text-[13px] font-medium text-foreground">
                 <InlineMarkdown
-                  imageBaseDir={imageBaseDir}
-                  onImageClick={onImageClick}
                   text={header}
-                  onNavigateAnchor={onNavigateAnchor}
                 />
               </th>
             ))}
@@ -118,10 +109,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
               {row.map((cell, cellIdx) => (
                 <td key={cellIdx} className="px-3 py-2 text-foreground/85">
                   <InlineMarkdown
-                    imageBaseDir={imageBaseDir}
-                    onImageClick={onImageClick}
                     text={cell}
-                    onNavigateAnchor={onNavigateAnchor}
                   />
                 </td>
               ))}

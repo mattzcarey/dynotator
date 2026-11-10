@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { storage } from "../utils/storage";
-import { usePrintMedia } from "../hooks/usePrintMedia";
 import { parseThemeMode, type Mode } from "./themeModes";
 
 export type { Mode } from "./themeModes";
@@ -55,11 +54,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     parseThemeMode(storage.getItem(THEME_STORAGE_KEY), "system"),
   );
   const [system, setSystem] = useState<ResolvedMode>(systemMode);
-  // Paper is white: print the light theme whatever is on screen.
-  const printing = usePrintMedia({
-    onEnter: () => applyMode("light"),
-    onExit: () => applyMode(mode === "system" ? systemMode() : mode),
-  });
 
   useEffect(enableTransitionsSoon, []);
 
@@ -72,7 +66,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => query.removeEventListener("change", onChange);
   }, [mode]);
 
-  const resolvedMode: ResolvedMode = printing ? "light" : mode === "system" ? system : mode;
+  const resolvedMode: ResolvedMode = mode === "system" ? system : mode;
   if (typeof document !== "undefined") applyMode(resolvedMode);
 
   const setMode = useCallback((next: Mode) => {

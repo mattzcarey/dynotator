@@ -1,16 +1,15 @@
 import {
   Waiters,
   allowsDecision,
-  clearDecision,
   getDecision,
   parseWaitSeconds,
+  revise,
   settle,
   type DecisionKind,
 } from "./decision";
 import { deleteDraft, loadDraft, parseGeneration, saveDraft } from "./drafts";
 import { HttpError, error, json, readJsonObject } from "./http";
 import {
-  addVersion,
   currentRevision,
   currentVersion,
   getMeta,
@@ -105,13 +104,7 @@ async function route(
 
   if (path === "/api/revise" && method === "POST") {
     const markdown = parseMarkdown((await readJsonObject(req)).markdown);
-    const decision = getDecision(store);
-    if (decision && (decision.approved || decision.exit)) {
-      return error(409, "This review session has finished.", { code: "already_decided" });
-    }
-    const { version, unchanged } = addVersion(store, markdown, now);
-    clearDecision(store);
-    return json({ ok: true, version, revision: currentRevision(store), unchanged });
+    return json({ ok: true, ...revise(store, markdown, now) });
   }
 
   if (path === "/api/draft") {

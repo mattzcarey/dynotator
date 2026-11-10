@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Annotation, ImageAttachment } from "@dynotator/ui/types";
+import type { Annotation } from "@dynotator/ui/types";
 
 const DEBOUNCE_MS = 500;
 
 export interface Draft {
   annotations: Annotation[];
-  globalAttachments: ImageAttachment[];
 }
 
 interface StoredDraft extends Draft {
@@ -37,6 +36,8 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
   const offeredRef = useRef<Draft | null>(null);
   const generationRef = useRef(0);
   const loadedRef = useRef(false);
+  /** A draft exists on the server (loaded or saved), so emptying it deletes it. */
+  const storedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef(draft);
   latestRef.current = draft;
@@ -50,13 +51,11 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
         const generation = generationOf(data?.draftGeneration);
         if (generation !== null) generationRef.current = Math.max(generationRef.current, generation);
         if (!res.ok || !data || !Array.isArray(data.annotations)) return;
-        const restored: Draft = {
-          annotations: data.annotations,
-          globalAttachments: Array.isArray(data.globalAttachments) ? data.globalAttachments : [],
-        };
-        const count = restored.annotations.length + restored.globalAttachments.length;
+        const restored: Draft = { annotations: data.annotations };
+        const count = restored.annotations.length;
         if (count === 0) return;
         offeredRef.current = restored;
+        storedRef.current = true;
         setOffer({ count, timeAgo: timeAgo(data.ts ?? 0) });
       })
       .catch(() => {})
@@ -67,17 +66,19 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
 
   const persist = useCallback((keepalive: boolean, retried = false): void => {
     if (!enabledRef.current) return;
-    const { annotations, globalAttachments } = latestRef.current;
+    const { annotations } = latestRef.current;
     const generation = ++generationRef.current;
-    if (annotations.length === 0 && globalAttachments.length === 0) {
+    if (annotations.length === 0) {
+      if (!storedRef.current) return;
+      storedRef.current = false;
       void fetch(`/api/draft?generation=${generation}`, { method: "DELETE", keepalive }).catch(
         () => {},
       );
       return;
     }
+    storedRef.current = true;
     const body: StoredDraft = {
       annotations,
-      globalAttachments,
       draftGeneration: generation,
       ts: Date.now(),
     };
@@ -116,7 +117,7 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
       timerRef.current = null;
       persist(false);
     }, DEBOUNCE_MS);
-  }, [draft.annotations, draft.globalAttachments, enabled, persist]);
+  }, [draft.annotations, enabled, persist]);
 
   useEffect(() => {
     const onHide = () => flush(true);

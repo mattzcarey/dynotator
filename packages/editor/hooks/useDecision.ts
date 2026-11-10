@@ -1,27 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AnnotationType, type Annotation } from "@dynotator/ui/types";
-import { generateId } from "@dynotator/ui/utils/generateId";
-import { getIdentity } from "@dynotator/ui/utils/identity";
-import type { DecisionActionId } from "@dynotator/ui/utils/decisionSpec";
-import type { PermissionMode } from "@dynotator/ui/utils/permissionMode";
-import { buildFeedback, hasFeedback, NO_FEEDBACK_SENTENCE, type FeedbackInput } from "../feedback";
+import type { Annotation } from "@dynotator/ui/types";
+import { buildFeedback, type FeedbackInput } from "../feedback";
 
-export type Submitted = "approved" | "denied" | "done" | "exited" | "closed";
-
-interface Options {
-  mode: "plan" | "annotate";
-  feedbackInput: FeedbackInput;
-  /** Only questions were answered: the deny tells the agent so. */
-  answersOnly: boolean;
-  /** Sent with an approval when the agent honours it (Claude Code). */
-  permissionMode: PermissionMode | null;
-  /** The plan revision on screen; the server refuses a decision on an older one. */
-  planRevision: number | null;
-  getDraftGeneration: () => number;
-  addAnnotation: (annotation: Annotation) => void;
-  onDecided: () => void;
-}
+export type Outcome = "approved" | "changes" | "sent" | "done" | "closed" | "taken";
 
 class Refused extends Error {
   constructor(readonly code: string) {
@@ -43,149 +25,97 @@ async function post(path: string, body?: object): Promise<void> {
   throw new Error(error ?? `The server answered ${res.status}.`);
 }
 
-function noteAnnotation(text: string): Annotation {
-  return {
-    id: generateId("global-note"),
-    blockId: "",
-    startOffset: 0,
-    endOffset: 0,
-    type: AnnotationType.GLOBAL_COMMENT,
-    text,
-    originalText: "",
-    createdA: Date.now(),
-    author: getIdentity(),
-  };
-}
+const reload = { label: "Load", onClick: () => window.location.reload() };
 
-/** Approve / deny (plan) and send feedback / close (annotate). */
+/** Approve / request changes (plan) and send feedback / close (annotate). */
 export function useDecision({
-  mode,
-  feedbackInput,
-  answersOnly,
-  permissionMode,
   planRevision,
   getDraftGeneration,
-  addAnnotation,
   onDecided,
-}: Options) {
-  const [submitted, setSubmitted] = useState<Submitted | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+}: {
+  planRevision: number | null;
+  getDraftGeneration: () => number;
+  onDecided: () => void;
+}) {
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
 
   const run = useCallback(
-    async (what: string, send: () => Promise<Submitted>) => {
+    async (send: () => Promise<Outcome>) => {
       if (busyRef.current) return;
       busyRef.current = true;
-      setIsSubmitting(true);
+      setBusy(true);
       try {
-        const outcome = await send();
+        const result = await send();
         onDecided();
-        setSubmitted(outcome);
+        setOutcome(result);
       } catch (error) {
         if (error instanceof Refused && error.code === "plan_revised") {
-          toast("The agent revised the plan", {
+          toast("The plan was revised", {
             description: "Nothing was sent. Load the new version, then decide again.",
             duration: Infinity,
-            action: { label: "Load", onClick: () => window.location.reload() },
+            action: reload,
           });
-          return;
-        }
-        if (error instanceof Refused && error.code === "already_decided") {
+        } else if (error instanceof Refused && error.code === "already_decided") {
           onDecided();
-          setSubmitted("closed");
-          return;
+          setOutcome("taken");
+        } else {
+          toast.error("Could not send", {
+            description: error instanceof Error ? error.message : undefined,
+            action: { label: "Retry", onClick: () => void run(send) },
+          });
         }
-        toast.error(`Could not send the ${what}`, {
-          description: error instanceof Error ? error.message : undefined,
-          action: { label: "Retry", onClick: () => void run(what, send) },
-        });
       } finally {
         busyRef.current = false;
-        setIsSubmitting(false);
+        setBusy(false);
       }
     },
     [onDecided],
   );
 
-  const withNote = (note: string | undefined): FeedbackInput => {
-    const text = note?.trim();
-    if (!text) return feedbackInput;
-    const annotation = noteAnnotation(text);
-    addAnnotation(annotation);
-    return { ...feedbackInput, annotations: [...feedbackInput.annotations, annotation] };
-  };
+  const revision = () => (planRevision === null ? {} : { planRevision });
+  const draftGeneration = () => ({ draftGeneration: getDraftGeneration() });
 
-  const approve = (input: FeedbackInput | null) =>
-    run("approval", async () => {
+  const approve = (input: FeedbackInput) =>
+    run(async () => {
+      const hasNotes = input.annotations.length > 0;
       await post("/api/approve", {
-        draftGeneration: getDraftGeneration(),
-        ...(planRevision !== null ? { planRevision } : {}),
-        ...(input && hasFeedback(input) ? { feedback: buildFeedback(input) } : {}),
-        ...(permissionMode ? { permissionMode } : {}),
+        ...(hasNotes ? { feedback: buildFeedback(input) } : {}),
+        ...revision(),
+        ...draftGeneration(),
       });
       return "approved";
     });
 
-  const deny = (input: FeedbackInput) =>
-    run("feedback", async () => {
+  const requestChanges = (input: FeedbackInput, answersOnly: boolean) =>
+    run(async () => {
       await post("/api/deny", {
-        draftGeneration: getDraftGeneration(),
-        ...(planRevision !== null ? { planRevision } : {}),
         feedback: buildFeedback(input),
         ...(answersOnly ? { answersOnly: true } : {}),
+        ...revision(),
+        ...draftGeneration(),
       });
-      return "denied";
+      return "changes";
     });
 
   const sendFeedback = (input: FeedbackInput) =>
-    run("feedback", async () => {
-      const feedback = buildFeedback(input);
-      const nothingToSend = feedback === NO_FEEDBACK_SENTENCE;
+    run(async () => {
+      const empty = input.annotations.length === 0;
       await post("/api/feedback", {
-        draftGeneration: getDraftGeneration(),
-        feedback,
-        annotations: input.annotations,
-        ...(nothingToSend ? { nothingToSend: true } : {}),
+        feedback: buildFeedback(input),
+        annotations: input.annotations satisfies Annotation[],
+        ...revision(),
+        ...draftGeneration(),
       });
-      return nothingToSend ? "done" : "denied";
+      return empty ? "done" : "sent";
     });
-
-  const empty: FeedbackInput = { ...feedbackInput, annotations: [], globalAttachments: [] };
-  const ready = hasFeedback(feedbackInput);
-
-  const act = (id: DecisionActionId, note?: string) => {
-    if (submitted) return;
-    if (mode === "plan") {
-      switch (id) {
-        case "primary":
-          return ready ? deny(feedbackInput) : approve(null);
-        case "note-with-approval":
-          return approve(withNote(note));
-        case "request-changes":
-        case "note-with-feedback":
-          return deny(withNote(note));
-        case "approve-with-notes":
-          return approve(feedbackInput);
-        case "discard-and-finish":
-          return approve(null);
-      }
-    }
-    switch (id) {
-      case "discard-and-finish":
-        return sendFeedback(empty);
-      case "primary":
-      case "approve-with-notes":
-        return sendFeedback(feedbackInput);
-      default:
-        return sendFeedback(withNote(note));
-    }
-  };
 
   const close = () =>
-    run("close request", async () => {
+    run(async () => {
       await post(`/api/exit?draftGeneration=${getDraftGeneration()}`);
-      return "exited";
+      return "closed";
     });
 
-  return { submitted, isSubmitting, act, close };
+  return { outcome, busy, approve, requestChanges, sendFeedback, close };
 }
