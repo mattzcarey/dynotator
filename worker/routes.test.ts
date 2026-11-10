@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { isSessionId, matchRoute, newSessionId, ttlSeconds } from "./routes";
 
 test("session ids are 160-bit URL-safe and distinct", () => {
@@ -21,7 +21,7 @@ describe("matchRoute", () => {
     ["GET", `/s/${id}`, { kind: "page", id }],
     ["GET", `/s/${id}/`, { kind: "page", id }],
     ["POST", `/s/${id}/api/approve`, { kind: "session-api", id, path: "/api/approve" }],
-    ["GET", "/s/bad/api/plan", { kind: "api-not-found" }],
+    ["GET", "/s/bad/api/review", { kind: "api-not-found" }],
     ["GET", "/s/bad", { kind: "page-not-found" }],
     ["GET", `/s/${id}/assets/x.js`, { kind: "asset" }],
     ["GET", "/assets/index.js", { kind: "asset" }],

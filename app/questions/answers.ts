@@ -15,9 +15,9 @@ import {
  * decisions carry it with the comments. Its text is the answer on one line, for a reader of the
  * raw annotations.
  */
-const answerId = (key: string) => `question-${key}`;
+const answerId = (path: string, key: string) => `question-${key}@${path}`;
 
-/** The valid answers among the annotations, by question key. */
+/** The valid answers among one file's annotations, by question key. */
 export function collectAnswers(annotations: readonly Annotation[]): Map<string, QuestionAnswer> {
   const out = new Map<string, QuestionAnswer>();
   for (const ann of annotations) {
@@ -30,17 +30,19 @@ export function collectAnswers(annotations: readonly Annotation[]): Map<string, 
 /** The annotations with a question's answer replaced in place, added, or (when empty) removed. */
 export function upsertAnswer(
   annotations: Annotation[],
+  path: string,
   blockId: string,
   answer: QuestionAnswer | null,
   key: string,
 ): Annotation[] {
-  const id = answerId(key);
+  const id = answerId(path, key);
   const index = annotations.findIndex((a) => a.id === id);
   if (!answer || isEmptyAnswer(answer)) {
     return index === -1 ? annotations : annotations.filter((_, i) => i !== index);
   }
   const next: Annotation = {
     id,
+    path,
     blockId,
     type: AnnotationType.COMMENT,
     text: formatAnswerText(answer),
@@ -56,7 +58,7 @@ export interface QuestionRow {
   status: QuestionStatus;
 }
 
-/** The panel's question list, in document order. */
+/** One file's questions for the panel, in document order. */
 export function questionRows(
   blocks: readonly Block[],
   annotations: readonly Annotation[],

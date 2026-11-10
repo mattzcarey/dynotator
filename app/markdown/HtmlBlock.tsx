@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useContext, useEffect, useMemo, useRef } from "react";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import type { Block } from "./blocks";
 import { blockId } from "./BlockRenderer";
+import { followInternal, LinkResolver } from "./links";
 
 const ALLOWED_TAGS = [
   "sub",
@@ -92,17 +93,23 @@ function HtmlBlockImpl({ block }: { block: Block }) {
       }),
     [block.content],
   );
+  const resolve = useContext(LinkResolver);
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
     if (root.innerHTML !== html) root.innerHTML = html;
     for (const a of root.querySelectorAll("a")) {
-      if (/^(https?:|\/\/)/i.test(a.getAttribute("href") ?? "")) {
+      const href = a.getAttribute("href") ?? "";
+      const internal = resolve?.(href);
+      if (internal) {
+        a.setAttribute("href", internal);
+        a.onclick = () => followInternal(internal);
+      } else if (/^(https?:|\/\/)/i.test(href)) {
         a.target = "_blank";
         a.rel = "noopener noreferrer";
       }
     }
-  }, [html]);
+  }, [html, resolve]);
   return (
     <div
       ref={ref}

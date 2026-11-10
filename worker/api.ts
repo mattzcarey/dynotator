@@ -1,9 +1,9 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 import type { Decision, Revision } from "../session/decision";
-import type { SessionInit } from "../session/plan";
+import { type Files, type ReviewInit, parseFiles, parseInit } from "../session/files";
 import { isSessionId, newSessionId, ttlSeconds } from "./routes";
 
-export type { Decision, Revision, SessionInit };
+export type { Decision, Files, Revision, ReviewInit };
 
 export interface Review {
   id: string;
@@ -11,23 +11,31 @@ export interface Review {
   url: string;
 }
 
-const MAX_MARKDOWN_BYTES = 1_000_000;
-const MAX_TITLE_LENGTH = 4096;
+/**
+ * Set by whoever creates the binding, never by the caller of a method: a Worker that embeds
+ * Dynotator passes the origin its reviewers reach it at when it calls its own entrypoint
+ * (`ctx.exports.Dynotator({ props: { origin } })`). Without it, review URLs start with
+ * `PUBLIC_URL`.
+ */
+export interface DynotatorProps {
+  origin?: string;
+}
 
 /**
  * The API other Workers and agents call through a service binding to this entrypoint. Nothing
  * here is reachable over HTTP: the binding is the authorisation.
  */
-export class Dynotator extends WorkerEntrypoint<Env> {
+export class Dynotator extends WorkerEntrypoint<Env, DynotatorProps> {
   /**
-   * Opens a review of `markdown` and returns the URL to hand to a human. `mode` is `"plan"`
+   * Opens a review of `files` and returns the URL to hand to a human. `mode` is `"plan"`
    * (approve or request changes) or `"annotate"` (send feedback or close).
    */
-  async createReview(init: SessionInit): Promise<Review> {
-    const session = parseInit(init);
+  async createReview(init: ReviewInit): Promise<Review> {
+    const review = parseInit(init);
     const id = newSessionId();
-    await this.supervisor(id).create(session, ttlSeconds(this.env.SESSION_TTL_SECONDS));
-    return { id, url: `${this.env.PUBLIC_URL.replace(/\/+$/, "")}/s/${id}` };
+    await this.supervisor(id).create(review, ttlSeconds(this.env.SESSION_TTL_SECONDS));
+    const origin = (this.ctx.props?.origin ?? this.env.PUBLIC_URL).replace(/\/+$/, "");
+    return { id, url: `${origin}/s/${id}` };
   }
 
   /** The decision, or `null` while the review is open. Throws if the review has expired. */
@@ -44,11 +52,13 @@ export class Dynotator extends WorkerEntrypoint<Env> {
   }
 
   /**
-   * Puts a revised document up for review at the same URL, so the reviewer sees the diff, and
-   * reopens the decision. Throws once the review has been approved or closed.
+   * Puts `files`, a full snapshot, up as the next version at the same URL, so the reviewer sees
+   * what changed, and reopens the decision. Files absent from the snapshot are deleted in that
+   * version. An identical snapshot is `unchanged` and leaves the decision standing. Throws once
+   * the review has been approved or closed.
    */
-  async revise(id: string, markdown: string): Promise<Revision> {
-    return this.session(id).revise(parseMarkdown(markdown));
+  async revise(id: string, files: Files): Promise<Revision> {
+    return this.session(id).revise(parseFiles(files));
   }
 
   private supervisor(id: string) {
@@ -59,24 +69,4 @@ export class Dynotator extends WorkerEntrypoint<Env> {
     if (!isSessionId(id)) throw new Error("This review does not exist or has expired");
     return this.supervisor(id);
   }
-}
-
-function parseInit(init: SessionInit): SessionInit {
-  if (!init || typeof init !== "object") throw new TypeError("Expected { mode, markdown, title? }");
-  const { mode, markdown, title } = init;
-  if (mode !== "plan" && mode !== "annotate") {
-    throw new TypeError('mode must be "plan" or "annotate"');
-  }
-  if (title !== undefined && (typeof title !== "string" || title.length > MAX_TITLE_LENGTH)) {
-    throw new TypeError(`title must be a string of at most ${MAX_TITLE_LENGTH} characters`);
-  }
-  return { mode, markdown: parseMarkdown(markdown), ...(title && { title }) };
-}
-
-function parseMarkdown(markdown: unknown): string {
-  if (typeof markdown !== "string") throw new TypeError("markdown must be a string");
-  if (new TextEncoder().encode(markdown).byteLength > MAX_MARKDOWN_BYTES) {
-    throw new RangeError(`markdown exceeds ${MAX_MARKDOWN_BYTES} bytes`);
-  }
-  return markdown;
 }

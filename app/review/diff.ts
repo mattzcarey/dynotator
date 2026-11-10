@@ -17,6 +17,8 @@ const keyOf = ({
 }: Block) =>
   JSON.stringify([type, level, language, checked, ordered, alertKind, directiveKind, content]);
 
+const MAX_CELLS = 4_000_000;
+
 /** Which items of `a` and `b` are common to both (a longest common subsequence). */
 function commonItems(a: string[], b: string[]): [boolean[], boolean[]] {
   const inA = a.map(() => false);
@@ -34,6 +36,8 @@ function commonItems(a: string[], b: string[]): [boolean[], boolean[]] {
   // lengths[i][j]: the LCS of a[i..endA) and b[j..endB).
   const rows = endA - start + 1;
   const cols = endB - start + 1;
+  // Quadratic in the changed middle: past this many cells it reads as replaced outright.
+  if (rows * cols > MAX_CELLS) return [inA, inB];
   const lengths = new Uint32Array(rows * cols);
   for (let i = endA - 1; i >= start; i--) {
     for (let j = endB - 1; j >= start; j--) {
@@ -80,5 +84,65 @@ export function diffPlans(oldText: string, newText: string): DiffEntry[] {
       o++;
     }
   }
+  return out;
+}
+
+export interface LineEntry {
+  change: "unchanged" | "added" | "removed";
+  text: string;
+  /** 1-based line in the old text (unchanged, removed) and in the new one (unchanged, added). */
+  oldLine?: number;
+  newLine?: number;
+}
+
+/** Lines of a text, without the empty one after a final newline; none for "". */
+export const splitLines = (text: string): string[] => {
+  if (text === "") return [];
+  const lines = text.split("\n");
+  if (lines[lines.length - 1] === "") lines.pop();
+  return lines;
+};
+
+/** A unified line diff: each changed run as its removed lines, then its added ones. */
+export function diffLines(oldText: string, newText: string): LineEntry[] {
+  const a = splitLines(oldText);
+  const b = splitLines(newText);
+  const [keptA, keptB] = commonItems(a, b);
+  const out: LineEntry[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length || j < b.length) {
+    while (i < a.length && !keptA[i]) out.push({ change: "removed", text: a[i], oldLine: ++i });
+    while (j < b.length && !keptB[j]) out.push({ change: "added", text: b[j], newLine: ++j });
+    if (i < a.length && j < b.length) out.push({ change: "unchanged", text: b[j], oldLine: ++i, newLine: ++j });
+  }
+  return out;
+}
+
+export type DiffRow = LineEntry | { hidden: LineEntry[] };
+
+/** The diff with runs of unchanged lines more than `context` away from a change folded. */
+export function foldUnchanged(entries: readonly LineEntry[], context = 3): DiffRow[] {
+  const near = entries.map(() => false);
+  entries.forEach((entry, index) => {
+    if (entry.change === "unchanged") return;
+    const end = Math.min(entries.length - 1, index + context);
+    for (let k = Math.max(0, index - context); k <= end; k++) near[k] = true;
+  });
+  const out: DiffRow[] = [];
+  let hidden: LineEntry[] = [];
+  const flush = () => {
+    // Folding a line or two saves nothing.
+    if (hidden.length > 2) out.push({ hidden });
+    else out.push(...hidden);
+    hidden = [];
+  };
+  entries.forEach((entry, index) => {
+    if (near[index] || entry.change !== "unchanged") {
+      flush();
+      out.push(entry);
+    } else hidden.push(entry);
+  });
+  flush();
   return out;
 }

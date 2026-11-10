@@ -30,8 +30,9 @@
  *   whose label ends in `(Recommended)` is the recommendation.
  * - The reviewer can pick, answer "Other", add a note, or skip.
  * - The feedback opens (under its title) with `## Answers to your questions`, then per question
- *   `### Q<n>. <question> (line <n>)` and `Answer: <label>` (`(your recommendation)` when it
- *   is yours), a list for several picks, `Other: …`, free text as a quote, or `Skipped`, and
+ *   `### Q<n>. <question> (line <n>)` (`(<file>, line <n>)` when the review has several
+ *   files) and `Answer: <label>` (`(your recommendation)` when it is yours), a list for several
+ *   picks, `Other: …`, free text as a quote, or `Skipped`, and
  *   any `Note: …`; unanswered questions are listed last. A settled question the reviewer
  *   left alone is not reported. When the reviewer only answered, a plan's denial says
  *   `answersOnly: true`.
@@ -369,6 +370,8 @@ export function parseQuestion(directiveKind: string | undefined, body: string): 
 }
 
 export interface IndexedQuestion {
+  /** The file it is in, named in the feedback; absent when the review has one file. */
+  path?: string;
   blockId: string;
   /** 1-based position among the document's questions. */
   number: number;
@@ -541,6 +544,8 @@ function formatAnswerLines(
   return out;
 }
 
+const where = ({ path, line }: IndexedQuestion) => (path ? `${path}, line ${line}` : `line ${line}`);
+
 const settledLabels = (q: Question) => q.choices.filter((c) => c.settled).map((c) => c.label);
 
 export const ANSWERS_HEADING = "## Answers to your questions";
@@ -579,7 +584,7 @@ export function formatAnswersSection(
 
   const unanswered: IndexedQuestion[] = [];
   for (const item of asked) {
-    const { question, number, line } = item;
+    const { question, number } = item;
     const answer = byKey.get(question.key);
     if (!answer) {
       unanswered.push(item);
@@ -587,7 +592,7 @@ export function formatAnswersSection(
     }
     byKey.delete(question.key);
     const standsSettled = !isAnswered(answer) && !answer.skipped ? settledLabels(question) : [];
-    out += `### Q${number}. ${oneLine(question.prompt)} (line ${line})\n`;
+    out += `### Q${number}. ${oneLine(question.prompt)} (${where(item)})\n`;
     out += formatAnswerLines(
       answer,
       isAnswered(answer) && isRecommendedAnswer(question, answer),
@@ -601,8 +606,8 @@ export function formatAnswersSection(
   }
   if (unanswered.length > 0) {
     out += "### Unanswered\n";
-    for (const { question, number, line } of unanswered) {
-      out += `- Q${number}. ${oneLine(question.prompt)} (line ${line})\n`;
+    for (const item of unanswered) {
+      out += `- Q${item.number}. ${oneLine(item.question.prompt)} (${where(item)})\n`;
     }
     out += "\n";
   }

@@ -1,6 +1,7 @@
 import { matchRoute } from "./routes";
 
 export { Dynotator } from "./api";
+export type { Decision, DynotatorProps, Files, Review, ReviewInit, Revision } from "./api";
 export { SessionSupervisor } from "./supervisor";
 
 export default {
@@ -34,8 +35,8 @@ export default {
 
 async function createForDev(request: Request, ctx: ExecutionContext, origin: string) {
   try {
-    const review = await ctx.exports.Dynotator({ props: {} }).createReview(await request.json());
-    return Response.json({ ...review, url: `${origin}/s/${review.id}` }, { status: 201 });
+    const review = await ctx.exports.Dynotator({ props: { origin } }).createReview(await request.json());
+    return Response.json(review, { status: 201 });
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : String(err) },

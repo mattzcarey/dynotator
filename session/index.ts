@@ -1,54 +1,44 @@
+import { Workspace } from "@cloudflare/computer";
 import { DurableObject } from "cloudflare:workers";
-import { type Decision, type Revision, getDecision, revise } from "./decision";
-import { type SessionInit, initSession } from "./plan";
-import { handleRequest } from "./router";
-
-const DEFAULT_WAIT_SECONDS = 25;
-const MAX_WAIT_SECONDS = 55;
+import type { Decision, Revision } from "./decision";
+import type { Files, ReviewInit } from "./files";
+import { Session } from "./session";
 
 /**
  * The per-review server. Runs inside a Dynamic Worker as a Durable Object Facet of the host's
- * `SessionSupervisor`, with no bindings, no network and only its own SQLite storage. The RPC
- * methods are reachable only through the supervisor; `fetch` serves the browser.
+ * `SessionSupervisor`, with no bindings, no network and only its own SQLite storage, which holds
+ * both the review's state and its `@cloudflare/computer` Workspace (one tree per version under
+ * `/v/<n>/`). The RPC methods are reachable only through the supervisor; `fetch` serves the
+ * browser.
  */
 export class SessionServer extends DurableObject {
-  /** Pending `wait` calls, in memory: they last only as long as this instance does. */
-  private readonly waiting = new Set<(decision: Decision | null) => void>();
+  private session?: Session;
 
-  init(input: SessionInit): void {
-    initSession(this.ctx.storage.kv, input);
+  init(input: ReviewInit): Promise<void> {
+    return this.open().init(input);
   }
 
   decision(): Decision | null {
-    return getDecision(this.ctx.storage.kv) ?? null;
+    return this.open().decision();
   }
 
-  /** The decision, or `null` if none arrives within `seconds` (default 25, at most 55). */
   wait(seconds?: number): Promise<Decision | null> {
-    const existing = this.decision();
-    if (existing) return Promise.resolve(existing);
-    const s =
-      seconds !== undefined && seconds >= 0
-        ? Math.min(seconds, MAX_WAIT_SECONDS)
-        : DEFAULT_WAIT_SECONDS;
-    return new Promise((resolve) => {
-      const done = (decision: Decision | null) => {
-        clearTimeout(timer);
-        this.waiting.delete(done);
-        resolve(decision);
-      };
-      const timer = setTimeout(() => done(null), s * 1000);
-      this.waiting.add(done);
-    });
+    return this.open().wait(seconds);
   }
 
-  revise(markdown: string): Revision {
-    return revise(this.ctx.storage.kv, markdown);
+  revise(files: Files): Promise<Revision> {
+    return this.open().revise(files);
   }
 
   fetch(request: Request): Promise<Response> {
-    return handleRequest(request, this.ctx.storage.kv, (decision) => {
-      for (const done of this.waiting) done(decision);
-    });
+    return this.open().fetch(request);
+  }
+
+  private open(): Session {
+    this.session ??= new Session(
+      this.ctx.storage.kv,
+      new Workspace({ storage: this.ctx.storage }).fs,
+    );
+    return this.session;
   }
 }

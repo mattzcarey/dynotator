@@ -15,7 +15,8 @@ export async function bundleSession(): Promise<{ code: string; id: string; input
     format: "esm",
     platform: "neutral",
     target: "es2024",
-    external: ["cloudflare:*"],
+    // Node built-ins come from the Dynamic Worker's nodejs_compat flag (worker/supervisor.ts).
+    external: ["cloudflare:*", "node:*"],
     write: false,
     metafile: true,
     legalComments: "none",

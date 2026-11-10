@@ -1,8 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import bundle from "virtual:session-server";
 import type { Decision, Revision } from "../session/decision";
+import type { Files, ReviewInit } from "../session/files";
 import type { SessionServer } from "../session/index";
-import type { SessionInit } from "../session/plan";
 
 interface SupervisorMeta {
   expiresAt: number;
@@ -15,7 +15,7 @@ const FACET = "server";
  * bundled source into a Dynamic Worker with no network, as a facet with its own SQLite database.
  */
 export class SessionSupervisor extends DurableObject<Env> {
-  async create(init: SessionInit, ttlSeconds: number): Promise<void> {
+  async create(init: ReviewInit, ttlSeconds: number): Promise<void> {
     if (this.ctx.storage.kv.get("meta")) throw new Error("Session id collision");
     const meta: SupervisorMeta = { expiresAt: Date.now() + ttlSeconds * 1000 };
     this.ctx.storage.kv.put("meta", meta);
@@ -37,8 +37,8 @@ export class SessionSupervisor extends DurableObject<Env> {
     return this.session().wait(seconds);
   }
 
-  revise(markdown: string): Promise<Revision> {
-    return this.session().revise(markdown);
+  revise(files: Files): Promise<Revision> {
+    return this.session().revise(files);
   }
 
   /** The browser's API, with the `/s/:id` prefix already stripped by the host. */
@@ -71,6 +71,8 @@ export class SessionSupervisor extends DurableObject<Env> {
     return this.ctx.facets.get<SessionServer>(FACET, () => {
       const worker = this.env.LOADER.get(bundle.id, () => ({
         compatibilityDate: "2026-11-01",
+        // @cloudflare/computer's Workspace uses node:crypto, node:events and node:fs.
+        compatibilityFlags: ["nodejs_compat"],
         mainModule: "session-server.js",
         modules: { "session-server.js": bundle.code },
         globalOutbound: null,

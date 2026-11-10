@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useContext } from "react";
+import { followInternal, LinkResolver } from "./links";
 
 const LINK_CLASS =
   "text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary";
@@ -107,18 +108,27 @@ export const InlineMarkdown: React.FC<{
     previous = rest[length - 1] ?? previous;
     rest = rest.slice(length);
   };
-  const link = (href: string, children: React.ReactNode, length: number) =>
+  const resolve = useContext(LinkResolver);
+  const link = (href: string, children: React.ReactNode, length: number) => {
+    const internal = resolve?.(href);
     take(
       length,
-      <a
-        key={key++}
-        href={href}
-        {...(href.startsWith("#") ? {} : { target: "_blank", rel: "noopener noreferrer" })}
-        className={LINK_CLASS}
-      >
-        {children}
-      </a>,
+      internal ? (
+        <a key={key++} href={internal} onClick={() => followInternal(internal)} className={LINK_CLASS}>
+          {children}
+        </a>
+      ) : (
+        <a
+          key={key++}
+          href={href}
+          {...(href.startsWith("#") ? {} : { target: "_blank", rel: "noopener noreferrer" })}
+          className={LINK_CLASS}
+        >
+          {children}
+        </a>
+      ),
     );
+  };
 
   while (rest.length > 0) {
     let m: RegExpExecArray | null;

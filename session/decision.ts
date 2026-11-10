@@ -1,5 +1,6 @@
 import { HttpError } from "./http";
-import { addVersion, currentVersion, type SessionMode } from "./plan";
+import type { ReviewMode } from "./files";
+import { currentVersion } from "./review";
 import type { Store } from "./store";
 
 /**
@@ -16,15 +17,16 @@ export interface Decision {
   approved: boolean;
   feedback?: string;
   answersOnly?: boolean;
+  /** As the browser sent them; each carries the `path` of the file it annotates. */
   annotations?: unknown[];
   exit?: boolean;
-  /** The version the reviewer decided on (1 for the document the review started with). */
+  /** The version the reviewer decided on (1 for the files the review started with). */
   version: number;
   /** ISO 8601. */
   decidedAt: string;
 }
 
-/** What `revise` returns: the version now under review, and whether the text was the same. */
+/** What `revise` returns: the version now under review, and whether the snapshot was the same. */
 export interface Revision {
   version: number;
   unchanged: boolean;
@@ -33,7 +35,7 @@ export interface Revision {
 export type DecisionKind = "approve" | "deny" | "feedback" | "exit";
 
 /** The decisions the browser can post in each mode. */
-export const DECISION_KINDS: Record<SessionMode, DecisionKind[]> = {
+export const DECISION_KINDS: Record<ReviewMode, DecisionKind[]> = {
   plan: ["approve", "deny"],
   annotate: ["feedback", "exit"],
 };
@@ -53,11 +55,11 @@ export function settle(store: Store, kind: DecisionKind, body: Record<string, un
     throw new HttpError(409, "This review has already been decided.", { code: "already_decided" });
   }
   const version = currentVersion(store);
-  if (typeof body.planRevision === "number" && body.planRevision !== version) {
+  if (typeof body.revision === "number" && body.revision !== version) {
     throw new HttpError(
       409,
-      "The plan was revised while you were reviewing it. Review the new version, then decide again.",
-      { code: "plan_revised", planRevision: version },
+      "The files were revised while you were reviewing them. Review the new version, then decide again.",
+      { code: "revised", revision: version },
     );
   }
   const decision: Decision = {
@@ -92,16 +94,17 @@ function describe(
 }
 
 /**
- * Puts a new version up for review and reopens the decision. Refused once a review is over.
- * Unchanged text is not a revision: the decision stands, since the open page would have nothing
- * new to load and the reviewer no way to tell the review had reopened.
+ * Whether the review can take a new version. Refused once a review is over. The decision is
+ * cleared only by an actual new version: an unchanged snapshot leaves it standing, since the open
+ * page would have nothing new to load and the reviewer no way to tell the review had reopened.
  */
-export function revise(store: Store, markdown: string): Revision {
+export function assertRevisable(store: Store): void {
   const decision = getDecision(store);
   if (decision && (decision.approved || decision.exit)) {
     throw new Error("This review has finished and cannot be revised.");
   }
-  const revision = addVersion(store, markdown);
-  if (!revision.unchanged) store.delete(DECISION);
-  return revision;
+}
+
+export function clearDecision(store: Store): void {
+  store.delete(DECISION);
 }

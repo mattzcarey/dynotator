@@ -432,3 +432,42 @@ pre code.fence[data-keep-layout] {
 .question-context h3 {
   font-size: 13.5px;
 }
+
+/* Source files: line numbers and text on one 20px grid (LINE_PX and PAD_PX in CodeView). Lines
+   never wrap; the view scrolls sideways, the numbers stay put. */
+.code-view {
+  background: var(--code-bg);
+}
+.code-view :is(.code-gutter, .code-text) {
+  font-family: var(--font-mono);
+  font-size: 0.78125rem;
+  line-height: 20px;
+  padding-block: 12px;
+  white-space: pre;
+}
+.code-view .code-gutter {
+  min-width: 3.25rem;
+  padding-inline: 0.75rem 0.625rem;
+  background: var(--code-bg);
+}
+.code-view .code-text {
+  padding-inline: 1rem;
+}
+.code-band {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+
+/* Version diff of a source file: one row per line, unified. */
+.line-diff .row-added {
+  background: oklch(from var(--success) l c h / 0.1);
+}
+.line-diff .row-removed {
+  background: oklch(from var(--destructive) l c h / 0.1);
+}
+.line-diff .row-added .sign {
+  color: var(--success);
+}
+.line-diff .row-removed .sign {
+  color: var(--destructive);
+}

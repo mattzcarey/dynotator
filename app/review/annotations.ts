@@ -19,8 +19,12 @@ export interface TextPosition {
  */
 export interface Annotation {
   id: string;
-  /** The block the selection starts in; "" for a general comment. */
+  /** The file it is about; "" for a general comment. */
+  path: string;
+  /** In a markdown file, the block the selection starts in; otherwise "". */
   blockId: string;
+  /** 1-based source lines: the selected lines in code, the block's lines in markdown. */
+  lines?: { start: number; end: number };
   type: AnnotationType;
   /** The comment; absent on a deletion. */
   text?: string;
@@ -32,9 +36,10 @@ export interface Annotation {
   endMeta?: TextPosition;
 }
 
-/** A comment on the whole document. */
+/** A comment on the whole review. */
 export const globalComment = (text: string): Annotation => ({
   id: `global-${crypto.randomUUID()}`,
+  path: "",
   blockId: "",
   type: AnnotationType.GLOBAL_COMMENT,
   text,
