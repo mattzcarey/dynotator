@@ -37,7 +37,6 @@ import {
   normalizeCssFontSize,
   normalizeFontFamilyName,
 } from "../utils/cssFontFamily";
-import { TaterSpritePullup } from "./TaterSpritePullup";
 import {
   getIdentity,
   regenerateIdentity,
@@ -105,7 +104,6 @@ import {
 } from "../utils/defaultNotesApp";
 import { useAgents } from "../hooks/useAgents";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
-import { ThemeTab } from "./ThemeTab";
 import { modKey, modKeyWord } from "../utils/platform";
 import { getAIProviderSettings, resolveAIProviderSelection } from "../utils/aiProvider";
 import { AISettingsTab } from "./AISettingsTab";
@@ -122,7 +120,6 @@ import { AnalysisLayerToggle } from "./AnalysisLayerToggle";
 
 type SettingsTab =
   | "general"
-  | "theme"
   | "review"
   | "display"
   | "analysis"
@@ -141,8 +138,8 @@ type SettingsTab =
   | "experimental";
 
 interface SettingsProps {
-  taterMode: boolean;
-  onTaterModeChange: (enabled: boolean) => void;
+  taterMode?: boolean;
+  onTaterModeChange?: (enabled: boolean) => void;
   onIdentityChange?: (oldIdentity: string, newIdentity: string) => void;
   origin?: Origin | null;
   mode?: "plan" | "annotate" | "review";
@@ -1487,8 +1484,6 @@ const CommentsTab: React.FC = () => {
 };
 
 export const Settings: React.FC<SettingsProps> = ({
-  taterMode,
-  onTaterModeChange,
   onIdentityChange,
   origin,
   mode = "plan",
@@ -1520,7 +1515,6 @@ export const Settings: React.FC<SettingsProps> = ({
   const updateChecksOn = updateCheckSetting ? updateCheckSetting.on : true;
   const [showDialog, setShowDialog] = useState(false);
   const settingsWasOpenRef = useRef(false);
-  const [themePreview, setThemePreview] = useState(false);
 
   useEffect(() => {
     const wasOpen = settingsWasOpenRef.current;
@@ -1528,27 +1522,12 @@ export const Settings: React.FC<SettingsProps> = ({
     if (
       wasOpen &&
       !showDialog &&
-      !themePreview &&
       mode !== "review" &&
       configStore.get("vimModeEnabled")
     ) {
       requestVimDocumentFocus();
     }
-  }, [mode, showDialog, themePreview]);
-
-  useEffect(() => {
-    if (!themePreview) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        setThemePreview(false);
-        setShowDialog(true);
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [themePreview]);
+  }, [mode, showDialog]);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const gridEnabled = useConfigValue("gridEnabled");
   const diagramShadow = useConfigValue("diagramShadow");
@@ -1622,7 +1601,6 @@ export const Settings: React.FC<SettingsProps> = ({
 
   const mainTabs = useMemo(() => {
     const t: { id: SettingsTab; label: string }[] = [{ id: "general", label: "General" }];
-    t.push({ id: "theme", label: "Theme" });
     // Annotate renders the same document viewer as plan review, so the
     // document-level tabs apply there too. Only rows that describe a plan
     // decision (plan snapshots, plan-arrival auto-save, plan-time hooks,
@@ -1879,7 +1857,6 @@ export const Settings: React.FC<SettingsProps> = ({
       </button>
 
       {showDialog &&
-        !themePreview &&
         createPortal(
           <div
             className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
@@ -1898,7 +1875,6 @@ export const Settings: React.FC<SettingsProps> = ({
                 setShowDialog(false);
               }}
             >
-              {taterMode && <TaterSpritePullup />}
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <h3 id="plannotator-settings-title" className="font-semibold text-sm">
                   Settings
@@ -2419,16 +2395,6 @@ export const Settings: React.FC<SettingsProps> = ({
                       </>
                     )}
 
-                    {/* === THEME TAB === */}
-                    {activeTab === "theme" && (
-                      <ThemeTab
-                        onPreview={() => {
-                          setShowDialog(false);
-                          setThemePreview(true);
-                        }}
-                      />
-                    )}
-
                     {/* === REVIEW TAB === */}
                     {activeTab === "review" && mode === "review" && (
                       <ReviewTab sinceBaseUnavailable={sinceBaseUnavailable} />
@@ -2743,26 +2709,6 @@ export const Settings: React.FC<SettingsProps> = ({
                           })()}
                         </div>
 
-                        <div className="border-t border-border" />
-
-                        {/* Tater Mode */}
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium">Tater Mode</div>
-                          <button
-                            role="switch"
-                            aria-checked={taterMode}
-                            onClick={() => onTaterModeChange(!taterMode)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              taterMode ? "bg-primary" : "bg-muted"
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-                                taterMode ? "translate-x-6" : "translate-x-1"
-                              }`}
-                            />
-                          </button>
-                        </div>
                       </>
                     )}
 
@@ -3665,34 +3611,6 @@ tags: [${mode === "annotate" ? "plannotator" : "plan"}, ...]
                     )}
                   </div>
                 </OverlayScrollArea>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {themePreview &&
-        createPortal(
-          <div className="fixed inset-0 z-[100] flex flex-col pointer-events-none">
-            <div className="flex-1" />
-            <div
-              className="pointer-events-auto w-full bg-card border-t-2 border-primary/30 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] flex flex-col max-h-[35vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
-                <span className="text-xs font-medium text-muted-foreground">Theme Preview</span>
-                <button
-                  onClick={() => {
-                    setThemePreview(false);
-                    setShowDialog(true);
-                  }}
-                  className="px-2.5 py-1 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  Done
-                </button>
-              </div>
-              <div className="p-3 overflow-y-auto flex-1 min-h-0">
-                <ThemeTab compact />
               </div>
             </div>
           </div>,
