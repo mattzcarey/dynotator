@@ -242,7 +242,7 @@ function Review({ session }: { session: Session }) {
   const requestChanges = (note: string) => {
     const withNote = note ? [...annotations, globalComment(note)] : annotations;
     setAnnotations(withNote);
-    decision.requestChanges(withNote, answersOnly && !note);
+    void decision.requestChanges(withNote, answersOnly && !note);
   };
   const open = (next: Location) => {
     versions.show(false);
@@ -268,7 +268,7 @@ function Review({ session }: { session: Session }) {
       const el = e.target as HTMLElement | null;
       if (el?.closest("textarea, input, [contenteditable='true']")) return;
       e.preventDefault();
-      onPrimaryKey();
+      void onPrimaryKey();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

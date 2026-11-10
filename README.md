@@ -1,7 +1,8 @@
 # 🦖🥔 Dynotator
 
-Human review for agents that run on Cloudflare. An agent hands Dynotator a plan (or any markdown),
-a person reads and annotates it in the browser, and the agent gets the decision back.
+Human review for agents that run on Cloudflare. An agent hands Dynotator a plan, a document or a
+whole repository as a tree of text files; a person reads and annotates it in the browser; the agent
+gets the decision back.
 
 Dynotator is a Worker you deploy once and bind to from your other Workers. It is a fork of
 [Plannotator](https://github.com/backnotprop/plannotator) (forked at `38d4d7c`, MIT OR Apache-2.0)
@@ -128,8 +129,8 @@ npm install
 npm run dev
 ```
 
-`npm run dev` is `cf dev`: one Vite dev server on port 3000 serving the browser app with HMR and
-the real Worker, Dynamic Workers and facets included. Under `cf dev` only, a review can be opened
+`npm run dev` is `vp dev` ([Vite+](https://viteplus.dev)): one Vite dev server on port 3000 serving the browser app with HMR and
+the real Worker, Dynamic Workers and facets included. Under the dev server only, a review can be opened
 without a second Worker:
 
 ```sh
@@ -148,5 +149,5 @@ npm run dev:self
 
 and open <http://localhost:3000/>.
 
-`npm run check` runs the formatter check, the linter, the type checker and the tests.
+`npm run check` is `vp check` (format, lint and type check) plus `vp test`.
 [AGENTS.md](AGENTS.md) describes the architecture and what was removed from upstream.

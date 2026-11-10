@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { isSessionId, matchRoute, newSessionId, ttlSeconds } from "./routes";
 
 test("session ids are 160-bit URL-safe and distinct", () => {

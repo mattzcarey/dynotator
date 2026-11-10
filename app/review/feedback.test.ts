@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { AnnotationType, globalComment, type Annotation } from "./annotations";
 import { buildFeedback, NO_FEEDBACK } from "./feedback";
 import { parseMarkdownToBlocks } from "../markdown/blocks";

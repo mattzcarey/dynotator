@@ -1,0 +1,5 @@
+{
+  "extends": "../worker/tsconfig.json",
+  "include": [".", "../worker/session-bundle.d.ts", "../.cloudflare/types/index.d.ts"],
+  "exclude": []
+}

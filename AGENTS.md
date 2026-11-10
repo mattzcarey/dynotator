@@ -1,7 +1,8 @@
 # Dynotator
 
-Human review for agents that run on Cloudflare: an agent submits a plan (or any markdown), a person
-reads and annotates it in the browser, the agent receives the decision. It is a fork of
+Human review for agents that run on Cloudflare: an agent submits a tree of text files (a plan, a
+document, a whole repository), a person reads and annotates it in the browser, the agent receives
+the decision. It is a fork of
 [Plannotator](https://github.com/backnotprop/plannotator) (MIT OR Apache-2.0, forked at `38d4d7c`)
 reduced to that one job.
 
@@ -17,10 +18,13 @@ containers, no local server, no CLI.
 | `worker/`                  | Host Worker: `Dynotator` RPC entrypoint (`api.ts`), HTTP router, `SessionSupervisor` Durable Object. |
 | `session/`                 | The per-review server. Bundled to a JS string and loaded as a Dynamic Worker.                        |
 | `index.html`, `app/`       | The browser review app (Vite entry `app/index.tsx`, styles and theme tokens in `app/theme.css`).     |
-| `app/review/`              | The review: document, annotations panel, sidebar, drafts, decisions, version diff, feedback text.    |
+| `app/review/`              | The review: annotating, panel, sidebar, drafts, decisions, version diff, feedback text.              |
+| `app/files/`               | The file tree, path and hash handling, lazy file loading, the source view with line numbers.         |
 | `app/markdown/`            | Markdown to blocks (`blocks.ts`) and the block and inline renderers, code highlighting, Mermaid.     |
 | `app/questions/`           | `:::question` blocks: grammar and answer export (`questions.ts`, the authoring reference), the card. |
-| `cloudflare.config.ts`     | Worker config for the `cf` CLI (bindings, exports, assets).                                          |
+| `examples/self/`           | A Worker that embeds Dynotator and puts this repository up for review (`npm run dev:self`).          |
+| `cloudflare.config.ts`     | Worker config for the `cf` CLI (bindings, exports, assets); `--mode self` selects the example.       |
+| `vite.config.ts`           | Vite+ config: the build, and the format, lint and test settings.                                     |
 | `scripts/build-session.ts` | Vite plugin that bundles `session/` into `virtual:session-server`.                                   |
 
 Imports are relative; there are no path aliases. npm packages still published under `@plannotator/*`
@@ -39,14 +43,16 @@ browser ─/s/:id/api/*──────────────▶ host Worker
   `getDecision`, `waitForDecision`, `revise`. Reachable only through a service binding, which is
   the authorisation. This is the surface to keep small and stable.
 - **Host Worker** (`worker/index.ts`): routes `/s/:id` to the SPA and `/s/:id/api/*` to the
-  review's supervisor. `POST /api/sessions` exists only under `cf dev`, to try things locally.
+  review's supervisor. `POST /api/sessions` exists only under the dev server, to try things locally.
 - **`SessionSupervisor`** (Durable Object, SQLite): named by review id. Stores only metadata and
   expiry. Loads the session-server bundle with `env.LOADER.get(bundleId, …)`
   (`globalOutbound: null`), takes its `SessionServer` class via `getDurableObjectClass`, and runs
   it as a facet. A facet stub cannot leave the supervisor, so RPC calls go through explicit
   pass-through methods.
-- **`SessionServer`** (`session/`, inside the Dynamic Worker): owns the document, versions, drafts
-  and the decision. It uses only its own facet storage: no bindings, no network.
+- **`SessionServer`** (`session/`, inside the Dynamic Worker): owns the files, versions, drafts
+  and the decision. The files live in a `@cloudflare/computer` `Workspace` on the facet's own
+  storage, one full tree per version (`/v/1/...`, `/v/2/...`), with a small hash index beside it
+  so listings and changes need no file reads. No bindings, no network, no execution backends.
 
 Rules that follow from this:
 
@@ -54,9 +60,13 @@ Rules that follow from this:
   by holding the unguessable review URL (>= 128 bits), optionally behind Cloudflare Access.
   Do not add tokens, API keys or secret bindings.
 - Agents never talk HTTP to Dynotator. New agent-facing capability goes on the RPC entrypoint.
-- The browser's API is `/s/:id/api/*`: `GET /api/plan`, `GET /api/plan/revision`,
-  `GET /api/plan/versions`, `GET /api/plan/version`, `POST /api/approve`, `POST /api/deny`,
+- The browser's API is `/s/:id/api/*`: `GET /api/review`, `GET /api/revision`, `GET /api/files`,
+  `GET /api/file`, `GET /api/changes`, `POST /api/approve`, `POST /api/deny`,
   `POST /api/feedback`, `POST /api/exit`, `GET/POST/DELETE /api/draft`. Nothing else.
+- A review's content arrives as a full snapshot (`files`: path to UTF-8 text) on `createReview`
+  and `revise`. Limits live in `session/files.ts` and keep a snapshot under the 32 MiB RPC
+  message limit. Dynotator can also be embedded in another Worker instead of bound
+  (`dynotator/worker`, see `examples/self`).
 - Reviews expire (default 7 days, `SESSION_TTL_SECONDS`); the supervisor deletes the facet and
   its own storage in an alarm.
 
@@ -67,9 +77,13 @@ The SPA is served at `/s/:id` and its API lives at `/s/:id/api`. `app/api.ts` ex
 
 ## What the browser app is
 
-Only: render the markdown (code highlighting, tables, Mermaid), table of contents, select text
-and annotate (comment, deletion, replacement, global comment), the annotation panel, question
-blocks, drafts, version history and diff after a revision, the decision, light and dark.
+Only: a file tree (hidden for a single file), markdown files rendered (code highlighting, tables,
+Mermaid) and other files shown as source with line numbers, a location in the URL hash, select
+text and annotate per file and line (comment, deletion, replacement, general comment), the
+annotation panel, question blocks, drafts, versions with changed files and a per-file diff after a
+revision, the decision, light and dark.
+
+It is a review surface, not an IDE: no search, editing, download, blame or tabs.
 
 Everything else upstream had is removed on purpose, including: the Inbox, code review, Guided
 Reviews, Shapes, Ask AI, agent terminals, every local-file surface, note-app and editor
@@ -82,15 +96,17 @@ and return a decision to an agent. Product features belong in the projects that 
 
 ## Tooling
 
-- Runtime and package manager: `bun`. TypeScript only.
-- `bun run fmt` (oxfmt), `bun run lint` (oxlint), `bun run typecheck` (tsrs, the Rust port of
-  the TypeScript 7 compiler), `bun test`, `bun run check` (all of them).
+- Node and npm. TypeScript only.
+- [Vite+](https://viteplus.dev) (`vp`) is the toolchain, configured in `vite.config.ts`:
+  `npm run dev` is `vp dev` (port 3000: SPA with HMR plus the real Worker, Dynamic Workers and
+  facets included), `npm run build` is `vp build` (one build for the SPA and the Worker, output in
+  `.cloudflare/`), `npm test` is `vp test run` (Vitest; tests import from `vite-plus/test`),
+  `npm run check` is `vp check` (oxfmt, oxlint and the type check) plus the tests, `npm run fmt`
+  and `npm run lint` are `vp fmt` and `vp lint`.
 - Cloudflare tooling is the `cf` CLI with `cloudflare.config.ts` and the Cloudflare Vite plugin;
-  there is no Wrangler config. `bun run dev` is `cf dev` (port 3000: SPA with HMR plus the real
-  Worker, Dynamic Workers and facets included), `bun run build` is `cf build` (one Vite build for
-  the SPA and the Worker, output in `.cloudflare/`), `bun run deploy` is `cf deploy`.
-- Everything committed must be formatted with oxfmt and must not add tsrs errors or oxlint
-  errors. Prefer deleting code to suppressing a diagnostic.
+  there is no Wrangler config. `npm run deploy` is `cf deploy`, `npm run types` regenerates the
+  binding types in `.cloudflare/types`.
+- Everything committed must pass `npm run check`. Prefer deleting code to suppressing a diagnostic.
 
 ## Style
 

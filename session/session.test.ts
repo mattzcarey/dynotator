@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import type { Files } from "./files";
 import type { Fs } from "./review";
 import { Session } from "./session";
@@ -46,7 +46,9 @@ async function session(init: { mode?: "plan" | "annotate"; title?: string; open?
           body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
       }),
     );
-    return { status: res.status, json: await res.json() };
+    // Tests poke at whatever shape a route returns.
+    // oxlint-disable-next-line typescript/no-explicit-any
+    return { status: res.status, json: (await res.json()) as any };
   };
   return { server, call, fs };
 }

@@ -11,6 +11,7 @@ const sources = import.meta.glob<string>(
     "/LICENSE-*",
     "/{app,worker,session,scripts,examples,public}/**/*.{ts,tsx,css,md,json,html,svg}",
     "!**/cloudflare.config.ts",
+    "!/package-lock.json",
   ],
   { query: "?raw", import: "default", eager: true },
 );

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { diffLines, diffPlans, foldUnchanged } from "./diff";
 
 const shape = (oldText: string, newText: string) =>

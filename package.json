@@ -13,18 +13,17 @@
     "./vite": "./scripts/build-session.ts"
   },
   "scripts": {
-    "dev": "cf dev",
-    "dev:self": "cf dev --mode self",
-    "build": "cf build",
-    "build:self": "cf build --mode self",
+    "dev": "vp dev",
+    "dev:self": "vp dev --mode self",
+    "build": "vp build",
+    "build:self": "vp build --mode self",
     "deploy": "cf deploy",
+    "deploy:self": "cf deploy --mode self",
     "types": "cf workers types",
-    "typecheck": "cf workers types && tsrs --noEmit -p tsconfig.json && tsrs --noEmit -p worker/tsconfig.json && tsrs --noEmit -p scripts/tsconfig.json && tsrs --noEmit -p examples/self/tsconfig.json",
-    "lint": "oxlint",
-    "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check",
-    "test": "bun test",
-    "check": "bun run fmt:check && bun run lint && bun run typecheck && bun test"
+    "test": "vp test run",
+    "lint": "vp lint",
+    "fmt": "vp fmt",
+    "check": "cf workers types && vp check && vp test run"
   },
   "dependencies": {
     "@cloudflare/computer": "0.10.0",
@@ -41,17 +40,17 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "2.0.0-beta.v.13",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/bun": "latest",
-    "@types/node": "^26.6.6",
+    "@types/node": "^22",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.0.0",
     "cf": "1.0.0-beta.28",
     "esbuild": "0.28.2",
-    "oxfmt": "^0.78.0",
-    "oxlint": "^1.93.0",
     "tailwindcss": "^4.1.18",
-    "tsrs": "0.23.0-ts7.1.0-beta",
-    "vite": "^7.3.8"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.5.1",
+    "vite-plus": "1.5.1"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.5.1"
   }
 }
