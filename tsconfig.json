@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@dynotator/ui/theme-modes": ["./packages/ui/components/themeModes.tsx"],
+      "@dynotator/ui/*": ["./packages/ui/*"],
+      "@dynotator/core/*": ["./packages/core/*"],
+      "@dynotator/shared/*": ["./packages/shared/*"],
+      "@dynotator/editor": ["./packages/editor/App.tsx"],
+      "@dynotator/editor/*": ["./packages/editor/*"]
+    }
+  },
+  "include": ["app", "packages"]
+}

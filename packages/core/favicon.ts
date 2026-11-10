@@ -1,0 +1,671 @@
+// The style ids, their names and the default live in favicon-style.ts, which
+// holds no icon bytes: the settings store imports that, so a bundle that never
+// draws a favicon (the guides.show viewer, which has a size budget) carries
+// none of the icons below. Each icon is also marked pure, so a bundle drops
+// the ones it never reads.
+
+import type { FaviconStyle } from './favicon-style';
+
+export { DEFAULT_FAVICON_STYLE, FAVICON_STYLE_CHOICES, isFaviconStyle, type FaviconStyle } from './favicon-style';
+
+/**
+ * The Glass favicon, the default, as the tab shows it: the brand studio's
+ * web/favicon.ico (16, 32 and 48, each frame hand-pixelled), embedded byte for
+ * byte. It is the same file plannotator.ai serves. The browser picks the 16 on
+ * a 1x screen and the 32 on a retina one, so the tab shows the studio's pixels,
+ * never a resample of a bigger icon.
+ * Source SHA-256: 7402e8509ac4ab49194fa387ab0722766cfab5ab94230c798facfd0e97771c59
+ */
+export const FAVICON_ICO_BASE64 = /* @__PURE__ */ [
+  "AAABAAMAEBAAAAEAIABoBAAANgAAACAgAAABACAAqBAAAJ4EAAAwMAAAAQAgAKglAABGFQAAKAAAABAAAAAgAAAAAQAgAAAAAAAA",
+  "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/",
+  "BAUG/wAAAAAFBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BwgJ",
+  "/wcICf8HCAn/BwgJ/wcICf8HCAn/BwgJ/wcICf8HCAn/BwgJ/wcICf8HCAn/BwgJ/wcICf8HCAn/BwgJ/wgKC/8ICgv/CAoL/wgK",
+  "C/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP+K",
+  "Ad3/igHd/4oB3f+KAd3/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/",
+  "Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/wwPEP8MDxD/qs3i/6rN4v+qzeL/qs3i/6rN4v8MDxD/DA8Q/6rN4v+qzeL/qs3i",
+  "/6rN4v+qzeL/DA8Q/wwPEP8NEBH/utnr/w8SE/8PEhP/DxIT/w8SE/+62ev/DRAR/w0QEf+62ev/DxIT/w8SE/8PEhP/DxIT/7rZ",
+  "6/8NEBH/yeT1/8nk9f8SFxj/JGf9/yRn/f8kZ/3/EhcY/8nk9f/J5PX/EhcY/yRn/f8kZ/3/JGf9/xIXGP/J5PX/yeT1/9ju/P/Y",
+  "7vz/Fhsc/yRn/f8kZ/3/JGf9/xYbHP8WGxz/Fhsc/xYbHP8kZ/3/JGf9/yRn/f8WGxz/2O78/9ju/P8TFxn/4/T+/xwgIv8cICL/",
+  "HCAi/xwgIv8cICL/HCAi/xwgIv8cICL/HCAi/xwgIv8cICL/HCAi/+P0/v8TFxn/Fhsc/xYbHP/u+f//7vn//+75///u+f//7vn/",
+  "/+75///u+f//7vn//+75///u+f//7vn//+75//8WGxz/Fhsc/xgeIP8YHiD/GB4g/xgeIP8YHiD/GB4g/xgeIP8YHiD/GB4g/xge",
+  "IP8YHiD/GB4g/xgeIP8YHiD/GB4g/xgeIP8bISP/GyEj/xshI/8bISP/GyEj/xshI/8bISP/GyEj/xshI/8bISP/GyEj/xshI/8b",
+  "ISP/GyEj/xshI/8bISP/SVNX/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/",
+  "SVNX/wAAAABLVVn/S1VZ/0tVWf9LVVn/S1VZ/0tVWf9LVVn/S1VZ/0tVWf9LVVn/S1VZ/0tVWf9LVVn/S1VZ/wAAAACAAQAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAKAAAACAAAABAAAAAAQAgAAAA",
+  "AAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8E",
+  "BQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8AAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAFBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH",
+  "/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/AAAAAAAAAAAAAAAABQcI/wUHCP8FBwj/BQcI/wUH",
+  "CP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8F",
+  "Bwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/AAAAAAAAAAAGBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/",
+  "BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI",
+  "/wYHCP8AAAAABggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYI",
+  "Cf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8HCQr/BwkK/wcJCv8H",
+  "CQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/",
+  "BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL",
+  "/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgK",
+  "C/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8I",
+  "Cgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8JCwz/",
+  "CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM",
+  "/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN/woM",
+  "Df8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf+KAd3/igHd/4oB3f+KAd3/igHd/4oB3f8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf8K",
+  "DA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDA3/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/",
+  "Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O",
+  "/woNDv8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsO",
+  "D/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8L",
+  "Dg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//",
+  "Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//DA8Q/wwPEP8MDxD/DA8Q/wwPEP+qzeL/qs3i/6rN4v+qzeL/qs3i",
+  "/6rN4v+qzeL/qs3i/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/6rN4v+qzeL/qs3i/6rN4v+qzeL/qs3i/6rN4v+qzeL/DA8Q/wwP",
+  "EP8MDxD/DA8Q/wwPEP8NEBH/DRAR/w0QEf8NEBH/DRAR/7PT5/8PEhP/DxIT/w8SE/8PEhP/DxIT/w8SE/+z0+f/DRAR/w0QEf8N",
+  "EBH/DRAR/w0QEf8NEBH/s9Pn/w8SE/8PEhP/DxIT/w8SE/8PEhP/DxIT/7PT5/8NEBH/DRAR/w0QEf8NEBH/DRAR/w0REv8NERL/",
+  "DRES/7va7f+72u3/EBUW/xAVFv8QFRb/EBUW/xAVFv8QFRb/EBUW/xAVFv+72u3/DRES/w0REv8NERL/DRES/7va7f8QFRb/EBUW",
+  "/xAVFv8QFRb/EBUW/xAVFv8QFRb/EBUW/7va7f+72u3/DRES/w0REv8NERL/DhES/w4REv8OERL/xODy/8Tg8v8TFhj/ExYY/xMW",
+  "GP8cXu7/HF7u/xxe7v8cXu7/ExYY/8Tg8v8OERL/DhES/w4REv8OERL/xODy/xMWGP8cXu7/HF7u/xxe7v8cXu7/ExYY/xMWGP8T",
+  "Fhj/xODy/8Tg8v8OERL/DhES/w4REv8OEhP/DhIT/w4SE//N5/f/zef3/xUZGv8VGRr/FRka/yFk+P8hZPj/IWT4/yFk+P8VGRr/",
+  "FRka/83n9/8OEhP/DhIT/83n9/8VGRr/FRka/yFk+P8hZPj/IWT4/yFk+P8VGRr/FRka/xUZGv/N5/f/zef3/w4SE/8OEhP/DhIT",
+  "/w8TFP8PExT/DxMU/9Xt/P/V7fz/Fxwd/xccHf8XHB3/LnH+/y5x/v8ucf7/LnH+/xccHf8XHB3/1e38/9Xt/P/V7fz/1e38/xcc",
+  "Hf8XHB3/LnH+/y5x/v8ucf7/LnH+/xccHf8XHB3/Fxwd/9Xt/P/V7fz/DxMU/w8TFP8PExT/EBUW/xAVFv8QFRb/2/D9/9vw/f8a",
+  "ICH/GiAh/xogIf9ypf//cqX//3Kl//9ypf//GiAh/xogIf8aICH/GiAh/xogIf8aICH/GiAh/xogIf9ypf//cqX//3Kl//9ypf//",
+  "GiAh/xogIf8aICH/2/D9/9vw/f8QFRb/EBUW/xAVFv8SFhf/EhYX/xIWF//i8/7/4vP+/x4iJP8eIiT/HiIk/x4iJP8eIiT/HiIk",
+  "/x4iJP8eIiT/HiIk/x4iJP8eIiT/HiIk/x4iJP8eIiT/HiIk/x4iJP8eIiT/HiIk/x4iJP8eIiT/HiIk/x4iJP/i8/7/4vP+/xIW",
+  "F/8SFhf/EhYX/xMYGf8TGBn/ExgZ/xMYGf8TGBn/6Pb+/yAmJ/8gJif/ICYn/yAmJ/8gJif/ICYn/yAmJ/8gJif/ICYn/yAmJ/8g",
+  "Jif/ICYn/yAmJ/8gJif/ICYn/yAmJ/8gJif/ICYn/yAmJ/8gJif/6Pb+/xMYGf8TGBn/ExgZ/xMYGf8TGBn/FRkb/xUZG/8VGRv/",
+  "FRkb/xUZG//u+f//7vn//+75///u+f//7vn//+75///u+f//7vn//+75///u+f//7vn//+75///u+f//7vn//+75///u+f//7vn/",
+  "/+75///u+f//7vn//+75///u+f//FRkb/xUZG/8VGRv/FRkb/xUZG/8WGxz/Fhsc/xYbHP8WGxz/Fhsc/xYbHP8WGxz/Fhsc/xYb",
+  "HP8WGxz/Fhsc/xYbHP8WGxz/Fhsc/xYbHP8WGxz/Fhsc/xYbHP8WGxz/Fhsc/xYbHP8WGxz/Fhsc/xYbHP8WGxz/Fhsc/xYbHP8W",
+  "Gxz/Fhsc/xYbHP8WGxz/Fhsc/xcdHv8XHR7/Fx0e/xcdHv8XHR7/Fx0e/xcdHv8XHR7/Fx0e/xcdHv8XHR7/Fx0e/xcdHv8XHR7/",
+  "Fx0e/xcdHv8XHR7/Fx0e/xcdHv8XHR7/Fx0e/xcdHv8XHR7/Fx0e/xcdHv8XHR7/Fx0e/xcdHv8XHR7/Fx0e/xcdHv8XHR7/GR4g",
+  "/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xke",
+  "IP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8aICL/GiAi/xogIv8aICL/GiAi/xogIv8a",
+  "ICL/GiAi/xogIv8aICL/GiAi/xogIv8aICL/GiAi/xogIv8aICL/GiAi/xogIv8aICL/GiAi/xogIv8aICL/GiAi/xogIv8aICL/",
+  "GiAi/xogIv8aICL/GiAi/xogIv8aICL/GiAi/1JdYf8bIiP/GyIj/xsiI/8bIiP/GyIj/xsiI/8bIiP/GyIj/xsiI/8bIiP/GyIj",
+  "/xsiI/8bIiP/GyIj/xsiI/8bIiP/GyIj/xsiI/8bIiP/GyIj/xsiI/8bIiP/GyIj/xsiI/8bIiP/GyIj/xsiI/8bIiP/GyIj/xsi",
+  "I/9SXWH/AAAAAB0jJf8dIyX/HSMl/x0jJf8dIyX/HSMl/x0jJf8dIyX/HSMl/x0jJf8dIyX/HSMl/x0jJf8dIyX/HSMl/x0jJf8d",
+  "IyX/HSMl/x0jJf8dIyX/HSMl/x0jJf8dIyX/HSMl/x0jJf8dIyX/HSMl/x0jJf8dIyX/HSMl/wAAAAAAAAAAVF9j/x4lJ/8eJSf/",
+  "HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn",
+  "/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/9UX2P/AAAAAAAAAAAAAAAAVmBk/1ZgZP8gJij/ICYo/yAmKP8gJij/ICYo/yAm",
+  "KP8gJij/ICYo/yAmKP8gJij/ICYo/yAmKP8gJij/ICYo/yAmKP8gJij/ICYo/yAmKP8gJij/ICYo/yAmKP8gJij/ICYo/yAmKP9W",
+  "YGT/VmBk/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFZhZv9WYWb/VmFm/1ZhZv9WYWb/VmFm/1ZhZv9WYWb/VmFm/1ZhZv9WYWb/",
+  "VmFm/1ZhZv9WYWb/VmFm/1ZhZv9WYWb/VmFm/1ZhZv9WYWb/VmFm/1ZhZv9WYWb/VmFm/wAAAAAAAAAAAAAAAAAAAADwAAAPwAAA",
+  "A4AAAAGAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAYAAAAHAAAAD8AAADygAAAAwAAAAYAAAAAEAIAAAAAAAACQAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/",
+  "BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG",
+  "/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAYH/wQG",
+  "B/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8E",
+  "Bgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/BAYH/wQGB/8EBgf/",
+  "BAYH/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH",
+  "/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUG",
+  "B/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8FBgf/BQYH/wUGB/8AAAAAAAAAAAAAAAAAAAAAAAAAAAUHCP8F",
+  "Bwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/",
+  "BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI/wUHCP8FBwj/BQcI",
+  "/wUHCP8FBwj/BQcI/wUHCP8FBwj/AAAAAAAAAAAAAAAABgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYH",
+  "CP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8G",
+  "Bwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wYHCP8GBwj/BgcI/wAAAAAAAAAA",
+  "BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ",
+  "/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYI",
+  "Cf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wAAAAAGCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8G",
+  "CAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/",
+  "BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ/wYICf8GCAn/BggJ",
+  "/wYICf8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJ",
+  "Cv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8H",
+  "CQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/",
+  "BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK",
+  "/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJ",
+  "Cv8HCQr/BwkK/wcJCv8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8I",
+  "Cgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/",
+  "CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL",
+  "/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgK",
+  "C/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8I",
+  "Cgv/CAoL/wgKC/8ICgv/CAoL/wgKC/8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/",
+  "CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM",
+  "/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8ICwz/CAsM/wgLDP8JCwz/CQsM/wkL",
+  "DP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8J",
+  "Cwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/",
+  "CQsM/wkLDP8JCwz/CQsM/wkLDP8JCwz/CQsM/wkLDP8JDA3/CQwN/wkMDf8JDA3/CQwN/wkMDf8JDA3/CQwN/wkMDf8JDA3/CQwN",
+  "/wkMDf8JDA3/CQwN/wkMDf8JDA3/CQwN/wkMDf8JDA3/gAHI/4AByP+AAcj/gAHI/4AByP+AAcj/gAHI/4AByP+AAcj/gAHI/wkM",
+  "Df8JDA3/CQwN/wkMDf8JDA3/CQwN/wkMDf8JDA3/CQwN/wkMDf8JDA3/CQwN/wkMDf8JDA3/CQwN/wkMDf8JDA3/CQwN/wkMDf8K",
+  "DA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDA3/",
+  "niTw/54k8P+eJPD/niTw/54k8P+eJPD/niTw/54k8P+eJPD/niTw/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN",
+  "/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDA3/CgwN/woMDf8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woN",
+  "Dv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8K",
+  "DQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/",
+  "Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O",
+  "/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woN",
+  "Dv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8KDQ7/Cg0O/woNDv8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8L",
+  "Dg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//",
+  "Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P",
+  "/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsO",
+  "D/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8L",
+  "Dg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8LDg//Cw4P/wsOD/8MDxD/DA8Q/wwPEP8MDxD/",
+  "DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q",
+  "/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwP",
+  "EP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/haa5/4Wmuf+Fprn/haa5/4Wmuf+F",
+  "prn/haa5/4Wmuf+Fprn/haa5/4Wmuf+Fprn/haa5/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MDxD/haa5/4Wmuf+Fprn/",
+  "haa5/4Wmuf+Fprn/haa5/4Wmuf+Fprn/haa5/4Wmuf+Fprn/haa5/wwPEP8MDxD/DA8Q/wwPEP8MDxD/DA8Q/wwPEP8MEBH/DBAR",
+  "/wwQEf8MEBH/DBAR/wwQEf+Kqbv/sNHl/9vq8//b6vP/2+rz/9vq8//b6vP/2+rz/9vq8//b6vP/2+rz/9vq8//b6vP/sNHl/wwQ",
+  "Ef8MEBH/DBAR/wwQEf8MEBH/DBAR/wwQEf8MEBH/sNHl/9vq8//b6vP/2+rz/9vq8//b6vP/2+rz/9vq8//b6vP/2+rz/9vq8//b",
+  "6vP/sNHl/4qpu/8MEBH/DBAR/wwQEf8MEBH/DBAR/wwQEf8NEBH/DRAR/w0QEf8NEBH/DRAR/w0QEf+11en/tdXp/xATFP8QExT/",
+  "EBMU/xATFP8QExT/EBMU/xATFP8QExT/EBMU/xATFP8QExT/tdXp/42rvv8NEBH/DRAR/w0QEf8NEBH/DRAR/w0QEf+Nq77/tdXp",
+  "/xATFP8QExT/EBMU/xATFP8QExT/EBMU/xATFP8QExT/EBMU/xATFP8QExT/tdXp/7XV6f8NEBH/DRAR/w0QEf8NEBH/DRAR/w0Q",
+  "Ef8NERL/DRES/w0REv8NERL/ka7A/5GuwP+72ez/4O72/xEVFv8RFRb/ERUW/xEVFv8RFRb/ERUW/xEVFv8RFRb/ERUW/xEVFv8R",
+  "FRb/4O72/7vZ7P8NERL/DRES/w0REv8NERL/DRES/w0REv+72ez/4O72/xEVFv8RFRb/ERUW/xEVFv8RFRb/ERUW/xEVFv8RFRb/",
+  "ERUW/xEVFv8RFRb/4O72/7vZ7P+RrsD/ka7A/w0REv8NERL/DRES/w0REv8OERL/DhES/w4REv8OERL/wN7w/8De8P/A3vD/ExYX",
+  "/xMWF/8TFhf/ExYX/xMWF/8TFhf/ExYX/xMWF/8TFhf/ExYX/xMWF/8TFhf/ExYX/8De8P+VssP/DhES/w4REv8OERL/DhES/5Wy",
+  "w//A3vD/ExYX/xMWF/8TFhf/ExYX/xMWF/8TFhf/ExYX/xMWF/8TFhf/ExYX/xMWF/8TFhf/ExYX/8De8P/A3vD/wN7w/w4REv8O",
+  "ERL/DhES/w4REv8OEhP/DhIT/w4SE/8OEhP/xuLz/8bi8//G4vP/FBka/xQZGv8UGRr/FBka/xxe7v8cXu7/HF7u/xxe7v8cXu7/",
+  "HF7u/xxe7v8UGRr/FBka/+Xy+v/G4vP/DhIT/w4SE/8OEhP/DhIT/8bi8//l8vr/FBka/xQZGv8cXu7/HF7u/xxe7v8cXu7/HF7u",
+  "/xxe7v8cXu7/FBka/xQZGv8UGRr/FBka/8bi8//G4vP/xuLz/w4SE/8OEhP/DhIT/w4SE/8OEhP/DhIT/w4SE/8OEhP/zOb2/8zm",
+  "9v/M5vb/FRob/xUaG/8VGhv/FRob/x9i9P8fYvT/H2L0/x9i9P8fYvT/H2L0/x9i9P8VGhv/FRob/xUaG//M5vb/nbfH/w4SE/8O",
+  "EhP/nbfH/8zm9v8VGhv/FRob/xUaG/8fYvT/H2L0/x9i9P8fYvT/H2L0/x9i9P8fYvT/FRob/xUaG/8VGhv/FRob/8zm9v/M5vb/",
+  "zOb2/w4SE/8OEhP/DhIT/w4SE/8PExT/DxMU/w8TFP8PExT/0er6/9Hq+v/R6vr/GBwd/xgcHf8YHB3/GBwd/yJl+v8iZfr/ImX6",
+  "/yJl+v8iZfr/ImX6/yJl+v8YHB3/GBwd/xgcHf/q9v3/0er6/6G6yv+husr/0er6/+r2/f8YHB3/GBwd/xgcHf8iZfr/ImX6/yJl",
+  "+v8iZfr/ImX6/yJl+v8iZfr/GBwd/xgcHf8YHB3/GBwd/9Hq+v/R6vr/0er6/w8TFP8PExT/DxMU/w8TFP8QFBX/EBQV/xAUFf8Q",
+  "FBX/1u78/9bu/P/W7vz/Gh4g/xoeIP8aHiD/Gh4g/ypt/f8qbf3/Km39/ypt/f8qbf3/Km39/ypt/f8aHiD/Gh4g/xoeIP8aHiD/",
+  "7ff+/+33/v/t9/7/7ff+/xoeIP8aHiD/Gh4g/xoeIP8qbf3/Km39/ypt/f8qbf3/Km39/ypt/f8qbf3/Gh4g/xoeIP8aHiD/Gh4g",
+  "/9bu/P/W7vz/1u78/xAUFf8QFBX/EBQV/xAUFf8RFRb/ERUW/xEVFv8RFRb/2u/9/9rv/f/a7/3/HCEi/xwhIv8cISL/HCEi/zZ4",
+  "/v82eP7/Nnj+/zZ4/v82eP7/Nnj+/zZ4/v8cISL/HCEi/xwhIv8cISL/HCEi/xwhIv8cISL/HCEi/xwhIv8cISL/HCEi/xwhIv82",
+  "eP7/Nnj+/zZ4/v82eP7/Nnj+/zZ4/v82eP7/HCEi/xwhIv8cISL/HCEi/9rv/f/a7/3/2u/9/xEVFv8RFRb/ERUW/xEVFv8RFhf/",
+  "ERYX/xEWF/8RFhf/3vH9/97x/f/e8f3/HSMk/x0jJP8dIyT/HSMk/4ez//+Hs///h7P//4ez//+Hs///h7P//4ez//8dIyT/HSMk",
+  "/x0jJP8dIyT/HSMk/x0jJP8dIyT/HSMk/x0jJP8dIyT/HSMk/x0jJP+Hs///h7P//4ez//+Hs///h7P//4ez//+Hs///HSMk/x0j",
+  "JP8dIyT/HSMk/97x/f/e8f3/3vH9/xEWF/8RFhf/ERYX/xEWF/8SFxj/EhcY/xIXGP8SFxj/8vr///L6///i8/7/rcDN/x8lJ/8f",
+  "JSf/HyUn/x8lJ/8fJSf/HyUn/x8lJ/8fJSf/HyUn/x8lJ/8fJSf/HyUn/x8lJ/8fJSf/HyUn/x8lJ/8fJSf/HyUn/x8lJ/8fJSf/",
+  "HyUn/x8lJ/8fJSf/HyUn/x8lJ/8fJSf/HyUn/x8lJ/8fJSf/HyUn/x8lJ/8fJSf/rcDN/+Lz/v/y+v//8vr//xIXGP8SFxj/EhcY",
+  "/xIXGP8TGBn/ExgZ/xMYGf8TGBn/ExgZ/xMYGf/m9f7/5vX+/yInKf8iJyn/Iicp/yInKf8iJyn/Iicp/yInKf8iJyn/Iicp/yIn",
+  "Kf8iJyn/Iicp/yInKf8iJyn/Iicp/yInKf8iJyn/Iicp/yInKf8iJyn/Iicp/yInKf8iJyn/Iicp/yInKf8iJyn/Iicp/yInKf8i",
+  "Jyn/Iicp/yInKf8iJyn/5vX+/+b1/v8TGBn/ExgZ/xMYGf8TGBn/ExgZ/xMYGf8UGRr/FBka/xQZGv8UGRr/FBka/xQZGv/2+///",
+  "6vf//7LDzv+yw87/ssPO/7LDzv+yw87/ssPO/7LDzv+yw87/ssPO/7LDzv+yw87/ssPO/7LDzv+yw87/ssPO/7LDzv+yw87/ssPO",
+  "/7LDzv+yw87/ssPO/7LDzv+yw87/ssPO/7LDzv+yw87/ssPO/7LDzv+yw87/ssPO/7LDzv+yw87/6vf///b7//8UGRr/FBka/xQZ",
+  "Gv8UGRr/FBka/xQZGv8VGhz/FRoc/xUaHP8VGhz/FRoc/xUaHP8VGhz/9/z///f8///3/P//9/z///f8///3/P//9/z///f8///3",
+  "/P//9/z///f8///3/P//9/z///f8///3/P//9/z///f8///3/P//9/z///f8///3/P//9/z///f8///3/P//9/z///f8///3/P//",
+  "9/z///f8///3/P//9/z///f8///3/P//9/z//xUaHP8VGhz/FRoc/xUaHP8VGhz/FRoc/xUaHP8WGx3/Fhsd/xYbHf8WGx3/Fhsd",
+  "/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYb",
+  "Hf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8W",
+  "Gx3/Fhsd/xYbHf8WGx3/Fhsd/xYbHf8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/",
+  "Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe",
+  "/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8XHB7/Fxwe/xccHv8YHR//GB0f/xgd",
+  "H/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8Y",
+  "HR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//",
+  "GB0f/xgdH/8YHR//GB0f/xgdH/8YHR//GB0f/xgdH/8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g",
+  "/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xke",
+  "IP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8ZHiD/GR4g/xkeIP8a",
+  "HyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/",
+  "Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h",
+  "/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8aHyH/Gh8h/xofIf8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xsh",
+  "Iv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8b",
+  "ISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/GyEi/xshIv8bISL/",
+  "GyEi/xshIv9bZWn/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj",
+  "/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwi",
+  "I/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/xwiI/8cIiP/HCIj/1tlaf8AAAAAHCMk/xwjJP8cIyT/HCMk/xwjJP8c",
+  "IyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/",
+  "HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk/xwjJP8cIyT/HCMk",
+  "/xwjJP8cIyT/HCMk/wAAAAAAAAAAW2dr/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0k",
+  "Jv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8d",
+  "JCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/HSQm/x0kJv8dJCb/W2dr/wAAAAAAAAAAAAAAAFxnbP8eJSf/",
+  "HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn",
+  "/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4lJ/8eJSf/HiUn/x4l",
+  "J/8eJSf/HiUn/x4lJ/9cZ2z/AAAAAAAAAAAAAAAAAAAAAAAAAABdaG3/HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/HyYo/x8mKP8f",
+  "Jij/HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/",
+  "HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/HyYo/x8mKP8fJij/HyYo/11obf8AAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAXWlt/11pbf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAn",
+  "Kf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAnKf8gJyn/ICcp/yAnKf8g",
+  "Jyn/ICcp/yAnKf9daW3/XWlt/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABeaW7/Xmlu/15pbv9eaW7/",
+  "Xmlu/15pbv9eaW7/Xmlu/15pbv9eaW7/Xmlu/15pbv9eaW7/Xmlu/15pbv9eaW7/Xmlu/15pbv9eaW7/Xmlu/15pbv9eaW7/Xmlu",
+  "/15pbv9eaW7/Xmlu/15pbv9eaW7/Xmlu/15pbv9eaW7/Xmlu/15pbv9eaW7/Xmlu/15pbv8AAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAD8AAAAAD8AAPAAAAAADwAA4AAAAAAHAADAAAAAAAMAAIAAAAAAAQAAgAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAEAAIAAAAAAAQAAwAAAAAADAADgAAAAAAcAAPAAAAAA",
+  "DwAA/AAAAAA/AAA=",
+].join("");
+
+export const FAVICON_ICO_DATA_URL = `data:image/x-icon;base64,${FAVICON_ICO_BASE64}`;
+
+export const FAVICON_ICO_BYTES = /* @__PURE__ */ Uint8Array.from(
+  atob(FAVICON_ICO_BASE64),
+  (char) => char.charCodeAt(0),
+);
+
+/**
+ * The Glass favicon as one PNG: the studio's pixel/fav-32.png (32x32, the
+ * .ico's 32 frame), embedded byte for byte. `/favicon.png` answers with it for
+ * anything that still links that URL, and the Inbox draws its tab-count badge
+ * over it.
+ * Source SHA-256: 02dd9afe0ab91344168142cc4aa7cdac952e2f88e1cd55c089798b7f79520d2b
+ */
+export const FAVICON_PNG_BASE64 = /* @__PURE__ */ [
+  "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACe0lEQVR4AcXBT2tUVxzH4c+Jx8QSrW0XlWIWNoLVVEhWtmhU4kso",
+  "IhIUK0rfhJtsfBNVsYUQRAouXSgtxqk2EkgC1j+F+o+Aa43OzZwz5/ft3DYXLpexIDi5z+Oo+OH0MdFDP16+6ihxrDn7/THR0bhz",
+  "j14a37+P3MWfrjo6HB1nTh1V48491tP4/n1c+vkX5+mYbcyx3mYbc+Tc6ZPfafb3Oepw6MA3bHj9+tUUAgQIECBAgAABAgQIECBA",
+  "gAABAgQIECBAgAABAgQIECBA8PzFMt5M1MmbjDp5M1EnLxNVy88e0wtDO76iypuMKqXAnrFv+ZAeLv6Byahy2z7/TKx5+fciuV2j",
+  "4/TCX0sNcl/sHKPgJaOg1CKXrE3hyfnjlA2fu8L/eXL+OGXD565QUGqRk4yCNxMFpUCu3U4UNH+TsnY7kXu69CtlX44eIaf5m5S1",
+  "24mCUiBnJgpeEoUYVsmlZBTCygplKRm5GFYZ+nqC3PKfv5GSkQsrK5SlZBRiWCUniUKfBBJIEFsZsZVhybBkWDKaIdIMkWaINEPE",
+  "kvHo7jW2j0wggQTbRyZ4dPcaloxmiDRDpBkizRCxZFgyLBmxlRFbGRJIIIEHUYghI2dKFHZff0NVDBkgymLIMCV2X3/Du8SQ8R9R",
+  "cJ9+skVUPLg9w97DJ+jm/q1pRg5O0s2D2zPsPXyCbu7fmmbk4CRVXhJVMWQs3LhANzFkSKKbGDIWblygmxgyJFHltn48KGrUR828",
+  "JOrkJd7b4tspuhkbnOJ9uc2DH4kaeUnUqY+aeUnUyUuiTo6OTQP9ogarreA8/xJ1cawZ6N8o1lErREeHo6J/oxc9FGLbUfIPNOVm",
+  "E2qbfnIAAAAASUVORK5CYII=",
+].join("");
+
+export const FAVICON_PNG_DATA_URL = `data:image/png;base64,${FAVICON_PNG_BASE64}`;
+
+export const FAVICON_PNG_BYTES = /* @__PURE__ */ Uint8Array.from(
+  atob(FAVICON_PNG_BASE64),
+  (character) => character.charCodeAt(0),
+);
+
+/**
+ * @deprecated Prefer FAVICON_PNG_DATA_URL for UI and FAVICON_PNG_BYTES for servers.
+ * Kept so published @dynotator/core consumers retain the existing export.
+ */
+export const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <image width="64" height="64" href="${FAVICON_PNG_DATA_URL}"/>
+</svg>`;
+
+/**
+ * The Face favicon: the goggles face icon PR 2975 replaced as the default
+ * (64x64 PNG), embedded byte for byte from FAVICON_PNG_BASE64 at eede4aecf^1.
+ * Source SHA-256: 8467d50dba314f3b72ab73ba37d406baabd8d74ed72529e853613442a8c65073
+ */
+export const FACE_FAVICON_PNG_BASE64 = /* @__PURE__ */ [
+  "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",
+].join("");
+
+export const FACE_FAVICON_PNG_DATA_URL = `data:image/png;base64,${FACE_FAVICON_PNG_BASE64}`;
+
+export const FACE_FAVICON_PNG_BYTES = /* @__PURE__ */ Uint8Array.from(
+  atob(FACE_FAVICON_PNG_BASE64),
+  (character) => character.charCodeAt(0),
+);
+
+/**
+ * The Yellow favicon: the glass icon with a yellow glass (the brand studio's
+ * yellow glass set, candidate B: an ink face on a yellow lens). Its
+ * web/favicon.ico (16, 32 and 48, each frame hand-pixelled), embedded byte for
+ * byte, as Glass's is.
+ * Source SHA-256: 2c5bbca9b41885f9d07b8b17b50b65e88e236760888ede779192ccb59ff1f8e4
+ */
+export const YELLOW_FAVICON_ICO_BASE64 = /* @__PURE__ */ [
+  "AAABAAMAEBAAAAEAIABoBAAANgAAACAgAAABACAAqBAAAJ4EAAAwMAAAAQAgAKglAABGFQAAKAAAABAAAAAgAAAAAQAgAAAAAAAA",
+  "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//",
+  "QLrf/wAAAABDveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/RsDj",
+  "/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0rD5v9Kw+b/SsPm/0rD",
+  "5v9Kw+b/SsPm/0rD5v9Kw+b/SsPm/0rD5v9Kw+b/SsPm/0rD5v9Kw+b/SsPm/0rD5v9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P92",
+  "Abf/dgG3/3YBt/92Abf/Tcbo/03G6P9Nxuj/Tcbo/03G6P9Nxuj/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/",
+  "UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1PM7P9TzOz/BAUG/wQFBv8EBQb/BAUG/wQFBv9TzOz/U8zs/wQFBv8EBQb/BAUG",
+  "/wQFBv8EBQb/U8zs/1PM7P9Xz+7/BwkK/1vQ7v9b0O7/W9Du/1vQ7v8HCQr/V8/u/1fP7v8HCQr/W9Du/1vQ7v9b0O7/W9Du/wcJ",
+  "Cv9Xz+7/CQwN/wkMDf9h1PH/Cw8Q/wsPEP8LDxD/YdTx/wkMDf8JDA3/YdTx/wsPEP8LDxD/Cw8Q/2HU8f8JDA3/CQwN/w8TFf8P",
+  "ExX/adjz/zN2/v8LDxD/Cw8Q/2nY8/9p2PP/adjz/2nY8/8zdv7/Cw8Q/wsPEP9p2PP/DxMV/w8TFf9l1/P/HSUn/3Pb9P9z2/T/",
+  "c9v0/3Pb9P9z2/T/c9v0/3Pb9P9z2/T/c9v0/3Pb9P9z2/T/c9v0/x0lJ/9l1/P/bdn1/23Z9f8sNjr/LDY6/yw2Ov8sNjr/LDY6",
+  "/yw2Ov8sNjr/LDY6/yw2Ov8sNjr/LDY6/yw2Ov9t2fX/bdn1/3Tc9v903Pb/dNz2/3Tc9v903Pb/dNz2/3Tc9v903Pb/dNz2/3Tc",
+  "9v903Pb/dNz2/3Tc9v903Pb/dNz2/3Tc9v973vf/e973/3ve9/973vf/e973/3ve9/973vf/e973/3ve9/973vf/e973/3ve9/97",
+  "3vf/e973/3ve9/973vf/te77/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/",
+  "te77/wAAAAC57/z/ue/8/7nv/P+57/z/ue/8/7nv/P+57/z/ue/8/7nv/P+57/z/ue/8/7nv/P+57/z/ue/8/wAAAACAAQAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAAKAAAACAAAABAAAAAAQAgAAAA",
+  "AAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9A",
+  "ut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/8AAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAABCu+D/Qrvg/0K74P9Cu+D/Qrvg/0K74P9Cu+D/Qrvg/0K74P9Cu+D/Qrvg/0K74P9Cu+D/Qrvg/0K74P9Cu+D/Qrvg",
+  "/0K74P9Cu+D/Qrvg/0K74P9Cu+D/Qrvg/0K74P9Cu+D/Qrvg/0K74P9Cu+D/AAAAAAAAAAAAAAAAQ73h/0O94f9DveH/Q73h/0O9",
+  "4f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9D",
+  "veH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/AAAAAAAAAABFvuL/Rb7i/0W+4v9FvuL/Rb7i/0W+4v9FvuL/Rb7i/0W+4v9FvuL/",
+  "Rb7i/0W+4v9FvuL/Rb7i/0W+4v9FvuL/Rb7i/0W+4v9FvuL/Rb7i/0W+4v9FvuL/Rb7i/0W+4v9FvuL/Rb7i/0W+4v9FvuL/Rb7i",
+  "/0W+4v8AAAAARsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA",
+  "4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9IweT/SMHk/0jB5P9I",
+  "weT/SMHk/0jB5P9IweT/SMHk/0jB5P9IweT/SMHk/0jB5P9IweT/SMHk/0jB5P9IweT/SMHk/0jB5P9IweT/SMHk/0jB5P9IweT/",
+  "SMHk/0jB5P9IweT/SMHk/0jB5P9IweT/SMHk/0jB5P9IweT/SMHk/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl",
+  "/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD",
+  "5f9Jw+X/ScPl/0nD5f9Jw+X/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9L",
+  "xOb/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9LxOb/S8Tm/0vE5v9Mxuf/",
+  "TMbn/0zG5/9Mxuf/TMbn/0zG5/9Mxuf/TMbn/0zG5/9Mxuf/TMbn/0zG5/9Mxuf/TMbn/0zG5/9Mxuf/TMbn/0zG5/9Mxuf/TMbn",
+  "/0zG5/9Mxuf/TMbn/0zG5/9Mxuf/TMbn/0zG5/9Mxuf/TMbn/0zG5/9Mxuf/TMbn/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H",
+  "6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f92Abf/dgG3/3YBt/92Abf/dgG3/3YBt/9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9O",
+  "x+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9Ox+n/UMjq/1DI6v9QyOr/UMjq/1DI6v9QyOr/UMjq/1DI6v9QyOr/UMjq/1DI6v9QyOr/",
+  "UMjq/1DI6v9QyOr/UMjq/1DI6v9QyOr/UMjq/1DI6v9QyOr/UMjq/1DI6v9QyOr/UMjq/1DI6v9QyOr/UMjq/1DI6v9QyOr/UMjq",
+  "/1DI6v9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK",
+  "6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1PL7P9Ty+z/U8vs/1PL7P9T",
+  "y+z/U8vs/1PL7P9Ty+z/U8vs/1PL7P9Ty+z/U8vs/1PL7P9Ty+z/U8vs/1PL7P9Ty+z/U8vs/1PL7P9Ty+z/U8vs/1PL7P9Ty+z/",
+  "U8vs/1PL7P9Ty+z/U8vs/1PL7P9Ty+z/U8vs/1PL7P9Ty+z/VM3t/1TN7f9Uze3/VM3t/1TN7f8EBQb/BAUG/wQFBv8EBQb/BAUG",
+  "/wQFBv8EBQb/BAUG/1TN7f9Uze3/VM3t/1TN7f9Uze3/VM3t/wQFBv8EBQb/BAUG/wQFBv8EBQb/BAUG/wQFBv8EBQb/VM3t/1TN",
+  "7f9Uze3/VM3t/1TN7f9Wzu7/Vs7u/1bO7v9Wzu7/Vs7u/wUHCP9Zz+7/Wc/u/1nP7v9Zz+7/Wc/u/1nP7v8FBwj/Vs7u/1bO7v9W",
+  "zu7/Vs7u/1bO7v9Wzu7/BQcI/1nP7v9Zz+7/Wc/u/1nP7v9Zz+7/Wc/u/wUHCP9Wzu7/Vs7u/1bO7v9Wzu7/Vs7u/1fQ7/9X0O//",
+  "V9Dv/wcJCv8HCQr/XdLw/13S8P9d0vD/XdLw/13S8P9d0vD/XdLw/13S8P8HCQr/V9Dv/1fQ7/9X0O//V9Dv/wcJCv9d0vD/XdLw",
+  "/13S8P9d0vD/XdLw/13S8P9d0vD/XdLw/wcJCv8HCQr/V9Dv/1fQ7/9X0O//WdHw/1nR8P9Z0fD/CAsM/wgLDP9h0/H/YdPx/2HT",
+  "8f8EBQb/BAUG/wQFBv8EBQb/YdPx/wgLDP9Z0fD/WdHw/1nR8P9Z0fD/CAsM/2HT8f8EBQb/BAUG/wQFBv8EBQb/YdPx/2HT8f9h",
+  "0/H/CAsM/wgLDP9Z0fD/WdHw/1nR8P9a0/H/WtPx/1rT8f8KDQ7/Cg0O/2XW8v9l1vL/Zdby/wkMDf8JDA3/CQwN/wkMDf9l1vL/",
+  "Zdby/woNDv9a0/H/WtPx/woNDv9l1vL/Zdby/wkMDf8JDA3/CQwN/wkMDf9l1vL/Zdby/2XW8v8KDQ7/Cg0O/1rT8f9a0/H/WtPx",
+  "/1zU8v9c1PL/XNTy/wsPEf8LDxH/adjz/2nY8/9p2PP/Exga/zN2/v8TGBr/Exga/2nY8/9p2PP/Cw8R/wsPEf8LDxH/Cw8R/2nY",
+  "8/9p2PP/Exga/zN2/v8TGBr/Exga/2nY8/9p2PP/adjz/wsPEf8LDxH/XNTy/1zU8v9c1PL/YNXz/2DV8/9g1fP/FBkb/xQZG/9w",
+  "2fT/cNn0/3DZ9P9ET1T/RE9U/0RPVP9ET1T/cNn0/3DZ9P9w2fT/cNn0/3DZ9P9w2fT/cNn0/3DZ9P9ET1T/RE9U/0RPVP9ET1T/",
+  "cNn0/3DZ9P9w2fT/FBkb/xQZG/9g1fP/YNXz/2DV8/9j1vP/Y9bz/2PW8/8cIyX/HCMl/3Xb9P912/T/ddv0/3Xb9P912/T/ddv0",
+  "/3Xb9P912/T/ddv0/3Xb9P912/T/ddv0/3Xb9P912/T/ddv0/3Xb9P912/T/ddv0/3Xb9P912/T/ddv0/3Xb9P8cIyX/HCMl/2PW",
+  "8/9j1vP/Y9bz/2fX9P9n1/T/Z9f0/2fX9P9n1/T/JCww/3vc9v973Pb/e9z2/3vc9v973Pb/e9z2/3vc9v973Pb/e9z2/3vc9v97",
+  "3Pb/e9z2/3vc9v973Pb/e9z2/3vc9v973Pb/e9z2/3vc9v973Pb/JCww/2fX9P9n1/T/Z9f0/2fX9P9n1/T/atn0/2rZ9P9q2fT/",
+  "atn0/2rZ9P8sNjr/LDY6/yw2Ov8sNjr/LDY6/yw2Ov8sNjr/LDY6/yw2Ov8sNjr/LDY6/yw2Ov8sNjr/LDY6/yw2Ov8sNjr/LDY6",
+  "/yw2Ov8sNjr/LDY6/yw2Ov8sNjr/atn0/2rZ9P9q2fT/atn0/2rZ9P9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a",
+  "9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u",
+  "2vX/btr1/27a9f9u2vX/btr1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/",
+  "cdv1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/cdv1/3Hb9f9x2/X/ddz2",
+  "/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc",
+  "9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v943fb/eN32/3jd9v943fb/eN32/3jd9v94",
+  "3fb/eN32/3jd9v943fb/eN32/3jd9v943fb/eN32/3jd9v943fb/eN32/3jd9v943fb/eN32/3jd9v943fb/eN32/3jd9v943fb/",
+  "eN32/3jd9v943fb/eN32/3jd9v943fb/eN32/7fu+/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73",
+  "/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze",
+  "9/+37vv/AAAAAH/g9/9/4Pf/f+D3/3/g9/9/4Pf/f+D3/3/g9/9/4Pf/f+D3/3/g9/9/4Pf/f+D3/3/g9/9/4Pf/f+D3/3/g9/9/",
+  "4Pf/f+D3/3/g9/9/4Pf/f+D3/3/g9/9/4Pf/f+D3/3/g9/9/4Pf/f+D3/3/g9/9/4Pf/f+D3/wAAAAAAAAAAu+/8/4Ph+P+D4fj/",
+  "g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4",
+  "/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+77/z/AAAAAAAAAAAAAAAAvPD8/7zw/P+G4vj/huL4/4bi+P+G4vj/huL4/4bi",
+  "+P+G4vj/huL4/4bi+P+G4vj/huL4/4bi+P+G4vj/huL4/4bi+P+G4vj/huL4/4bi+P+G4vj/huL4/4bi+P+G4vj/huL4/4bi+P+8",
+  "8Pz/vPD8/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7w/P++8Pz/vvD8/77w/P++8Pz/vvD8/77w/P++8Pz/vvD8/77w/P++8Pz/",
+  "vvD8/77w/P++8Pz/vvD8/77w/P++8Pz/vvD8/77w/P++8Pz/vvD8/77w/P++8Pz/vvD8/wAAAAAAAAAAAAAAAAAAAADwAAAPwAAA",
+  "A4AAAAGAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAYAAAAHAAAAD8AAADygAAAAwAAAAYAAAAAEAIAAAAAAAACQAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//",
+  "QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/9Aut//QLrf",
+  "/0C63/9Aut//QLrf/0C63/9Aut//QLrf/0C63/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQbvg/0G7",
+  "4P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9B",
+  "u+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/Qbvg/0G74P9Bu+D/",
+  "Qbvg/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg",
+  "/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K8",
+  "4P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P9CvOD/Qrzg/0K84P8AAAAAAAAAAAAAAAAAAAAAAAAAAEO94f9D",
+  "veH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/",
+  "Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h/0O94f9DveH/Q73h",
+  "/0O94f9DveH/Q73h/0O94f9DveH/AAAAAAAAAAAAAAAARL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+",
+  "4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9E",
+  "vuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/0S+4v9EvuL/RL7i/wAAAAAAAAAA",
+  "Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i",
+  "/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/",
+  "4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/0W/4v9Fv+L/Rb/i/wAAAABGwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9G",
+  "wOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/",
+  "RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj/0bA4/9GwOP/RsDj",
+  "/0bA4/9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB",
+  "5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9H",
+  "weT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9HweT/R8Hk/0fB5P9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/",
+  "SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl",
+  "/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC5f9IwuX/SMLl/0jC",
+  "5f9IwuX/SMLl/0jC5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9J",
+  "w+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/",
+  "ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9Jw+X/ScPl/0nD5f9KxOb/SsTm/0rE5v9KxOb/SsTm",
+  "/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE",
+  "5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9K",
+  "xOb/SsTm/0rE5v9KxOb/SsTm/0rE5v9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/",
+  "S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn",
+  "/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9LxOf/S8Tn/0vE5/9Mxef/TMXn/0zF",
+  "5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9M",
+  "xef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/",
+  "TMXn/0zF5/9Mxef/TMXn/0zF5/9Mxef/TMXn/0zF5/9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P9Nxuj/Tcbo",
+  "/03G6P9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P9Nxuj/ZQCg/2UAoP9lAKD/ZQCg/2UAoP9lAKD/ZQCg/2UAoP9lAKD/ZQCg/03G",
+  "6P9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P9Nxuj/Tcbo/03G6P9O",
+  "x+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9Ox+n/",
+  "gAHE/4ABxP+AAcT/gAHE/4ABxP+AAcT/gAHE/4ABxP+AAcT/gAHE/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp",
+  "/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9Ox+n/Tsfp/07H6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I",
+  "6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9P",
+  "yOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/T8jp/0/I6f9PyOn/",
+  "T8jp/0/I6f9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq",
+  "/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ",
+  "6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Qyer/UMnq/1DJ6v9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9R",
+  "yuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/",
+  "Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr/1HK6/9Ryuv/Ucrr",
+  "/1HK6/9Ryuv/Ucrr/1HK6/9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL",
+  "7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9S",
+  "y+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9Sy+z/Usvs/1LL7P9UzOz/VMzs/1TM7P9UzOz/",
+  "VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs",
+  "/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM",
+  "7P9UzOz/VMzs/1TM7P9UzOz/VMzs/1TM7P9Vze3/Vc3t/1XN7f9Vze3/Vc3t/1XN7f9Vze3/AgME/wIDBP8CAwT/AgME/wIDBP8C",
+  "AwT/AgME/wIDBP8CAwT/AgME/wIDBP8CAwT/AgME/1XN7f9Vze3/Vc3t/1XN7f9Vze3/Vc3t/1XN7f9Vze3/AgME/wIDBP8CAwT/",
+  "AgME/wIDBP8CAwT/AgME/wIDBP8CAwT/AgME/wIDBP8CAwT/AgME/1XN7f9Vze3/Vc3t/1XN7f9Vze3/Vc3t/1XN7f9Wzu7/Vs7u",
+  "/1bO7v9Wzu7/Vs7u/1bO7v8DBAT/BQYH/0FKTv9BSk7/QUpO/0FKTv9BSk7/QUpO/0FKTv9BSk7/QUpO/0FKTv9BSk7/BQYH/1bO",
+  "7v9Wzu7/Vs7u/1bO7v9Wzu7/Vs7u/1bO7v9Wzu7/BQYH/0FKTv9BSk7/QUpO/0FKTv9BSk7/QUpO/0FKTv9BSk7/QUpO/0FKTv9B",
+  "Sk7/BQYH/wMEBP9Wzu7/Vs7u/1bO7v9Wzu7/Vs7u/1bO7v9Xz+7/V8/u/1fP7v9Xz+7/V8/u/1fP7v8GCAn/BggJ/1vQ7v9b0O7/",
+  "W9Du/1vQ7v9b0O7/W9Du/1vQ7v9b0O7/W9Du/1vQ7v9b0O7/BggJ/wQFBf9Xz+7/V8/u/1fP7v9Xz+7/V8/u/1fP7v8EBQX/BggJ",
+  "/1vQ7v9b0O7/W9Du/1vQ7v9b0O7/W9Du/1vQ7v9b0O7/W9Du/1vQ7v9b0O7/BggJ/wYICf9Xz+7/V8/u/1fP7v9Xz+7/V8/u/1fP",
+  "7v9Y0O//WNDv/1jQ7/9Y0O//BAUG/wQFBv8HCQr/QkxQ/17S8P9e0vD/XtLw/17S8P9e0vD/XtLw/17S8P9e0vD/XtLw/17S8P9e",
+  "0vD/QkxQ/wcJCv9Y0O//WNDv/1jQ7/9Y0O//WNDv/1jQ7/8HCQr/QkxQ/17S8P9e0vD/XtLw/17S8P9e0vD/XtLw/17S8P9e0vD/",
+  "XtLw/17S8P9e0vD/QkxQ/wcJCv8EBQb/BAUG/1jQ7/9Y0O//WNDv/1jQ7/9Z0fD/WdHw/1nR8P9Z0fD/CAoL/wgKC/8ICgv/YdPx",
+  "/2HT8f9h0/H/YdPx/2HT8f9h0/H/YdPx/2HT8f9h0/H/YdPx/2HT8f9h0/H/YdPx/wgKC/8FBgf/WdHw/1nR8P9Z0fD/WdHw/wUG",
+  "B/8ICgv/YdPx/2HT8f9h0/H/YdPx/2HT8f9h0/H/YdPx/2HT8f9h0/H/YdPx/2HT8f9h0/H/YdPx/wgKC/8ICgv/CAoL/1nR8P9Z",
+  "0fD/WdHw/1nR8P9a0vD/WtLw/1rS8P9a0vD/CQsM/wkLDP8JCwz/ZNXx/2TV8f9k1fH/ZNXx/wQFBv8EBQb/BAUG/wQFBv8EBQb/",
+  "BAUG/wQFBv9k1fH/ZNXx/0ROUf8JCwz/WtLw/1rS8P9a0vD/WtLw/wkLDP9ETlH/ZNXx/2TV8f8EBQb/BAUG/wQFBv8EBQb/BAUG",
+  "/wQFBv8EBQb/ZNXx/2TV8f9k1fH/ZNXx/wkLDP8JCwz/CQsM/1rS8P9a0vD/WtLw/1rS8P9b0/H/W9Px/1vT8f9b0/H/CQ0O/wkN",
+  "Dv8JDQ7/Z9by/2fW8v9n1vL/Z9by/wcJCv8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv9n1vL/Z9by/2fW8v8JDQ7/BQgI/1vT8f9b",
+  "0/H/BQgI/wkNDv9n1vL/Z9by/2fW8v8HCQr/BwkK/wcJCv8HCQr/BwkK/wcJCv8HCQr/Z9by/2fW8v9n1vL/Z9by/wkNDv8JDQ7/",
+  "CQ0O/1vT8f9b0/H/W9Px/1vT8f9c1PL/XNTy/1zU8v9c1PL/Cg4P/woOD/8KDg//atjz/2rY8/9q2PP/atjz/woNDv8KDQ7/Cg0O",
+  "/woNDv8KDQ7/Cg0O/woNDv9q2PP/atjz/2rY8/9EUFT/Cg4P/wYICf8GCAn/Cg4P/0RQVP9q2PP/atjz/2rY8/8KDQ7/Cg0O/woN",
+  "Dv8KDQ7/Cg0O/woNDv8KDQ7/atjz/2rY8/9q2PP/atjz/woOD/8KDg//Cg4P/1zU8v9c1PL/XNTy/1zU8v9e1fL/XtXy/17V8v9e",
+  "1fL/DRES/w0REv8NERL/bdnz/23Z8/9t2fP/bdnz/xAVFv8zdv7/M3b+/xAVFv8QFRb/EBUW/xAVFv9t2fP/bdnz/23Z8/9t2fP/",
+  "RlJW/0ZSVv9GUlb/RlJW/23Z8/9t2fP/bdnz/23Z8/8QFRb/M3b+/zN2/v8QFRb/EBUW/xAVFv8QFRb/bdnz/23Z8/9t2fP/bdnz",
+  "/w0REv8NERL/DRES/17V8v9e1fL/XtXy/17V8v9g1fP/YNXz/2DV8/9g1fP/EhcZ/xIXGf8SFxn/cdr0/3Ha9P9x2vT/cdr0/xog",
+  "Iv8zdv7/M3b+/xogIv8aICL/GiAi/xogIv9x2vT/cdr0/3Ha9P9x2vT/cdr0/3Ha9P9x2vT/cdr0/3Ha9P9x2vT/cdr0/3Ha9P8a",
+  "ICL/M3b+/zN2/v8aICL/GiAi/xogIv8aICL/cdr0/3Ha9P9x2vT/cdr0/xIXGf8SFxn/EhcZ/2DV8/9g1fP/YNXz/2DV8/9i1vP/",
+  "Ytbz/2LW8/9i1vP/Fx0f/xcdH/8XHR//ddv1/3Xb9f912/X/ddv1/0RPVP9ET1T/RE9U/0RPVP9ET1T/RE9U/0RPVP912/X/ddv1",
+  "/3Xb9f912/X/ddv1/3Xb9f912/X/ddv1/3Xb9f912/X/ddv1/3Xb9f9ET1T/RE9U/0RPVP9ET1T/RE9U/0RPVP9ET1T/ddv1/3Xb",
+  "9f912/X/ddv1/xcdH/8XHR//Fx0f/2LW8/9i1vP/Ytbz/2LW8/9l1/P/Zdfz/2XX8/9l1/P/UV9k/1FfZP8cIyb/ERUX/3nc9f95",
+  "3PX/edz1/3nc9f953PX/edz1/3nc9f953PX/edz1/3nc9f953PX/edz1/3nc9f953PX/edz1/3nc9f953PX/edz1/3nc9f953PX/",
+  "edz1/3nc9f953PX/edz1/3nc9f953PX/edz1/3nc9f953PX/edz1/3nc9f953PX/ERUX/xwjJv9RX2T/UV9k/2XX8/9l1/P/Zdfz",
+  "/2XX8/9n2PT/Z9j0/2fY9P9n2PT/Z9j0/2fY9P8iKi3/Iiot/3ze9v983vb/fN72/3ze9v983vb/fN72/3ze9v983vb/fN72/3ze",
+  "9v983vb/fN72/3ze9v983vb/fN72/3ze9v983vb/fN72/3ze9v983vb/fN72/3ze9v983vb/fN72/3ze9v983vb/fN72/3ze9v98",
+  "3vb/fN72/3ze9v983vb/Iiot/yIqLf9n2PT/Z9j0/2fY9P9n2PT/Z9j0/2fY9P9p2PT/adj0/2nY9P9p2PT/adj0/2nY9P9ZaG3/",
+  "JzAz/xcdH/8XHR//Fx0f/xcdH/8XHR//Fx0f/xcdH/8XHR//Fx0f/xcdH/8XHR//Fx0f/xcdH/8XHR//Fx0f/xcdH/8XHR//Fx0f",
+  "/xcdH/8XHR//Fx0f/xcdH/8XHR//Fx0f/xcdH/8XHR//Fx0f/xcdH/8XHR//Fx0f/xcdH/8XHR//JzAz/1lobf9p2PT/adj0/2nY",
+  "9P9p2PT/adj0/2nY9P9s2fT/bNn0/2zZ9P9s2fT/bNn0/2zZ9P9s2fT/XWxy/11scv9dbHL/XWxy/11scv9dbHL/XWxy/11scv9d",
+  "bHL/XWxy/11scv9dbHL/XWxy/11scv9dbHL/XWxy/11scv9dbHL/XWxy/11scv9dbHL/XWxy/11scv9dbHL/XWxy/11scv9dbHL/",
+  "XWxy/11scv9dbHL/XWxy/11scv9dbHL/XWxy/2zZ9P9s2fT/bNn0/2zZ9P9s2fT/bNn0/2zZ9P9u2vX/btr1/27a9f9u2vX/btr1",
+  "/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a",
+  "9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u2vX/btr1/27a9f9u",
+  "2vX/btr1/27a9f9u2vX/btr1/27a9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/",
+  "cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1",
+  "/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9w2/X/cNv1/3Db9f9z2/X/c9v1/3Pb",
+  "9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z",
+  "2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/",
+  "c9v1/3Pb9f9z2/X/c9v1/3Pb9f9z2/X/c9v1/3Pb9f913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2",
+  "/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc",
+  "9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v913Pb/ddz2/3Xc9v93",
+  "3fb/d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/",
+  "d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/d932",
+  "/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v933fb/d932/3fd9v963vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re",
+  "9/963vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re9/96",
+  "3vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re9/963vf/et73/3re9/963vf/",
+  "et73/3re9/+97/v/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73",
+  "/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze",
+  "9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/3ze9/983vf/fN73/73v+/8AAAAAft/3/37f9/9+3/f/ft/3/37f9/9+",
+  "3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/",
+  "ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3/37f9/9+3/f/ft/3",
+  "/37f9/9+3/f/ft/3/wAAAAAAAAAAv/D8/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg",
+  "+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B",
+  "4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/geD4/4Hg+P+B4Pj/v/D8/wAAAAAAAAAAAAAAAMDw/P+D4fj/",
+  "g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4",
+  "/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph+P+D4fj/g+H4/4Ph",
+  "+P+D4fj/g+H4/4Ph+P/A8Pz/AAAAAAAAAAAAAAAAAAAAAAAAAADB8Pz/heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/heH4/4Xh+P+F",
+  "4fj/heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/",
+  "heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/heH4/4Xh+P+F4fj/heH4/8Hw/P8AAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAwvH8/8Lx/P+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji",
+  "+f+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji+f+I4vn/iOL5/4ji+f+I",
+  "4vn/iOL5/4ji+f/C8fz/wvH8/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADD8fz/w/H8/8Px/P/D8fz/",
+  "w/H8/8Px/P/D8fz/w/H8/8Px/P/D8fz/w/H8/8Px/P/D8fz/w/H8/8Px/P/D8fz/w/H8/8Px/P/D8fz/w/H8/8Px/P/D8fz/w/H8",
+  "/8Px/P/D8fz/w/H8/8Px/P/D8fz/w/H8/8Px/P/D8fz/w/H8/8Px/P/D8fz/w/H8/8Px/P8AAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAD8AAAAAD8AAPAAAAAADwAA4AAAAAAHAADAAAAAAAMAAIAAAAAAAQAAgAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAEAAIAAAAAAAQAAwAAAAAADAADgAAAAAAcAAPAAAAAA",
+  "DwAA/AAAAAA/AAA=",
+].join("");
+
+export const YELLOW_FAVICON_ICO_DATA_URL = `data:image/x-icon;base64,${YELLOW_FAVICON_ICO_BASE64}`;
+
+export const YELLOW_FAVICON_ICO_BYTES = /* @__PURE__ */ Uint8Array.from(
+  atob(YELLOW_FAVICON_ICO_BASE64),
+  (character) => character.charCodeAt(0),
+);
+
+/**
+ * The Yellow favicon as one PNG: the set's pixel/fav-32.png (32x32, the .ico's
+ * 32 frame), embedded byte for byte. `/favicon.png` answers with it, and the
+ * Inbox draws its tab-count badge over it.
+ * Source SHA-256: 22f9b788ee9ce33caf76521b7c1e8962b82964805c54cbc139b072e7b2ba73db
+ */
+export const YELLOW_FAVICON_PNG_BASE64 = /* @__PURE__ */ [
+  "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACaUlEQVR4AcXBT2tUVxzH4c8tZ63pTgaVdCG4cGEF0xhBJDTaTdFQ",
+  "UbJo8FX4InwBriVZiChEcKEmJdQyjknFZCOhu4YoWYiY+Idrjvec39c54oHhMgoBk/s8BTVhc17sIDcwWtCj4Iuw+ZfoCm//ZSe5",
+  "PUMkbuDXgq6CrrAxp/B2gd3k9gzjfhwrHF3Vmza7rXrTJimq1/cUNh/RBDdwEldtPKQp1cZDHIo0yUmBJjkUaZKTAnVn/vyHnTA7",
+  "fYo6h0XqynKLzp1LfE8j52+CReqcFMiO/f6AZPn+BKaPfE/tmXF+/u0GydLds2QORbKy3OIzq8guX3lGr+tXj/Atl688o9f1q0fI",
+  "ynKLzxTJnBTIyvIDieTJOovLvJgcZP/UKol0iOTgL1P0WlucJOksLvNicpD9U6sk0iGysvxAIgUyJxlZNJHIAtm79yV7r62QyQJJ",
+  "NPG8c57kwMgdZIHk3fuSvddWyGSBLJpIJCP7QSZkQibMDDNDMaAYUAx4X+F9hfcV3lcoBlrHp1lrn0MmZGKtfY7W8WkUA95XeF/h",
+  "fYX3FYoBxYBiwMwwM2RCJmTCSUZmJhIpkL18OkEvKWAmJKOXmZACL59O0EsKZGYikYyseL10UdS0TsywvnCBflrDt1l/PE4/rRMz",
+  "rC9coJ/W8G3WH49T5ySjzkzsG7rF10hGP2Zi39AtvkYy6opXT/4QDXKS0SQnE01ykrFdSyOH6edY5z+2y5mM7Tr6aIV+TGybk4km",
+  "OclokpOJJjnJaFJB19r8mGjAwdG5wtElGU0p+GJ1blTsosGx+YKugpr/Z0+LHfTTmb8LenwCIklvaPI6mmgAAAAASUVORK5CYII=",
+].join("");
+
+export const YELLOW_FAVICON_PNG_DATA_URL = `data:image/png;base64,${YELLOW_FAVICON_PNG_BASE64}`;
+
+export const YELLOW_FAVICON_PNG_BYTES = /* @__PURE__ */ Uint8Array.from(
+  atob(YELLOW_FAVICON_PNG_BASE64),
+  (character) => character.charCodeAt(0),
+);
+
+/**
+ * Exact historical pre-Totman dark-navy favicon SVG with gold highlight.
+ * Byte-identical to the FAVICON_SVG that shipped at 5b91c543^.
+ * No longer offered, and 'classic' is no longer a style (favicon-style.ts).
+ * Kept exported so published @dynotator/core consumers keep the export.
+ * Source SHA-256: 27d33cff3d4515801f48e1cbaceec777ba802a7d341b22b2c0444d82b303cb49
+ */
+export const CLASSIC_FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#070b14"/>
+  <rect x="12" y="28" width="40" height="14" rx="3" fill="#E0BA55" opacity="0.35"/>
+  <text x="32" y="46" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-weight="800" font-size="42" fill="white">P</text>
+</svg>`;
+
+export const CLASSIC_FAVICON_DATA_URL = `data:image/svg+xml;base64,${/* @__PURE__ */ btoa(CLASSIC_FAVICON_SVG)}`;
+
+/**
+ * What a `<link rel="icon">` points at for a style: Glass and Yellow are their
+ * .ico (the tab picks the 16 or 32 frame), Face is its PNG.
+ */
+export function faviconDataUrl(style: FaviconStyle): string {
+  if (style === 'yellow') return YELLOW_FAVICON_ICO_DATA_URL;
+  if (style === 'totman') return FACE_FAVICON_PNG_DATA_URL;
+  return FAVICON_ICO_DATA_URL;
+}
+
+/** A style's icon as one PNG (what `/favicon.png` serves); the Inbox draws its tab-count badge over it. */
+export function faviconPngDataUrl(style: FaviconStyle): string {
+  if (style === 'yellow') return YELLOW_FAVICON_PNG_DATA_URL;
+  if (style === 'totman') return FACE_FAVICON_PNG_DATA_URL;
+  return FAVICON_PNG_DATA_URL;
+}
+
+/** What a `<link rel="icon">` declares for a style: its type, and the sizes it holds. */
+export function faviconLinkType(style: FaviconStyle): { type: 'image/png' | 'image/x-icon'; sizes: string } {
+  if (style === 'yellow') return { type: 'image/x-icon', sizes: FAVICON_ICO_SIZES };
+  if (style === 'totman') return { type: 'image/png', sizes: '64x64' };
+  return { type: 'image/x-icon', sizes: FAVICON_ICO_SIZES };
+}
+
+/** The frames in the Glass and Yellow .ico files, as a `sizes` attribute. */
+export const FAVICON_ICO_SIZES = '16x16 32x32 48x48';
+
+/** What `/favicon.png` answers for a style (any value that is not a style answers the default). */
+export function faviconBody(style: unknown): { body: Uint8Array<ArrayBuffer>; contentType: 'image/png' } {
+  if (style === 'yellow') return { body: YELLOW_FAVICON_PNG_BYTES, contentType: 'image/png' };
+  if (style === 'totman') return { body: FACE_FAVICON_PNG_BYTES, contentType: 'image/png' };
+  return { body: FAVICON_PNG_BYTES, contentType: 'image/png' };
+}
+
+/**
+ * What `/favicon.ico` answers for a style, the URL every app page links first:
+ * Glass and Yellow are their .ico; Face has no .ico, so its PNG (a browser reads an
+ * icon by its bytes and Content-Type, not by the URL's extension).
+ */
+export function faviconIcoBody(style: unknown): { body: Uint8Array<ArrayBuffer>; contentType: 'image/png' | 'image/x-icon' } {
+  if (style === 'yellow') return { body: YELLOW_FAVICON_ICO_BYTES, contentType: 'image/x-icon' };
+  if (style === 'totman') return faviconBody(style);
+  return { body: FAVICON_ICO_BYTES, contentType: 'image/x-icon' };
+}

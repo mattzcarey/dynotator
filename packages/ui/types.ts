@@ -1,0 +1,598 @@
+import type { DiagramAnchor } from '@dynotator/core/diagram-anchor';
+import type { ImageRegion } from '@dynotator/core/image-region';
+import type { DocumentRenderKind } from '@dynotator/core/annotatable';
+import type { QuestionAnswer } from '@dynotator/core/question-block';
+
+export type { DiagramAnchor } from '@dynotator/core/diagram-anchor';
+export type { ImageRegion, ImageRegionBox } from '@dynotator/core/image-region';
+export type { QuestionAnswer } from '@dynotator/core/question-block';
+export type { DiagramRenderKind, DocumentRenderKind } from '@dynotator/core/annotatable';
+
+/**
+ * How a document's body is rendered. `markdown` and `html` are the original
+ * pair; the two diagram kinds are whole-file diagram sources (.mmd/.mermaid,
+ * .dot/.gv) that render as ONE diagram through the same engine a ```mermaid
+ * fence uses — see diagramDocumentBlocks in utils/parser. `asciidoc` is an
+ * .adoc source parsed by utils/asciidocParser into the same block model.
+ */
+export type DocumentRenderAs = 'markdown' | 'html' | DocumentRenderKind;
+
+export enum AnnotationType {
+  DELETION = 'DELETION',
+  COMMENT = 'COMMENT',
+  GLOBAL_COMMENT = 'GLOBAL_COMMENT',
+}
+
+export type EditorMode = 'selection' | 'comment' | 'redline' | 'quickLabel';
+
+export type InputMethod = 'drag' | 'pinpoint';
+
+/**
+ * Compactness of the Viewer action button labels (Image / Comment / Copy).
+ * Driven by measured plan-area width so the cluster collapses responsively
+ * when the side panel squeezes the plan.
+ *   full  → "Global comment" / "Copy plan"
+ *   short → "Comment" / "Copy"
+ *   icon  → labels hidden entirely
+ */
+export type ActionsLabelMode = 'full' | 'short' | 'icon';
+
+export type WideModeType = 'wide' | 'focus';
+
+export interface ImageAttachment {
+  path: string;
+  name: string;
+}
+
+/** DOM-relative text position used to restore a document annotation selection. */
+export interface AnnotationTextMeta {
+  parentTagName: string;
+  parentIndex: number;
+  textOffset: number;
+}
+
+/** Durable, media-specific location for a note created in the PR artifact viewer. */
+export type ArtifactAnnotationAnchor =
+  | {
+      kind: 'document';
+      originalText: string;
+      blockId: string;
+      startOffset: number;
+      endOffset: number;
+      startMeta?: AnnotationTextMeta;
+      endMeta?: AnnotationTextMeta;
+    }
+  | { kind: 'image'; x: number; y: number }
+  | { kind: 'video'; timestamp: number }
+  | { kind: 'page' };
+
+/** Context shared by description and comment annotations created on a PR artifact. */
+export interface ArtifactAnnotationMeta {
+  artifactId: string;
+  artifactName: string;
+  artifactUrl: string;
+  artifactKind: 'image' | 'gif' | 'video' | 'html' | 'markdown';
+  sourceUrl: string;
+  anchor: ArtifactAnnotationAnchor;
+}
+
+export interface Annotation {
+  id: string;
+  blockId: string; // Legacy - not used with web-highlighter
+  startOffset: number; // Legacy
+  endOffset: number; // Legacy
+  type: AnnotationType;
+  text?: string; // For comments
+  originalText: string; // The text that was selected
+  createdA: number;
+  author?: string; // Tater identity for collaborative sharing
+  source?: string; // External tool identifier (e.g., "eslint") — set when annotation comes from external API
+  images?: ImageAttachment[]; // Attached images with human-readable names
+  mentions?: readonly string[]; // opaque host ids named with `@` in the comment body, set ONLY when a host supplied a `mentionSource` to the composer and at least one token survived; the key is absent otherwise. Host data: the package never renders, exports, shares or archives it.
+  isQuickLabel?: boolean; // true if created via quick label chip
+  quickLabelTip?: string; // optional instruction tip from the label definition
+  diffContext?: 'added' | 'removed' | 'modified'; // set when annotation created in plan diff view
+  artifact?: ArtifactAnnotationMeta; // code-review artifact viewer anchor + source context
+  mathTargets?: Array<{
+    blockId: string;
+    tex: string;
+    displayMode: boolean;
+  }>; // math elements covered by a mixed text+formula selection
+  prUrl?: string; // code-review PR mode: the PR this note belongs to, so it isn't shown/exported against another PR after an in-place switch
+  pageUrl?: string; // set only by live app annotate sessions: the page (pathname + search) the annotation was made on; restore filters to the current page and export groups by page
+  inReplyTo?: string; // id of the annotation this one replies to; a reply inherits its parent's anchor, renders indented under it in the panel, and exports grouped under it. Additive: annotations without it render and export exactly as before.
+  htmlAnchor?: HtmlElementAnchor; // raw-HTML pinpoint: serialized element anchor for reliable restoration
+  elementContext?: HtmlElementContext; // raw-HTML / live-app pinpoint: bounded agent-facing description of the primary element (never used by restore)
+  htmlAdditionalTargets?: HtmlAnnotationTarget[]; // raw-HTML shift-click multi-select: extra elements this one comment covers (primary stays htmlAnchor/originalText)
+  diagramAnchor?: DiagramAnchor; // a comment on a rendered diagram part (Mermaid / Graphviz fence): the part's own id, label and document source line; the highlighter skips it and the diagram overlay restores it (see @dynotator/core/diagram-anchor)
+  imageRegion?: ImageRegion; // a comment on part of an image in a markdown document (#2100): the image's src as written, its document line, and the box in the image's own pixels; drawn by the image viewer, skipped by the highlighter, exported as `Image:` / `Region:` lines (see @dynotator/core/image-region)
+  questionAnswer?: QuestionAnswer; // the reviewer's answer to a `:::question` block (id `ann-question-<key>`): the Viewer draws the answer from it, the highlighter skips it, and the export prints it in the "Answers to your questions" section instead of as a numbered comment (see @dynotator/core/question-block)
+  // web-highlighter metadata for cross-element selections
+  startMeta?: AnnotationTextMeta;
+  endMeta?: AnnotationTextMeta;
+}
+
+/**
+ * Serialized element anchor for annotations created on the raw-HTML surface
+ * (pinpoint mode). Built inside the sandboxed viewer bridge: a verified-unique
+ * CSS selector plus a fingerprint (tag + normalized text snapshot) used to
+ * fail closed when a weak selector no longer matches the same content.
+ * Additive — annotations without one restore via document-wide text search.
+ */
+export interface HtmlElementAnchor {
+  selector: string;
+  tagName: string;
+  text?: string;
+  /**
+   * The user's selected point inside the target element's rect, normalized to
+   * 0..1 on each axis. Placed comment markers reproject it against the
+   * element's CURRENT rect, so the marker follows the element through
+   * responsive movement instead of pinning stale pixels. Additive — anchors
+   * without one (older records, keyboard-driven selections) fall back to the
+   * target rect center.
+   */
+  point?: { x: number; y: number };
+}
+
+/**
+ * One additional element covered by a multi-target raw-HTML pinpoint comment
+ * (shift-click multi-select). Carries what the export and composer chips need
+ * even when anchoring failed closed: the semantic label from the pinpoint
+ * hover cascade and the element's text (or `[element: …]` description).
+ * Additive — annotations without the array behave exactly as before.
+ */
+export interface HtmlAnnotationTarget {
+  /** Semantic label from the hover-label cascade (e.g. "Button", "rowchip"). */
+  label?: string;
+  /** The target element's capped text, or an element description when text-less. */
+  text: string;
+  /** Element anchor for restoration; absent when the bridge failed closed. */
+  anchor?: HtmlElementAnchor;
+  /** Agent-facing element description (smaller budget than the primary's). */
+  context?: HtmlElementContext;
+}
+
+/**
+ * A bounded, agent-facing description of a pinpointed element, captured by the
+ * bridge at annotation time (only it can see the DOM). Purely descriptive:
+ * restore never reads it (that is `HtmlElementAnchor`'s job). It exists so the
+ * exported feedback can tell an agent working in the app's SOURCE which
+ * element the comment is about — identity (what it is), location (where it
+ * sits), and hooks (what to grep for) — without dumping the page. Every field
+ * is page-controlled and re-validated at the parent trust boundary
+ * (`parseHtmlElementContext`). Additive: annotations without one export
+ * exactly as before, and share links never carry it.
+ */
+export interface HtmlElementContext {
+  tag: string;
+  id?: string;
+  /** Author classes, generated/hashed ones skipped; may end in "+N more". */
+  classes?: string[];
+  /** Ancestor path, e.g. `body > div#root > header.site-header > nav#site-nav`. */
+  path?: string;
+  /** Explicit `role` or the tag's implicit ARIA role. */
+  role?: string;
+  /** Accessible name: aria-label, aria-labelledby, alt, title, <label for>, own short text. */
+  name?: string;
+  /** Allowlisted attributes in a fixed order (href/src scrubbed of query and fragment). */
+  attrs?: Array<[string, string]>;
+  /** Rendered text (innerText), whitespace-collapsed, word-boundary truncated. */
+  text?: string;
+  /** Collapsed HTML skeleton: opening tag with allowlisted attributes, then children as bare tags. */
+  outline?: string;
+  /** Number of element children (after skipping script/style/template and viewer overlays). */
+  children?: number;
+  /** Viewport-relative bounding box plus the viewport it was seen at. */
+  rect?: { x: number; y: number; w: number; h: number; vw: number; vh: number };
+  /** Nearest enclosing landmark/region, e.g. `header.site-header "Primary"`. */
+  landmark?: string;
+  /** Nearest preceding heading, e.g. `h2 "Usage"`. */
+  heading?: string;
+  /** Nearest author component marker, e.g. `data-component=AppNav`. */
+  component?: string;
+  /** Live-app sessions only: the route the element was seen on and the page title. */
+  page?: { url: string; title?: string };
+  /** Media elements only: the file the element shows, resolved by the bridge
+   *  exactly as the composer quote names it (src, data-src, srcset,
+   *  <picture>/<source>, poster), query and fragment scrubbed. */
+  sourceName?: string;
+}
+
+export type AlertKind = 'note' | 'tip' | 'warning' | 'caution' | 'important';
+
+export interface Block {
+  id: string;
+  type: 'paragraph' | 'heading' | 'blockquote' | 'list-item' | 'code' | 'hr' | 'table' | 'html' | 'directive' | 'math';
+  content: string; // Plain text, or raw (unsanitized) HTML for type === 'html'
+  level?: number; // For headings (1-6) or list indentation
+  language?: string; // For code blocks (e.g., 'rust', 'typescript')
+  checked?: boolean; // For checkbox list items (true = checked, false = unchecked, undefined = not a checkbox)
+  ordered?: boolean; // For list items: true when source marker was \d+.
+  orderedStart?: number; // For ordered list items: integer parsed from the marker (e.g. 5 for "5.")
+  alertKind?: AlertKind; // For blockquotes starting with [!NOTE] / [!TIP] / etc.
+  directiveKind?: string; // For directive containers (e.g. ':::note' → 'note')
+  order: number; // Sorting order
+  startLine: number; // 1-based line number in source
+  blankLinesBefore?: number; // Paragraph only, with parse option keepBlankLines: the blank lines (2+) typed before it
+  sourceLineCount?: number; // Number of source lines consumed when it differs from content lines
+  /**
+   * Line offset a diagram comment's `sourceLine` is measured from, when it
+   * differs from `startLine`. A ```mermaid fence in a document has its opening
+   * line ABOVE the diagram's first line, so `startLine` is the right offset
+   * there and this stays unset. A whole-file diagram source (.mmd/.dot) has no
+   * fence: its first line IS document line 1, so it sets 0 here while
+   * `startLine` keeps naming the block's own first line for the export's
+   * `(lines a–b)` label.
+   */
+  diagramSourceLineOffset?: number;
+  /**
+   * Set on a whole-file code document (`renderAs: "code"`, see
+   * `codeDocumentBlocks`): the document line of `content`'s first character.
+   * The file is ONE block, so a comment's line label is counted from its
+   * position inside `content`, not the block's span (which would name every
+   * line). Unset everywhere else, so other labels stay as they were.
+   */
+  contentStartLine?: number;
+}
+
+export interface DiffResult {
+  original: string;
+  modified: string;
+  diffText: string;
+}
+
+// Code Review Types
+export type CodeAnnotationType = 'comment' | 'suggestion' | 'concern';
+// 'general' is a review-level comment tied to no file and no line. For 'general'
+// (and the file-less case) filePath is "" and lineStart/lineEnd are 0 — consumers
+// must branch on scope, never read those sentinels as a real path or row.
+export type CodeAnnotationScope = 'line' | 'file' | 'general';
+
+/**
+ * One inferred step selected from the Call Flow analysis surface.
+ *
+ * Source location is optional because CallDiff can surface structural steps
+ * without a concrete line. `CodeAnnotation` uses an in-patch located target
+ * as its native inline anchor when one exists; otherwise the annotation is
+ * file- or review-scoped while this target remains its durable Call Flow
+ * anchor. Raw output selections use a one-based `rawLine` instead of a source
+ * location. This lets every rendered Call Flow row and raw line participate in
+ * feedback without pretending an out-of-hunk or diagnostic line can be posted
+ * as an inline source comment.
+ */
+interface CallFlowAnnotationTargetBase {
+  treePath: string;
+  entry: string;
+  label: string;
+  side: 'old' | 'new';
+}
+
+export type CallFlowAnnotationTarget = CallFlowAnnotationTargetBase & (
+  | { filePath: string; lineStart: number; lineEnd: number; rawLine?: undefined }
+  | { filePath: string; lineStart?: undefined; lineEnd?: undefined; rawLine?: undefined }
+  | { rawLine: number; filePath?: undefined; lineStart?: undefined; lineEnd?: undefined }
+  | { rawLine?: undefined; filePath?: undefined; lineStart?: undefined; lineEnd?: undefined }
+);
+
+/** Conventional Comments label — see https://conventionalcomments.org */
+export type ConventionalLabel =
+  | 'praise'
+  | 'nitpick'
+  | 'suggestion'
+  | 'issue'
+  | 'todo'
+  | 'question'
+  | 'thought'
+  | 'chore'
+  | 'note'
+  | 'typo'
+  | 'polish'
+  | (string & {}); // Allow custom labels while preserving autocomplete for built-ins
+
+/** Conventional Comments decoration (parenthesized modifier) */
+export type ConventionalDecoration = 'blocking' | 'non-blocking' | 'if-minor';
+
+/**
+ * A note attached to a whole PR comment/review/thread (code-review Phase 2).
+ * Button-driven (not text-anchored): the reviewer clicks "Annotate" on a card
+ * and leaves a note. The comment body travels with it so the agent — which
+ * can't see PR discussion — receives the full context on export.
+ */
+export interface CommentAnnotation {
+  id: string;
+  commentId: string;      // the timeline entry id (matches data-comment-id on the card)
+  commentAuthor: string;
+  commentBody: string;
+  text: string;           // the reviewer's note
+  createdAt: number;
+  prUrl?: string;         // the PR this note belongs to (see Annotation.prUrl)
+  artifact?: ArtifactAnnotationMeta; // optional artifact anchor within this source comment
+}
+
+export interface CodeAnnotation {
+  id: string;
+  type: CodeAnnotationType;
+  scope?: CodeAnnotationScope; // Defaults to 'line' for backward compatibility
+  filePath: string;
+  lineStart: number;
+  lineEnd: number;
+  side: 'old' | 'new'; // Maps to 'deletions' | 'additions' in @pierre/diffs
+  text?: string;
+  images?: ImageAttachment[];
+  suggestedCode?: string;
+  originalCode?: string; // Original selected lines for suggestion diff
+  charStart?: number; // Character offset within lineStart (token-level selection)
+  charEnd?: number; // Character offset within lineEnd (token-level selection)
+  tokenText?: string; // Selected token/span text (token-level selection)
+  /** Exact text highlighted when the comment was created inside an edit
+   *  session (captured from the editor selection). Exported alongside the
+   *  comment so the agent sees what was highlighted even when it differs
+   *  from the anchored diff lines. */
+  selectedText?: string;
+  /** True when the edit-session selection overlapped in-session edits: the
+   *  line anchor maps to the pristine lines those edits replace, so it is
+   *  approximate and the export labels it as such. */
+  selectedTextFromEdits?: boolean;
+  /**
+   * Complete Call Flow selection for an annotation authored from that
+   * surface. When any target maps to the patch, one target also supplies this
+   * annotation's primary inline anchor; otherwise the annotation is file- or
+   * review-scoped. Target order always preserves the user's selection order.
+   */
+  callFlowTargets?: CallFlowAnnotationTarget[];
+  createdAt: number;
+  author?: string;
+  source?: string; // External tool identifier (e.g., "eslint") — set when annotation comes from external API
+  severity?: 'important' | 'nit' | 'pre_existing'; // Agent review severity (Claude)
+  reasoning?: string; // Validation chain — how the issue was confirmed (Claude)
+  reviewProfileLabel?: string; // Custom review that produced this finding — shown as a tag
+  conventionalLabel?: ConventionalLabel;
+  decorations?: ConventionalDecoration[];
+  prUrl?: string;
+  prNumber?: number;
+  prTitle?: string;
+  prRepo?: string;
+  diffScope?: 'layer' | 'full-stack';
+  /** Set when the annotation was created on a commit:<sha> diff (Commits
+   *  panel). Line numbers anchor to THAT commit's diff-vs-parent — the export
+   *  labels the annotation with its commit when sent from any other diff, so
+   *  the agent never reads historical line numbers against the current diff. */
+  commitSha?: string;
+  /** The commit's one-line subject, captured for readable export labels. */
+  commitSubject?: string;
+  /** GitButler target that supplied this annotation's line coordinates. */
+  gitButlerDiffType?: string;
+  /** Human-readable GitButler target label captured with the annotation. */
+  gitButlerDiffLabel?: string;
+  /** GitButler merge base active when the annotation was created. */
+  gitButlerBase?: string;
+  /** Exact server snapshot that supplied the GitButler line coordinates. */
+  gitButlerSnapshotId?: string;
+  /** Local Git worktree + branch + comparison identity supplied by the server. */
+  localReviewTarget?: string;
+  /**
+   * PR and local Git reviews (#1590): the text of the diff lines this line comment
+   * was anchored to at creation (lineStart..lineEnd on `side`, joined with
+   * "\n"). When a saved draft is restored against a different patch, the
+   * comment keeps its position only if these lines still read the same;
+   * otherwise it is marked `outdated`. Absent on older annotations and on
+   * lines outside the patch hunks.
+   */
+  anchorText?: string;
+  /**
+   * PR and local Git reviews (#1590): the lines around the anchor on the same side
+   * (up to two before and two after; `null` where a line is outside the patch
+   * hunks) and the hunk header's function context (`hunk`, when git printed
+   * one), so a comment on a common line (`}`, `return null;`) only keeps its
+   * position when its surroundings still match too.
+   */
+  anchorContext?: { before: (string | null)[]; after: (string | null)[]; hunk?: string };
+  /**
+   * PR and local Git reviews (#1590): the review snapshot id of the diff whose line
+   * coordinates this comment uses. Re-stamped when a later diff passes the
+   * anchor check; a line comment is only posted inline when this matches the
+   * diff currently known for its PR.
+   */
+  anchorSnapshot?: string;
+  /**
+   * Set when a comment no longer matches the code it was written on.
+   * Its line numbers refer to
+   * the earlier version: it is listed and exported (labelled) but never drawn
+   * inline on the current diff and never posted as an inline PR comment.
+   */
+  outdated?: boolean;
+  /**
+   * Code review only: a comment on lines outside the diff — a file the review
+   * does not change (opened from All files), or lines of a changed file
+   * outside its hunks (its Whole file view). Line-scoped on the new side,
+   * with the commented code in `anchorText`. The agent gets it with the file,
+   * lines and code; a PR review posts it in the review body with the quoted
+   * code and a permalink, never inline (no platform accepts an inline comment
+   * outside the PR's diff). Never marked outdated by a diff re-check.
+   * Additive: annotations without it behave exactly as before.
+   */
+  outsideDiff?: boolean;
+  /**
+   * Code review only: a comment made by selecting text in a Markdown file's
+   * rendered preview. Always file-scoped (`scope: 'file'`); `lineStart` /
+   * `lineEnd` are the file-comment sentinels, not source lines. Exported with
+   * the quoted text; in PR mode it goes into the review body, never inline.
+   * Additive: annotations without it behave exactly as before.
+   */
+  markdownPreview?: MarkdownPreviewAnchor;
+}
+
+/** Where a comment made in a rendered Markdown preview points (see `CodeAnnotation.markdownPreview`). */
+export interface MarkdownPreviewAnchor {
+  /** The rendered text the reviewer selected. */
+  originalText: string;
+  /** The preview view it was made in: the rendered diff or the whole new version. */
+  view: 'diff' | 'whole';
+  /** In the rendered diff: the kind of section the selection started in. */
+  diffContext?: 'added' | 'removed' | 'modified' | 'unchanged';
+  /** web-highlighter positions, valid only in the view it was made in;
+   *  other views re-anchor by text. */
+  startMeta?: AnnotationTextMeta;
+  endMeta?: AnnotationTextMeta;
+}
+
+/** Token-level metadata passed from selection to annotation creation. */
+export interface TokenAnnotationMeta {
+  charStart: number;
+  charEnd: number;
+  tokenText: string;
+}
+
+/** Severity display styles — shared between agent detail panel and inline diff annotations. */
+export const SEVERITY_STYLES: Record<string, { dot: string; label: string }> = {
+  important: { dot: 'bg-destructive', label: 'Important' },
+  nit: { dot: 'bg-amber-500', label: 'Nit' },
+  pre_existing: { dot: 'bg-muted-foreground', label: 'Pre-existing' },
+};
+
+// For @pierre/diffs integration
+export interface DiffAnnotationMetadata {
+  annotationId: string;
+  type: CodeAnnotationType;
+  text?: string;
+  suggestedCode?: string;
+  originalCode?: string;
+  author?: string;
+  severity?: 'important' | 'nit' | 'pre_existing';
+  reasoning?: string;
+  conventionalLabel?: ConventionalLabel;
+  decorations?: ConventionalDecoration[];
+  // Shared comment-meta fields (so the inline diff card shows the same identity
+  // row — author, time, badges — as the sidebar and file-banner cards).
+  createdAt?: number;
+  reviewProfileLabel?: string;
+  source?: string;
+  /** Precomputed clipboard text (location prefix + body + reasoning) so the
+   *  inline copy action matches the sidebar/banner — the inline card only has
+   *  the projected metadata, not the full annotation. */
+  copyText?: string;
+  // AI marker fields (set when kind === 'ai-marker')
+  kind?: 'annotation' | 'ai-marker' | 'host-note' | 'context-note';
+  /** A host's context note (kind === 'context-note'; review-editor's `contextNotes`): never a comment. */
+  contextNoteId?: string;
+  questionId?: string;
+  promptPreview?: string;
+  hasResponse?: boolean;
+  isStreaming?: boolean;
+}
+
+export interface SelectedLineRange {
+  start: number;
+  end: number;
+  side: 'deletions' | 'additions';
+  endSide?: 'deletions' | 'additions';
+}
+
+// ---------------------------------------------------------------------------
+// AI Chat (inline AI on diffs)
+// ---------------------------------------------------------------------------
+
+export interface AIQuestion {
+  id: string;
+  prompt: string;
+  scope?: {
+    kind: 'general' | 'selection';
+    label?: string;
+    text?: string;
+    sourcePath?: string;
+    /** Agent-facing identity of the selected element(s) (raw-HTML / live-app
+     *  pinpoints): sent with the question, never shown in the chat. */
+    detail?: string;
+    /** 1-based source lines of a text selection in a markdown document (the
+     *  enclosing block's span, or first to last block for a selection over
+     *  several). `buildDefaultPrompt` appends them to the `Source:` line
+     *  (`, line 41` / `, lines 41–44`). Optional: absent prints no lines. */
+    lineStart?: number;
+    lineEnd?: number;
+  };
+  /** undefined = general question (no file scope) */
+  filePath?: string;
+  /** undefined + filePath present = file-scoped; with filePath = line-scoped */
+  lineStart?: number;
+  lineEnd?: number;
+  side?: 'old' | 'new';
+  selectedCode?: string;
+  createdAt: number;
+}
+
+export interface AIResponse {
+  questionId: string;
+  text: string;
+  isStreaming: boolean;
+  error?: string;
+  /** Server error code with `error` (e.g. `agent_busy`, `session_gone` from "Ask this session"). */
+  errorCode?: string;
+  /** "Ask this session": the question is waiting for a busy session, or interrupting it. */
+  status?: 'waiting' | 'interrupting';
+  /**
+   * "Ask this session": a note shown under the answer (not an error). Set when
+   * the person typed into the session while it answered, so the answer stops
+   * where their prompt took the turn over.
+   */
+  notice?: string;
+  createdAt: number;
+}
+
+export interface VaultNode {
+  name: string;
+  path: string; // relative path within vault
+  type: "file" | "folder";
+  children?: VaultNode[];
+}
+
+export type { EditorAnnotation } from '@dynotator/core/types';
+
+export type {
+  ExternalAnnotationEvent,
+} from '@dynotator/core/external-annotation';
+
+export type {
+  AgentJobInfo,
+  AgentJobEvent,
+  AgentJobStatus,
+  AgentCapability,
+  AgentCapabilities,
+} from '@dynotator/core/agent-jobs';
+
+/** Host toolbar seams (opt-in; Plannotator supplies neither). */
+export type {
+  SelectionAction,
+  SelectionActionContext,
+} from './utils/selectionActions';
+
+export type {
+  MentionPerson,
+  MentionSource,
+  MentionTrigger,
+} from './utils/mentions';
+
+/**
+ * The composer handed to the host (opt-in `onHostDraft` on `Viewer` and
+ * `HtmlViewer`; Plannotator supplies neither). With it a viewer draws no
+ * toolbar or composer of its own: it reports what a comment would be on, and
+ * the host writes the comment, saves it, and draws it as saved through
+ * `annotations` or `applySharedAnnotations`.
+ */
+export interface HostDraft {
+  /** The annotation a comment here would carry, with an empty `text`. */
+  annotation: Annotation;
+  /**
+   * `'selection'`: a text selection settled; the host offers its own Comment
+   * (a phone's edit menu). `'compose'`: open the composer now (a pinpoint
+   * tap, Comment mode, an HTML pin).
+   */
+  intent: 'selection' | 'compose';
+  /** What it is on, as a composer names it (Plannotator's pinpoint label: "Button", a heading's words). Absent for text. */
+  label?: string;
+  /**
+   * Drop the draft: its pending highlight or pin goes. The host calls it when
+   * the person cancels, and after the save, before it draws the saved
+   * annotation. A draft already replaced by a newer one ignores it.
+   */
+  cancel: () => void;
+}
