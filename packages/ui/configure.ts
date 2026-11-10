@@ -1,35 +1,60 @@
-import { setImageSrcResolver, type ImageSrcResolver } from './components/ImageThumbnail';
-import { setDocPreviewFetcher, type DocPreviewFetcher, type DocPreviewResult } from './components/InlineMarkdown';
-import { setStorageBackend, type StorageBackend } from './utils/storage';
-import { setUploadTransport, type UploadTransport, type UploadResult } from './utils/upload';
-import { setIdentityProvider, type IdentityProvider } from './utils/identity';
-import { setFileTreeBackend, type FileTreeBackend } from './hooks/useFileBrowser';
-import { setDraftTransport, type DraftTransport } from './hooks/useAnnotationDraft';
-import { setExternalAnnotationTransport, type ExternalAnnotationTransport } from './hooks/useExternalAnnotations';
-import { setAITransport, type AITransport } from './hooks/useAIChat';
-import { setSkillCatalogExportRegistration, setSkillCatalogTransport, setSkillContentTransport, type SkillCatalogTransport, type SkillContentTransport } from './utils/skillCatalog';
-import { setWebMcpPolicy, type WebMcpPolicy } from './webmcp/policy';
-import { setMathRendererLoader, type MathRenderer, type MathRendererLoader } from './utils/math';
-import { setIdentityGenerator, type IdentityGenerator } from './utils/generateIdentity';
-import { setAlertIconRenderer, type AlertIconRenderer } from './components/blocks/AlertBlock';
-import { setSkillInstructionsDestination } from './components/SkillReferenceMenu';
-import { setFenceThemeResolver, type FenceThemeResolver } from './utils/syntaxTheme';
-import { setCodeHighlightWorker, setDeferOffscreenCodeHighlight, type CodeHighlightWorker } from './utils/codeHighlight';
-import { configStore } from './config';
-import type { ServerSyncFn } from './config/configStore';
-import type { ExternalAnnotationEvent, VaultNode } from './types';
-import { setComponentTooltips } from './components/HostTitle';
-import { setRichCopyEnabled } from './utils/richCopyPolicy';
-import { setCommentCardEnabled, setVisibleCommentDrafts, type CommentCardLayout } from './utils/commentCardPolicy';
-import { setTouchSelectionToolbar } from './utils/touchToolbarPlacement';
-import { setPageMarks } from './utils/pageMarks';
-import { setClickAWord } from './utils/clickAWordPolicy';
-import { setCrossRepoRefsWithoutRepo, setDigitHexIssueRefs, type CrossRepoRefsWithoutRepo } from './components/InlineMarkdown';
-import { setRefCardTransport, type RefCardTransport } from './utils/refCard';
+import { setImageSrcResolver, type ImageSrcResolver } from "./components/ImageThumbnail";
+import {
+  setDocPreviewFetcher,
+  type DocPreviewFetcher,
+  type DocPreviewResult,
+} from "./components/InlineMarkdown";
+import { setStorageBackend, type StorageBackend } from "./utils/storage";
+import { setUploadTransport, type UploadTransport, type UploadResult } from "./utils/upload";
+import { setIdentityProvider, type IdentityProvider } from "./utils/identity";
+import { setFileTreeBackend, type FileTreeBackend } from "./hooks/useFileBrowser";
+import { setDraftTransport, type DraftTransport } from "./hooks/useAnnotationDraft";
+import {
+  setExternalAnnotationTransport,
+  type ExternalAnnotationTransport,
+} from "./hooks/useExternalAnnotations";
+import { setAITransport, type AITransport } from "./hooks/useAIChat";
+import {
+  setSkillCatalogExportRegistration,
+  setSkillCatalogTransport,
+  setSkillContentTransport,
+  type SkillCatalogTransport,
+  type SkillContentTransport,
+} from "./utils/skillCatalog";
+import { setWebMcpPolicy, type WebMcpPolicy } from "./webmcp/policy";
+import { setMathRendererLoader, type MathRenderer, type MathRendererLoader } from "./utils/math";
+import { setIdentityGenerator, type IdentityGenerator } from "./utils/generateIdentity";
+import { setAlertIconRenderer, type AlertIconRenderer } from "./components/blocks/AlertBlock";
+import { setSkillInstructionsDestination } from "./components/SkillReferenceMenu";
+import { setFenceThemeResolver, type FenceThemeResolver } from "./utils/syntaxTheme";
+import {
+  setCodeHighlightWorker,
+  setDeferOffscreenCodeHighlight,
+  type CodeHighlightWorker,
+} from "./utils/codeHighlight";
+import { configStore } from "./config";
+import type { ServerSyncFn } from "./config/configStore";
+import type { ExternalAnnotationEvent, VaultNode } from "./types";
+import { setComponentTooltips } from "./components/HostTitle";
+import { setRichCopyEnabled } from "./utils/richCopyPolicy";
+import {
+  setCommentCardEnabled,
+  setVisibleCommentDrafts,
+  type CommentCardLayout,
+} from "./utils/commentCardPolicy";
+import { setTouchSelectionToolbar } from "./utils/touchToolbarPlacement";
+import { setPageMarks } from "./utils/pageMarks";
+import { setClickAWord } from "./utils/clickAWordPolicy";
+import {
+  setCrossRepoRefsWithoutRepo,
+  setDigitHexIssueRefs,
+  type CrossRepoRefsWithoutRepo,
+} from "./components/InlineMarkdown";
+import { setRefCardTransport, type RefCardTransport } from "./utils/refCard";
 
 // One-stop type barrel: every seam contract a host implements is importable
 // from this module, next to configurePlannotatorUI itself.
-export type { CommentCardLayout } from './utils/commentCardPolicy';
+export type { CommentCardLayout } from "./utils/commentCardPolicy";
 export type {
   ImageSrcResolver,
   DocPreviewFetcher,
@@ -250,12 +275,15 @@ export function configurePlannotatorUI(config: PlannotatorUIConfig): void {
   if (config.fileTreeBackend) setFileTreeBackend(config.fileTreeBackend);
   if (config.identityProvider) setIdentityProvider(config.identityProvider);
   if (config.draftTransport) setDraftTransport(config.draftTransport);
-  if (config.externalAnnotationTransport) setExternalAnnotationTransport(config.externalAnnotationTransport);
+  if (config.externalAnnotationTransport)
+    setExternalAnnotationTransport(config.externalAnnotationTransport);
   if (config.aiTransport) setAITransport(config.aiTransport);
   if (config.skillCatalogTransport) setSkillCatalogTransport(config.skillCatalogTransport);
   if (config.skillContentTransport) setSkillContentTransport(config.skillContentTransport);
-  if (config.skillReferenceExport !== undefined) setSkillCatalogExportRegistration(config.skillReferenceExport);
-  if (config.skillInstructionsDestination) setSkillInstructionsDestination(config.skillInstructionsDestination);
+  if (config.skillReferenceExport !== undefined)
+    setSkillCatalogExportRegistration(config.skillReferenceExport);
+  if (config.skillInstructionsDestination)
+    setSkillInstructionsDestination(config.skillInstructionsDestination);
   if (config.serverSync) configStore.setServerSync(config.serverSync);
   if (config.webmcp) setWebMcpPolicy(config.webmcp);
   if (config.mathRendererLoader) setMathRendererLoader(config.mathRendererLoader);
@@ -264,15 +292,19 @@ export function configurePlannotatorUI(config: PlannotatorUIConfig): void {
   if (config.fenceTheme) setFenceThemeResolver(config.fenceTheme);
   if (config.componentTooltips !== undefined) setComponentTooltips(config.componentTooltips);
   if (config.digitHexIssueRefs !== undefined) setDigitHexIssueRefs(config.digitHexIssueRefs);
-  if (config.crossRepoRefsWithoutRepo !== undefined) setCrossRepoRefsWithoutRepo(config.crossRepoRefsWithoutRepo);
+  if (config.crossRepoRefsWithoutRepo !== undefined)
+    setCrossRepoRefsWithoutRepo(config.crossRepoRefsWithoutRepo);
   if (config.richCopy !== undefined) setRichCopyEnabled(config.richCopy);
   if (config.commentCard !== undefined) setCommentCardEnabled(config.commentCard);
-  if (config.visibleCommentDrafts !== undefined) setVisibleCommentDrafts(config.visibleCommentDrafts);
-  if (config.touchSelectionToolbar !== undefined) setTouchSelectionToolbar(config.touchSelectionToolbar);
+  if (config.visibleCommentDrafts !== undefined)
+    setVisibleCommentDrafts(config.visibleCommentDrafts);
+  if (config.touchSelectionToolbar !== undefined)
+    setTouchSelectionToolbar(config.touchSelectionToolbar);
   if (config.pageMarks !== undefined) setPageMarks(config.pageMarks);
   if (config.clickAWord !== undefined) setClickAWord(config.clickAWord);
   if (config.refCardTransport) setRefCardTransport(config.refCardTransport);
-  if (config.deferOffscreenCodeHighlight !== undefined) setDeferOffscreenCodeHighlight(config.deferOffscreenCodeHighlight);
+  if (config.deferOffscreenCodeHighlight !== undefined)
+    setDeferOffscreenCodeHighlight(config.deferOffscreenCodeHighlight);
   if (config.codeHighlightWorker) setCodeHighlightWorker(config.codeHighlightWorker);
   // Re-hydrate AFTER storageBackend is installed (load-bearing order — gated last).
   if (config.loadSettingsFromBackend) configStore.loadFromBackend();

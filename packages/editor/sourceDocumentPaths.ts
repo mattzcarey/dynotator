@@ -1,13 +1,10 @@
-import {
-  dirnameBrowserPath,
-  normalizeBrowserPath,
-} from '@dynotator/shared/browser-paths';
+import { dirnameBrowserPath, normalizeBrowserPath } from "@dynotator/shared/browser-paths";
 
 export {
   dirnameBrowserPath,
   normalizeBrowserPath,
   pathIsInsideDir,
-} from '@dynotator/shared/browser-paths';
+} from "@dynotator/shared/browser-paths";
 
 export interface SourceWatchSubscription {
   query: string;
@@ -18,11 +15,11 @@ export interface SourceWatchSubscription {
 export function buildSourceWatchSubscription(paths: string[]): SourceWatchSubscription {
   const normalizedPaths = [...new Set(paths.map(normalizeBrowserPath).filter(Boolean))].sort();
   const params = new URLSearchParams();
-  for (const path of normalizedPaths) params.append('filePath', path);
+  for (const path of normalizedPaths) params.append("filePath", path);
 
   return {
     query: params.toString(),
     dirs: [...new Set(normalizedPaths.map(dirnameBrowserPath))].sort(),
-    key: normalizedPaths.join('\n'),
+    key: normalizedPaths.join("\n"),
   };
 }

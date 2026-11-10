@@ -1,10 +1,15 @@
-import React, { useMemo } from 'react';
-import { parseMarkdownToBlocks, groupBlocks, computeListIndices } from '../utils/parser';
-import { BlockRenderer } from './BlockRenderer';
-import { LocalLinkContext, type LocalLinkResolver } from './LocalLinkContext';
-import { ImageResolverContext, PreserveResolvedVideosContext, ResolvedResponsiveImagesContext, type ImageResolver } from './ImageResolverContext';
-import { SoftLineBreaksContext } from './InlineMarkdown';
-import { buildHeadingSlugMap } from '../utils/slugify';
+import React, { useMemo } from "react";
+import { parseMarkdownToBlocks, groupBlocks, computeListIndices } from "../utils/parser";
+import { BlockRenderer } from "./BlockRenderer";
+import { LocalLinkContext, type LocalLinkResolver } from "./LocalLinkContext";
+import {
+  ImageResolverContext,
+  PreserveResolvedVideosContext,
+  ResolvedResponsiveImagesContext,
+  type ImageResolver,
+} from "./ImageResolverContext";
+import { SoftLineBreaksContext } from "./InlineMarkdown";
+import { buildHeadingSlugMap } from "../utils/slugify";
 
 /**
  * Full markdown renderer for surfaces outside the plan editor (e.g. the PR
@@ -77,19 +82,30 @@ export const RenderedMarkdown: React.FC<RenderedMarkdownProps> = ({
   let body = (
     <div className={className}>
       {groups.map((group) =>
-        group.type === 'list-group' ? (
+        group.type === "list-group" ? (
           (() => {
             const indices = computeListIndices(group.blocks);
             return (
               <div key={group.key}>
                 {group.blocks.map((block, i) => (
-                  <BlockRenderer key={block.id} block={block} orderedIndex={indices[i]} headingAnchorId={headingSlugMap?.get(block.id)} {...cb} />
+                  <BlockRenderer
+                    key={block.id}
+                    block={block}
+                    orderedIndex={indices[i]}
+                    headingAnchorId={headingSlugMap?.get(block.id)}
+                    {...cb}
+                  />
                 ))}
               </div>
             );
           })()
         ) : (
-          <BlockRenderer key={group.block.id} block={group.block} headingAnchorId={headingSlugMap?.get(group.block.id)} {...cb} />
+          <BlockRenderer
+            key={group.block.id}
+            block={group.block}
+            headingAnchorId={headingSlugMap?.get(group.block.id)}
+            {...cb}
+          />
         ),
       )}
     </div>
@@ -100,13 +116,23 @@ export const RenderedMarkdown: React.FC<RenderedMarkdownProps> = ({
     body = <SoftLineBreaksContext.Provider value={true}>{body}</SoftLineBreaksContext.Provider>;
   }
   if (preserveVideos) {
-    body = <PreserveResolvedVideosContext.Provider value={true}>{body}</PreserveResolvedVideosContext.Provider>;
+    body = (
+      <PreserveResolvedVideosContext.Provider value={true}>
+        {body}
+      </PreserveResolvedVideosContext.Provider>
+    );
   }
   if (responsiveImages) {
-    body = <ResolvedResponsiveImagesContext.Provider value={true}>{body}</ResolvedResponsiveImagesContext.Provider>;
+    body = (
+      <ResolvedResponsiveImagesContext.Provider value={true}>
+        {body}
+      </ResolvedResponsiveImagesContext.Provider>
+    );
   }
   if (resolveImage) {
-    body = <ImageResolverContext.Provider value={resolveImage}>{body}</ImageResolverContext.Provider>;
+    body = (
+      <ImageResolverContext.Provider value={resolveImage}>{body}</ImageResolverContext.Provider>
+    );
   }
   if (resolveLocalLink) {
     body = <LocalLinkContext.Provider value={resolveLocalLink}>{body}</LocalLinkContext.Provider>;

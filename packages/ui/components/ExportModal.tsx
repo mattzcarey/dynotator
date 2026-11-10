@@ -6,15 +6,15 @@
  * Notes tab: Save plan to Obsidian/Bear without approving
  */
 
-import React, { useState, useEffect } from 'react';
-import { getObsidianSettings, getEffectiveVaultPath } from '../utils/obsidian';
-import { getBearSettings } from '../utils/bear';
-import { getOctarineSettings } from '../utils/octarine';
-import { getNotionParentPageId, isNotionAvailable } from '../utils/notion';
-import { wrapFeedbackForAgent } from '../utils/parser';
-import { copyTextToClipboard } from '../utils/clipboard';
-import { noteServerSessionMismatch, withServerSession } from '../utils/serverSession';
-import { OverlayScrollArea } from './OverlayScrollArea';
+import React, { useState, useEffect } from "react";
+import { getObsidianSettings, getEffectiveVaultPath } from "../utils/obsidian";
+import { getBearSettings } from "../utils/bear";
+import { getOctarineSettings } from "../utils/octarine";
+import { getNotionParentPageId, isNotionAvailable } from "../utils/notion";
+import { wrapFeedbackForAgent } from "../utils/parser";
+import { copyTextToClipboard } from "../utils/clipboard";
+import { noteServerSessionMismatch, withServerSession } from "../utils/serverSession";
+import { OverlayScrollArea } from "./OverlayScrollArea";
 
 /** POST body shape sent to the notes endpoint (mirrors what the Notes tab builds today). */
 interface SaveToNotesPayload {
@@ -31,14 +31,21 @@ interface SaveToNotesResult {
 
 /** Default save-to-notes wire: today's literal POST to /api/save-notes. */
 async function defaultSaveToNotes(body: SaveToNotesPayload): Promise<SaveToNotesResult> {
-  const res = await fetch('/api/save-notes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("/api/save-notes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     // The stale-tab guard (a no-op for a host that never adopted a session).
     body: JSON.stringify(withServerSession(body)),
   });
   if (await noteServerSessionMismatch(res)) {
-    return { results: Object.fromEntries(Object.keys(body).map((k) => [k, { success: false, error: 'This review was replaced. Reload the page.' }])) };
+    return {
+      results: Object.fromEntries(
+        Object.keys(body).map((k) => [
+          k,
+          { success: false, error: "This review was replaced. Reload the page." },
+        ]),
+      ),
+    };
   }
   return res.json();
 }
@@ -74,19 +81,19 @@ interface ExportModalProps {
   wrapCopiedAnnotations?: (feedback: string) => string;
 }
 
-type Tab = 'share' | 'annotations' | 'notes';
+type Tab = "share" | "annotations" | "notes";
 
-type SaveTarget = 'obsidian' | 'bear' | 'octarine' | 'notion';
-type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
+type SaveTarget = "obsidian" | "bear" | "octarine" | "notion";
+type SaveStatus = "idle" | "saving" | "success" | "error";
 
 export const ExportModal: React.FC<ExportModalProps> = ({
   isOpen,
   onClose,
   shareUrl,
   shareUrlSize,
-  shortShareUrl = '',
+  shortShareUrl = "",
   isGeneratingShortUrl = false,
-  shortUrlError = '',
+  shortUrlError = "",
   onGenerateShortUrl,
   annotationsOutput,
   annotationCount,
@@ -98,24 +105,29 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onSaveToNotes = defaultSaveToNotes,
   wrapCopiedAnnotations = wrapFeedbackForAgent,
 }) => {
-  const defaultTab = initialTab || (sharingEnabled ? 'share' : 'annotations');
+  const defaultTab = initialTab || (sharingEnabled ? "share" : "annotations");
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
-  const [copied, setCopied] = useState<'short' | 'full' | 'annotations' | false>(false);
-  const [saveStatus, setSaveStatus] = useState<Record<SaveTarget, SaveStatus>>({ obsidian: 'idle', bear: 'idle', octarine: 'idle', notion: 'idle' });
+  const [copied, setCopied] = useState<"short" | "full" | "annotations" | false>(false);
+  const [saveStatus, setSaveStatus] = useState<Record<SaveTarget, SaveStatus>>({
+    obsidian: "idle",
+    bear: "idle",
+    octarine: "idle",
+    notion: "idle",
+  });
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
   const [savedUrls, setSavedUrls] = useState<Partial<Record<SaveTarget, string>>>({});
 
   // Reset tab when modal opens
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(initialTab || (sharingEnabled ? 'share' : 'annotations'));
+      setActiveTab(initialTab || (sharingEnabled ? "share" : "annotations"));
     }
   }, [isOpen, initialTab, sharingEnabled]);
 
   // Reset save status when modal opens
   useEffect(() => {
     if (isOpen) {
-      setSaveStatus({ obsidian: 'idle', bear: 'idle', octarine: 'idle', notion: 'idle' });
+      setSaveStatus({ obsidian: "idle", bear: "idle", octarine: "idle", notion: "idle" });
       setSaveErrors({});
       setSavedUrls({});
     }
@@ -136,17 +148,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const notionParentPageId = getNotionParentPageId();
   const isNotionReady = notionParentPageId !== null;
 
-  const handleCopy = async (text: string, which: 'short' | 'full' | 'annotations') => {
+  const handleCopy = async (text: string, which: "short" | "full" | "annotations") => {
     if (await copyTextToClipboard(text)) {
       setCopied(which);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      console.error('Failed to copy');
+      console.error("Failed to copy");
     }
   };
 
   const handleCopyAnnotations = async () => {
-    await handleCopy(wrapCopiedAnnotations(annotationsOutput), 'annotations');
+    await handleCopy(wrapCopiedAnnotations(annotationsOutput), "annotations");
   };
 
   // Warn when the hash URL may be too long for messaging apps
@@ -155,11 +167,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const hashUnavailable = !shareUrl && !!onGenerateShortUrl;
 
   const handleDownloadAnnotations = () => {
-    const blob = new Blob([annotationsOutput], { type: 'text/plain' });
+    const blob = new Blob([annotationsOutput], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'annotations.md';
+    a.download = "annotations.md";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -167,31 +179,38 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const handleSaveToNotes = async (target: SaveTarget) => {
     if (!markdown) return;
 
-    setSaveStatus(prev => ({ ...prev, [target]: 'saving' }));
-    setSaveErrors(prev => { const next = { ...prev }; delete next[target]; return next; });
+    setSaveStatus((prev) => ({ ...prev, [target]: "saving" }));
+    setSaveErrors((prev) => {
+      const next = { ...prev };
+      delete next[target];
+      return next;
+    });
 
     const body: { obsidian?: object; bear?: object; octarine?: object; notion?: object } = {};
 
-    if (target === 'obsidian') {
+    if (target === "obsidian") {
       body.obsidian = {
         vaultPath: effectiveVaultPath,
-        folder: obsidianSettings.folder || 'plannotator',
+        folder: obsidianSettings.folder || "plannotator",
         plan: markdown,
         ...(obsidianSettings.filenameFormat && { filenameFormat: obsidianSettings.filenameFormat }),
-        ...(obsidianSettings.filenameSeparator && obsidianSettings.filenameSeparator !== 'space' && { filenameSeparator: obsidianSettings.filenameSeparator }),
+        ...(obsidianSettings.filenameSeparator &&
+          obsidianSettings.filenameSeparator !== "space" && {
+            filenameSeparator: obsidianSettings.filenameSeparator,
+          }),
       };
     }
-    if (target === 'bear') {
+    if (target === "bear") {
       body.bear = { plan: markdown };
     }
-    if (target === 'octarine') {
+    if (target === "octarine") {
       body.octarine = {
         plan: markdown,
         workspace: octarineSettings.workspace,
-        folder: octarineSettings.folder || 'plannotator',
+        folder: octarineSettings.folder || "plannotator",
       };
     }
-    if (target === 'notion' && notionParentPageId) {
+    if (target === "notion" && notionParentPageId) {
       body.notion = { plan: markdown, parentPageId: notionParentPageId };
     }
 
@@ -200,28 +219,30 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       const result = data.results?.[target];
 
       if (result?.success) {
-        setSaveStatus(prev => ({ ...prev, [target]: 'success' }));
-        if (result.url) setSavedUrls(prev => ({ ...prev, [target]: result.url! }));
+        setSaveStatus((prev) => ({ ...prev, [target]: "success" }));
+        if (result.url) setSavedUrls((prev) => ({ ...prev, [target]: result.url! }));
       } else {
-        setSaveStatus(prev => ({ ...prev, [target]: 'error' }));
-        setSaveErrors(prev => ({ ...prev, [target]: result?.error || 'Save failed' }));
+        setSaveStatus((prev) => ({ ...prev, [target]: "error" }));
+        setSaveErrors((prev) => ({ ...prev, [target]: result?.error || "Save failed" }));
       }
     } catch {
-      setSaveStatus(prev => ({ ...prev, [target]: 'error' }));
-      setSaveErrors(prev => ({ ...prev, [target]: 'Save failed' }));
+      setSaveStatus((prev) => ({ ...prev, [target]: "error" }));
+      setSaveErrors((prev) => ({ ...prev, [target]: "Save failed" }));
     }
   };
 
   const handleSaveAll = async () => {
     const targets: SaveTarget[] = [];
-    if (isObsidianReady) targets.push('obsidian');
-    if (isBearReady) targets.push('bear');
-    if (isOctarineReady) targets.push('octarine');
-    if (isNotionReady) targets.push('notion');
-    await Promise.all(targets.map(t => handleSaveToNotes(t)));
+    if (isObsidianReady) targets.push("obsidian");
+    if (isBearReady) targets.push("bear");
+    if (isOctarineReady) targets.push("octarine");
+    if (isNotionReady) targets.push("notion");
+    await Promise.all(targets.map((t) => handleSaveToNotes(t)));
   };
 
-  const readyCount = [isObsidianReady, isBearReady, isOctarineReady, isNotionReady].filter(Boolean).length;
+  const readyCount = [isObsidianReady, isBearReady, isOctarineReady, isNotionReady].filter(
+    Boolean,
+  ).length;
 
   // Determine which tabs to show
   const showTabs = sharingEnabled || showNotesTab;
@@ -230,7 +251,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
       <div
         className="bg-card border border-border rounded-xl w-full max-w-2xl flex flex-col max-h-[80vh] shadow-2xl relative"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {taterSprite}
 
@@ -240,13 +261,19 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             <h3 className="font-semibold text-sm">Export</h3>
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
-                {annotationCount} annotation{annotationCount !== 1 ? 's' : ''}
+                {annotationCount} annotation{annotationCount !== 1 ? "s" : ""}
               </span>
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -256,387 +283,465 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         {/* Body */}
         <OverlayScrollArea className="flex-1 min-h-0">
-        <div className="p-4">
-          {/* Tabs */}
-          {showTabs && (
-            <div className="flex gap-1 bg-muted rounded-lg p-1 mb-4">
-              {sharingEnabled && (
+          <div className="p-4">
+            {/* Tabs */}
+            {showTabs && (
+              <div className="flex gap-1 bg-muted rounded-lg p-1 mb-4">
+                {sharingEnabled && (
+                  <button
+                    onClick={() => setActiveTab("share")}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      activeTab === "share"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Share
+                  </button>
+                )}
                 <button
-                  onClick={() => setActiveTab('share')}
+                  onClick={() => setActiveTab("annotations")}
                   className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    activeTab === 'share'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                    activeTab === "annotations"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Share
+                  Annotations
                 </button>
-              )}
-              <button
-                onClick={() => setActiveTab('annotations')}
-                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  activeTab === 'annotations'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Annotations
-              </button>
-              {showNotesTab && (
-                <button
-                  onClick={() => setActiveTab('notes')}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    activeTab === 'notes'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Notes
-                </button>
-              )}
-            </div>
-          )}
+                {showNotesTab && (
+                  <button
+                    onClick={() => setActiveTab("notes")}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      activeTab === "notes"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Notes
+                  </button>
+                )}
+              </div>
+            )}
 
-          {/* Tab content */}
-          {activeTab === 'share' && sharingEnabled ? (
-            <div className="space-y-4">
-              {/* Short URL — primary copy target when available */}
-              {shortShareUrl ? (
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-2">
-                    Share Link
-                  </label>
-                  <div className="relative group">
-                    <input
-                      readOnly
-                      value={shortShareUrl}
-                      className="w-full bg-muted rounded-lg p-3 pr-20 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-accent/50"
-                      onClick={e => (e.target as HTMLInputElement).select()}
-                    />
-                    <button
-                      onClick={() => handleCopy(shortShareUrl, 'short')}
-                      className="absolute top-1.5 right-2 px-2 py-1 rounded text-xs font-medium bg-background/80 hover:bg-background border border-border/50 transition-colors flex items-center gap-1"
-                    >
-                      {copied === 'short' ? (
-                        <>
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                          Copy
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Encrypted short link. The browser uploads AES-256-GCM ciphertext; the decryption key stays in the URL fragment.
-                  </p>
-                </div>
-              ) : isGeneratingShortUrl ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-muted rounded-lg">
-                  <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
-                  </svg>
-                  Generating short link...
-                </div>
-              ) : onGenerateShortUrl ? (
-                <div className={`p-3 rounded-lg border ${
-                  urlIsLarge
-                    ? 'bg-amber-500/10 border-amber-500/20'
-                    : 'bg-muted/50 border-border'
-                }`}>
-                  {urlIsLarge && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
-                      This URL may be too long for some messaging apps.
+            {/* Tab content */}
+            {activeTab === "share" && sharingEnabled ? (
+              <div className="space-y-4">
+                {/* Short URL — primary copy target when available */}
+                {shortShareUrl ? (
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-2">
+                      Share Link
+                    </label>
+                    <div className="relative group">
+                      <input
+                        readOnly
+                        value={shortShareUrl}
+                        className="w-full bg-muted rounded-lg p-3 pr-20 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-accent/50"
+                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                      />
+                      <button
+                        onClick={() => handleCopy(shortShareUrl, "short")}
+                        className="absolute top-1.5 right-2 px-2 py-1 rounded text-xs font-medium bg-background/80 hover:bg-background border border-border/50 transition-colors flex items-center gap-1"
+                      >
+                        {copied === "short" ? (
+                          <>
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Encrypted short link. The browser uploads AES-256-GCM ciphertext; the
+                      decryption key stays in the URL fragment.
                     </p>
-                  )}
-                  <button
-                    onClick={onGenerateShortUrl}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                  </div>
+                ) : isGeneratingShortUrl ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-muted rounded-lg">
+                    <svg
+                      className="w-3 h-3 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
+                    </svg>
+                    Generating short link...
+                  </div>
+                ) : onGenerateShortUrl ? (
+                  <div
+                    className={`p-3 rounded-lg border ${
+                      urlIsLarge
+                        ? "bg-amber-500/10 border-amber-500/20"
+                        : "bg-muted/50 border-border"
+                    }`}
                   >
-                    Create short link
-                  </button>
-                  {shortUrlError && (
-                    <p className="text-[10px] text-amber-500 mt-1">({shortUrlError})</p>
-                  )}
-                </div>
-              ) : null}
-
-              {/* Full hash URL — hidden when hash-based sharing is unavailable (HTML mode) */}
-              {!hashUnavailable && <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-2">
-                  {shortShareUrl ? 'Full URL (backup)' : 'Shareable URL'}
-                </label>
-                <div className="relative group">
-                  <textarea
-                    readOnly
-                    value={shareUrl}
-                    className="w-full h-24 bg-muted rounded-lg p-3 pr-20 text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-accent/50"
-                    onClick={e => (e.target as HTMLTextAreaElement).select()}
-                  />
-                  <button
-                    onClick={() => handleCopy(shareUrl, 'full')}
-                    className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium bg-background/80 hover:bg-background border border-border/50 transition-colors flex items-center gap-1"
-                  >
-                    {copied === 'full' ? (
-                      <>
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Copy
-                      </>
+                    {urlIsLarge && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                        This URL may be too long for some messaging apps.
+                      </p>
                     )}
-                  </button>
-                  <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                    {shareUrlSize}
-                  </div>
-                </div>
-                {!shortShareUrl && !isGeneratingShortUrl && !urlIsLarge && (
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Shared content is compressed, not encrypted, in the URL fragment. The portal request does not include that fragment.
-                  </p>
-                )}
-              </div>}
-
-              <p className="text-xs text-muted-foreground">
-                Anyone with the full link can view the shared content, including services used to send the link. Hosted short-link ciphertext expires after 7 days.
-              </p>
-            </div>
-          ) : activeTab === 'notes' && showNotesTab ? (
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                Save this plan to your notes app without approving or denying.
-              </p>
-
-              {/* Obsidian */}
-              <div className="border border-border rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${isObsidianReady ? 'bg-success' : 'bg-muted-foreground/30'}`} />
-                    <span className="text-sm font-medium">Obsidian</span>
-                  </div>
-                  {isObsidianReady ? (
                     <button
-                      onClick={() => handleSaveToNotes('obsidian')}
-                      disabled={saveStatus.obsidian === 'saving'}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                        saveStatus.obsidian === 'success'
-                          ? 'bg-success/15 text-success'
-                          : saveStatus.obsidian === 'error'
-                            ? 'bg-destructive/15 text-destructive'
-                            : saveStatus.obsidian === 'saving'
-                              ? 'bg-muted text-muted-foreground opacity-50'
-                              : 'bg-primary text-primary-foreground hover:opacity-90'
-                      }`}
+                      onClick={onGenerateShortUrl}
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                     >
-                      {saveStatus.obsidian === 'saving' ? 'Saving...'
-                        : saveStatus.obsidian === 'success' ? 'Saved'
-                        : saveStatus.obsidian === 'error' ? 'Failed'
-                        : 'Save'}
+                      Create short link
                     </button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Not configured</span>
-                  )}
-                </div>
-                {isObsidianReady && (
-                  <div className="text-[10px] text-muted-foreground/70">
-                    {effectiveVaultPath}/{obsidianSettings.folder || 'plannotator'}/
+                    {shortUrlError && (
+                      <p className="text-[10px] text-amber-500 mt-1">({shortUrlError})</p>
+                    )}
                   </div>
-                )}
-                {!isObsidianReady && (
-                  <div className="text-[10px] text-muted-foreground/70">
-                    Enable in Settings &gt; Saving &gt; Obsidian
-                  </div>
-                )}
-                {saveErrors.obsidian && (
-                  <div className="text-[10px] text-destructive">{saveErrors.obsidian}</div>
-                )}
-              </div>
+                ) : null}
 
-              {/* Bear */}
-              <div className="border border-border rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${isBearReady ? 'bg-success' : 'bg-muted-foreground/30'}`} />
-                    <span className="text-sm font-medium">Bear</span>
-                  </div>
-                  {isBearReady ? (
-                    <button
-                      onClick={() => handleSaveToNotes('bear')}
-                      disabled={saveStatus.bear === 'saving'}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                        saveStatus.bear === 'success'
-                          ? 'bg-success/15 text-success'
-                          : saveStatus.bear === 'error'
-                            ? 'bg-destructive/15 text-destructive'
-                            : saveStatus.bear === 'saving'
-                              ? 'bg-muted text-muted-foreground opacity-50'
-                              : 'bg-primary text-primary-foreground hover:opacity-90'
-                      }`}
-                    >
-                      {saveStatus.bear === 'saving' ? 'Saving...'
-                        : saveStatus.bear === 'success' ? 'Saved'
-                        : saveStatus.bear === 'error' ? 'Failed'
-                        : 'Save'}
-                    </button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Not configured</span>
-                  )}
-                </div>
-                {!isBearReady && (
-                  <div className="text-[10px] text-muted-foreground/70">
-                    Enable in Settings &gt; Saving &gt; Bear
+                {/* Full hash URL — hidden when hash-based sharing is unavailable (HTML mode) */}
+                {!hashUnavailable && (
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-2">
+                      {shortShareUrl ? "Full URL (backup)" : "Shareable URL"}
+                    </label>
+                    <div className="relative group">
+                      <textarea
+                        readOnly
+                        value={shareUrl}
+                        className="w-full h-24 bg-muted rounded-lg p-3 pr-20 text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-accent/50"
+                        onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                      />
+                      <button
+                        onClick={() => handleCopy(shareUrl, "full")}
+                        className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium bg-background/80 hover:bg-background border border-border/50 transition-colors flex items-center gap-1"
+                      >
+                        {copied === "full" ? (
+                          <>
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                            Copy
+                          </>
+                        )}
+                      </button>
+                      <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {shareUrlSize}
+                      </div>
+                    </div>
+                    {!shortShareUrl && !isGeneratingShortUrl && !urlIsLarge && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Shared content is compressed, not encrypted, in the URL fragment. The portal
+                        request does not include that fragment.
+                      </p>
+                    )}
                   </div>
                 )}
-                {saveErrors.bear && (
-                  <div className="text-[10px] text-destructive">{saveErrors.bear}</div>
-                )}
-              </div>
 
-              {/* Octarine */}
-              <div className="border border-border rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${isOctarineReady ? 'bg-success' : 'bg-muted-foreground/30'}`} />
-                    <span className="text-sm font-medium">Octarine</span>
-                  </div>
-                  {isOctarineReady ? (
-                    <button
-                      onClick={() => handleSaveToNotes('octarine')}
-                      disabled={saveStatus.octarine === 'saving'}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                        saveStatus.octarine === 'success'
-                          ? 'bg-success/15 text-success'
-                          : saveStatus.octarine === 'error'
-                            ? 'bg-destructive/15 text-destructive'
-                            : saveStatus.octarine === 'saving'
-                              ? 'bg-muted text-muted-foreground opacity-50'
-                              : 'bg-primary text-primary-foreground hover:opacity-90'
-                      }`}
-                    >
-                      {saveStatus.octarine === 'saving' ? 'Saving...'
-                        : saveStatus.octarine === 'success' ? 'Saved'
-                        : saveStatus.octarine === 'error' ? 'Failed'
-                        : 'Save'}
-                    </button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Not configured</span>
-                  )}
-                </div>
-                {isOctarineReady && (
-                  <div className="text-[10px] text-muted-foreground/70">
-                    {octarineSettings.workspace} / {octarineSettings.folder || 'plannotator'}/
-                  </div>
-                )}
-                {!isOctarineReady && (
-                  <div className="text-[10px] text-muted-foreground/70">
-                    Enable in Settings &gt; Saving &gt; Octarine
-                  </div>
-                )}
-                {saveErrors.octarine && (
-                  <div className="text-[10px] text-destructive">{saveErrors.octarine}</div>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  Anyone with the full link can view the shared content, including services used to
+                  send the link. Hosted short-link ciphertext expires after 7 days.
+                </p>
               </div>
+            ) : activeTab === "notes" && showNotesTab ? (
+              <div className="space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Save this plan to your notes app without approving or denying.
+                </p>
 
-              {/* Notion */}
-              {notionAvailable && (
+                {/* Obsidian */}
                 <div className="border border-border rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${isNotionReady ? 'bg-success' : 'bg-muted-foreground/30'}`} />
-                      <span className="text-sm font-medium">Notion</span>
+                      <span
+                        className={`w-2 h-2 rounded-full ${isObsidianReady ? "bg-success" : "bg-muted-foreground/30"}`}
+                      />
+                      <span className="text-sm font-medium">Obsidian</span>
                     </div>
-                    {isNotionReady ? (
+                    {isObsidianReady ? (
                       <button
-                        onClick={() => handleSaveToNotes('notion')}
-                        disabled={saveStatus.notion === 'saving'}
+                        onClick={() => handleSaveToNotes("obsidian")}
+                        disabled={saveStatus.obsidian === "saving"}
                         className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                          saveStatus.notion === 'success'
-                            ? 'bg-success/15 text-success'
-                            : saveStatus.notion === 'error'
-                              ? 'bg-destructive/15 text-destructive'
-                              : saveStatus.notion === 'saving'
-                                ? 'bg-muted text-muted-foreground opacity-50'
-                                : 'bg-primary text-primary-foreground hover:opacity-90'
+                          saveStatus.obsidian === "success"
+                            ? "bg-success/15 text-success"
+                            : saveStatus.obsidian === "error"
+                              ? "bg-destructive/15 text-destructive"
+                              : saveStatus.obsidian === "saving"
+                                ? "bg-muted text-muted-foreground opacity-50"
+                                : "bg-primary text-primary-foreground hover:opacity-90"
                         }`}
                       >
-                        {saveStatus.notion === 'saving' ? 'Saving...'
-                          : saveStatus.notion === 'success' ? 'Saved'
-                          : saveStatus.notion === 'error' ? 'Failed'
-                          : 'Save'}
+                        {saveStatus.obsidian === "saving"
+                          ? "Saving..."
+                          : saveStatus.obsidian === "success"
+                            ? "Saved"
+                            : saveStatus.obsidian === "error"
+                              ? "Failed"
+                              : "Save"}
                       </button>
                     ) : (
                       <span className="text-xs text-muted-foreground">Not configured</span>
                     )}
                   </div>
-                  {isNotionReady && (
+                  {isObsidianReady && (
                     <div className="text-[10px] text-muted-foreground/70">
-                      Parent page: {notionParentPageId}
+                      {effectiveVaultPath}/{obsidianSettings.folder || "plannotator"}/
                     </div>
                   )}
-                  {savedUrls.notion?.startsWith('https://') && (
-                    <a
-                      href={savedUrls.notion}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block text-[10px] text-primary hover:underline truncate"
-                    >
-                      Open saved page
-                    </a>
-                  )}
-                  {!isNotionReady && (
+                  {!isObsidianReady && (
                     <div className="text-[10px] text-muted-foreground/70">
-                      Enable in Settings &gt; Saving &gt; Notion
+                      Enable in Settings &gt; Saving &gt; Obsidian
                     </div>
                   )}
-                  {saveErrors.notion && (
-                    <div className="text-[10px] text-destructive">{saveErrors.notion}</div>
+                  {saveErrors.obsidian && (
+                    <div className="text-[10px] text-destructive">{saveErrors.obsidian}</div>
                   )}
                 </div>
-              )}
 
-              {/* Save All button */}
-              {readyCount >= 2 && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleSaveAll}
-                    disabled={saveStatus.obsidian === 'saving' || saveStatus.bear === 'saving' || saveStatus.octarine === 'saving' || saveStatus.notion === 'saving'}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    Save All
-                  </button>
+                {/* Bear */}
+                <div className="border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${isBearReady ? "bg-success" : "bg-muted-foreground/30"}`}
+                      />
+                      <span className="text-sm font-medium">Bear</span>
+                    </div>
+                    {isBearReady ? (
+                      <button
+                        onClick={() => handleSaveToNotes("bear")}
+                        disabled={saveStatus.bear === "saving"}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                          saveStatus.bear === "success"
+                            ? "bg-success/15 text-success"
+                            : saveStatus.bear === "error"
+                              ? "bg-destructive/15 text-destructive"
+                              : saveStatus.bear === "saving"
+                                ? "bg-muted text-muted-foreground opacity-50"
+                                : "bg-primary text-primary-foreground hover:opacity-90"
+                        }`}
+                      >
+                        {saveStatus.bear === "saving"
+                          ? "Saving..."
+                          : saveStatus.bear === "success"
+                            ? "Saved"
+                            : saveStatus.bear === "error"
+                              ? "Failed"
+                              : "Save"}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not configured</span>
+                    )}
+                  </div>
+                  {!isBearReady && (
+                    <div className="text-[10px] text-muted-foreground/70">
+                      Enable in Settings &gt; Saving &gt; Bear
+                    </div>
+                  )}
+                  {saveErrors.bear && (
+                    <div className="text-[10px] text-destructive">{saveErrors.bear}</div>
+                  )}
                 </div>
-              )}
-            </div>
-          ) : (
-            <pre className="bg-muted rounded-lg p-4 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap">
-              {annotationsOutput}
-            </pre>
-          )}
-        </div>
+
+                {/* Octarine */}
+                <div className="border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${isOctarineReady ? "bg-success" : "bg-muted-foreground/30"}`}
+                      />
+                      <span className="text-sm font-medium">Octarine</span>
+                    </div>
+                    {isOctarineReady ? (
+                      <button
+                        onClick={() => handleSaveToNotes("octarine")}
+                        disabled={saveStatus.octarine === "saving"}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                          saveStatus.octarine === "success"
+                            ? "bg-success/15 text-success"
+                            : saveStatus.octarine === "error"
+                              ? "bg-destructive/15 text-destructive"
+                              : saveStatus.octarine === "saving"
+                                ? "bg-muted text-muted-foreground opacity-50"
+                                : "bg-primary text-primary-foreground hover:opacity-90"
+                        }`}
+                      >
+                        {saveStatus.octarine === "saving"
+                          ? "Saving..."
+                          : saveStatus.octarine === "success"
+                            ? "Saved"
+                            : saveStatus.octarine === "error"
+                              ? "Failed"
+                              : "Save"}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not configured</span>
+                    )}
+                  </div>
+                  {isOctarineReady && (
+                    <div className="text-[10px] text-muted-foreground/70">
+                      {octarineSettings.workspace} / {octarineSettings.folder || "plannotator"}/
+                    </div>
+                  )}
+                  {!isOctarineReady && (
+                    <div className="text-[10px] text-muted-foreground/70">
+                      Enable in Settings &gt; Saving &gt; Octarine
+                    </div>
+                  )}
+                  {saveErrors.octarine && (
+                    <div className="text-[10px] text-destructive">{saveErrors.octarine}</div>
+                  )}
+                </div>
+
+                {/* Notion */}
+                {notionAvailable && (
+                  <div className="border border-border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full ${isNotionReady ? "bg-success" : "bg-muted-foreground/30"}`}
+                        />
+                        <span className="text-sm font-medium">Notion</span>
+                      </div>
+                      {isNotionReady ? (
+                        <button
+                          onClick={() => handleSaveToNotes("notion")}
+                          disabled={saveStatus.notion === "saving"}
+                          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                            saveStatus.notion === "success"
+                              ? "bg-success/15 text-success"
+                              : saveStatus.notion === "error"
+                                ? "bg-destructive/15 text-destructive"
+                                : saveStatus.notion === "saving"
+                                  ? "bg-muted text-muted-foreground opacity-50"
+                                  : "bg-primary text-primary-foreground hover:opacity-90"
+                          }`}
+                        >
+                          {saveStatus.notion === "saving"
+                            ? "Saving..."
+                            : saveStatus.notion === "success"
+                              ? "Saved"
+                              : saveStatus.notion === "error"
+                                ? "Failed"
+                                : "Save"}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Not configured</span>
+                      )}
+                    </div>
+                    {isNotionReady && (
+                      <div className="text-[10px] text-muted-foreground/70">
+                        Parent page: {notionParentPageId}
+                      </div>
+                    )}
+                    {savedUrls.notion?.startsWith("https://") && (
+                      <a
+                        href={savedUrls.notion}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-[10px] text-primary hover:underline truncate"
+                      >
+                        Open saved page
+                      </a>
+                    )}
+                    {!isNotionReady && (
+                      <div className="text-[10px] text-muted-foreground/70">
+                        Enable in Settings &gt; Saving &gt; Notion
+                      </div>
+                    )}
+                    {saveErrors.notion && (
+                      <div className="text-[10px] text-destructive">{saveErrors.notion}</div>
+                    )}
+                  </div>
+                )}
+
+                {/* Save All button */}
+                {readyCount >= 2 && (
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleSaveAll}
+                      disabled={
+                        saveStatus.obsidian === "saving" ||
+                        saveStatus.bear === "saving" ||
+                        saveStatus.octarine === "saving" ||
+                        saveStatus.notion === "saving"
+                      }
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      Save All
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <pre className="bg-muted rounded-lg p-4 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap">
+                {annotationsOutput}
+              </pre>
+            )}
+          </div>
         </OverlayScrollArea>
 
         {/* Footer actions - only show for Annotations tab */}
-        {activeTab === 'annotations' && (
+        {activeTab === "annotations" && (
           <div className="p-4 border-t border-border flex justify-end gap-2">
             <button
               onClick={handleCopyAnnotations}
               className="px-3 py-1.5 rounded-md text-xs font-medium bg-muted hover:bg-muted/80 transition-colors"
             >
-              {copied === 'annotations' ? 'Copied!' : 'Copy'}
+              {copied === "annotations" ? "Copied!" : "Copy"}
             </button>
             <button
               onClick={handleDownloadAnnotations}

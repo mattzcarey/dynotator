@@ -1,15 +1,36 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useSyncExternalStore } from "react";
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import { AnnotationType } from "../types";
 import { createPortal } from "react-dom";
 import { useDismissOnOutsideAndEscape } from "../hooks/useDismissOnOutsideAndEscape";
-import { type QuickLabel, getQuickLabels, quickLabelIndexForDigit, THUMBS_UP_LABEL } from "../utils/quickLabels";
+import {
+  type QuickLabel,
+  getQuickLabels,
+  quickLabelIndexForDigit,
+  THUMBS_UP_LABEL,
+} from "../utils/quickLabels";
 import { copyTextToClipboard } from "../utils/clipboard";
-import { copyRichSelection, richCopyOutcomeLabel, type RichCopyOutcome, type RichCopySource } from "../utils/richClipboard";
+import {
+  copyRichSelection,
+  richCopyOutcomeLabel,
+  type RichCopyOutcome,
+  type RichCopySource,
+} from "../utils/richClipboard";
 import { acquireTypeToCommentCapture } from "../shortcuts/plan-review/annotationMode.shortcuts";
 import { FloatingQuickLabelPicker } from "./FloatingQuickLabelPicker";
 import { FloatingSelectionActionsPicker } from "./SelectionActionsDropdown";
-import { buildSelectionActionContext, type SelectionAction, type SelectionActionContext } from "../utils/selectionActions";
-import { HostTitle } from './HostTitle';
+import {
+  buildSelectionActionContext,
+  type SelectionAction,
+  type SelectionActionContext,
+} from "../utils/selectionActions";
+import { HostTitle } from "./HostTitle";
 import { TOUCH_PRIMARY_QUERY } from "../utils/touchSelection";
 import {
   getTouchSelectionToolbar,
@@ -22,14 +43,18 @@ import {
 } from "../utils/touchToolbarPlacement";
 
 function subscribeTouchPrimary(onChange: () => void): () => void {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {};
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
   const mql = window.matchMedia(TOUCH_PRIMARY_QUERY);
-  mql.addEventListener('change', onChange);
-  return () => mql.removeEventListener('change', onChange);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
 }
 
 function isTouchPrimary(): boolean {
-  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(TOUCH_PRIMARY_QUERY).matches;
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia(TOUCH_PRIMARY_QUERY).matches
+  );
 }
 
 /**
@@ -49,7 +74,7 @@ function useTouchToolbar(): boolean {
 const noopSubscribe = () => () => {};
 const alwaysFalse = () => false;
 
-type PositionMode = 'center-above' | 'top-right';
+type PositionMode = "center-above" | "top-right";
 
 const isEditableElement = (node: EventTarget | Element | null): boolean => {
   if (!(node instanceof Element)) return false;
@@ -169,7 +194,13 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
   onMouseEnter,
   onMouseLeave,
 }) => {
-  const [position, setPosition] = useState<{ top: number; left?: number; right?: number; touch?: TouchToolbarPlacement; maxWidth?: number } | null>(null);
+  const [position, setPosition] = useState<{
+    top: number;
+    left?: number;
+    right?: number;
+    touch?: TouchToolbarPlacement;
+    maxWidth?: number;
+  } | null>(null);
   const touchToolbar = useTouchToolbar();
   const [copied, setCopied] = useState(false);
   const [richCopied, setRichCopied] = useState<RichCopyOutcome | false>(false);
@@ -204,15 +235,18 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
     if (richCopyTimeoutRef.current !== null) clearTimeout(richCopyTimeoutRef.current);
     richCopyTimeoutRef.current = null;
   }, [element, getRichCopy]);
-  useEffect(() => () => {
-    if (richCopyTimeoutRef.current !== null) clearTimeout(richCopyTimeoutRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (richCopyTimeoutRef.current !== null) clearTimeout(richCopyTimeoutRef.current);
+    },
+    [],
+  );
 
   const handleCopy = async () => {
     let textToCopy = copyText;
     if (!textToCopy) {
-      const codeEl = element.querySelector('code');
-      textToCopy = codeEl?.textContent || element.textContent || '';
+      const codeEl = element.querySelector("code");
+      textToCopy = codeEl?.textContent || element.textContent || "";
     }
     if (await copyTextToClipboard(textToCopy)) {
       setCopied(true);
@@ -224,7 +258,8 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
     setRichCopied(false);
     const build = getRichCopy;
     if (!build) return;
-    const fallback = copyText || element.querySelector('code')?.textContent || element.textContent || '';
+    const fallback =
+      copyText || element.querySelector("code")?.textContent || element.textContent || "";
     const result = await copyRichSelection(build, fallback);
     const current = richCopySelectionRef.current;
     if (current.element !== element || current.getRichCopy !== build) return;
@@ -273,13 +308,18 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
           insets: readSafeAreaInsets(),
           mode: positionMode,
         });
-        hiddenRef.current = placed.placement === 'hidden';
-        setPosition({ top: placed.top, left: placed.left, touch: placed.placement, maxWidth: placed.maxWidth });
+        hiddenRef.current = placed.placement === "hidden";
+        setPosition({
+          top: placed.top,
+          left: placed.left,
+          touch: placed.placement,
+          maxWidth: placed.maxWidth,
+        });
         return;
       }
 
       hiddenRef.current = false;
-      if (positionMode === 'center-above') {
+      if (positionMode === "center-above") {
         // On screen while the selection is: its first piece may be above the window.
         setPosition({
           top: Math.max(rect.top - 48, 8),
@@ -327,7 +367,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
   });
   useEffect(() => {
     const el = toolbarRef.current;
-    if (!touchToolbar || !hasPosition || !el || typeof ResizeObserver === 'undefined') return;
+    if (!touchToolbar || !hasPosition || !el || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => {
       const last = measuredSizeRef.current;
       const width = el.offsetWidth;
@@ -357,7 +397,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
 
       // Alt+N applies quick label (picker closed). Comment-only surfaces
       // suppress this path: their only label affordance is the 👍 button.
-      const isDigit = (e.code >= 'Digit1' && e.code <= 'Digit9') || e.code === 'Digit0';
+      const isDigit = (e.code >= "Digit1" && e.code <= "Digit9") || e.code === "Digit0";
       if (isDigit && !e.ctrlKey && !e.metaKey && e.altKey) {
         e.preventDefault();
         if (!commentOnly && quickLabelsEnabled) {
@@ -386,7 +426,16 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
       window.removeEventListener("keydown", handleKeyDown);
       releaseCapture();
     };
-  }, [onClose, onRequestComment, onQuickLabel, quickLabels, quickLabelsOpen, selectionActionsOpen, commentOnly, quickLabelsEnabled]);
+  }, [
+    onClose,
+    onRequestComment,
+    onQuickLabel,
+    quickLabels,
+    quickLabelsOpen,
+    selectionActionsOpen,
+    commentOnly,
+    quickLabelsEnabled,
+  ]);
 
   useDismissOnOutsideAndEscape({
     enabled: !quickLabelsOpen && !selectionActionsOpen,
@@ -405,30 +454,30 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
   };
 
   const isCentered = position.left !== undefined && !position.touch;
-  const translateX = isCentered ? ' translateX(-50%)' : '';
+  const translateX = isCentered ? " translateX(-50%)" : "";
 
-  const style: React.CSSProperties & { '--pn-annotation-toolbar-anchor-x'?: string } = {
+  const style: React.CSSProperties & { "--pn-annotation-toolbar-anchor-x"?: string } = {
     top: position.top,
-    '--pn-annotation-toolbar-anchor-x': isCentered ? `${position.left}px` : undefined,
+    "--pn-annotation-toolbar-anchor-x": isCentered ? `${position.left}px` : undefined,
     ...(position.touch
       ? {
           left: position.left,
           maxWidth: position.maxWidth,
           // Its selection is scrolled out of sight: hidden until it is back.
-          ...(position.touch === 'hidden' ? { visibility: 'hidden' as const } : {}),
+          ...(position.touch === "hidden" ? { visibility: "hidden" as const } : {}),
         }
       : isCentered
-      ? { left: position.left, transform: 'translateX(-50%)' }
-      : { right: position.right }),
+        ? { left: position.left, transform: "translateX(-50%)" }
+        : { right: position.right }),
     animation: isExiting
-      ? 'annotation-toolbar-out 0.15s ease-in forwards'
-      : 'annotation-toolbar-in 0.15s ease-out',
+      ? "annotation-toolbar-out 0.15s ease-in forwards"
+      : "annotation-toolbar-in 0.15s ease-out",
   };
 
   return createPortal(
     <div
       ref={toolbarRef}
-      data-pn-annotation-toolbar-centered={isCentered ? 'true' : undefined}
+      data-pn-annotation-toolbar-centered={isCentered ? "true" : undefined}
       // Touch placement (host opt-in, finger pointer): which side of the
       // selection it took. theme.css sizes the buttons for a thumb here.
       data-pn-annotation-toolbar-touch={position.touch}
@@ -458,17 +507,29 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
               <ToolbarButton
                 onClick={handleRichCopy}
                 icon={richCopied ? <CheckIcon /> : <CopyIcon />}
-                label={!richCopied ? "Copy"
-                  : richCopied.copied === 'rich' ? "Copied!"
-                  : richCopyOutcomeLabel(richCopied)}
-                className={richCopied ? "text-success" : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                label={
+                  !richCopied
+                    ? "Copy"
+                    : richCopied.copied === "rich"
+                      ? "Copied!"
+                      : richCopyOutcomeLabel(richCopied)
+                }
+                className={
+                  richCopied
+                    ? "text-success"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }
               />
             ) : (
               <ToolbarButton
                 onClick={handleCopy}
                 icon={copied ? <CheckIcon /> : <CopyIcon />}
                 label={copied ? "Copied!" : "Copy"}
-                className={copied ? "text-success" : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                className={
+                  copied
+                    ? "text-success"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }
               />
             )}
             <div className="w-px h-5 bg-border mx-0.5" />
@@ -491,11 +552,15 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
         {hasSelectionActions && (
           <ToolbarButton
             ref={actionsButtonRef}
-            onClick={() => setShowSelectionActions(prev => !prev)}
+            onClick={() => setShowSelectionActions((prev) => !prev)}
             icon={selectionActionsIcon ?? <WandIcon />}
             label="Actions"
-            className={selectionActionsOpen ? "text-primary bg-primary/10" : "text-primary hover:bg-primary/10"}
-            dataAttributes={{ 'data-selection-actions': 'true' }}
+            className={
+              selectionActionsOpen
+                ? "text-primary bg-primary/10"
+                : "text-primary hover:bg-primary/10"
+            }
+            dataAttributes={{ "data-selection-actions": "true" }}
           />
         )}
         {selectionActionsOpen && actionsButtonRef.current && (
@@ -506,10 +571,8 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
               setShowSelectionActions(false);
               // Read at invoke time, not on every render: a toolbar with no
               // host actions must not walk the element's text at all.
-              const actionText = copyText
-                ?? element.querySelector('code')?.textContent
-                ?? element.textContent
-                ?? '';
+              const actionText =
+                copyText ?? element.querySelector("code")?.textContent ?? element.textContent ?? "";
               action.onSelect(buildSelectionActionContext(element, actionText));
               onClose();
             }}
@@ -521,10 +584,14 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
             {!commentOnly && quickLabelsEnabled && (
               <ToolbarButton
                 ref={zapButtonRef}
-                onClick={() => setShowQuickLabels(prev => !prev)}
+                onClick={() => setShowQuickLabels((prev) => !prev)}
                 icon={<ZapIcon />}
                 label="Quick label"
-                className={showQuickLabels ? "text-amber-500 bg-amber-500/10" : "text-amber-500 hover:bg-amber-500/10"}
+                className={
+                  showQuickLabels
+                    ? "text-amber-500 bg-amber-500/10"
+                    : "text-amber-500 hover:bg-amber-500/10"
+                }
               />
             )}
             <ToolbarButton
@@ -545,44 +612,46 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
             )}
           </>
         )}
-        {onSide && (() => {
-          const pressSide = () => {
-            // Read at press time, as the selection actions read it.
-            const text = copyText ?? element.querySelector('code')?.textContent ?? element.textContent ?? '';
-            onSide(text, buildSelectionActionContext(element, text));
-            onClose();
-          };
-          return (
-            <>
-              <div className="w-px h-5 bg-border mx-0.5" />
-              {sideButton ? (
-                // The host's own drawing (`sideButton`): icon-only, as its neighbours are, named by its tooltip.
-                <ToolbarButton
-                  onClick={pressSide}
-                  icon={sideButton.icon ?? <MessagesSquareIcon />}
-                  label={sideButton.label}
-                  className="text-foreground hover:bg-muted"
-                  dataAttributes={{ 'data-annotation-side': '' }}
-                />
-              ) : (
-                // The word shows, so the name is the word: no tooltip. On a touch
-                // toolbar theme.css gives it the 44px height and the 20px glyph;
-                // its words are a bare text node, never a span (sized there as a
-                // glyph).
-                <button
-                  type="button"
-                  data-pn-touch-target="true"
-                  data-annotation-side=""
-                  onClick={pressSide}
-                  className="flex items-center gap-1.5 h-7 pl-2 pr-2.5 rounded-md text-foreground hover:bg-muted transition-colors text-[12.5px] font-medium whitespace-nowrap"
-                >
-                  <MessagesSquareIcon />
-                  Side
-                </button>
-              )}
-            </>
-          );
-        })()}
+        {onSide &&
+          (() => {
+            const pressSide = () => {
+              // Read at press time, as the selection actions read it.
+              const text =
+                copyText ?? element.querySelector("code")?.textContent ?? element.textContent ?? "";
+              onSide(text, buildSelectionActionContext(element, text));
+              onClose();
+            };
+            return (
+              <>
+                <div className="w-px h-5 bg-border mx-0.5" />
+                {sideButton ? (
+                  // The host's own drawing (`sideButton`): icon-only, as its neighbours are, named by its tooltip.
+                  <ToolbarButton
+                    onClick={pressSide}
+                    icon={sideButton.icon ?? <MessagesSquareIcon />}
+                    label={sideButton.label}
+                    className="text-foreground hover:bg-muted"
+                    dataAttributes={{ "data-annotation-side": "" }}
+                  />
+                ) : (
+                  // The word shows, so the name is the word: no tooltip. On a touch
+                  // toolbar theme.css gives it the 44px height and the 20px glyph;
+                  // its words are a bare text node, never a span (sized there as a
+                  // glyph).
+                  <button
+                    type="button"
+                    data-pn-touch-target="true"
+                    data-annotation-side=""
+                    onClick={pressSide}
+                    className="flex items-center gap-1.5 h-7 pl-2 pr-2.5 rounded-md text-foreground hover:bg-muted transition-colors text-[12.5px] font-medium whitespace-nowrap"
+                  >
+                    <MessagesSquareIcon />
+                    Side
+                  </button>
+                )}
+              </>
+            );
+          })()}
         <div className="w-px h-5 bg-border mx-0.5" />
         <ToolbarButton
           onClick={onClose}
@@ -592,14 +661,23 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
         />
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
 // Icons
 /** Lucide's messages-square (ISC): the Side button's two bubbles. */
 const MessagesSquareIcon = () => (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    className="w-4 h-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" />
   </svg>
@@ -607,7 +685,11 @@ const MessagesSquareIcon = () => (
 
 const CopyIcon = () => (
   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+    />
   </svg>
 );
 
@@ -619,13 +701,21 @@ const CheckIcon = () => (
 
 const TrashIcon = () => (
   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+    />
   </svg>
 );
 
 const CommentIcon = () => (
   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+    />
   </svg>
 );
 
@@ -649,14 +739,17 @@ const CloseIcon = () => (
   </svg>
 );
 
-const ToolbarButton = React.forwardRef<HTMLButtonElement, {
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  className: string;
-  /** Extra DOM attributes (e.g. data-selection-actions). Absent adds nothing. */
-  dataAttributes?: Record<string, string>;
-}>(({ onClick, icon, label, className, dataAttributes }, ref) => (
+const ToolbarButton = React.forwardRef<
+  HTMLButtonElement,
+  {
+    onClick: () => void;
+    icon: React.ReactNode;
+    label: string;
+    className: string;
+    /** Extra DOM attributes (e.g. data-selection-actions). Absent adds nothing. */
+    dataAttributes?: Record<string, string>;
+  }
+>(({ onClick, icon, label, className, dataAttributes }, ref) => (
   // The label is the button's only name: as a component tooltip (HostTitle) it also becomes its aria-label.
   <HostTitle title={label} name>
     <button

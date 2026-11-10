@@ -11,13 +11,13 @@
  * Nothing here touches the DOM, fetches, or persists. A composer with no
  * `mentionSource` never calls any of it.
  */
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 /** One pickable identity, supplied by the host. */
 export interface MentionPerson {
   /** Opaque host id (a user id, a credential id). Reported back verbatim. */
   readonly id: string;
-  readonly kind: 'user' | 'agent';
+  readonly kind: "user" | "agent";
   readonly label: string;
   /** Right-aligned hint shown after the label (an email, "Agent"), or null. */
   readonly detail: string | null;
@@ -74,7 +74,7 @@ export interface MentionSource {
    * as before (an agent is not taggable in a host's comments by default). A
    * host whose agents can be tagged (the Inbox) passes `['agent']` or both.
    */
-  readonly kinds?: readonly MentionPerson['kind'][];
+  readonly kinds?: readonly MentionPerson["kind"][];
   /**
    * Whether a query also matches the `detail` line. Absent → true, as
    * before. A host whose detail is incidental (the Inbox's "billing-api ·
@@ -109,8 +109,8 @@ export const MENTION_QUERY_RE = /@[\w .-]*$/;
  */
 export function sanitizeMentionLabel(label: string): string {
   return label
-    .replace(/[[\]|\n\r]/gu, ' ')
-    .replace(/\s+/gu, ' ')
+    .replace(/[[\]|\n\r]/gu, " ")
+    .replace(/\s+/gu, " ")
     .trim();
 }
 
@@ -150,7 +150,7 @@ export function mentionMatches(
   people: readonly MentionPerson[],
   trigger: MentionTrigger,
   alreadyTagged: ReadonlySet<string>,
-  kinds: readonly MentionPerson['kind'][] = ['user'],
+  kinds: readonly MentionPerson["kind"][] = ["user"],
   matchDetail = true,
 ): readonly MentionPerson[] {
   const seen = new Set<string>();
@@ -158,10 +158,10 @@ export function mentionMatches(
     if (!kinds.includes(person.kind)) return false;
     if (alreadyTagged.has(person.id) || seen.has(person.id)) return false;
     seen.add(person.id);
-    if (trigger.query === '') return true;
+    if (trigger.query === "") return true;
     return (
       person.label.toLowerCase().includes(trigger.query) ||
-      (matchDetail && (person.detail ?? '').toLowerCase().includes(trigger.query))
+      (matchDetail && (person.detail ?? "").toLowerCase().includes(trigger.query))
     );
   });
 }
@@ -201,7 +201,10 @@ export function survivingMentions(
   // token ("@Fix" in "@Fix login" when "Fix login" is tagged too). Anything
   // else still counts as before, whatever follows it ("@Ann2", "@Annさん").
   const standsAt = (token: string, at: number) =>
-    !tokens.some((other) => other.length > token.length && other.startsWith(token) && text.startsWith(other, at));
+    !tokens.some(
+      (other) =>
+        other.length > token.length && other.startsWith(token) && text.startsWith(other, at),
+    );
   return tagged.filter((_, index) => {
     const token = tokens[index]!;
     for (let at = text.indexOf(token); at !== -1; at = text.indexOf(token, at + 1)) {

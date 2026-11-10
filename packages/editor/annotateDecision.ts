@@ -1,4 +1,8 @@
-import type { DecisionActionId, DecisionMenuItem, DecisionPrimary } from "@dynotator/ui/utils/decisionSpec";
+import type {
+  DecisionActionId,
+  DecisionMenuItem,
+  DecisionPrimary,
+} from "@dynotator/ui/utils/decisionSpec";
 import type { CompactPlanAction } from "@dynotator/ui/components/PlanHeaderMenu";
 
 /**

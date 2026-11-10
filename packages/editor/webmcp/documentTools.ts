@@ -15,10 +15,10 @@
  * unit-testable with a fake adapter and no DOM, and a host can build the
  * same adapter over its own document state.
  */
-import { AnnotationType, type Annotation, type Block, type ImageRegion } from '@dynotator/ui/types';
-import { regionOf } from '@dynotator/ui/components/ImageRegions';
-import { generateId } from '@dynotator/ui/utils/generateId';
-import { collectQuestionAnswers } from '@dynotator/ui/utils/questionAnswers';
+import { AnnotationType, type Annotation, type Block, type ImageRegion } from "@dynotator/ui/types";
+import { regionOf } from "@dynotator/ui/components/ImageRegions";
+import { generateId } from "@dynotator/ui/utils/generateId";
+import { collectQuestionAnswers } from "@dynotator/ui/utils/questionAnswers";
 import {
   canonicalQuestionAnswer,
   indexQuestionBlocks,
@@ -26,7 +26,7 @@ import {
   questionStatus,
   type QuestionKind,
   type QuestionStatus,
-} from '@dynotator/shared/question-block';
+} from "@dynotator/shared/question-block";
 import {
   AnnotationChangeTracker,
   BROWSER_AGENT_SOURCE,
@@ -43,7 +43,7 @@ import {
   type ToolError,
   type ToolSpec,
   type ToolsetHooks,
-} from '@dynotator/ui/webmcp';
+} from "@dynotator/ui/webmcp";
 import {
   ANNOTATION_TEXT_MAX,
   DEFAULT_MAX_CHARS,
@@ -58,15 +58,22 @@ import {
   sectionSlice,
   windowText,
   type OutlineEntry,
-} from './documentText';
+} from "./documentText";
 
 // ---------------------------------------------------------------------------
 // Adapter contract
 // ---------------------------------------------------------------------------
 
-export type SessionMode = 'plan' | 'annotate' | 'annotate-last' | 'annotate-folder' | 'annotate-app' | 'archive' | 'shared';
+export type SessionMode =
+  | "plan"
+  | "annotate"
+  | "annotate-last"
+  | "annotate-folder"
+  | "annotate-app"
+  | "archive"
+  | "shared";
 /** `done`: the human finished with nothing to send (annotate Done). */
-export type SessionDecision = 'pending' | 'approved' | 'feedback-sent' | 'done' | 'exited';
+export type SessionDecision = "pending" | "approved" | "feedback-sent" | "done" | "exited";
 
 export interface DocumentSessionView {
   mode: SessionMode;
@@ -131,7 +138,7 @@ export interface DocumentToolAdapter {
 
 export interface AnnotationView {
   id: string;
-  kind: 'comment' | 'deletion' | 'note';
+  kind: "comment" | "deletion" | "note";
   author: string | null;
   source: string;
   createdAt: string;
@@ -182,7 +189,7 @@ export interface QuestionView {
   orphaned?: true;
 }
 
-export type AnchoredBy = 'quote' | 'section' | 'reply' | 'document';
+export type AnchoredBy = "quote" | "section" | "reply" | "document";
 
 export interface AddCommentItem {
   text: string;
@@ -194,12 +201,35 @@ export interface AddCommentItem {
 }
 
 export type AddCommentResult =
-  | { ok: true; index: number; annotation: AnnotationView; anchoredBy: AnchoredBy; deduplicated?: boolean; verified?: boolean }
-  | { ok: false; index: number; error: { code: 'not_found' | 'ambiguous' | 'forbidden' | 'invalid_input' | 'not_available' | 'conflict'; message: string; hint?: string; candidates?: string[] } };
+  | {
+      ok: true;
+      index: number;
+      annotation: AnnotationView;
+      anchoredBy: AnchoredBy;
+      deduplicated?: boolean;
+      verified?: boolean;
+    }
+  | {
+      ok: false;
+      index: number;
+      error: {
+        code:
+          | "not_found"
+          | "ambiguous"
+          | "forbidden"
+          | "invalid_input"
+          | "not_available"
+          | "conflict";
+        message: string;
+        hint?: string;
+        candidates?: string[];
+      };
+    };
 
-const NOT_OWNED_HINT = 'Only comments you created in this session can be changed; reply with add_comments { inReplyTo } instead.';
+const NOT_OWNED_HINT =
+  "Only comments you created in this session can be changed; reply with add_comments { inReplyTo } instead.";
 
-const OPEN_FIRST_HINT = 'Call reveal { path } to open that document, then comment on it.';
+const OPEN_FIRST_HINT = "Call reveal { path } to open that document, then comment on it.";
 
 export const NUDGE_USER_MAX_CHARS = 280;
 export const MAX_COMMENTS_PER_CALL = 20;
@@ -218,7 +248,10 @@ export class DocumentToolState {
   /** Per-sibling read watermark. */
   readonly siblingRead = new Map<string, number>();
   /** requestId -> what it created (idempotency). Bounded: see rememberRequest. */
-  readonly requests = new Map<string, { id: string; path: string | null; anchoredBy: AnchoredBy }>();
+  readonly requests = new Map<
+    string,
+    { id: string; path: string | null; anchoredBy: AnchoredBy }
+  >();
 
   /**
    * Record a requestId, forgetting the oldest past MAX_REMEMBERED_REQUESTS
@@ -226,7 +259,10 @@ export class DocumentToolState {
    * a bounded window is the whole contract; an unbounded map grew with every
    * add_comments call for the life of the tab.
    */
-  rememberRequest(rid: string, created: { id: string; path: string | null; anchoredBy: AnchoredBy }): void {
+  rememberRequest(
+    rid: string,
+    created: { id: string; path: string | null; anchoredBy: AnchoredBy },
+  ): void {
     this.requests.delete(rid);
     this.requests.set(rid, created);
     while (this.requests.size > MAX_REMEMBERED_REQUESTS) {
@@ -239,7 +275,8 @@ export class DocumentToolState {
   lastOpenPath: string | null = null;
   responses = 0;
   /** Per-call scratch consumed by buildNudges. */
-  current: { since?: number; truncated?: { nextOffset: number; args: Record<string, unknown> } } = {};
+  current: { since?: number; truncated?: { nextOffset: number; args: Record<string, unknown> } } =
+    {};
 
   constructor(readonly now: () => number = () => Date.now()) {
     this.main = new AnnotationChangeTracker(now);
@@ -256,17 +293,20 @@ export function createDocumentToolState(now?: () => number): DocumentToolState {
 // ---------------------------------------------------------------------------
 
 function isoTime(ms: number | undefined, fallback: number): string {
-  const value = typeof ms === 'number' && Number.isFinite(ms) ? ms : fallback;
+  const value = typeof ms === "number" && Number.isFinite(ms) ? ms : fallback;
   return new Date(value).toISOString();
 }
 
-function kindOf(annotation: Annotation): AnnotationView['kind'] {
-  if (annotation.type === AnnotationType.DELETION) return 'deletion';
-  if (annotation.type === AnnotationType.GLOBAL_COMMENT) return 'note';
-  return 'comment';
+function kindOf(annotation: Annotation): AnnotationView["kind"] {
+  if (annotation.type === AnnotationType.DELETION) return "deletion";
+  if (annotation.type === AnnotationType.GLOBAL_COMMENT) return "note";
+  return "comment";
 }
 
-function sortByDocumentOrder(blocks: readonly Block[], annotations: readonly Annotation[]): Annotation[] {
+function sortByDocumentOrder(
+  blocks: readonly Block[],
+  annotations: readonly Annotation[],
+): Annotation[] {
   const order = new Map(blocks.map((b, i) => [b.id, i] as const));
   return [...annotations].sort((a, b) => {
     const ia = a.blockId ? (order.get(a.blockId) ?? Number.MAX_SAFE_INTEGER) : -1;
@@ -293,13 +333,16 @@ function viewOf(
     id: annotation.id,
     kind: kindOf(annotation),
     author: annotation.author ?? null,
-    source: annotation.source ?? 'human',
+    source: annotation.source ?? "human",
     createdAt: isoTime(annotation.createdA, now),
     seq: seq ?? null,
     isNew: tracker.isNew(annotation.id, since),
     section: section ? { id: section.id, title: section.title } : null,
-    quote: annotation.type === AnnotationType.GLOBAL_COMMENT ? '' : (annotation.originalText ?? ''),
-    context: annotation.type === AnnotationType.GLOBAL_COMMENT ? '' : contextForAnnotation(blocks, annotation),
+    quote: annotation.type === AnnotationType.GLOBAL_COMMENT ? "" : (annotation.originalText ?? ""),
+    context:
+      annotation.type === AnnotationType.GLOBAL_COMMENT
+        ? ""
+        : contextForAnnotation(blocks, annotation),
     text: capped.text,
     inReplyTo: annotation.inReplyTo ?? null,
     replies: all.filter((a) => a.inReplyTo === annotation.id).map((a) => a.id),
@@ -316,13 +359,17 @@ function viewOf(
 }
 
 /** The document's questions and answers, in document order, then orphaned answers. */
-export function questionViews(blocks: readonly Block[], annotations: readonly Annotation[], outline: readonly OutlineEntry[]): QuestionView[] {
+export function questionViews(
+  blocks: readonly Block[],
+  annotations: readonly Annotation[],
+  outline: readonly OutlineEntry[],
+): QuestionView[] {
   // The lines plan review shows as plain text stay in each question's context here too.
   const indexed = indexQuestionBlocks(blocks, { contractLines: false });
   const answers = collectQuestionAnswers(annotations);
   const seen = new Set<string>();
   const questionsByKey = new Map(indexed.map(({ question }) => [question.key, question]));
-  const answerView = (key: string): QuestionView['answer'] | undefined => {
+  const answerView = (key: string): QuestionView["answer"] | undefined => {
     const stored = answers.get(key);
     if (!stored) return undefined;
     // An answer quoting an older label of a choice reads as that choice.
@@ -382,7 +429,11 @@ function surfaceOf(session: DocumentSessionView): DocumentSurface {
   return session.surface;
 }
 
-function trackerFor(state: DocumentToolState, path: string | null, openPath: string | null): AnnotationChangeTracker {
+function trackerFor(
+  state: DocumentToolState,
+  path: string | null,
+  openPath: string | null,
+): AnnotationChangeTracker {
   if (path === null || path === openPath) return state.main;
   return state.siblings.forPath(path);
 }
@@ -395,7 +446,10 @@ export function syncTrackers(adapter: DocumentToolAdapter, state: DocumentToolSt
   }
 }
 
-function otherDocumentActivity(adapter: DocumentToolAdapter, state: DocumentToolState): OtherDocumentActivity[] {
+function otherDocumentActivity(
+  adapter: DocumentToolAdapter,
+  state: DocumentToolState,
+): OtherDocumentActivity[] {
   const open = adapter.getDocument().path;
   return adapter
     .getSiblingDocuments()
@@ -429,7 +483,11 @@ export interface DocumentToolsetOptions {
 // Hooks (nudges + watermark) shared by every tool
 // ---------------------------------------------------------------------------
 
-export function buildDocumentHooks(adapter: DocumentToolAdapter, state: DocumentToolState, toolName: (bare: string) => string): ToolsetHooks {
+export function buildDocumentHooks(
+  adapter: DocumentToolAdapter,
+  state: DocumentToolState,
+  toolName: (bare: string) => string,
+): ToolsetHooks {
   return {
     buildNudges: () => {
       syncTrackers(adapter, state);
@@ -443,7 +501,7 @@ export function buildDocumentHooks(adapter: DocumentToolAdapter, state: Document
         pageUrl: session.pageUrl,
         lastPageUrl: state.lastPageUrl,
         annotationCount: document.annotations.length,
-        decided: session.decision !== 'pending',
+        decided: session.decision !== "pending",
         firstResponse: state.responses === 0,
         annotations: document.annotations,
         otherDocuments: otherDocumentActivity(adapter, state),
@@ -474,20 +532,30 @@ type ReadInput = {
   offset?: number;
   maxChars?: number;
   since?: string | number;
-  include?: Array<'text' | 'annotations' | 'outline' | 'questions'>;
+  include?: Array<"text" | "annotations" | "outline" | "questions">;
 };
 
 const PATH_PARAM = {
-  type: 'string',
+  type: "string",
   maxLength: 4096,
-  description: 'Folder or linked-doc sessions only: a sibling document path from otherDocuments or list_documents. Default: the open document.',
+  description:
+    "Folder or linked-doc sessions only: a sibling document path from otherDocuments or list_documents. Default: the open document.",
 };
 
-export function buildDocumentTools(adapter: DocumentToolAdapter, state: DocumentToolState, options: DocumentToolsetOptions): ToolSpec<never, unknown>[] {
+export function buildDocumentTools(
+  adapter: DocumentToolAdapter,
+  state: DocumentToolState,
+  options: DocumentToolsetOptions,
+): ToolSpec<never, unknown>[] {
   const { toolName } = options;
   const now = state.now;
 
-  type Target = { snapshot: DocumentSnapshot; path: string | null; tracker: AnnotationChangeTracker; isOpen: boolean };
+  type Target = {
+    snapshot: DocumentSnapshot;
+    path: string | null;
+    tracker: AnnotationChangeTracker;
+    isOpen: boolean;
+  };
   type Missing = { ok: false; error: ToolError };
   const resolveTarget = async (path: string | undefined): Promise<Target | Missing> => {
     const open = adapter.getDocument();
@@ -496,7 +564,14 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
     }
     const sibling = await adapter.readDocument(path);
     if (!sibling) {
-      return { ok: false, error: { code: 'not_found', message: 'no document at that path in this session', hint: 'Use a path from otherDocuments or list_documents.' } };
+      return {
+        ok: false,
+        error: {
+          code: "not_found",
+          message: "no document at that path in this session",
+          hint: "Use a path from otherDocuments or list_documents.",
+        },
+      };
     }
     const tracker = state.siblings.forPath(path);
     tracker.observe(sibling.annotations);
@@ -504,77 +579,139 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
   };
 
   const readDocument = defineTool<ReadInput, unknown>({
-    name: 'read_document',
-    title: 'Read the document under review',
+    name: "read_document",
+    title: "Read the document under review",
     description:
-      'Everything about the page in one call: the session (mode, editing, whether the human decided), the document text, its outline with per-section comment counts, every comment with its quote, context and whether it is new since your last read, the document questions with the human answers (read-only), other active documents, and nudges. Call it with no arguments first. Do not use it just to look up a comment id a previous response gave you.',
+      "Everything about the page in one call: the session (mode, editing, whether the human decided), the document text, its outline with per-section comment counts, every comment with its quote, context and whether it is new since your last read, the document questions with the human answers (read-only), other active documents, and nudges. Call it with no arguments first. Do not use it just to look up a comment id a previous response gave you.",
     inputSchema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
       properties: {
         path: PATH_PARAM,
-        section: { type: 'string', maxLength: 512, description: 'Heading id from outline; returns only that section text (annotations stay complete).' },
-        offset: { type: 'integer', minimum: 0, description: 'Character offset into the (section) text for large documents. Default 0.' },
-        maxChars: { type: 'integer', minimum: 200, maximum: 200000, description: 'Text budget; cut at a block boundary, nextOffset continues. Default 16000.' },
-        since: { type: 'string', maxLength: 64, description: 'A cursor from an earlier response; marks comments newer than it as isNew instead of the per-tab watermark.' },
-        include: { type: 'array', maxItems: 4, items: { type: 'string', enum: ['text', 'annotations', 'outline', 'questions'] }, description: 'Subset to return. Default: all. questions appears only when the document has question blocks or answers.' },
+        section: {
+          type: "string",
+          maxLength: 512,
+          description:
+            "Heading id from outline; returns only that section text (annotations stay complete).",
+        },
+        offset: {
+          type: "integer",
+          minimum: 0,
+          description: "Character offset into the (section) text for large documents. Default 0.",
+        },
+        maxChars: {
+          type: "integer",
+          minimum: 200,
+          maximum: 200000,
+          description: "Text budget; cut at a block boundary, nextOffset continues. Default 16000.",
+        },
+        since: {
+          type: "string",
+          maxLength: 64,
+          description:
+            "A cursor from an earlier response; marks comments newer than it as isNew instead of the per-tab watermark.",
+        },
+        include: {
+          type: "array",
+          maxItems: 4,
+          items: { type: "string", enum: ["text", "annotations", "outline", "questions"] },
+          description:
+            "Subset to return. Default: all. questions appears only when the document has question blocks or answers.",
+        },
       },
     },
     annotations: { readOnlyHint: true, untrustedContentHint: true },
     execute: async (input) => {
       syncTrackers(adapter, state);
       const target = await resolveTarget(input.path);
-      if ('ok' in target) return target;
+      if ("ok" in target) return target;
       const { snapshot, tracker, isOpen } = target;
       const session = adapter.getSession();
-      const include = new Set(input.include && input.include.length > 0 ? input.include : ['text', 'annotations', 'outline', 'questions']);
+      const include = new Set(
+        input.include && input.include.length > 0
+          ? input.include
+          : ["text", "annotations", "outline", "questions"],
+      );
       const explicitSince = AnnotationChangeTracker.parseSince(input.since);
-      const since = explicitSince ?? (isOpen ? state.main.watermark : (state.siblingRead.get(target.path ?? '') ?? 0));
+      const since =
+        explicitSince ??
+        (isOpen ? state.main.watermark : (state.siblingRead.get(target.path ?? "") ?? 0));
       if (isOpen && explicitSince !== null) state.current.since = explicitSince;
 
       const outline = buildOutline(snapshot.blocks, snapshot.annotations);
       let text: string | null = null;
-      let textRange: { offset: number; length: number; total: number; truncated: boolean; nextOffset?: number } | null = null;
-      if (include.has('text') && snapshot.text !== null) {
+      let textRange: {
+        offset: number;
+        length: number;
+        total: number;
+        truncated: boolean;
+        nextOffset?: number;
+      } | null = null;
+      if (include.has("text") && snapshot.text !== null) {
         let source = snapshot.text;
         const sectionArgs: Record<string, unknown> = {};
         if (input.section) {
           const section = findSection(outline, input.section);
-          if (!section) return fail('not_found', 'no section with that id', { hint: 'Use an id from outline.' });
+          if (!section)
+            return fail("not_found", "no section with that id", {
+              hint: "Use an id from outline.",
+            });
           source = sectionSlice(snapshot.text, snapshot.blocks, section).text;
           sectionArgs.section = section.id;
         }
         if (input.path && !isOpen) sectionArgs.path = input.path;
-        const window = windowText(source, input.section ? [] : snapshot.blocks, input.offset ?? 0, input.maxChars ?? DEFAULT_MAX_CHARS);
+        const window = windowText(
+          source,
+          input.section ? [] : snapshot.blocks,
+          input.offset ?? 0,
+          input.maxChars ?? DEFAULT_MAX_CHARS,
+        );
         text = window.text;
-        textRange = { offset: window.offset, length: window.length, total: window.total, truncated: window.truncated };
+        textRange = {
+          offset: window.offset,
+          length: window.length,
+          total: window.total,
+          truncated: window.truncated,
+        };
         if (window.truncated && window.nextOffset !== undefined) {
           textRange.nextOffset = window.nextOffset;
-          state.current.truncated = { nextOffset: window.nextOffset, args: { ...sectionArgs, ...(input.maxChars ? { maxChars: input.maxChars } : {}) } };
+          state.current.truncated = {
+            nextOffset: window.nextOffset,
+            args: { ...sectionArgs, ...(input.maxChars ? { maxChars: input.maxChars } : {}) },
+          };
         }
       }
 
-      const pageFilter = session.surface === 'live-app' && session.pageUrl;
+      const pageFilter = session.surface === "live-app" && session.pageUrl;
       const listed = sortByDocumentOrder(snapshot.blocks, snapshot.annotations)
         .filter((a) => !pageFilter || !a.pageUrl || a.pageUrl === session.pageUrl)
         .slice(0, MAX_ANNOTATIONS_IN_RESPONSE);
-      const annotations = include.has('annotations')
-        ? listed.map((a) => viewOf(a, snapshot.annotations, snapshot.blocks, outline, tracker, since, now()))
+      const annotations = include.has("annotations")
+        ? listed.map((a) =>
+            viewOf(a, snapshot.annotations, snapshot.blocks, outline, tracker, since, now()),
+          )
         : undefined;
 
       // Read-only view of the question blocks and the human's answers. A
       // document without questions gets no `questions` key at all.
-      const questions = include.has('questions') ? questionViews(snapshot.blocks, snapshot.annotations, outline) : undefined;
+      const questions = include.has("questions")
+        ? questionViews(snapshot.blocks, snapshot.annotations, outline)
+        : undefined;
 
       const agentComments = snapshot.annotations.filter(isAgentAnnotation).length;
-      const others = otherDocumentActivity(adapter, state).slice(0, MAX_OTHER_DOCUMENTS).map((doc) => ({
-        path: doc.path,
-        open: doc.open,
-        annotations: doc.annotations,
-        newSinceLastRead: doc.newSinceLastRead,
-        lastActivity: doc.lastActivity === null || doc.lastActivity === undefined ? null : new Date(doc.lastActivity).toISOString(),
-        composerOpen: doc.composerOpen,
-      }));
+      const others = otherDocumentActivity(adapter, state)
+        .slice(0, MAX_OTHER_DOCUMENTS)
+        .map((doc) => ({
+          path: doc.path,
+          open: doc.open,
+          annotations: doc.annotations,
+          newSinceLastRead: doc.newSinceLastRead,
+          lastActivity:
+            doc.lastActivity === null || doc.lastActivity === undefined
+              ? null
+              : new Date(doc.lastActivity).toISOString(),
+          composerOpen: doc.composerOpen,
+        }));
 
       if (!isOpen && target.path) state.siblingRead.set(target.path, tracker.seq);
 
@@ -593,11 +730,13 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
           ...(session.pageUrl ? { pageUrl: session.pageUrl } : {}),
           agentComments,
           humanComments: snapshot.annotations.length - agentComments,
-          pendingUnsent: session.decision === 'pending' ? snapshot.annotations.length : 0,
+          pendingUnsent: session.decision === "pending" ? snapshot.annotations.length : 0,
         },
         document: { path: snapshot.path, textAvailable: snapshot.text !== null },
-        ...(include.has('text') ? { text, textRange } : {}),
-        ...(include.has('outline') ? { outline: outline.map(({ blockId: _blockId, ...entry }) => entry) } : {}),
+        ...(include.has("text") ? { text, textRange } : {}),
+        ...(include.has("outline")
+          ? { outline: outline.map(({ blockId: _blockId, ...entry }) => entry) }
+          : {}),
         ...(annotations ? { annotations } : {}),
         ...(questions && questions.length > 0 ? { questions } : {}),
         otherDocuments: others,
@@ -607,31 +746,57 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
   });
 
   const addComments = defineTool<{ comments: AddCommentItem[] }, unknown>({
-    name: 'add_comments',
-    title: 'Add comments',
+    name: "add_comments",
+    title: "Add comments",
     description:
       'Leave one or more comments in one call: on an exact quote from the text, on a section by its outline id, as a reply to an existing comment (inReplyTo inherits its anchor), or as a document-level note with no anchor (also how you say "looks ready to me"). Returns each created comment with its resolved anchor and context, so no read-back is needed. Do not use it to approve, request changes or submit: the human does that from the page. It cannot edit the human\'s comments.',
     inputSchema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
-      required: ['comments'],
+      required: ["comments"],
       properties: {
         comments: {
-          type: 'array',
+          type: "array",
           minItems: 1,
           maxItems: MAX_COMMENTS_PER_CALL,
-          description: 'Comments to create, in order. Each result carries the matching index.',
+          description: "Comments to create, in order. Each result carries the matching index.",
           items: {
-            type: 'object',
+            type: "object",
             additionalProperties: false,
-            required: ['text'],
+            required: ["text"],
             properties: {
-              text: { type: 'string', minLength: 1, maxLength: 20000, description: 'The comment. Markdown is rendered the same way as in the panel.' },
-              quote: { type: 'string', minLength: 1, maxLength: 4000, description: 'Exact text to anchor on; resolved by text search, so copy it from the document verbatim.' },
-              section: { type: 'string', maxLength: 512, description: 'Outline id. With quote: disambiguates. Alone: anchors on the heading.' },
-              inReplyTo: { type: 'string', maxLength: 128, description: 'Comment id to reply to; the reply inherits that anchor and threads under it.' },
+              text: {
+                type: "string",
+                minLength: 1,
+                maxLength: 20000,
+                description: "The comment. Markdown is rendered the same way as in the panel.",
+              },
+              quote: {
+                type: "string",
+                minLength: 1,
+                maxLength: 4000,
+                description:
+                  "Exact text to anchor on; resolved by text search, so copy it from the document verbatim.",
+              },
+              section: {
+                type: "string",
+                maxLength: 512,
+                description:
+                  "Outline id. With quote: disambiguates. Alone: anchors on the heading.",
+              },
+              inReplyTo: {
+                type: "string",
+                maxLength: 128,
+                description:
+                  "Comment id to reply to; the reply inherits that anchor and threads under it.",
+              },
               path: PATH_PARAM,
-              requestId: { type: 'string', maxLength: 128, description: 'Idempotency key: a repeat returns the existing comment with deduplicated: true.' },
+              requestId: {
+                type: "string",
+                maxLength: 128,
+                description:
+                  "Idempotency key: a repeat returns the existing comment with deduplicated: true.",
+              },
             },
           },
         },
@@ -640,8 +805,8 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
     execute: async (input) => {
       syncTrackers(adapter, state);
       const session = adapter.getSession();
-      if (session.readOnly || session.decision !== 'pending') {
-        return fail('not_available', 'this session no longer accepts comments');
+      if (session.readOnly || session.decision !== "pending") {
+        return fail("not_available", "this session no longer accepts comments");
       }
       const results: AddCommentResult[] = [];
       let created = 0;
@@ -651,14 +816,25 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
         if (rid && state.requests.has(rid)) {
           const seen = state.requests.get(rid)!;
           const targetForSeen = await resolveTarget(seen.path ?? undefined);
-          if (!('ok' in targetForSeen)) {
+          if (!("ok" in targetForSeen)) {
             const existing = targetForSeen.snapshot.annotations.find((a) => a.id === seen.id);
             if (existing) {
-              const outline = buildOutline(targetForSeen.snapshot.blocks, targetForSeen.snapshot.annotations);
+              const outline = buildOutline(
+                targetForSeen.snapshot.blocks,
+                targetForSeen.snapshot.annotations,
+              );
               results.push({
                 ok: true,
                 index,
-                annotation: viewOf(existing, targetForSeen.snapshot.annotations, targetForSeen.snapshot.blocks, outline, targetForSeen.tracker, Number.MAX_SAFE_INTEGER, now()),
+                annotation: viewOf(
+                  existing,
+                  targetForSeen.snapshot.annotations,
+                  targetForSeen.snapshot.blocks,
+                  outline,
+                  targetForSeen.tracker,
+                  Number.MAX_SAFE_INTEGER,
+                  now(),
+                ),
                 anchoredBy: seen.anchoredBy,
                 deduplicated: true,
               });
@@ -671,25 +847,33 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
           results.push({
             ok: false,
             index,
-            error: { code: 'conflict', message: 'the comment this requestId created was removed since; not re-creating it', hint: 'Treat the removal as resolved, or add a new comment with a new requestId.' },
+            error: {
+              code: "conflict",
+              message: "the comment this requestId created was removed since; not re-creating it",
+              hint: "Treat the removal as resolved, or add a new comment with a new requestId.",
+            },
           });
           continue;
         }
         const target = await resolveTarget(item.path);
-        if ('ok' in target) {
-          results.push({ ok: false, index, error: { code: 'not_found', message: target.error.message } });
+        if ("ok" in target) {
+          results.push({
+            ok: false,
+            index,
+            error: { code: "not_found", message: target.error.message },
+          });
           continue;
         }
         const { snapshot, path, tracker } = target;
         const outline = buildOutline(snapshot.blocks, snapshot.annotations);
         const base: Annotation = {
-          id: generateId('ann'),
-          blockId: '',
+          id: generateId("ann"),
+          blockId: "",
           startOffset: 0,
           endOffset: 0,
           type: AnnotationType.GLOBAL_COMMENT,
           text: item.text,
-          originalText: '',
+          originalText: "",
           createdA: now(),
           // Author and source both name the agent, exactly like an
           // external-annotation comment names its tool: the panel then shows
@@ -703,7 +887,14 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
         if (item.inReplyTo) {
           const parent = snapshot.annotations.find((a) => a.id === item.inReplyTo);
           if (!parent) {
-            results.push({ ok: false, index, error: { code: 'not_found', message: 'inReplyTo does not name a comment in this document' } });
+            results.push({
+              ok: false,
+              index,
+              error: {
+                code: "not_found",
+                message: "inReplyTo does not name a comment in this document",
+              },
+            });
             continue;
           }
           annotation = {
@@ -724,11 +915,15 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
             ...(parent.pageUrl ? { pageUrl: parent.pageUrl } : {}),
             ...(parent.diffContext ? { diffContext: parent.diffContext } : {}),
           };
-          anchoredBy = 'reply';
+          anchoredBy = "reply";
         } else if (item.quote) {
           const section = item.section ? findSection(outline, item.section) : null;
           if (item.section && !section) {
-            results.push({ ok: false, index, error: { code: 'not_found', message: 'no section with that id' } });
+            results.push({
+              ok: false,
+              index,
+              error: { code: "not_found", message: "no section with that id" },
+            });
             continue;
           }
           if (snapshot.blocks.length === 0 && snapshot.text === null) {
@@ -736,46 +931,84 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
             // resolves the quote lazily and keeps the record until it does.
             annotation = { ...base, type: AnnotationType.COMMENT, originalText: item.quote.trim() };
             verified = false;
-          } else if (session.surface === 'html' && snapshot.html) {
+          } else if (session.surface === "html" && snapshot.html) {
             const plain = htmlToPlainText(snapshot.html);
-            const needle = item.quote.trim().replace(/\s+/g, ' ');
+            const needle = item.quote.trim().replace(/\s+/g, " ");
             if (!plain.includes(needle)) {
-              results.push({ ok: false, index, error: { code: 'not_found', message: 'quote not found in the page text' } });
+              results.push({
+                ok: false,
+                index,
+                error: { code: "not_found", message: "quote not found in the page text" },
+              });
               continue;
             }
             annotation = { ...base, type: AnnotationType.COMMENT, originalText: item.quote.trim() };
           } else {
             const resolution = resolveQuote(snapshot.blocks, item.quote, section);
-            if (resolution.status === 'not_found') {
-              results.push({ ok: false, index, error: { code: 'not_found', message: 'quote not found in the document text' } });
-              continue;
-            }
-            if (resolution.status === 'ambiguous') {
+            if (resolution.status === "not_found") {
               results.push({
                 ok: false,
                 index,
-                error: { code: 'ambiguous', message: 'quote matches more than one place; add section to disambiguate', candidates: resolution.candidates.map((c) => c.context) },
+                error: { code: "not_found", message: "quote not found in the document text" },
+              });
+              continue;
+            }
+            if (resolution.status === "ambiguous") {
+              results.push({
+                ok: false,
+                index,
+                error: {
+                  code: "ambiguous",
+                  message: "quote matches more than one place; add section to disambiguate",
+                  candidates: resolution.candidates.map((c) => c.context),
+                },
               });
               continue;
             }
             const match = resolution.match;
-            annotation = { ...base, type: AnnotationType.COMMENT, blockId: match.blockId, startOffset: match.startOffset, endOffset: match.endOffset, originalText: match.originalText };
+            annotation = {
+              ...base,
+              type: AnnotationType.COMMENT,
+              blockId: match.blockId,
+              startOffset: match.startOffset,
+              endOffset: match.endOffset,
+              originalText: match.originalText,
+            };
           }
-          anchoredBy = 'quote';
+          anchoredBy = "quote";
         } else if (item.section) {
           const section = findSection(outline, item.section);
           if (!section) {
-            results.push({ ok: false, index, error: { code: 'not_found', message: 'no section with that id' } });
+            results.push({
+              ok: false,
+              index,
+              error: { code: "not_found", message: "no section with that id" },
+            });
             continue;
           }
-          annotation = { ...base, type: AnnotationType.COMMENT, blockId: section.blockId, startOffset: 0, endOffset: section.title.length, originalText: section.title };
-          anchoredBy = 'section';
+          annotation = {
+            ...base,
+            type: AnnotationType.COMMENT,
+            blockId: section.blockId,
+            startOffset: 0,
+            endOffset: section.title.length,
+            originalText: section.title,
+          };
+          anchoredBy = "section";
         } else {
           annotation = base;
-          anchoredBy = 'document';
+          anchoredBy = "document";
         }
         if (!adapter.addAnnotation(annotation, path)) {
-          results.push({ ok: false, index, error: { code: 'not_available', message: 'that document is not open, so it cannot be written to', hint: OPEN_FIRST_HINT } });
+          results.push({
+            ok: false,
+            index,
+            error: {
+              code: "not_available",
+              message: "that document is not open, so it cannot be written to",
+              hint: OPEN_FIRST_HINT,
+            },
+          });
           continue;
         }
         tracker.claimOwn(annotation);
@@ -789,7 +1022,15 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
         const result: AddCommentResult = {
           ok: true,
           index,
-          annotation: viewOf(annotation, all, snapshot.blocks, outline, tracker, Number.MAX_SAFE_INTEGER, now()),
+          annotation: viewOf(
+            annotation,
+            all,
+            snapshot.blocks,
+            outline,
+            tracker,
+            Number.MAX_SAFE_INTEGER,
+            now(),
+          ),
           anchoredBy,
         };
         if (!verified) result.verified = false;
@@ -800,53 +1041,79 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
   });
 
   const updateComment = defineTool<{ id: string; text: string; path?: string }, unknown>({
-    name: 'update_comment',
-    title: 'Reword one of your comments',
+    name: "update_comment",
+    title: "Reword one of your comments",
     description:
-      'Replace the text of a comment you created earlier (source browser-agent). Use it to correct or refine your own note after new information. It refuses the human\'s comments and comments from other tools with forbidden; to respond to a human comment, add a reply with add_comments instead.',
+      "Replace the text of a comment you created earlier (source browser-agent). Use it to correct or refine your own note after new information. It refuses the human's comments and comments from other tools with forbidden; to respond to a human comment, add a reply with add_comments instead.",
     inputSchema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
-      required: ['id', 'text'],
+      required: ["id", "text"],
       properties: {
-        id: { type: 'string', maxLength: 128, description: 'The comment id.' },
-        text: { type: 'string', minLength: 1, maxLength: 20000, description: 'The new comment text.' },
+        id: { type: "string", maxLength: 128, description: "The comment id." },
+        text: {
+          type: "string",
+          minLength: 1,
+          maxLength: 20000,
+          description: "The new comment text.",
+        },
         path: PATH_PARAM,
       },
     },
     execute: async (input) => {
       syncTrackers(adapter, state);
       const target = await resolveTarget(input.path);
-      if ('ok' in target) return target;
+      if ("ok" in target) return target;
       const { snapshot, path, tracker } = target;
       const existing = snapshot.annotations.find((a) => a.id === input.id);
-      if (!existing) return fail('not_found', 'no comment with that id');
+      if (!existing) return fail("not_found", "no comment with that id");
       // Ownership is the tracker's claim from this session, not the `source`
       // stamp: the external-annotations API accepts any source, so a stamp
       // alone would let another tool's findings become agent-editable.
-      if (!tracker.isOwn(existing.id)) return fail('forbidden', 'only comments you created can be changed', { hint: NOT_OWNED_HINT });
+      if (!tracker.isOwn(existing.id))
+        return fail("forbidden", "only comments you created can be changed", {
+          hint: NOT_OWNED_HINT,
+        });
       if (!adapter.updateAnnotation(input.id, { text: input.text }, path)) {
-        return fail('not_available', 'that document is not open, so it cannot be written to', { hint: OPEN_FIRST_HINT });
+        return fail("not_available", "that document is not open, so it cannot be written to", {
+          hint: OPEN_FIRST_HINT,
+        });
       }
       const updated = { ...existing, text: input.text };
       tracker.claimOwn(updated);
       syncTrackers(adapter, state);
       const outline = buildOutline(snapshot.blocks, snapshot.annotations);
-      return ok({ annotation: viewOf(updated, snapshot.annotations, snapshot.blocks, outline, tracker, Number.MAX_SAFE_INTEGER, now()) });
+      return ok({
+        annotation: viewOf(
+          updated,
+          snapshot.annotations,
+          snapshot.blocks,
+          outline,
+          tracker,
+          Number.MAX_SAFE_INTEGER,
+          now(),
+        ),
+      });
     },
   });
 
   const removeComments = defineTool<{ ids: string[]; path?: string }, unknown>({
-    name: 'remove_comments',
-    title: 'Withdraw your comments',
+    name: "remove_comments",
+    title: "Withdraw your comments",
     description:
-      'Remove comments you created earlier (source browser-agent), in batch, when they no longer apply. Each id resolves independently and the response says which succeeded. It refuses the human\'s comments with forbidden. Do not remove a comment just because the human disagreed: that conversation belongs in a reply.',
+      "Remove comments you created earlier (source browser-agent), in batch, when they no longer apply. Each id resolves independently and the response says which succeeded. It refuses the human's comments with forbidden. Do not remove a comment just because the human disagreed: that conversation belongs in a reply.",
     inputSchema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
-      required: ['ids'],
+      required: ["ids"],
       properties: {
-        ids: { type: 'array', minItems: 1, maxItems: MAX_REMOVALS_PER_CALL, items: { type: 'string', maxLength: 128 }, description: 'Comment ids to remove.' },
+        ids: {
+          type: "array",
+          minItems: 1,
+          maxItems: MAX_REMOVALS_PER_CALL,
+          items: { type: "string", maxLength: 128 },
+          description: "Comment ids to remove.",
+        },
         path: PATH_PARAM,
       },
     },
@@ -857,14 +1124,36 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
     execute: async (input) => {
       syncTrackers(adapter, state);
       const target = await resolveTarget(input.path);
-      if ('ok' in target) return target;
+      if ("ok" in target) return target;
       const { snapshot, path, tracker } = target;
       const results = input.ids.map((id) => {
         const existing = snapshot.annotations.find((a) => a.id === id);
-        if (!existing) return { id, ok: false as const, error: { code: 'not_found' as const, message: 'no comment with that id' } };
-        if (!tracker.isOwn(existing.id)) return { id, ok: false as const, error: { code: 'forbidden' as const, message: 'only comments you created can be removed', hint: NOT_OWNED_HINT } };
+        if (!existing)
+          return {
+            id,
+            ok: false as const,
+            error: { code: "not_found" as const, message: "no comment with that id" },
+          };
+        if (!tracker.isOwn(existing.id))
+          return {
+            id,
+            ok: false as const,
+            error: {
+              code: "forbidden" as const,
+              message: "only comments you created can be removed",
+              hint: NOT_OWNED_HINT,
+            },
+          };
         if (!adapter.removeAnnotation(id, path)) {
-          return { id, ok: false as const, error: { code: 'not_available' as const, message: 'that document is not open, so it cannot be written to', hint: OPEN_FIRST_HINT } };
+          return {
+            id,
+            ok: false as const,
+            error: {
+              code: "not_available" as const,
+              message: "that document is not open, so it cannot be written to",
+              hint: OPEN_FIRST_HINT,
+            },
+          };
         }
         // The agent's own removal must not come back to it as "the human
         // removed your comment" (the resolution signal).
@@ -877,51 +1166,72 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
   });
 
   const reveal = defineTool<{ annotationId?: string; section?: string; path?: string }, unknown>({
-    name: 'reveal',
-    title: 'Bring the human to a comment or section',
+    name: "reveal",
+    title: "Bring the human to a comment or section",
     description:
       'Scroll the human\'s view to a comment (selecting it) or to a section heading. Use it right after leaving a comment you want them to see, or when answering "where is that". A path other than the open document navigates the human there and the response says so. It returns no content; use read_document to read.',
     inputSchema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
       properties: {
-        annotationId: { type: 'string', maxLength: 128, description: 'Comment id to select and scroll to.' },
-        section: { type: 'string', maxLength: 512, description: 'Outline id to scroll to (used when annotationId is absent).' },
+        annotationId: {
+          type: "string",
+          maxLength: 128,
+          description: "Comment id to select and scroll to.",
+        },
+        section: {
+          type: "string",
+          maxLength: 512,
+          description: "Outline id to scroll to (used when annotationId is absent).",
+        },
         path: PATH_PARAM,
       },
     },
     execute: async (input) => {
-      if (!input.annotationId && !input.section) return fail('invalid_input', 'pass annotationId or section');
+      if (!input.annotationId && !input.section)
+        return fail("invalid_input", "pass annotationId or section");
       syncTrackers(adapter, state);
       const open = adapter.getDocument();
       const navigated = !!input.path && input.path !== open.path;
       if (input.annotationId) {
-        const revealed = await adapter.revealAnnotation(input.annotationId, navigated ? input.path! : null);
-        if (!revealed) return fail('not_found', 'no comment with that id');
-        return ok({ revealed: 'annotation', navigated, ...(navigated ? { path: input.path } : {}) });
+        const revealed = await adapter.revealAnnotation(
+          input.annotationId,
+          navigated ? input.path! : null,
+        );
+        if (!revealed) return fail("not_found", "no comment with that id");
+        return ok({
+          revealed: "annotation",
+          navigated,
+          ...(navigated ? { path: input.path } : {}),
+        });
       }
       const target = await resolveTarget(input.path);
-      if ('ok' in target) return target;
+      if ("ok" in target) return target;
       const outline = buildOutline(target.snapshot.blocks, target.snapshot.annotations);
       const section = findSection(outline, input.section!);
-      if (!section) return fail('not_found', 'no section with that id');
+      if (!section) return fail("not_found", "no section with that id");
       const revealed = await adapter.revealSection(section.blockId, navigated ? input.path! : null);
-      if (!revealed) return fail('not_found', 'the section is not on screen');
-      return ok({ revealed: 'section', navigated, ...(navigated ? { path: input.path } : {}) });
+      if (!revealed) return fail("not_found", "the section is not on screen");
+      return ok({ revealed: "section", navigated, ...(navigated ? { path: input.path } : {}) });
     },
   });
 
   const nudgeUser = defineTool<{ message: string }, unknown>({
-    name: 'nudge_user',
-    title: 'Show the human a short message',
+    name: "nudge_user",
+    title: "Show the human a short message",
     description:
       'Show one short, transient message in the page ("Finished: two comments, nothing blocking, ready for your approval"). One banner at a time; a new call replaces it, and the human can dismiss it. It is not saved and not part of the feedback. Do not use it for anything that should survive the session or reach the coding agent: leave a document-level note with add_comments for that.',
     inputSchema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
-      required: ['message'],
+      required: ["message"],
       properties: {
-        message: { type: 'string', minLength: 1, maxLength: NUDGE_USER_MAX_CHARS, description: 'Plain text, at most 280 characters.' },
+        message: {
+          type: "string",
+          minLength: 1,
+          maxLength: NUDGE_USER_MAX_CHARS,
+          description: "Plain text, at most 280 characters.",
+        },
       },
     },
     execute: (input) => {
@@ -931,15 +1241,19 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
   });
 
   const listDocuments = defineTool<{ filter?: string }, unknown>({
-    name: 'list_documents',
-    title: 'List the documents in this folder session',
+    name: "list_documents",
+    title: "List the documents in this folder session",
     description:
-      'Browse the folder session\'s document tree when the nudges and otherDocuments in a previous response do not already name the document you need: every path with its comment count and what changed since you last read it. Use the returned path with read_document. Do not use it to read contents.',
+      "Browse the folder session's document tree when the nudges and otherDocuments in a previous response do not already name the document you need: every path with its comment count and what changed since you last read it. Use the returned path with read_document. Do not use it to read contents.",
     inputSchema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
       properties: {
-        filter: { type: 'string', maxLength: 256, description: 'Case-insensitive substring of the path or title.' },
+        filter: {
+          type: "string",
+          maxLength: 256,
+          description: "Case-insensitive substring of the path or title.",
+        },
       },
     },
     annotations: { readOnlyHint: true },
@@ -949,11 +1263,17 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
       const siblings = new Map(adapter.getSiblingDocuments().map((s) => [s.path, s] as const));
       const known = new Map<string, { path: string; title?: string }>();
       for (const entry of adapter.listDocuments?.() ?? []) known.set(entry.path, entry);
-      for (const [path, sibling] of siblings) if (!known.has(path)) known.set(path, { path, title: sibling.title });
+      for (const [path, sibling] of siblings)
+        if (!known.has(path)) known.set(path, { path, title: sibling.title });
       if (open.path && !known.has(open.path)) known.set(open.path, { path: open.path });
       const filter = input.filter?.trim().toLowerCase();
       const documents = [...known.values()]
-        .filter((doc) => !filter || doc.path.toLowerCase().includes(filter) || (doc.title ?? '').toLowerCase().includes(filter))
+        .filter(
+          (doc) =>
+            !filter ||
+            doc.path.toLowerCase().includes(filter) ||
+            (doc.title ?? "").toLowerCase().includes(filter),
+        )
         .map((doc) => {
           const isOpen = doc.path === open.path;
           const sibling = siblings.get(doc.path);
@@ -966,7 +1286,8 @@ export function buildDocumentTools(adapter: DocumentToolAdapter, state: Document
             open: isOpen || !!sibling?.open,
             annotations: count,
             newSinceLastRead: tracker.newSince(since).length,
-            lastActivity: tracker.lastActivity === null ? null : new Date(tracker.lastActivity).toISOString(),
+            lastActivity:
+              tracker.lastActivity === null ? null : new Date(tracker.lastActivity).toISOString(),
           };
         })
         .sort((a, b) => a.path.localeCompare(b.path));

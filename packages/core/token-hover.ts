@@ -55,11 +55,7 @@ export type TokenHoverDelay = 150 | 300 | 700;
 export const DEFAULT_TOKEN_HOVER_DELAY_MS = 300 satisfies TokenHoverDelay;
 
 /** Every delay, fastest first, in the order the Settings control presents them. */
-export const TOKEN_HOVER_DELAYS = [
-  150,
-  300,
-  700,
-] as const satisfies readonly TokenHoverDelay[];
+export const TOKEN_HOVER_DELAYS = [150, 300, 700] as const satisfies readonly TokenHoverDelay[];
 
 export function isTokenHoverDelay(value: unknown): value is TokenHoverDelay {
   return value === 150 || value === 300 || value === 700;

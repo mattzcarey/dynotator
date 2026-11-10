@@ -1,6 +1,6 @@
-import React from 'react';
-import { MentionPicker } from './MentionPicker';
-import type { MentionMenuState } from '../hooks/useMentionAutocomplete';
+import React from "react";
+import { MentionPicker } from "./MentionPicker";
+import type { MentionMenuState } from "../hooks/useMentionAutocomplete";
 
 /**
  * Internal glue between `useMentionAutocomplete` and `MentionPicker`: the

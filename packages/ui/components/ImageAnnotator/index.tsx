@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Canvas } from './Canvas';
-import { Toolbar } from './Toolbar';
-import { renderStroke } from './utils';
-import type { Point } from './types';
-import { newUuid } from '../../utils/uuid';
-import { useImageAnnotatorShortcuts } from '../../shortcuts';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { Canvas } from "./Canvas";
+import { Toolbar } from "./Toolbar";
+import { renderStroke } from "./utils";
+import type { Point } from "./types";
+import { newUuid } from "../../utils/uuid";
+import { useImageAnnotatorShortcuts } from "../../shortcuts";
 import {
   DEFAULT_STROKE_HISTORY_STATE,
   clearStrokeHistory,
@@ -12,7 +12,7 @@ import {
   redoStroke,
   undoStroke,
   type StrokeHistoryState,
-} from './strokeHistory';
+} from "./strokeHistory";
 
 interface ImageAnnotatorProps {
   imageSrc: string;
@@ -36,7 +36,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
   isOpen,
   onAccept,
   onClose,
-  initialName = '',
+  initialName = "",
   escapeCancels = false,
   hint,
 }) => {
@@ -56,7 +56,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
 
   const handleStrokeStart = useCallback((point: Point) => {
     const id = newUuid();
-    setState(s => ({
+    setState((s) => ({
       ...s,
       currentStroke: {
         id,
@@ -69,7 +69,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
   }, []);
 
   const handleStrokeMove = useCallback((point: Point) => {
-    setState(s => {
+    setState((s) => {
       if (!s.currentStroke) return s;
       return {
         ...s,
@@ -82,7 +82,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
   }, []);
 
   const handleStrokeEnd = useCallback(() => {
-    setState(s => {
+    setState((s) => {
       if (!s.currentStroke || s.currentStroke.points.length < 2) {
         return { ...s, currentStroke: null };
       }
@@ -118,7 +118,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
       }
 
       const hasDrawings = state.strokes.length > 0;
-      const finalName = name.trim() || initialName || 'image';
+      const finalName = name.trim() || initialName || "image";
 
       // If no drawings, just pass through original image
       if (!hasDrawings) {
@@ -130,9 +130,9 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
       }
 
       // Composite image + drawings
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas 2D context is unavailable');
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas 2D context is unavailable");
 
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
@@ -144,7 +144,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
       const scale = img.naturalWidth / img.clientWidth;
 
       // Draw all strokes at full resolution
-      state.strokes.forEach(stroke => {
+      state.strokes.forEach((stroke) => {
         renderStroke(ctx, stroke, scale);
       });
 
@@ -154,9 +154,9 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
           await onAccept(blob, true, finalName);
         }
         onClose();
-      }, 'image/png');
+      }, "image/png");
     } catch (err) {
-      console.error('Failed to save annotated image:', err);
+      console.error("Failed to save annotated image:", err);
       onClose();
     } finally {
       setSaving(false);
@@ -168,21 +168,32 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
 
   useImageAnnotatorShortcuts({
     handlers: {
-      penTool: { when: (event) => isOpen && !saving && !keyboardTargetIsInput(event), handle: () => setState((current) => ({ ...current, tool: 'pen' })) },
-      arrowTool: { when: (event) => isOpen && !saving && !keyboardTargetIsInput(event), handle: () => setState((current) => ({ ...current, tool: 'arrow' })) },
-      circleTool: { when: (event) => isOpen && !saving && !keyboardTargetIsInput(event), handle: () => setState((current) => ({ ...current, tool: 'circle' })) },
+      penTool: {
+        when: (event) => isOpen && !saving && !keyboardTargetIsInput(event),
+        handle: () => setState((current) => ({ ...current, tool: "pen" })),
+      },
+      arrowTool: {
+        when: (event) => isOpen && !saving && !keyboardTargetIsInput(event),
+        handle: () => setState((current) => ({ ...current, tool: "arrow" })),
+      },
+      circleTool: {
+        when: (event) => isOpen && !saving && !keyboardTargetIsInput(event),
+        handle: () => setState((current) => ({ ...current, tool: "circle" })),
+      },
       undo: {
-        when: (event) => isOpen && !saving && !keyboardTargetIsInput(event) && state.strokes.length > 0,
+        when: (event) =>
+          isOpen && !saving && !keyboardTargetIsInput(event) && state.strokes.length > 0,
         handle: handleUndo,
       },
       redo: {
-        when: (event) => isOpen && !saving && !keyboardTargetIsInput(event) && state.futureStrokes.length > 0,
+        when: (event) =>
+          isOpen && !saving && !keyboardTargetIsInput(event) && state.futureStrokes.length > 0,
         handle: handleRedo,
       },
       save: {
         when: (event) => isOpen && !saving && !keyboardTargetIsInput(event),
         handle: (event) => {
-          if (escapeCancels && event.key === 'Escape') onClose();
+          if (escapeCancels && event.key === "Escape") onClose();
           else void handleAccept();
         },
       },
@@ -218,14 +229,14 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
           strokeSize={state.strokeSize}
           canUndo={state.strokes.length > 0}
           canRedo={state.futureStrokes.length > 0}
-          onToolChange={(tool) => setState(s => ({ ...s, tool }))}
-          onColorChange={(color) => setState(s => ({ ...s, color }))}
-          onStrokeSizeChange={(strokeSize) => setState(s => ({ ...s, strokeSize }))}
+          onToolChange={(tool) => setState((s) => ({ ...s, tool }))}
+          onColorChange={(color) => setState((s) => ({ ...s, color }))}
+          onStrokeSizeChange={(strokeSize) => setState((s) => ({ ...s, strokeSize }))}
           onUndo={handleUndo}
           onRedo={handleRedo}
           onClear={handleClear}
           onSave={handleAccept}
-          saveKey={escapeCancels ? 'Enter' : 'Escape'}
+          saveKey={escapeCancels ? "Enter" : "Escape"}
         />
 
         <Canvas
@@ -250,12 +261,12 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') {
+                if (e.key === "Escape") {
                   e.preventDefault();
                   e.currentTarget.blur();
                   return;
                 }
-                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   handleAccept();
                 }
@@ -270,7 +281,9 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({
         <div className="text-xs text-muted-foreground" data-pn-image-annotator-hint>
           {hint ?? (
             <>
-              Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground">Esc</kbd> or <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground">Enter</kbd> or click outside to accept
+              Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground">Esc</kbd> or{" "}
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground">Enter</kbd> or click
+              outside to accept
             </>
           )}
         </div>

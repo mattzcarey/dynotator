@@ -14,17 +14,18 @@
  * This module has NO static import of `@viz-js/viz`; the only place the
  * dependency is named at runtime is the default loader's `import()`.
  */
-import type { Viz } from '@viz-js/viz';
+import type { Viz } from "@viz-js/viz";
 
 export type GraphvizRuntime = Viz;
 
 /** Who filled the slot. */
-export type GraphvizRuntimeSource = 'loader' | 'host';
+export type GraphvizRuntimeSource = "loader" | "host";
 
 export type GraphvizRuntimeLoader = () => Promise<Viz>;
 
 /** Default lazy loader: import the engine and instantiate its wasm once. */
-const defaultGraphvizLoader: GraphvizRuntimeLoader = () => import('@viz-js/viz').then((m) => m.instance());
+const defaultGraphvizLoader: GraphvizRuntimeLoader = () =>
+  import("@viz-js/viz").then((m) => m.instance());
 
 let runtime: Viz | null = null;
 let runtimeSource: GraphvizRuntimeSource | null = null;
@@ -45,7 +46,7 @@ export function getGraphvizRuntimeSource(): GraphvizRuntimeSource | null {
 }
 
 /** Register an already-instantiated engine (a host with its own import). */
-export function setGraphvizRuntime(next: Viz, source: GraphvizRuntimeSource = 'host'): void {
+export function setGraphvizRuntime(next: Viz, source: GraphvizRuntimeSource = "host"): void {
   runtime = next;
   runtimeSource = source;
   pending = null;
@@ -67,7 +68,7 @@ export function loadGraphvizRuntime(): Promise<Viz> {
   if (!pending) {
     const attempt = loader().then(
       (loaded) => {
-        setGraphvizRuntime(loaded, 'loader');
+        setGraphvizRuntime(loaded, "loader");
         return loaded;
       },
       (err: unknown) => {

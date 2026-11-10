@@ -1,10 +1,16 @@
-import { useCallback, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
-import { questionAnswerAnnotationId, type QuestionAnswer } from '@dynotator/shared/question-block';
-import type { Annotation } from '@dynotator/ui/types';
-import type { UndoHistoryApi } from '@dynotator/ui/hooks/useUndoHistory';
-import type { CollectionMutation } from '@dynotator/ui/utils/undoHistory';
-import { getIdentity } from '@dynotator/ui/utils/identity';
-import { upsertQuestionAnswerAnnotation } from '@dynotator/ui/utils/questionAnswers';
+import {
+  useCallback,
+  useRef,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from "react";
+import { questionAnswerAnnotationId, type QuestionAnswer } from "@dynotator/shared/question-block";
+import type { Annotation } from "@dynotator/ui/types";
+import type { UndoHistoryApi } from "@dynotator/ui/hooks/useUndoHistory";
+import type { CollectionMutation } from "@dynotator/ui/utils/undoHistory";
+import { getIdentity } from "@dynotator/ui/utils/identity";
+import { upsertQuestionAnswerAnnotation } from "@dynotator/ui/utils/questionAnswers";
 
 /**
  * Typing in a question's free text, "Other…" or note field folds into ONE
@@ -35,9 +41,10 @@ export const isQuestionTypingChange = (
   before: QuestionAnswer | undefined,
   after: QuestionAnswer | undefined,
 ): boolean => {
-  const textual = (before?.text ?? '') !== (after?.text ?? '')
-    || (before?.other ?? '') !== (after?.other ?? '')
-    || (before?.note ?? '') !== (after?.note ?? '');
+  const textual =
+    (before?.text ?? "") !== (after?.text ?? "") ||
+    (before?.other ?? "") !== (after?.other ?? "") ||
+    (before?.note ?? "") !== (after?.note ?? "");
   if (!textual) return false;
   if (!!before?.skipped !== !!after?.skipped) return false;
   if (sameList(before?.selected, after?.selected)) return true;
@@ -46,12 +53,15 @@ export const isQuestionTypingChange = (
 
 /** The one collection mutation that turns `from` into `to` for the answer's
  *  annotation, or null when they are the same answer. */
-export const questionAnswerMutation = (from: Located, to: Located): CollectionMutation<Annotation> | null => {
+export const questionAnswerMutation = (
+  from: Located,
+  to: Located,
+): CollectionMutation<Annotation> | null => {
   if (!from.annotation && !to.annotation) return null;
-  if (!to.annotation) return { kind: 'delete', item: from.annotation!, index: from.index };
-  if (!from.annotation) return { kind: 'add', item: to.annotation, index: to.index };
+  if (!to.annotation) return { kind: "delete", item: from.annotation!, index: from.index };
+  if (!from.annotation) return { kind: "add", item: to.annotation, index: to.index };
   if (sameAnswer(from.annotation, to.annotation)) return null;
-  return { kind: 'edit', before: from.annotation, after: to.annotation };
+  return { kind: "edit", before: from.annotation, after: to.annotation };
 };
 
 interface Burst<TAction> {
@@ -65,7 +75,7 @@ interface Burst<TAction> {
 interface Options<TAction> {
   setAnnotations: Dispatch<SetStateAction<Annotation[]>>;
   annotationsRef: MutableRefObject<Annotation[]>;
-  history: Pick<UndoHistoryApi<TAction>, 'record' | 'replaceLast'>;
+  history: Pick<UndoHistoryApi<TAction>, "record" | "replaceLast">;
   /** Wrap an answer's mutation as the host's history action. */
   toAction: (mutation: CollectionMutation<Annotation>) => TAction;
   readOnly?: boolean;
@@ -92,46 +102,58 @@ export function useQuestionAnswers<TAction>({
   const optionsRef = useRef({ history, toAction, readOnly, now });
   optionsRef.current = { history, toAction, readOnly, now };
 
-  return useCallback((blockId: string, answer: QuestionAnswer | null, key: string) => {
-    const opts = optionsRef.current;
-    if (opts.readOnly) return;
-    const current = annotationsRef.current;
-    const id = questionAnswerAnnotationId(key);
-    const beforeIndex = current.findIndex((a) => a.id === id);
-    const before: Located = { annotation: beforeIndex === -1 ? undefined : current[beforeIndex], index: beforeIndex === -1 ? current.length : beforeIndex };
+  return useCallback(
+    (blockId: string, answer: QuestionAnswer | null, key: string) => {
+      const opts = optionsRef.current;
+      if (opts.readOnly) return;
+      const current = annotationsRef.current;
+      const id = questionAnswerAnnotationId(key);
+      const beforeIndex = current.findIndex((a) => a.id === id);
+      const before: Located = {
+        annotation: beforeIndex === -1 ? undefined : current[beforeIndex],
+        index: beforeIndex === -1 ? current.length : beforeIndex,
+      };
 
-    let next = upsertQuestionAnswerAnnotation(current, blockId, answer, key);
-    if (next === current) return;
-    const afterIndex = next.findIndex((a) => a.id === id);
-    if (afterIndex !== -1 && !next[afterIndex].author) {
-      next = next.slice();
-      next[afterIndex] = { ...next[afterIndex], author: getIdentity() };
-    }
-    const after: Located = { annotation: afterIndex === -1 ? undefined : next[afterIndex], index: afterIndex === -1 ? next.length : afterIndex };
-    if (!before.annotation && !after.annotation) return;
+      let next = upsertQuestionAnswerAnnotation(current, blockId, answer, key);
+      if (next === current) return;
+      const afterIndex = next.findIndex((a) => a.id === id);
+      if (afterIndex !== -1 && !next[afterIndex].author) {
+        next = next.slice();
+        next[afterIndex] = { ...next[afterIndex], author: getIdentity() };
+      }
+      const after: Located = {
+        annotation: afterIndex === -1 ? undefined : next[afterIndex],
+        index: afterIndex === -1 ? next.length : afterIndex,
+      };
+      if (!before.annotation && !after.annotation) return;
 
-    annotationsRef.current = next;
-    setAnnotations(next);
+      annotationsRef.current = next;
+      setAnnotations(next);
 
-    const at = opts.now();
-    const typing = isQuestionTypingChange(answerOf(before.annotation), answerOf(after.annotation));
-    const burst = burstRef.current;
-    if (burst && burst.key === key && at - burst.at <= QUESTION_TYPING_BURST_MS) {
-      const reverted = sameAnswer(burst.origin.annotation, after.annotation);
-      if (reverted || (typing && burst.typing)) {
-        const mutation = questionAnswerMutation(burst.origin, after);
-        const action = mutation ? opts.toAction(mutation) : null;
-        if (opts.history.replaceLast(burst.action, action)) {
-          burstRef.current = action ? { ...burst, action, at } : null;
-          return;
+      const at = opts.now();
+      const typing = isQuestionTypingChange(
+        answerOf(before.annotation),
+        answerOf(after.annotation),
+      );
+      const burst = burstRef.current;
+      if (burst && burst.key === key && at - burst.at <= QUESTION_TYPING_BURST_MS) {
+        const reverted = sameAnswer(burst.origin.annotation, after.annotation);
+        if (reverted || (typing && burst.typing)) {
+          const mutation = questionAnswerMutation(burst.origin, after);
+          const action = mutation ? opts.toAction(mutation) : null;
+          if (opts.history.replaceLast(burst.action, action)) {
+            burstRef.current = action ? { ...burst, action, at } : null;
+            return;
+          }
         }
       }
-    }
 
-    const mutation = questionAnswerMutation(before, after);
-    if (!mutation) return;
-    const action = opts.toAction(mutation);
-    opts.history.record(action);
-    burstRef.current = { key, origin: before, action, at, typing };
-  }, [annotationsRef, setAnnotations]);
+      const mutation = questionAnswerMutation(before, after);
+      if (!mutation) return;
+      const action = opts.toAction(mutation);
+      opts.history.record(action);
+      burstRef.current = { key, origin: before, action, at, typing };
+    },
+    [annotationsRef, setAnnotations],
+  );
 }

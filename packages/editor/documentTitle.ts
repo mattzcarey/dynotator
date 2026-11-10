@@ -6,7 +6,7 @@
  *
  * Pure: everything it reads comes in through `DocumentTitleInput`.
  */
-import { annotateBundleBaseName } from '@dynotator/shared/annotate-bundle';
+import { annotateBundleBaseName } from "@dynotator/shared/annotate-bundle";
 
 export interface DocumentTitleRepo {
   display: string;
@@ -21,7 +21,7 @@ export interface DocumentTitleInput {
   archiveMode: boolean;
   goalSetupMode: boolean;
   /** 'file' (one file or URL, and live apps), 'message' (annotate-last), 'folder' (folder and several files). */
-  annotateSource: 'file' | 'message' | 'folder' | null;
+  annotateSource: "file" | "message" | "folder" | null;
   /** A linked document that is open in place of the session's own. */
   linkedPath?: string | null;
   /** A one-file session's own file, or its URL. */
@@ -56,12 +56,16 @@ const HEADING_MAX = 80;
 
 /** HTML elements a heading may carry inline. Only these are stripped, so
  *  `Result<T>` or `Vec<String>` keep their angle brackets. */
-const HTML_TAG = /<\/?(?:a|abbr|b|bdi|bdo|br|cite|code|del|dfn|em|i|img|ins|kbd|mark|q|s|samp|small|span|strong|sub|sup|time|u|var|wbr)(?:\s[^<>]*)?\/?>|<!--[\s\S]*?-->/gi;
+const HTML_TAG =
+  /<\/?(?:a|abbr|b|bdi|bdo|br|cite|code|del|dfn|em|i|img|ins|kbd|mark|q|s|samp|small|span|strong|sub|sup|time|u|var|wbr)(?:\s[^<>]*)?\/?>|<!--[\s\S]*?-->/gi;
 
 /** The text's user-perceived characters (grapheme clusters where the engine knows them). */
 function graphemes(text: string): string[] {
-  if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
-    return Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text), (part) => part.segment);
+  if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+    return Array.from(
+      new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text),
+      (part) => part.segment,
+    );
   }
   return Array.from(text);
 }
@@ -74,10 +78,14 @@ function openPath(input: DocumentTitleInput): string | null {
 export function urlDisplayName(url: string): string {
   try {
     const parsed = new URL(url);
-    const path = parsed.pathname.replace(/\/+$/, '');
+    const path = parsed.pathname.replace(/\/+$/, "");
     return `${parsed.host}${path}`;
   } catch {
-    return url.replace(URL_PATTERN, '').replace(/^[^/?#]*@/, '').replace(/[?#].*$/, '').replace(/\/+$/, '');
+    return url
+      .replace(URL_PATTERN, "")
+      .replace(/^[^/?#]*@/, "")
+      .replace(/[?#].*$/, "")
+      .replace(/\/+$/, "");
   }
 }
 
@@ -93,14 +101,14 @@ export function scrubbedUrl(url: string): string {
   } catch {
     hasQuery = /\?[^#]/.test(url);
   }
-  return `${urlDisplayName(url)}${hasQuery ? '?…' : ''}`;
+  return `${urlDisplayName(url)}${hasQuery ? "?…" : ""}`;
 }
 
 function urlHost(url: string): string {
   try {
     return new URL(url).host;
   } catch {
-    return urlDisplayName(url).split('/')[0];
+    return urlDisplayName(url).split("/")[0];
   }
 }
 
@@ -120,35 +128,42 @@ function bundleName(path: string, bundle: { index: number; total: number }): str
  */
 export function planHeadingText(heading: string): string {
   let text = heading
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(HTML_TAG, '')
-    .replace(/`+/g, '')
-    .replace(/(\*\*|__|~~)(.+?)\1/g, '$2')
-    .replace(/(^|[^\w*])\*(?!\s)(.+?)\*(?!\w)/g, '$1$2')
-    .replace(/(^|\W)_(?!\s)(.+?)_(?!\w)/g, '$1$2')
-    .replace(/\s+/g, ' ')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(HTML_TAG, "")
+    .replace(/`+/g, "")
+    .replace(/(\*\*|__|~~)(.+?)\1/g, "$2")
+    .replace(/(^|[^\w*])\*(?!\s)(.+?)\*(?!\w)/g, "$1$2")
+    .replace(/(^|\W)_(?!\s)(.+?)_(?!\w)/g, "$1$2")
+    .replace(/\s+/g, " ")
     .trim();
-  const withoutPrefix = text.replace(/^(implementation\s+)?plan\s*:\s*/i, '');
+  const withoutPrefix = text.replace(/^(implementation\s+)?plan\s*:\s*/i, "");
   if (withoutPrefix) text = withoutPrefix;
   const chars = graphemes(text);
-  return chars.length > HEADING_MAX ? `${chars.slice(0, HEADING_MAX - 1).join('').trimEnd()}…` : text;
+  return chars.length > HEADING_MAX
+    ? `${chars
+        .slice(0, HEADING_MAX - 1)
+        .join("")
+        .trimEnd()}…`
+    : text;
 }
 
 /** What the name sits beside in the tab: the repository, or "Plannotator" outside one. */
 function repoSuffix(repo: DocumentTitleRepo | null | undefined): string {
   // A directory name with no branch and no remote is the server's last
   // fallback: not a git repository.
-  return repo && (repo.branch || repo.host) ? repo.display : 'Plannotator';
+  return repo && (repo.branch || repo.host) ? repo.display : "Plannotator";
 }
 
 /** Today's title, kept for code paths the change leaves alone. */
 function defaultTabTitle(repo: DocumentTitleRepo | null | undefined): string {
-  return repo ? `${repo.display} · Plannotator` : 'Plannotator';
+  return repo ? `${repo.display} · Plannotator` : "Plannotator";
 }
 
 /** The name the document is known by, with the place it came from. */
-function documentName(input: DocumentTitleInput): { name: string; title?: string; web: boolean } | null {
+function documentName(
+  input: DocumentTitleInput,
+): { name: string; title?: string; web: boolean } | null {
   if (input.liveAppUrl) {
     return { name: urlHost(input.liveAppUrl), title: scrubbedUrl(input.liveAppUrl), web: true };
   }
@@ -160,9 +175,13 @@ function documentName(input: DocumentTitleInput): { name: string; title?: string
     const web = URL_PATTERN.test(path);
     return { name: pathDisplayName(path), title: web ? scrubbedUrl(path) : path, web };
   }
-  if (input.annotateSource === 'message') return { name: 'Last message', web: false };
-  if (input.annotateSource === 'folder' && input.folderPath) {
-    return { name: `${annotateBundleBaseName(input.folderPath)}/`, title: input.folderPath, web: false };
+  if (input.annotateSource === "message") return { name: "Last message", web: false };
+  if (input.annotateSource === "folder" && input.folderPath) {
+    return {
+      name: `${annotateBundleBaseName(input.folderPath)}/`,
+      title: input.folderPath,
+      web: false,
+    };
   }
   return null;
 }
@@ -175,10 +194,11 @@ function documentName(input: DocumentTitleInput): { name: string; title?: string
  * is open (#2289).
  */
 export function documentTabTitle(input: DocumentTitleInput): string {
-  if (!input.apiMode || input.archiveMode || input.goalSetupMode) return defaultTabTitle(input.repo);
+  if (!input.apiMode || input.archiveMode || input.goalSetupMode)
+    return defaultTabTitle(input.repo);
   if (input.sessionTitle) return input.sessionTitle;
   const named = documentName(input);
-  if (named) return `${named.name} · ${named.web ? 'Plannotator' : repoSuffix(input.repo)}`;
+  if (named) return `${named.name} · ${named.web ? "Plannotator" : repoSuffix(input.repo)}`;
   if (!input.annotateMode && input.planHeading) {
     const heading = planHeadingText(input.planHeading);
     if (heading) return `${heading} (plan) · ${repoSuffix(input.repo)}`;
@@ -201,13 +221,17 @@ export function documentTabTitle(input: DocumentTitleInput): string {
  * its tab agree (#2289); the tooltip still names the folder or the open file.
  */
 export function documentHeaderName(input: DocumentTitleInput): DocumentHeaderName | null {
-  if (!input.apiMode || !input.annotateMode || input.archiveMode || input.goalSetupMode) return null;
+  if (!input.apiMode || !input.annotateMode || input.archiveMode || input.goalSetupMode)
+    return null;
   if (input.bundle) return null;
   if (input.sessionTitle) {
-    const tooltip = input.annotateSource === 'folder' && input.folderPath ? input.folderPath : documentName(input)?.title;
+    const tooltip =
+      input.annotateSource === "folder" && input.folderPath
+        ? input.folderPath
+        : documentName(input)?.title;
     return tooltip ? { name: input.sessionTitle, title: tooltip } : { name: input.sessionTitle };
   }
-  if (input.annotateSource === 'folder' && input.folderPath) {
+  if (input.annotateSource === "folder" && input.folderPath) {
     return { name: input.folderPath, title: input.folderPath, cutsFromStart: true };
   }
   const named = documentName(input);
@@ -219,9 +243,9 @@ export function documentHeaderName(input: DocumentTitleInput): DocumentHeaderNam
 export function compactDocumentTitle(input: DocumentTitleInput): string {
   const path = openPath(input);
   if (path && input.bundle && input.bundle.index >= 0) return bundleName(path, input.bundle);
-  if (path) return path.replace(/\\/g, '/').split('/').pop() || path;
+  if (path) return path.replace(/\\/g, "/").split("/").pop() || path;
   if (input.archiveTitle) return input.archiveTitle;
-  if (input.annotateSource === 'message') return 'Message';
-  if (input.annotateSource === 'folder') return 'Choose a file';
-  return 'Plan';
+  if (input.annotateSource === "message") return "Message";
+  if (input.annotateSource === "folder") return "Choose a file";
+  return "Plan";
 }

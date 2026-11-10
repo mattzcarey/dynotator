@@ -1,17 +1,11 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type RefObject,
-} from 'react';
-import type { InputMethod } from '../types';
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import type { InputMethod } from "../types";
 import {
   buildSemanticTargetGraph,
   createSemanticTargetRange,
   resolveSemanticTargetAtPoint,
   type SemanticTarget,
-} from '../utils/blockTargeting';
+} from "../utils/blockTargeting";
 
 /** Inputs for pointer Pinpoint targeting within one rendered document. */
 export interface UsePinpointOptions {
@@ -49,9 +43,9 @@ export function usePinpoint({
   const [hoverTarget, setHoverTarget] = useState<SemanticTarget | null>(null);
   const hoverElementRef = useRef<HTMLElement | null>(null);
 
-  const isActive = inputMethod === 'pinpoint' && enabled;
+  const isActive = inputMethod === "pinpoint" && enabled;
   const clearHover = useCallback(() => {
-    hoverElementRef.current?.removeAttribute('data-pinpoint-hover');
+    hoverElementRef.current?.removeAttribute("data-pinpoint-hover");
     hoverElementRef.current = null;
     setHoverTarget(null);
   }, []);
@@ -83,16 +77,12 @@ export function usePinpoint({
     observer.observe(container, { childList: true, subtree: true });
 
     const updateHover = (clientX: number, clientY: number, target: HTMLElement) => {
-      const resolved = resolveSemanticTargetAtPoint(
-        liveGraph(),
-        target,
-        { clientX, clientY },
-      );
+      const resolved = resolveSemanticTargetAtPoint(liveGraph(), target, { clientX, clientY });
 
       if (resolved) {
         if (resolved.element !== hoverElementRef.current) {
-          hoverElementRef.current?.removeAttribute('data-pinpoint-hover');
-          resolved.element.setAttribute('data-pinpoint-hover', '');
+          hoverElementRef.current?.removeAttribute("data-pinpoint-hover");
+          resolved.element.setAttribute("data-pinpoint-hover", "");
           hoverElementRef.current = resolved.element;
           setHoverTarget(resolved);
         }
@@ -116,17 +106,17 @@ export function usePinpoint({
       clearHover();
     };
 
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseleave', handleMouseLeave);
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener("mousemove", handleMouseMove);
+    container.addEventListener("mouseleave", handleMouseLeave);
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
 
     return () => {
       observer.disconnect();
-      hoverElementRef.current?.removeAttribute('data-pinpoint-hover');
+      hoverElementRef.current?.removeAttribute("data-pinpoint-hover");
       hoverElementRef.current = null;
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseleave', handleMouseLeave);
-      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener("mousemove", handleMouseMove);
+      container.removeEventListener("mouseleave", handleMouseLeave);
+      container.removeEventListener("touchstart", handleTouchStart);
     };
   }, [clearHover, isActive, containerRef]);
 
@@ -139,34 +129,35 @@ export function usePinpoint({
       const target = e.target as HTMLElement;
       // A `:::question` card's form controls are the answer UI, never a pin
       // target: a click on a radio, a checkbox or a text box answers.
-      const inQuestion = !!target.closest?.('fieldset.question-block');
-      if (inQuestion && target.closest('input, textarea, select')) return;
-      const resolved = resolveSemanticTargetAtPoint(
-        buildSemanticTargetGraph(container),
-        target,
-        { clientX: e.clientX, clientY: e.clientY },
-      );
+      const inQuestion = !!target.closest?.("fieldset.question-block");
+      if (inQuestion && target.closest("input, textarea, select")) return;
+      const resolved = resolveSemanticTargetAtPoint(buildSemanticTargetGraph(container), target, {
+        clientX: e.clientX,
+        clientY: e.clientY,
+      });
       if (!resolved) return;
 
       // Pinning a choice's text must not also pick the choice: the row is a
       // <label>, which would forward this click to its radio or checkbox.
-      if (inQuestion && target.closest('[data-question-option]')) {
+      if (inQuestion && target.closest("[data-question-option]")) {
         e.preventDefault();
       }
 
       // Prevent link navigation in pinpoint mode
-      const link = (target.closest('a') as HTMLAnchorElement | null);
+      const link = target.closest("a") as HTMLAnchorElement | null;
       if (link && container.contains(link)) {
         e.preventDefault();
       }
 
       // Clear hover state
-      resolved.element.removeAttribute('data-pinpoint-hover');
+      resolved.element.removeAttribute("data-pinpoint-hover");
       setHoverTarget(null);
 
-      if (resolved.kind === 'code') {
+      if (resolved.kind === "code") {
         // Route to existing code block annotation path
-        const codeBlockContainer = container.querySelector(`[data-block-id="${resolved.blockId}"]`) as HTMLElement;
+        const codeBlockContainer = container.querySelector(
+          `[data-block-id="${resolved.blockId}"]`,
+        ) as HTMLElement;
         if (codeBlockContainer) {
           onCodeBlockClick(resolved.blockId, codeBlockContainer);
         }
@@ -182,10 +173,10 @@ export function usePinpoint({
     };
 
     // Use capture phase so we get the click before links navigate
-    container.addEventListener('click', handleClick, true);
+    container.addEventListener("click", handleClick, true);
 
     return () => {
-      container.removeEventListener('click', handleClick, true);
+      container.removeEventListener("click", handleClick, true);
     };
   }, [isActive, containerRef, onCodeBlockClick, onSelectRange]);
 

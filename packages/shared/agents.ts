@@ -1,1 +1,1 @@
-export * from '@dynotator/core/agents';
+export * from "@dynotator/core/agents";

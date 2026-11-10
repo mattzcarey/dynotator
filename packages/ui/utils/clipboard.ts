@@ -1,11 +1,11 @@
 function copyTextWithFallback(text: string, focusOwner?: HTMLElement): boolean {
-  const activeElement = document.activeElement instanceof HTMLElement
-    ? document.activeElement
-    : null;
+  const activeElement =
+    document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const selection = window.getSelection();
   const savedRanges = selection
     ? Array.from({ length: selection.rangeCount }, (_, index) =>
-        selection.getRangeAt(index).cloneRange())
+        selection.getRangeAt(index).cloneRange(),
+      )
     : [];
   let copied = false;
 
@@ -15,32 +15,32 @@ function copyTextWithFallback(text: string, focusOwner?: HTMLElement): boolean {
     // unsuccessful so the textarea path below runs.
     if (!event.clipboardData) return;
     event.preventDefault();
-    event.clipboardData.setData('text/plain', text);
+    event.clipboardData.setData("text/plain", text);
     copied = true;
   };
-  document.addEventListener('copy', handleCopy);
+  document.addEventListener("copy", handleCopy);
   try {
     // Success requires BOTH: our handler actually wrote the payload via
     // setData, AND execCommand reported the copy command ran.
-    copied = document.execCommand('copy') && copied;
+    copied = document.execCommand("copy") && copied;
   } catch {
     copied = false;
   } finally {
-    document.removeEventListener('copy', handleCopy);
+    document.removeEventListener("copy", handleCopy);
   }
 
   if (!copied) {
-    const textarea = document.createElement('textarea');
-    textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    const textarea = document.createElement("textarea");
+    textarea.style.cssText = "position:fixed;opacity:0;pointer-events:none";
     // Marker so focus-sensitive surfaces (PopoutDialog's focus-out close
     // guard) can recognize the transient fallback textarea and not treat the
     // focus shift as leaving the dialog.
-    textarea.setAttribute('data-clipboard-fallback', 'true');
+    textarea.setAttribute("data-clipboard-fallback", "true");
     textarea.value = text;
     document.body.appendChild(textarea);
     textarea.select();
     try {
-      copied = document.execCommand('copy');
+      copied = document.execCommand("copy");
     } catch {
       // Clipboard access can be denied by the embedding browser. The caller
       // still regains the same document focus and selection below.
@@ -66,10 +66,7 @@ function copyTextWithFallback(text: string, focusOwner?: HTMLElement): boolean {
  * Copy text without stealing focus or discarding the host document's native
  * selection. Falls back to the copy event for restricted browser contexts.
  */
-export function copyTextPreservingFocus(
-  text: string,
-  focusOwner: HTMLElement,
-): void {
+export function copyTextPreservingFocus(text: string, focusOwner: HTMLElement): void {
   try {
     const clipboardWrite = navigator.clipboard?.writeText(text);
     if (clipboardWrite) {

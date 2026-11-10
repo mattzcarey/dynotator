@@ -10,8 +10,8 @@
  * packages/editor/webmcp — and only then selects.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
-import { normalizeBrowserPath } from '../sourceDocumentPaths';
+import { useCallback, useEffect, useRef } from "react";
+import { normalizeBrowserPath } from "../sourceDocumentPaths";
 
 /** Grace for the destination's restored highlights to paint before we scroll
  *  to one. useLinkedDoc re-applies them on a 100ms timeout. */
@@ -40,7 +40,9 @@ export interface AnnotationJumpOptions {
  * Returns `jump(path, id)`: selects in place when `path` is already open,
  * otherwise navigates and selects once the document commits.
  */
-export function useAnnotationJump(options: AnnotationJumpOptions): (path: string, id: string) => void {
+export function useAnnotationJump(
+  options: AnnotationJumpOptions,
+): (path: string, id: string) => void {
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
@@ -63,11 +65,13 @@ export function useAnnotationJump(options: AnnotationJumpOptions): (path: string
     }
     clearTimers();
     pendingRef.current = { path, id };
-    timersRef.current.push(setTimeout(() => {
-      // Never committed — drop the request rather than selecting an id that
-      // does not exist in whatever document is open now.
-      if (samePath(pendingRef.current?.path, path)) pendingRef.current = null;
-    }, optionsRef.current.commitTimeoutMs ?? COMMIT_TIMEOUT_MS));
+    timersRef.current.push(
+      setTimeout(() => {
+        // Never committed — drop the request rather than selecting an id that
+        // does not exist in whatever document is open now.
+        if (samePath(pendingRef.current?.path, path)) pendingRef.current = null;
+      }, optionsRef.current.commitTimeoutMs ?? COMMIT_TIMEOUT_MS),
+    );
     void Promise.resolve(navigate(path)).catch(() => {
       if (samePath(pendingRef.current?.path, path)) pendingRef.current = null;
     });
@@ -85,11 +89,14 @@ export function useAnnotationJump(options: AnnotationJumpOptions): (path: string
     timersRef.current.push(timer);
   }, [currentPath]);
 
-  useEffect(() => () => {
-    for (const timer of timersRef.current) clearTimeout(timer);
-    timersRef.current = [];
-    pendingRef.current = null;
-  }, []);
+  useEffect(
+    () => () => {
+      for (const timer of timersRef.current) clearTimeout(timer);
+      timersRef.current = [];
+      pendingRef.current = null;
+    },
+    [],
+  );
 
   return jump;
 }

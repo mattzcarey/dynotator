@@ -1,8 +1,8 @@
-import React from 'react';
-import { getProviderMeta } from '../ProviderIcons';
-import { findSessionBridge, type AIProviderOption } from '../../utils/aiProvider';
-import { ModelSourceHint, modelSourceToolForProvider } from '../ModelSourceHint';
-import { AskSessionSetupHint } from './AskSessionSetupHint';
+import React from "react";
+import { getProviderMeta } from "../ProviderIcons";
+import { findSessionBridge, type AIProviderOption } from "../../utils/aiProvider";
+import { ModelSourceHint, modelSourceToolForProvider } from "../ModelSourceHint";
+import { AskSessionSetupHint } from "./AskSessionSetupHint";
 
 interface AIProviderBarProps {
   providers: AIProviderOption[];
@@ -32,10 +32,10 @@ export const AIProviderBar: React.FC<AIProviderBarProps> = ({
   if (providers.length === 0) {
     return (
       <>
-      <div className="border-t border-border/50 px-2 py-1.5 text-[11px] text-muted-foreground/50">
-        No AI providers available
-      </div>
-      <AskSessionSetupHint text={setupHint} />
+        <div className="border-t border-border/50 px-2 py-1.5 text-[11px] text-muted-foreground/50">
+          No AI providers available
+        </div>
+        <AskSessionSetupHint text={setupHint} />
       </>
     );
   }
@@ -57,75 +57,75 @@ export const AIProviderBar: React.FC<AIProviderBarProps> = ({
     );
   }
 
-  const currentProvider = providers.find(p => p.id === selectedProviderId) ?? providers[0];
-  const effectiveProviderId = currentProvider?.id ?? '';
+  const currentProvider = providers.find((p) => p.id === selectedProviderId) ?? providers[0];
+  const effectiveProviderId = currentProvider?.id ?? "";
   const models = currentProvider?.models ?? [];
-  const defaultModel = models.find(m => m.default) ?? models[0];
-  const effectiveModel = selectedModel ?? defaultModel?.id ?? '';
-  const currentModel = models.find(m => m.id === effectiveModel) ?? defaultModel;
+  const defaultModel = models.find((m) => m.default) ?? models[0];
+  const effectiveModel = selectedModel ?? defaultModel?.id ?? "";
+  const currentModel = models.find((m) => m.id === effectiveModel) ?? defaultModel;
   const reasoningEfforts = currentModel?.reasoningEfforts ?? [];
-  const meta = getProviderMeta(currentProvider?.name ?? 'AI', currentProvider?.label);
+  const meta = getProviderMeta(currentProvider?.name ?? "AI", currentProvider?.label);
   const Icon = meta.icon;
   // Show only when the selected model actually reports reasoning efforts.
   const showReasoningEffort = !!onReasoningEffortChange && reasoningEfforts.length > 0;
 
   return (
     <>
-    <div className="border-t border-border/50 px-2 py-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-      <select
-        value={effectiveProviderId ?? ''}
-        onChange={(event) => onProviderChange(event.target.value)}
-        className="min-w-0 max-w-[8rem] bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
-        aria-label="AI provider"
-      >
-        {providers.map(provider => {
-          const providerMeta = getProviderMeta(provider.name, provider.label);
-          return (
-            <option key={provider.id} value={provider.id}>
-              {providerMeta.label}
-            </option>
-          );
-        })}
-      </select>
-
-      {models.length > 0 && (
+      <div className="border-t border-border/50 px-2 py-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
         <select
-          value={effectiveModel}
-          onChange={(event) => onModelChange(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
-          aria-label="AI model"
+          value={effectiveProviderId ?? ""}
+          onChange={(event) => onProviderChange(event.target.value)}
+          className="min-w-0 max-w-[8rem] bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
+          aria-label="AI provider"
         >
-          {models.map(model => (
-            <option key={model.id} value={model.id}>
-              {model.label}
-            </option>
-          ))}
+          {providers.map((provider) => {
+            const providerMeta = getProviderMeta(provider.name, provider.label);
+            return (
+              <option key={provider.id} value={provider.id}>
+                {providerMeta.label}
+              </option>
+            );
+          })}
         </select>
-      )}
 
-      {showReasoningEffort && (
-        <select
-          value={selectedReasoningEffort ?? ''}
-          onChange={(event) => onReasoningEffortChange?.(event.target.value || null)}
-          className="w-16 bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
-          aria-label="Reasoning effort"
-        >
-          <option value="">Auto</option>
-          {reasoningEfforts.map(effort => (
-            <option key={effort.id} value={effort.id}>
-              {effort.label}
-            </option>
-          ))}
-        </select>
-      )}
-    </div>
-    <ModelSourceHint
-      tool={modelSourceToolForProvider(currentProvider?.name)}
-      info={currentProvider}
-      className="-mt-1 px-2 pb-1.5 text-[10px] text-muted-foreground/50"
-    />
-    <AskSessionSetupHint text={setupHint} />
+        {models.length > 0 && (
+          <select
+            value={effectiveModel}
+            onChange={(event) => onModelChange(event.target.value)}
+            className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
+            aria-label="AI model"
+          >
+            {models.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.label}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {showReasoningEffort && (
+          <select
+            value={selectedReasoningEffort ?? ""}
+            onChange={(event) => onReasoningEffortChange?.(event.target.value || null)}
+            className="w-16 bg-transparent text-[11px] text-foreground focus:outline-none [&>option]:bg-card [&>option]:text-foreground"
+            aria-label="Reasoning effort"
+          >
+            <option value="">Auto</option>
+            {reasoningEfforts.map((effort) => (
+              <option key={effort.id} value={effort.id}>
+                {effort.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      <ModelSourceHint
+        tool={modelSourceToolForProvider(currentProvider?.name)}
+        info={currentProvider}
+        className="-mt-1 px-2 pb-1.5 text-[10px] text-muted-foreground/50"
+      />
+      <AskSessionSetupHint text={setupHint} />
     </>
   );
 };

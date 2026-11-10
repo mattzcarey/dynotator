@@ -19,7 +19,7 @@
  * tests/entry-assets.test.ts (KaTeX itself stays inlined either way through
  * the loader's import(), so a KaTeX class name cannot prove registration).
  */
-import katex from 'katex';
-import { setMathRenderer } from './math';
+import katex from "katex";
+import { setMathRenderer } from "./math";
 
-setMathRenderer(katex, 'plannotator-math-eager');
+setMathRenderer(katex, "plannotator-math-eager");

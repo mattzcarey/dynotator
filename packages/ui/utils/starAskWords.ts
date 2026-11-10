@@ -8,25 +8,25 @@
  * new word still fills it.
  */
 export const STAR_ASK_WORDS = {
-  title: 'Would you star Plannotator?',
-  body: 'It’s free and open source. A star helps more people find it, and helps us keep it going.',
-  notNow: 'Not now',
-  star: 'Star on GitHub',
-  starring: 'Starring…',
+  title: "Would you star Plannotator?",
+  body: "It’s free and open source. A star helps more people find it, and helps us keep it going.",
+  notNow: "Not now",
+  star: "Star on GitHub",
+  starring: "Starring…",
   /** gh starred it. */
-  starred: 'Starred. Thank you!',
+  starred: "Starred. Thank you!",
   /** The link opened GitHub in a new tab (no gh, or gh could not check). */
-  opened: 'Thank you! GitHub is open in a new tab.',
+  opened: "Thank you! GitHub is open in a new tab.",
   /** gh could not star it on the click (a token not allowed to star, the network): the link follows. */
-  failed: 'Couldn’t star it from here.',
-  openGitHub: 'Open GitHub',
-  close: 'Close',
+  failed: "Couldn’t star it from here.",
+  openGitHub: "Open GitHub",
+  close: "Close",
   art: {
-    label: 'plannotator · open source',
-    ask: 'a small ask',
-    after: 'decided · recorded',
-    big: 'star it?',
-    bigAfter: 'starred.',
+    label: "plannotator · open source",
+    ask: "a small ask",
+    after: "decided · recorded",
+    big: "star it?",
+    bigAfter: "starred.",
   },
 } as const;
 

@@ -27,11 +27,20 @@ export interface SkillBlockAudience {
 }
 
 /** Plan review and annotate: the reviewer's feedback. The export's wording since #1229. */
-export const REVIEWER_SKILL_AUDIENCE: SkillBlockAudience = { requester: 'reviewer', subject: 'feedback' };
+export const REVIEWER_SKILL_AUDIENCE: SkillBlockAudience = {
+  requester: "reviewer",
+  subject: "feedback",
+};
 /** The Inbox's reply box (a reply, a redirected reply). */
-export const INBOX_REPLY_SKILL_AUDIENCE: SkillBlockAudience = { requester: 'person', subject: 'reply' };
+export const INBOX_REPLY_SKILL_AUDIENCE: SkillBlockAudience = {
+  requester: "person",
+  subject: "reply",
+};
 /** The Inbox's New message (and the message-an-agent dialog). */
-export const INBOX_MESSAGE_SKILL_AUDIENCE: SkillBlockAudience = { requester: 'person', subject: 'message' };
+export const INBOX_MESSAGE_SKILL_AUDIENCE: SkillBlockAudience = {
+  requester: "person",
+  subject: "message",
+};
 
 /** The block's first line. */
 export function skillsReferencedHeading(audience: SkillBlockAudience): string {
@@ -44,7 +53,8 @@ export function skillInstructionsIncludedNote(audience: SkillBlockAudience): str
 }
 
 /** The heading the Inbox writes: a person's reply or message. */
-const INBOX_HEADING_RE = /^\*\*Skills referenced\*\* \(the person is asking you to invoke these skills when acting on this (reply|message)\):$/;
+const INBOX_HEADING_RE =
+  /^\*\*Skills referenced\*\* \(the person is asking you to invoke these skills when acting on this (reply|message)\):$/;
 /** One list line: "- `name`" plus an optional note in parentheses. */
 const LIST_LINE_RE = /^- `([^`\n]+)`(.*)$/;
 const BEGIN_RE = /^--- BEGIN SKILL INSTRUCTIONS: (.+) ---$/;
@@ -79,7 +89,7 @@ export interface InboxSkillsSplit {
   /** The block, from its heading to the end of the body. */
   block: string;
   /** What the heading calls the message. */
-  subject: 'reply' | 'message';
+  subject: "reply" | "message";
   skills: InboxSkillReference[];
 }
 
@@ -100,8 +110,9 @@ function readBlockTail(lines: readonly string[], from: number): InboxSkillRefere
     const note = match[2]!;
     skills.push({
       name: match[1]!,
-      humanOnly: note.includes('cannot be invoked by a model') || note.includes('human-invocation-only'),
-      included: note.includes('its instructions are included below'),
+      humanOnly:
+        note.includes("cannot be invoked by a model") || note.includes("human-invocation-only"),
+      included: note.includes("its instructions are included below"),
       bytes: 0,
     });
   }
@@ -115,12 +126,13 @@ function readBlockTail(lines: readonly string[], from: number): InboxSkillRefere
     if (open) {
       const end = (open.note ? NOTE_END_RE : END_RE).exec(line);
       if (end && end[1] === open.name) {
-        if (!open.note) byName.get(open.name)!.bytes = utf8Bytes(lines.slice(open.start, i + 1).join('\n'));
+        if (!open.note)
+          byName.get(open.name)!.bytes = utf8Bytes(lines.slice(open.start, i + 1).join("\n"));
         open = null;
       }
       continue;
     }
-    if (line.trim() === '') continue;
+    if (line.trim() === "") continue;
     // The Inbox's note about a listed skill (inboxSkillNoteSection), once per skill.
     const note = NOTE_BEGIN_RE.exec(line);
     if (note && byName.has(note[1]!) && !noted.has(note[1]!)) {
@@ -164,16 +176,16 @@ function readBlockTail(lines: readonly string[], from: number): InboxSkillRefere
  * messages carry a block the window composed.
  */
 export function splitInboxSkillsBlock(body: string): InboxSkillsSplit | null {
-  const lines = body.split('\n').map((line) => line.replace(/\r$/, ''));
+  const lines = body.split("\n").map((line) => line.replace(/\r$/, ""));
   for (let at = lines.length - 1; at >= 0; at--) {
     const heading = INBOX_HEADING_RE.exec(lines[at]!);
-    if (!heading || (at > 0 && lines[at - 1]!.trim() !== '')) continue;
+    if (!heading || (at > 0 && lines[at - 1]!.trim() !== "")) continue;
     const skills = readBlockTail(lines, at + 1);
     if (!skills) continue;
     return {
-      before: lines.slice(0, at).join('\n').trimEnd(),
-      block: lines.slice(at).join('\n').trimEnd(),
-      subject: heading[1] as 'reply' | 'message',
+      before: lines.slice(0, at).join("\n").trimEnd(),
+      block: lines.slice(at).join("\n").trimEnd(),
+      subject: heading[1] as "reply" | "message",
       skills,
     };
   }

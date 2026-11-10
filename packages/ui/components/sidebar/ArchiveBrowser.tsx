@@ -37,18 +37,12 @@ export const ArchiveBrowser: React.FC<ArchiveBrowserProps> = ({
   isLoading,
 }) => {
   if (isLoading) {
-    return (
-      <div className="p-4 text-xs text-muted-foreground text-center">
-        Loading archive...
-      </div>
-    );
+    return <div className="p-4 text-xs text-muted-foreground text-center">Loading archive...</div>;
   }
 
   if (plans.length === 0) {
     return (
-      <div className="p-4 text-xs text-muted-foreground text-center">
-        No archived plans found.
-      </div>
+      <div className="p-4 text-xs text-muted-foreground text-center">No archived plans found.</div>
     );
   }
 

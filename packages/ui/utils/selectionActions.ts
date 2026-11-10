@@ -8,7 +8,7 @@
  * nothing here runs in Plannotator's apps.
  */
 
-import type React from 'react';
+import type React from "react";
 
 /** What the toolbar knows about the selection an action was invoked on. */
 export interface SelectionActionContext {
@@ -52,11 +52,11 @@ export function buildSelectionActionContext(
   element: HTMLElement,
   text: string,
 ): SelectionActionContext {
-  const blockEl = element.closest<HTMLElement>('[data-block-id]');
-  const blockId = blockEl?.dataset.blockId ?? '';
+  const blockEl = element.closest<HTMLElement>("[data-block-id]");
+  const blockId = blockEl?.dataset.blockId ?? "";
   let startOffset = 0;
   if (blockEl && text) {
-    const blockText = blockEl.textContent || '';
+    const blockText = blockEl.textContent || "";
     const before = blockText.split(text)[0];
     startOffset = before === blockText ? 0 : before?.length || 0;
   }

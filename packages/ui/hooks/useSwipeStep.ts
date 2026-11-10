@@ -30,7 +30,7 @@
  * lightbox steps the same way; the numbers did not change.
  */
 
-import { useEffect, useMemo, useRef, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore, type RefObject } from "react";
 
 /** The finger moves this far before the swipe is decided either way. */
 export const SWIPE_DECIDE_PX = 10;
@@ -62,9 +62,9 @@ export type SwipeDir = 1 | -1;
 export const swipeDirOf = (dx: number): SwipeDir => (dx < 0 ? 1 : -1);
 
 /** Once the finger has moved (`mx`, `my` from where it went down): wait, a swipe, or the page's own (a scroll). */
-export function decideSwipe(mx: number, my: number): 'wait' | 'swipe' | 'native' {
-  if (Math.abs(mx) < SWIPE_DECIDE_PX && Math.abs(my) < SWIPE_DECIDE_PX) return 'wait';
-  return Math.abs(mx) > SWIPE_RATIO * Math.abs(my) ? 'swipe' : 'native';
+export function decideSwipe(mx: number, my: number): "wait" | "swipe" | "native" {
+  if (Math.abs(mx) < SWIPE_DECIDE_PX && Math.abs(my) < SWIPE_DECIDE_PX) return "wait";
+  return Math.abs(mx) > SWIPE_RATIO * Math.abs(my) ? "swipe" : "native";
 }
 
 /** A drag that is mostly down (`my` from where the finger went down): a drag to close. */
@@ -75,7 +75,11 @@ export function isDragDown(mx: number, my: number): boolean {
 /** Released at `dx` (raw finger travel) with speed `vx` (px/ms): whether it steps. */
 export function swipeCommits(dx: number, width: number, vx: number): boolean {
   if (Math.abs(dx) > width * SWIPE_COMMIT_SHARE) return true;
-  return Math.abs(vx) > SWIPE_FLICK_SPEED && Math.abs(dx) > SWIPE_FLICK_MIN_PX && Math.sign(vx) === Math.sign(dx);
+  return (
+    Math.abs(vx) > SWIPE_FLICK_SPEED &&
+    Math.abs(dx) > SWIPE_FLICK_MIN_PX &&
+    Math.sign(vx) === Math.sign(dx)
+  );
 }
 
 /** Released `dy` down (with speed `vy`, px/ms) on a stage `height` tall: whether it closes. */
@@ -89,7 +93,8 @@ export function dismissCommits(dy: number, height: number, vy: number): boolean 
  * adds its own (`SwipeStepOptions.owners`: the Inbox adds the diagram canvas,
  * which ui's document Viewer must not reach statically).
  */
-const TOUCH_OWNERS = 'video, audio, input, textarea, select, [contenteditable=""], [contenteditable="true"], iframe, [data-claims-arrows="true"]';
+const TOUCH_OWNERS =
+  'video, audio, input, textarea, select, [contenteditable=""], [contenteditable="true"], iframe, [data-claims-arrows="true"]';
 
 /**
  * Why the touch is not the swipe's, or null when it may be: `owner` (a field,
@@ -97,20 +102,24 @@ const TOUCH_OWNERS = 'video, audio, input, textarea, select, [contenteditable=""
  * scroll that way). `path` is the touchstart's composed path (through shadow
  * roots); `dir` the way the swipe would step.
  */
-export function sidewaysOwner(path: readonly EventTarget[], dir: SwipeDir, owners?: string): 'owner' | 'sideways' | null {
+export function sidewaysOwner(
+  path: readonly EventTarget[],
+  dir: SwipeDir,
+  owners?: string,
+): "owner" | "sideways" | null {
   const own = owners ? `${TOUCH_OWNERS}, ${owners}` : TOUCH_OWNERS;
   for (const node of path) {
-    if (typeof Element === 'undefined' || !(node instanceof Element)) continue;
+    if (typeof Element === "undefined" || !(node instanceof Element)) continue;
     if (node === document.documentElement || node === document.body) continue;
-    if (node.matches(own)) return 'owner';
+    if (node.matches(own)) return "owner";
     if (node.scrollWidth > node.clientWidth + 1) {
       const overflow = getComputedStyle(node).overflowX;
-      if (overflow === 'auto' || overflow === 'scroll') {
+      if (overflow === "auto" || overflow === "scroll") {
         // At its edge in the swipe's direction the block has nothing more to show: the swipe may step.
         // Next (the finger moves left) scrolls the block right, so it is at its edge when scrolled to its end.
         const max = node.scrollWidth - node.clientWidth;
         const atEdge = dir > 0 ? node.scrollLeft >= max - 1 : node.scrollLeft <= 1;
-        if (!atEdge) return 'sideways';
+        if (!atEdge) return "sideways";
       }
     }
   }
@@ -118,11 +127,14 @@ export function sidewaysOwner(path: readonly EventTarget[], dir: SwipeDir, owner
 }
 
 const textSelected = () => {
-  const selection = typeof window !== 'undefined' ? window.getSelection() : null;
-  return !!selection && !selection.isCollapsed && selection.toString().trim() !== '';
+  const selection = typeof window !== "undefined" ? window.getSelection() : null;
+  return !!selection && !selection.isCollapsed && selection.toString().trim() !== "";
 };
 
-export const prefersReducedMotion = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * Where a swipe is, for what the host draws beside it: which way, how far
@@ -136,7 +148,7 @@ export interface SwipeProgress {
   dir: SwipeDir;
   progress: number;
   offset: number;
-  phase: 'drag' | 'slide' | 'back' | 'handoff';
+  phase: "drag" | "slide" | "back" | "handoff";
   ms?: number;
 }
 
@@ -153,7 +165,15 @@ function createProgressStore(): ProgressStore {
     get: () => value,
     set: (next) => {
       if (next === value) return;
-      if (next && value && next.dir === value.dir && next.phase === value.phase && Math.abs(next.progress - value.progress) < 0.005 && Math.abs(next.offset - value.offset) < 0.5) return;
+      if (
+        next &&
+        value &&
+        next.dir === value.dir &&
+        next.phase === value.phase &&
+        Math.abs(next.progress - value.progress) < 0.005 &&
+        Math.abs(next.offset - value.offset) < 0.5
+      )
+        return;
       value = next;
       for (const listener of listeners) listener();
     },
@@ -170,20 +190,20 @@ export function useSwipeProgress(store: SwipeStep): SwipeProgress | null {
 }
 
 /** Only the swipe's phase and direction, for what needs no redraw while the finger moves (it redraws when either changes). */
-export function useSwipePhase(store: SwipeStep): Pick<SwipeProgress, 'dir' | 'phase'> | null {
+export function useSwipePhase(store: SwipeStep): Pick<SwipeProgress, "dir" | "phase"> | null {
   const read = () => {
     const progress = store.get();
-    return progress ? `${progress.phase}:${progress.dir}` : '';
+    return progress ? `${progress.phase}:${progress.dir}` : "";
   };
   const key = useSyncExternalStore(store.subscribe, read, read);
   return useMemo(() => {
     if (!key) return null;
-    const [phase, dir] = key.split(':');
-    return { phase: phase as SwipeProgress['phase'], dir: (dir === '1' ? 1 : -1) as SwipeDir };
+    const [phase, dir] = key.split(":");
+    return { phase: phase as SwipeProgress["phase"], dir: (dir === "1" ? 1 : -1) as SwipeDir };
   }, [key]);
 }
 
-export interface SwipeStep extends Pick<ProgressStore, 'get' | 'subscribe'> {
+export interface SwipeStep extends Pick<ProgressStore, "get" | "subscribe"> {
   /** The new item is shown: the host's picture of it (`peek`) can go. */
   settle: () => void;
 }
@@ -206,7 +226,10 @@ export interface SwipeStepOptions {
    * `onStep` (the host's picture covers the change), so they may be the item's own. Without `peek` the next item
    * fades in on the same elements, so they must outlive the step. Absent, null or empty: `area` moves.
    */
-  move?: (gesture: 'step' | 'dismiss', dir: SwipeDir) => readonly (HTMLElement | null | undefined)[] | null;
+  move?: (
+    gesture: "step" | "dismiss",
+    dir: SwipeDir,
+  ) => readonly (HTMLElement | null | undefined)[] | null;
   /** The item keeps this touch itself (a zoomed image that can still pan that way): no swipe. Absent: nothing does. */
   keeps?: (dir: SwipeDir) => boolean;
   /**
@@ -232,7 +255,10 @@ export interface SwipeStepOptions {
  * names) moved by `transform` only, and the progress for what the host draws
  * beside it.
  */
-export function useSwipeStep(area: RefObject<HTMLElement | null>, options: SwipeStepOptions): SwipeStep {
+export function useSwipeStep(
+  area: RefObject<HTMLElement | null>,
+  options: SwipeStepOptions,
+): SwipeStep {
   const progressStore = useMemo(createProgressStore, []);
   const optionsRef = useRef(options);
   optionsRef.current = options;
@@ -243,7 +269,7 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
       get: progressStore.get,
       subscribe: progressStore.subscribe,
       settle: () => {
-        if (progressStore.get()?.phase !== 'handoff') return;
+        if (progressStore.get()?.phase !== "handoff") return;
         if (handoffTimer.current) clearTimeout(handoffTimer.current);
         handoffTimer.current = null;
         progressStore.set(null);
@@ -256,7 +282,7 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
     const el = area.current;
     if (!el || !enabled) return;
     let start: { x: number; y: number; path: EventTarget[] } | null = null;
-    let mode: 'idle' | 'swipe' | 'dismiss' | 'native' = 'idle';
+    let mode: "idle" | "swipe" | "dismiss" | "native" = "idle";
     let last = { x: 0, y: 0, t: 0 };
     let vx = 0;
     let vy = 0;
@@ -277,36 +303,50 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
     const height = () => size.height;
     const reset = (nodes: readonly HTMLElement[]) => {
       for (const node of nodes) {
-        node.style.transform = '';
-        node.style.transition = '';
-        node.style.opacity = '';
+        node.style.transform = "";
+        node.style.transition = "";
+        node.style.opacity = "";
       }
     };
     /** Point the swipe at what follows the finger for this gesture (the last one's are put back first). */
-    const pick = (gesture: 'step' | 'dismiss', dir: SwipeDir) => {
-      const named = optionsRef.current.move?.(gesture, dir)?.filter((node): node is HTMLElement => !!node) ?? [];
+    const pick = (gesture: "step" | "dismiss", dir: SwipeDir) => {
+      const named =
+        optionsRef.current.move?.(gesture, dir)?.filter((node): node is HTMLElement => !!node) ??
+        [];
       const next = named.length > 0 ? named : [el];
       if (next.length !== moved.length || next.some((node, i) => node !== moved[i])) {
         reset(moved.filter((node) => !next.includes(node)));
         moved = next;
       }
     };
-    const draw = (offset: number, transition: string | null, opacity = '', axis: 'x' | 'y' = 'x') => {
-      const transform = offset ? (axis === 'x' ? `translateX(${offset}px)` : `translateY(${offset}px)`) : '';
+    const draw = (
+      offset: number,
+      transition: string | null,
+      opacity = "",
+      axis: "x" | "y" = "x",
+    ) => {
+      const transform = offset
+        ? axis === "x"
+          ? `translateX(${offset}px)`
+          : `translateY(${offset}px)`
+        : "";
       for (const node of moved) {
-        node.style.transition = transition ?? 'none';
+        node.style.transition = transition ?? "none";
         node.style.transform = transform;
         node.style.opacity = opacity;
       }
     };
     const unsetTransition = () => {
-      for (const node of moved) node.style.transition = '';
+      for (const node of moved) node.style.transition = "";
     };
     /**
      * A step's slide that is still under way: what lands it. A touch that comes meanwhile lands it at once
      * (`landNow`), so the new swipe starts from the item it brought in.
      */
-    let sliding: { timer: ReturnType<typeof setTimeout>; land: (interrupted: boolean) => void } | null = null;
+    let sliding: {
+      timer: ReturnType<typeof setTimeout>;
+      land: (interrupted: boolean) => void;
+    } | null = null;
     const slideThen = (ms: number, land: (interrupted: boolean) => void) => {
       const timer = setTimeout(() => {
         sliding = null;
@@ -319,7 +359,7 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
         // The next item still fading in after a step: in place at once.
         cancelAnimationFrame(frame);
         frame = 0;
-        draw(0, null, '');
+        draw(0, null, "");
         unsetTransition();
       }
       if (!sliding) return;
@@ -338,7 +378,7 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
     /** Once a spring-back or slide-in has run, the item carries no inline transition (unless a new swipe took it meanwhile). */
     const clearTransitionAfter = (ms: number) =>
       later(ms, () => {
-        if (mode !== 'swipe' && mode !== 'dismiss') unsetTransition();
+        if (mode !== "swipe" && mode !== "dismiss") unsetTransition();
       });
     const fade = (share: number) => optionsRef.current.dismiss?.onProgress?.(share);
     const springBack = () => {
@@ -347,9 +387,15 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
       draw(0, reduced ? null : `transform ${SWIPE_SPRING_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`);
       fade(0);
       if (was && !reduced) {
-        progressStore.set({ dir: was.dir, progress: 0, offset: 0, phase: 'back', ms: SWIPE_SPRING_MS });
+        progressStore.set({
+          dir: was.dir,
+          progress: 0,
+          offset: 0,
+          phase: "back",
+          ms: SWIPE_SPRING_MS,
+        });
         later(SWIPE_SPRING_MS, () => {
-          if (progressStore.get()?.phase === 'back') progressStore.set(null);
+          if (progressStore.get()?.phase === "back") progressStore.set(null);
         });
       } else progressStore.set(null);
       if (reduced) unsetTransition();
@@ -357,16 +403,16 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
     };
     const onStart = (event: TouchEvent) => {
       if (event.touches.length !== 1) {
-        if (mode === 'swipe' || mode === 'dismiss') springBack();
+        if (mode === "swipe" || mode === "dismiss") springBack();
         start = null;
-        mode = 'native';
+        mode = "native";
         return;
       }
       // The last step still sliding in: it lands now, and this swipe starts from the item it brought.
       landNow();
       const touch = event.touches[0]!;
       start = { x: touch.clientX, y: touch.clientY, path: event.composedPath() };
-      mode = 'idle';
+      mode = "idle";
       last = { x: touch.clientX, y: touch.clientY, t: event.timeStamp };
       vx = 0;
       vy = 0;
@@ -374,36 +420,46 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
       rawY = 0;
     };
     const onMove = (event: TouchEvent) => {
-      if (!start || mode === 'native') return;
+      if (!start || mode === "native") return;
       if (event.touches.length !== 1) {
-        if (mode === 'swipe' || mode === 'dismiss') springBack();
-        mode = 'native';
+        if (mode === "swipe" || mode === "dismiss") springBack();
+        mode = "native";
         return;
       }
       const touch = event.touches[0]!;
       const mx = touch.clientX - start.x;
       const my = touch.clientY - start.y;
-      if (mode === 'idle') {
+      if (mode === "idle") {
         const decided = decideSwipe(mx, my);
-        if (decided === 'wait') return;
+        if (decided === "wait") return;
         const { dismiss, keeps } = optionsRef.current;
-        if (decided === 'native') {
+        if (decided === "native") {
           // Mostly down: a drag to close, where the host allows one now; anything else is the page's own.
-          if (dismiss && isDragDown(mx, my) && !textSelected() && sidewaysOwner(start.path, 1, optionsRef.current.owners) !== 'owner' && dismiss.can()) {
-            mode = 'dismiss';
-            pick('dismiss', 1);
+          if (
+            dismiss &&
+            isDragDown(mx, my) &&
+            !textSelected() &&
+            sidewaysOwner(start.path, 1, optionsRef.current.owners) !== "owner" &&
+            dismiss.can()
+          ) {
+            mode = "dismiss";
+            pick("dismiss", 1);
           } else {
-            mode = 'native';
+            mode = "native";
             return;
           }
         } else {
-          if (textSelected() || sidewaysOwner(start.path, swipeDirOf(mx), optionsRef.current.owners) || keeps?.(swipeDirOf(mx))) {
-            mode = 'native';
+          if (
+            textSelected() ||
+            sidewaysOwner(start.path, swipeDirOf(mx), optionsRef.current.owners) ||
+            keeps?.(swipeDirOf(mx))
+          ) {
+            mode = "native";
             return;
           }
-          mode = 'swipe';
+          mode = "swipe";
           pickedDir = swipeDirOf(mx);
-          pick('step', pickedDir);
+          pick("step", pickedDir);
         }
         measure();
       }
@@ -412,11 +468,11 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
       vx = (touch.clientX - last.x) / dt;
       vy = (touch.clientY - last.y) / dt;
       last = { x: touch.clientX, y: touch.clientY, t: event.timeStamp };
-      if (mode === 'dismiss') {
+      if (mode === "dismiss") {
         rawY = Math.max(0, my);
         // Reduced motion: nothing follows the finger; a release far enough still closes.
         if (!prefersReducedMotion()) {
-          draw(rawY, null, '', 'y');
+          draw(rawY, null, "", "y");
           fade(Math.min(1, rawY / (height() * SWIPE_DISMISS_FADE_SHARE)));
         }
         return;
@@ -427,13 +483,22 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
         // Turned back past where the finger went down (what moves that way may be something else), or the item was
         // drawn again under the finger (the step a touch landed, drawn after the swipe was decided).
         pickedDir = dir;
-        pick('step', dir);
+        pick("step", dir);
       }
       const can = optionsRef.current.canStep(dir);
       const offset = can ? mx : mx * SWIPE_END_RESIST;
       // Reduced motion: nothing follows the finger (the host's card still says where a release goes).
       if (!prefersReducedMotion()) draw(offset, null);
-      progressStore.set(can ? { dir, progress: Math.min(1, Math.abs(mx) / width()), offset: prefersReducedMotion() ? 0 : offset, phase: 'drag' } : null);
+      progressStore.set(
+        can
+          ? {
+              dir,
+              progress: Math.min(1, Math.abs(mx) / width()),
+              offset: prefersReducedMotion() ? 0 : offset,
+              phase: "drag",
+            }
+          : null,
+      );
     };
     const endDismiss = () => {
       const { dismiss, wouldAsk } = optionsRef.current;
@@ -448,7 +513,12 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
         return;
       }
       // The image falls away the way the finger went, the backdrop gone with it, then the viewer closes.
-      draw(h, `transform ${SWIPE_SLIDE_MS}ms cubic-bezier(0.23, 1, 0.32, 1), opacity ${SWIPE_SLIDE_MS}ms ease-out`, '0', 'y');
+      draw(
+        h,
+        `transform ${SWIPE_SLIDE_MS}ms cubic-bezier(0.23, 1, 0.32, 1), opacity ${SWIPE_SLIDE_MS}ms ease-out`,
+        "0",
+        "y",
+      );
       fade(1);
       later(SWIPE_SLIDE_MS, () => {
         dismiss.onDismiss();
@@ -462,15 +532,15 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
       });
     };
     const onEnd = () => {
-      if (mode !== 'swipe' && mode !== 'dismiss') {
+      if (mode !== "swipe" && mode !== "dismiss") {
         start = null;
-        mode = 'idle';
+        mode = "idle";
         return;
       }
       const was = mode;
       start = null;
-      mode = 'idle';
-      if (was === 'dismiss') return endDismiss();
+      mode = "idle";
+      if (was === "dismiss") return endDismiss();
       const dir = swipeDirOf(raw);
       const w = width();
       const commits = swipeCommits(raw, w, vx);
@@ -489,16 +559,16 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
         // neighbour stays where it lands until the new item is shown (no fade in: it is the same picture).
         const travel = dir > 0 ? -(w + SWIPE_PEEK_GAP) : w + SWIPE_PEEK_GAP;
         draw(travel, `transform ${SWIPE_SLIDE_MS}ms cubic-bezier(0.23, 1, 0.32, 1)`);
-        progressStore.set({ dir, progress: 1, offset: travel, phase: 'slide', ms: SWIPE_SLIDE_MS });
+        progressStore.set({ dir, progress: 1, offset: travel, phase: "slide", ms: SWIPE_SLIDE_MS });
         slideThen(SWIPE_SLIDE_MS, () => {
-          progressStore.set({ dir, progress: 1, offset: travel, phase: 'handoff' });
+          progressStore.set({ dir, progress: 1, offset: travel, phase: "handoff" });
           onStep(dir);
           draw(0, null);
           unsetTransition();
           if (handoffTimer.current) clearTimeout(handoffTimer.current);
           handoffTimer.current = setTimeout(() => {
             handoffTimer.current = null;
-            if (progressStore.get()?.phase === 'handoff') progressStore.set(null);
+            if (progressStore.get()?.phase === "handoff") progressStore.set(null);
           }, SWIPE_HANDOFF_MAX_MS);
         });
         return;
@@ -510,15 +580,19 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
         onStep(dir);
         if (interrupted) {
           // A finger is already down for the next swipe: the new item is simply there.
-          draw(0, null, '');
+          draw(0, null, "");
           unsetTransition();
           return;
         }
-        draw(dir > 0 ? w * 0.25 : -w * 0.25, null, '0');
+        draw(dir > 0 ? w * 0.25 : -w * 0.25, null, "0");
         frame = requestAnimationFrame(() => {
           frame = requestAnimationFrame(() => {
             frame = 0;
-            draw(0, `transform ${SWIPE_SLIDE_MS + 40}ms cubic-bezier(0.23, 1, 0.32, 1), opacity ${SWIPE_SLIDE_MS}ms ease-out`, '');
+            draw(
+              0,
+              `transform ${SWIPE_SLIDE_MS + 40}ms cubic-bezier(0.23, 1, 0.32, 1), opacity ${SWIPE_SLIDE_MS}ms ease-out`,
+              "",
+            );
             clearTransitionAfter(SWIPE_SLIDE_MS + 40);
           });
         });
@@ -534,15 +608,15 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
     let seen: Event | null = null;
     const follow = (target: EventTarget | null) => {
       if (following) {
-        following.removeEventListener('touchmove', onMoveAny as EventListener);
-        following.removeEventListener('touchend', onEndAny as EventListener);
-        following.removeEventListener('touchcancel', onEndAny as EventListener);
+        following.removeEventListener("touchmove", onMoveAny as EventListener);
+        following.removeEventListener("touchend", onEndAny as EventListener);
+        following.removeEventListener("touchcancel", onEndAny as EventListener);
       }
       following = target;
       if (following) {
-        following.addEventListener('touchmove', onMoveAny as EventListener, { passive: false });
-        following.addEventListener('touchend', onEndAny as EventListener);
-        following.addEventListener('touchcancel', onEndAny as EventListener);
+        following.addEventListener("touchmove", onMoveAny as EventListener, { passive: false });
+        following.addEventListener("touchend", onEndAny as EventListener);
+        following.addEventListener("touchcancel", onEndAny as EventListener);
       }
     };
     const onStartEl = (event: TouchEvent) => {
@@ -560,19 +634,19 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
       if (event === seen) return;
       seen = event;
       // A second finger lifting while one stays down is not the end of the gesture.
-      if (event.type === 'touchend' && event.touches.length > 0) return;
+      if (event.type === "touchend" && event.touches.length > 0) return;
       onEnd();
       follow(null);
     };
-    el.addEventListener('touchstart', onStartEl, { passive: true });
-    el.addEventListener('touchmove', onMoveAny, { passive: false });
-    el.addEventListener('touchend', onEndAny);
-    el.addEventListener('touchcancel', onEndAny);
+    el.addEventListener("touchstart", onStartEl, { passive: true });
+    el.addEventListener("touchmove", onMoveAny, { passive: false });
+    el.addEventListener("touchend", onEndAny);
+    el.addEventListener("touchcancel", onEndAny);
     return () => {
-      el.removeEventListener('touchstart', onStartEl);
-      el.removeEventListener('touchmove', onMoveAny);
-      el.removeEventListener('touchend', onEndAny);
-      el.removeEventListener('touchcancel', onEndAny);
+      el.removeEventListener("touchstart", onStartEl);
+      el.removeEventListener("touchmove", onMoveAny);
+      el.removeEventListener("touchend", onEndAny);
+      el.removeEventListener("touchcancel", onEndAny);
       follow(null);
       for (const timer of timers) clearTimeout(timer);
       if (sliding) clearTimeout(sliding.timer);
@@ -582,7 +656,7 @@ export function useSwipeStep(area: RefObject<HTMLElement | null>, options: Swipe
       reset([el]);
       optionsRef.current.dismiss?.onProgress?.(0);
       // A step's picture of the new item (`handoff`) outlives the swipe: it goes with `settle` or its own timer.
-      if (progressStore.get()?.phase !== 'handoff') progressStore.set(null);
+      if (progressStore.get()?.phase !== "handoff") progressStore.set(null);
     };
   }, [area, enabled, progressStore]);
 

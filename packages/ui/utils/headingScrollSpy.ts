@@ -46,13 +46,10 @@ export function topInsideViewport(node: HTMLElement, viewport: HTMLElement): num
  * bound, so a heading of an embedded document (its ids are namespaced) is never
  * read; when an id is drawn twice, the first one in document order is.
  */
-export function bindHeadings(
-  viewport: HTMLElement,
-  blockIds: readonly string[],
-): HeadingBinding[] {
+export function bindHeadings(viewport: HTMLElement, blockIds: readonly string[]): HeadingBinding[] {
   const nodesByBlockId = new Map<string, HTMLElement>();
   for (const node of viewport.querySelectorAll<HTMLElement>('[data-block-type="heading"]')) {
-    const id = node.dataset.blockId ?? '';
+    const id = node.dataset.blockId ?? "";
     if (!nodesByBlockId.has(id)) nodesByBlockId.set(id, node);
   }
   const bindings = blockIds.flatMap<HeadingBinding>((blockId, itemIndex) => {

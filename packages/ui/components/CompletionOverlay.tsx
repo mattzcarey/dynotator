@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { useAutoClose } from '../hooks/useAutoClose';
+import type { ReactNode } from "react";
+import { useAutoClose } from "../hooks/useAutoClose";
 
 // ---------------------------------------------------------------------------
 // Icons
@@ -29,7 +29,7 @@ interface CompletionOverlayProps {
   /** `done`: the session finished with nothing sent (an annotate Done with
    *  no feedback). Neutral styling. `done` and `exited` (Close) send nothing,
    *  so neither shows the "response has been sent" line. */
-  submitted: 'approved' | 'denied' | 'feedback' | 'done' | 'exited' | null | false;
+  submitted: "approved" | "denied" | "feedback" | "done" | "exited" | null | false;
   title: string;
   subtitle: string;
   agentLabel: string;
@@ -47,29 +47,46 @@ interface CompletionOverlayProps {
   footer?: ReactNode;
 }
 
-export function CompletionOverlay({ submitted, title, subtitle, agentLabel, links, footer }: CompletionOverlayProps) {
+export function CompletionOverlay({
+  submitted,
+  title,
+  subtitle,
+  agentLabel,
+  links,
+  footer,
+}: CompletionOverlayProps) {
   const { state, enableAndStart } = useAutoClose(!!submitted);
 
   if (!submitted) return null;
 
-  const isApproved = submitted === 'approved';
-  const isDone = submitted === 'done';
-  const sentNothing = isDone || submitted === 'exited';
+  const isApproved = submitted === "approved";
+  const isDone = submitted === "done";
+  const sentNothing = isDone || submitted === "exited";
   const hasFooter = footer !== undefined && footer !== null && footer !== false;
 
   return (
     <div
-      className={hasFooter
-        ? 'fixed inset-0 z-[100] bg-background flex items-start justify-center overflow-y-auto pt-10 pb-8 sm:pt-[72px] sm:pb-12'
-        : 'fixed inset-0 z-[100] bg-background flex items-center justify-center'}
+      className={
+        hasFooter
+          ? "fixed inset-0 z-[100] bg-background flex items-start justify-center overflow-y-auto pt-10 pb-8 sm:pt-[72px] sm:pb-12"
+          : "fixed inset-0 z-[100] bg-background flex items-center justify-center"
+      }
       data-completion-state={submitted}
     >
-      <div className={hasFooter ? 'text-center space-y-6 w-full max-w-[480px] px-8' : 'text-center space-y-6 max-w-md px-8'}>
+      <div
+        className={
+          hasFooter
+            ? "text-center space-y-6 w-full max-w-[480px] px-8"
+            : "text-center space-y-6 max-w-md px-8"
+        }
+      >
         <div
           className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
-            isApproved ? 'bg-success/20 text-success'
-            : isDone ? 'bg-muted text-muted-foreground'
-            : 'bg-accent/20 text-accent'
+            isApproved
+              ? "bg-success/20 text-success"
+              : isDone
+                ? "bg-muted text-muted-foreground"
+                : "bg-accent/20 text-accent"
           }`}
         >
           {isApproved || isDone ? <CheckIcon /> : <ChatBubbleIcon />}
@@ -97,15 +114,16 @@ export function CompletionOverlay({ submitted, title, subtitle, agentLabel, link
         </div>
 
         <div className="pt-4 border-t border-border space-y-2">
-          {state.phase === 'counting' ? (
+          {state.phase === "counting" ? (
             <>
               <p className="text-sm text-muted-foreground">
-                This tab will close in <span className="text-foreground font-medium">{state.remaining}</span> second
-                {state.remaining !== 1 ? 's' : ''}...
+                This tab will close in{" "}
+                <span className="text-foreground font-medium">{state.remaining}</span> second
+                {state.remaining !== 1 ? "s" : ""}...
               </p>
               <p className="text-xs text-muted-foreground/60">You can change this in Settings.</p>
             </>
-          ) : state.phase === 'closeFailed' ? (
+          ) : state.phase === "closeFailed" ? (
             <>
               <p className="text-sm text-muted-foreground">
                 Could not close this tab automatically. Please close it manually.
@@ -117,17 +135,25 @@ export function CompletionOverlay({ submitted, title, subtitle, agentLabel, link
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
-                You can close this tab and return to <span className="text-foreground font-medium">{agentLabel}</span>.
+                You can close this tab and return to{" "}
+                <span className="text-foreground font-medium">{agentLabel}</span>.
               </p>
-              {state.phase === 'prompt' ? (
+              {state.phase === "prompt" ? (
                 <>
                   <label className="flex items-center justify-center gap-2 cursor-pointer group">
-                    <input type="checkbox" checked={false} onChange={enableAndStart} className="accent-primary" />
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={enableAndStart}
+                      className="accent-primary"
+                    />
                     <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
                       Auto-close this tab after 3 seconds
                     </span>
                   </label>
-                  <p className="text-xs text-muted-foreground/60">You can change the delay in Settings.</p>
+                  <p className="text-xs text-muted-foreground/60">
+                    You can change the delay in Settings.
+                  </p>
                 </>
               ) : sentNothing ? null : (
                 <p className="text-xs text-muted-foreground/60">Your response has been sent.</p>

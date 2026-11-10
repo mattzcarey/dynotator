@@ -1,6 +1,6 @@
-import React from 'react';
-import { MERMAID_CONFIG, __setMermaidRuntimeLoaderForTests } from '../utils/mermaid';
-import { DiagramBlock, type DiagramBlockProps } from './DiagramBlock';
+import React from "react";
+import { MERMAID_CONFIG, __setMermaidRuntimeLoaderForTests } from "../utils/mermaid";
+import { DiagramBlock, type DiagramBlockProps } from "./DiagramBlock";
 
 // Re-exported: the config pin test and the lazy-retry test import them from here.
 export { MERMAID_CONFIG, __setMermaidRuntimeLoaderForTests };

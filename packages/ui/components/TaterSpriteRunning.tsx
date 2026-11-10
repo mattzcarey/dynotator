@@ -1,6 +1,6 @@
 /// <reference path="../globals.d.ts" />
-import React from 'react';
-import spriteSheet from '../sprite_package_additional/sprite.png';
+import React from "react";
+import spriteSheet from "../sprite_package_additional/sprite.png";
 
 // Sprite: 176x96 native, 24 frames, 5 second animation cycle
 // Running across screen should sync with animation speed
@@ -29,8 +29,8 @@ export const TaterSpriteRunning: React.FC = () => {
         zIndex: 5, // Above sidebars (z-auto) but below plan document (z-10)
         backgroundImage: `url(${spriteSheet})`,
         backgroundSize: `${TOTAL_SPRITE_WIDTH}px ${DISPLAY_HEIGHT}px`,
-        backgroundPosition: 'left center',
-        imageRendering: 'pixelated',
+        backgroundPosition: "left center",
+        imageRendering: "pixelated",
         animation: `tater-run-sprite ${FRAME_DURATION}s steps(${FRAMES}) infinite, tater-run-across ${SCREEN_TRAVERSE_TIME}s linear infinite`,
       }}
     >

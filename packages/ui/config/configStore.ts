@@ -11,7 +11,7 @@
  * via a debounced POST /api/config.
  */
 
-import { SETTINGS, type SettingName, type SettingsMap } from './settings';
+import { SETTINGS, type SettingName, type SettingsMap } from "./settings";
 
 type Listener = () => void;
 
@@ -19,8 +19,12 @@ type Listener = () => void;
 function deepMerge(target: Record<string, unknown>, source: Record<string, unknown>): void {
   for (const key of Object.keys(source)) {
     if (
-      typeof target[key] === 'object' && target[key] !== null && !Array.isArray(target[key]) &&
-      typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])
+      typeof target[key] === "object" &&
+      target[key] !== null &&
+      !Array.isArray(target[key]) &&
+      typeof source[key] === "object" &&
+      source[key] !== null &&
+      !Array.isArray(source[key])
     ) {
       deepMerge(target[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
     } else {
@@ -30,7 +34,7 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -57,9 +61,9 @@ export type ServerSyncFn = (payload: Record<string, unknown>) => void;
 /** Default = today's inline POST /api/config (best-effort).
     keepalive lets the request outlive page teardown (pagehide flush). */
 const defaultServerSync: ServerSyncFn = (payload) => {
-  fetch('/api/config', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  fetch("/api/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     keepalive: true,
   }).catch(() => {}); // best-effort
@@ -67,7 +71,9 @@ const defaultServerSync: ServerSyncFn = (payload) => {
 
 /** Infer the value type from a SettingDef */
 type SettingValue<K extends SettingName> = SettingsMap[K] extends { defaultValue: infer D }
-  ? D extends (...args: unknown[]) => infer R ? R : D
+  ? D extends (...args: unknown[]) => infer R
+    ? R
+    : D
   : never;
 
 class ConfigStore {
@@ -100,9 +106,10 @@ class ConfigStore {
     this.loaded = true;
     for (const [name, def] of Object.entries(SETTINGS)) {
       const fromCookie = def.fromCookie();
-      const defaultVal = typeof def.defaultValue === 'function'
-        ? (def.defaultValue as () => unknown)()
-        : def.defaultValue;
+      const defaultVal =
+        typeof def.defaultValue === "function"
+          ? (def.defaultValue as () => unknown)()
+          : def.defaultValue;
       const resolved = fromCookie ?? defaultVal;
       this.values.set(name, resolved);
       // Persist generated defaults to cookie so the value is stable across calls
@@ -260,9 +267,9 @@ class ConfigStore {
     // ~/.plannotator/config.json disagreeing; on the next session init() then
     // "restores" the stale server value over the cookie. Flush on pagehide so
     // the two stores can't diverge this way.
-    if (!this.pagehideFlushRegistered && typeof window !== 'undefined') {
+    if (!this.pagehideFlushRegistered && typeof window !== "undefined") {
       this.pagehideFlushRegistered = true;
-      window.addEventListener('pagehide', () => this.flushServerSync());
+      window.addEventListener("pagehide", () => this.flushServerSync());
     }
     if (this.serverSyncTimer) clearTimeout(this.serverSyncTimer);
     this.serverSyncTimer = setTimeout(() => this.flushServerSync(), 300);

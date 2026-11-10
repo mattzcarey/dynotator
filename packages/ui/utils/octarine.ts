@@ -5,12 +5,12 @@
  * Uses octarine:// URI scheme — no vault detection needed.
  */
 
-import { storage } from './storage';
+import { storage } from "./storage";
 
-const STORAGE_KEY_ENABLED = 'plannotator-octarine-enabled';
-const STORAGE_KEY_WORKSPACE = 'plannotator-octarine-workspace';
-const STORAGE_KEY_FOLDER = 'plannotator-octarine-folder';
-const STORAGE_KEY_AUTOSAVE = 'plannotator-octarine-autosave';
+const STORAGE_KEY_ENABLED = "plannotator-octarine-enabled";
+const STORAGE_KEY_WORKSPACE = "plannotator-octarine-workspace";
+const STORAGE_KEY_FOLDER = "plannotator-octarine-folder";
+const STORAGE_KEY_AUTOSAVE = "plannotator-octarine-autosave";
 
 /**
  * Octarine integration settings
@@ -27,10 +27,10 @@ export interface OctarineSettings {
  */
 export function getOctarineSettings(): OctarineSettings {
   return {
-    enabled: storage.getItem(STORAGE_KEY_ENABLED) === 'true',
-    workspace: storage.getItem(STORAGE_KEY_WORKSPACE) ?? '',
-    folder: storage.getItem(STORAGE_KEY_FOLDER) || 'plannotator',
-    autoSave: storage.getItem(STORAGE_KEY_AUTOSAVE) === 'true',
+    enabled: storage.getItem(STORAGE_KEY_ENABLED) === "true",
+    workspace: storage.getItem(STORAGE_KEY_WORKSPACE) ?? "",
+    folder: storage.getItem(STORAGE_KEY_FOLDER) || "plannotator",
+    autoSave: storage.getItem(STORAGE_KEY_AUTOSAVE) === "true",
   };
 }
 

@@ -156,8 +156,8 @@ export function buildBridgeScriptTag(bridgeScriptUrl?: string): string {
     // rendered an HtmlViewer without `bridgeScriptUrl`: an empty inline
     // script would be a silently dead surface, so fail loudly instead.
     throw new Error(
-      "@dynotator/ui HtmlViewer: the inline bridge script is stubbed out "
-        + "(bridge-script.lite alias) but no bridgeScriptUrl was passed.",
+      "@dynotator/ui HtmlViewer: the inline bridge script is stubbed out " +
+        "(bridge-script.lite alias) but no bridgeScriptUrl was passed.",
     );
   }
   return `<script>${BRIDGE_SCRIPT}</script>`;
@@ -230,7 +230,10 @@ function headStart(rawHtml: string): { position: number; firstScript: number | n
     else if (/^<head[\s>]/.test(token)) return { position: end, firstScript };
     else if (token === "<body") break;
   }
-  return { position: afterDoctype, firstScript: firstScript !== null && firstScript < afterDoctype ? firstScript : null };
+  return {
+    position: afterDoctype,
+    firstScript: firstScript !== null && firstScript < afterDoctype ? firstScript : null,
+  };
 }
 
 function printDefaultsPosition(rawHtml: string): number {
@@ -244,7 +247,10 @@ function printDefaultsPosition(rawHtml: string): number {
  * wrapped code lines; `sectionBreaks` adds the pagination (a new sheet per
  * section and the keep-together hints).
  */
-export function injectPrintDefaults(rawHtml: string, { sectionBreaks = false }: { sectionBreaks?: boolean } = {}): string {
+export function injectPrintDefaults(
+  rawHtml: string,
+  { sectionBreaks = false }: { sectionBreaks?: boolean } = {},
+): string {
   const style = `<style>${DOCUMENT_PRINT_CSS}${sectionBreaks ? SECTION_BREAK_PRINT_CSS : ""}</style>`;
   const position = printDefaultsPosition(rawHtml);
   return rawHtml.slice(0, position) + style + rawHtml.slice(position);

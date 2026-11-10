@@ -1,9 +1,13 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { diagramTargetName } from '@dynotator/core/diagram-anchor';
-import { cn } from '../../lib/utils';
-import { projectElement, type ScreenRect } from '../../utils/diagram-projection';
-import type { DiagramCanvasHandle } from './DiagramCanvas';
-import type { DiagramComposerDraft, DiagramHover, ResolvedDiagramComment } from './useDiagramComments';
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { diagramTargetName } from "@dynotator/core/diagram-anchor";
+import { cn } from "../../lib/utils";
+import { projectElement, type ScreenRect } from "../../utils/diagram-projection";
+import type { DiagramCanvasHandle } from "./DiagramCanvas";
+import type {
+  DiagramComposerDraft,
+  DiagramHover,
+  ResolvedDiagramComment,
+} from "./useDiagramComments";
 
 /**
  * Rings, numbered badges, the hover chip and the composer's anchor point,
@@ -114,7 +118,7 @@ export function DiagramOverlay({
       }
     };
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-    if (typeof requestAnimationFrame === 'function') {
+    if (typeof requestAnimationFrame === "function") {
       frameRef.current = requestAnimationFrame(run);
     } else {
       run();
@@ -145,9 +149,9 @@ export function DiagramOverlay({
         <div key={entry.id} data-diagram-mark={entry.id} data-number={entry.number}>
           <div
             className={cn(
-              'absolute rounded-sm border-2',
-              entry.resolved ? 'border-muted-foreground/50' : 'border-primary/70',
-              entry.id === selectedCommentId && 'animate-pulse border-primary',
+              "absolute rounded-sm border-2",
+              entry.resolved ? "border-muted-foreground/50" : "border-primary/70",
+              entry.id === selectedCommentId && "animate-pulse border-primary",
             )}
             style={ringStyle(entry.rect)}
             aria-hidden="true"
@@ -164,16 +168,19 @@ export function DiagramOverlay({
             type="button"
             data-diagram-badge={entry.id}
             className={cn(
-              'pointer-events-auto absolute flex size-5 -translate-y-1/2 items-center justify-center rounded-full border font-mono text-[10px] font-medium tabular-nums',
+              "pointer-events-auto absolute flex size-5 -translate-y-1/2 items-center justify-center rounded-full border font-mono text-[10px] font-medium tabular-nums",
               // A part's badge rides its top-right corner; the whole
               // diagram's sits top-left, clear of the parts' badges.
-              entry.whole ? '-translate-x-1/2' : 'translate-x-1/2',
+              entry.whole ? "-translate-x-1/2" : "translate-x-1/2",
               entry.resolved
-                ? 'border-border bg-muted text-muted-foreground'
-                : 'border-primary-foreground/40 bg-primary text-primary-foreground',
-              entry.id === selectedCommentId && 'ring-2 ring-primary/40',
+                ? "border-border bg-muted text-muted-foreground"
+                : "border-primary-foreground/40 bg-primary text-primary-foreground",
+              entry.id === selectedCommentId && "ring-2 ring-primary/40",
             )}
-            style={{ left: entry.whole ? entry.rect.left : entry.rect.left + entry.rect.width, top: entry.rect.top }}
+            style={{
+              left: entry.whole ? entry.rect.left : entry.rect.left + entry.rect.width,
+              top: entry.rect.top,
+            }}
             aria-label={`Comment ${entry.number}: ${entry.label}`}
             title={entry.label}
             onClick={(event) => {
@@ -189,13 +196,17 @@ export function DiagramOverlay({
       ))}
       {hoverRect !== null && hover !== null && composer === null && (
         <div data-diagram-hover="">
-          <div className="absolute rounded-sm border-2 border-primary/50" style={ringStyle(hoverRect)} aria-hidden="true" />
+          <div
+            className="absolute rounded-sm border-2 border-primary/50"
+            style={ringStyle(hoverRect)}
+            aria-hidden="true"
+          />
           <span
             className="absolute -translate-y-full whitespace-nowrap rounded-sm border border-border bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground"
             style={{ left: hoverRect.left, top: hoverRect.top - 4 }}
           >
-            {hover.target.label !== '' ? hover.target.label : diagramTargetName(hover.target)}
-            {hover.target.label !== '' && (
+            {hover.target.label !== "" ? hover.target.label : diagramTargetName(hover.target)}
+            {hover.target.label !== "" && (
               <span className="text-muted-foreground/70"> · {diagramTargetName(hover.target)}</span>
             )}
           </span>
@@ -203,9 +214,18 @@ export function DiagramOverlay({
       )}
       {draftRects !== null && composer !== null && (
         <div data-diagram-draft="">
-          <div className="absolute rounded-sm border-2 border-primary" style={ringStyle(draftRects.primary)} aria-hidden="true" />
+          <div
+            className="absolute rounded-sm border-2 border-primary"
+            style={ringStyle(draftRects.primary)}
+            aria-hidden="true"
+          />
           {draftRects.additional.map((rect, index) => (
-            <div key={index} className="absolute rounded-sm border-2 border-dashed border-primary" style={ringStyle(rect)} aria-hidden="true" />
+            <div
+              key={index}
+              className="absolute rounded-sm border-2 border-dashed border-primary"
+              style={ringStyle(rect)}
+              aria-hidden="true"
+            />
           ))}
           {renderComposer(draftRects.primary)}
         </div>

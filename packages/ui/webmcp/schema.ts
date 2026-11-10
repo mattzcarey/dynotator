@@ -10,16 +10,21 @@
 
 export type JsonSchema = Record<string, unknown>;
 
-export function validateAgainstSchema(schema: JsonSchema | undefined, value: unknown, path = 'input'): string | null {
+export function validateAgainstSchema(
+  schema: JsonSchema | undefined,
+  value: unknown,
+  path = "input",
+): string | null {
   if (!schema) return null;
   const type = schema.type;
   const enumValues = schema.enum;
   if (Array.isArray(enumValues) && !enumValues.some((v) => v === value)) {
-    return `${path} must be one of ${enumValues.map((v) => JSON.stringify(v)).join(', ')}`;
+    return `${path} must be one of ${enumValues.map((v) => JSON.stringify(v)).join(", ")}`;
   }
   switch (type) {
-    case 'object': {
-      if (value === null || typeof value !== 'object' || Array.isArray(value)) return `${path} must be an object`;
+    case "object": {
+      if (value === null || typeof value !== "object" || Array.isArray(value))
+        return `${path} must be an object`;
       const record = value as Record<string, unknown>;
       const properties = (schema.properties ?? {}) as Record<string, JsonSchema>;
       const required = Array.isArray(schema.required) ? (schema.required as string[]) : [];
@@ -38,32 +43,34 @@ export function validateAgainstSchema(schema: JsonSchema | undefined, value: unk
       }
       return null;
     }
-    case 'string': {
-      if (typeof value !== 'string') return `${path} must be a string`;
-      if (typeof schema.minLength === 'number' && value.length < schema.minLength) {
+    case "string": {
+      if (typeof value !== "string") return `${path} must be a string`;
+      if (typeof schema.minLength === "number" && value.length < schema.minLength) {
         return `${path} must be at least ${schema.minLength} characters`;
       }
-      if (typeof schema.maxLength === 'number' && value.length > schema.maxLength) {
+      if (typeof schema.maxLength === "number" && value.length > schema.maxLength) {
         return `${path} must be at most ${schema.maxLength} characters`;
       }
       return null;
     }
-    case 'integer':
-    case 'number': {
-      if (typeof value !== 'number' || !Number.isFinite(value)) return `${path} must be a number`;
-      if (type === 'integer' && !Number.isInteger(value)) return `${path} must be an integer`;
-      if (typeof schema.minimum === 'number' && value < schema.minimum) return `${path} must be >= ${schema.minimum}`;
-      if (typeof schema.maximum === 'number' && value > schema.maximum) return `${path} must be <= ${schema.maximum}`;
+    case "integer":
+    case "number": {
+      if (typeof value !== "number" || !Number.isFinite(value)) return `${path} must be a number`;
+      if (type === "integer" && !Number.isInteger(value)) return `${path} must be an integer`;
+      if (typeof schema.minimum === "number" && value < schema.minimum)
+        return `${path} must be >= ${schema.minimum}`;
+      if (typeof schema.maximum === "number" && value > schema.maximum)
+        return `${path} must be <= ${schema.maximum}`;
       return null;
     }
-    case 'boolean':
-      return typeof value === 'boolean' ? null : `${path} must be a boolean`;
-    case 'array': {
+    case "boolean":
+      return typeof value === "boolean" ? null : `${path} must be a boolean`;
+    case "array": {
       if (!Array.isArray(value)) return `${path} must be an array`;
-      if (typeof schema.minItems === 'number' && value.length < schema.minItems) {
-        return `${path} must have at least ${schema.minItems} item${schema.minItems === 1 ? '' : 's'}`;
+      if (typeof schema.minItems === "number" && value.length < schema.minItems) {
+        return `${path} must have at least ${schema.minItems} item${schema.minItems === 1 ? "" : "s"}`;
       }
-      if (typeof schema.maxItems === 'number' && value.length > schema.maxItems) {
+      if (typeof schema.maxItems === "number" && value.length > schema.maxItems) {
         return `${path} must have at most ${schema.maxItems} items`;
       }
       const items = schema.items as JsonSchema | undefined;

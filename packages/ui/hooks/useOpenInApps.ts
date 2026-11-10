@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import type { OpenInKind, OpenInPlatform } from '@dynotator/core/open-in-apps';
-import { getStoredOpenInApp, setLastOpenInApp } from '../utils/storage';
+import { useEffect, useState } from "react";
+import type { OpenInKind, OpenInPlatform } from "@dynotator/core/open-in-apps";
+import { getStoredOpenInApp, setLastOpenInApp } from "../utils/storage";
 
 /**
  * The "Open in" pieces every host shares: the detected-apps list (fetched
@@ -44,8 +44,15 @@ export function loadOpenInApps(url: string): Promise<OpenInAppsAnswer> {
       .then(async (response) => {
         if (!response.ok) return unavailable();
         const data = (await response.json()) as Partial<OpenInAppsAnswer>;
-        const platform = data.platform === 'mac' || data.platform === 'win' || data.platform === 'linux' ? data.platform : undefined;
-        return { available: data.available === true, apps: Array.isArray(data.apps) ? data.apps : [], ...(platform ? { platform } : {}) };
+        const platform =
+          data.platform === "mac" || data.platform === "win" || data.platform === "linux"
+            ? data.platform
+            : undefined;
+        return {
+          available: data.available === true,
+          apps: Array.isArray(data.apps) ? data.apps : [],
+          ...(platform ? { platform } : {}),
+        };
       })
       .catch(unavailable);
     loads.set(url, load);
@@ -58,7 +65,11 @@ export function loadOpenInApps(url: string): Promise<OpenInAppsAnswer> {
  * reads nothing (and answers null). A new `retryKey` asks again after a read
  * that did not answer; a kept answer comes back at once.
  */
-export function useOpenInApps(url: string, enabled = true, retryKey?: string): OpenInAppsAnswer | null {
+export function useOpenInApps(
+  url: string,
+  enabled = true,
+  retryKey?: string,
+): OpenInAppsAnswer | null {
   const [answer, setAnswer] = useState<OpenInAppsAnswer | null>(null);
   useEffect(() => {
     if (!enabled) return;

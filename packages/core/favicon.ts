@@ -4,9 +4,14 @@
 // none of the icons below. Each icon is also marked pure, so a bundle drops
 // the ones it never reads.
 
-import type { FaviconStyle } from './favicon-style';
+import type { FaviconStyle } from "./favicon-style";
 
-export { DEFAULT_FAVICON_STYLE, FAVICON_STYLE_CHOICES, isFaviconStyle, type FaviconStyle } from './favicon-style';
+export {
+  DEFAULT_FAVICON_STYLE,
+  FAVICON_STYLE_CHOICES,
+  isFaviconStyle,
+  type FaviconStyle,
+} from "./favicon-style";
 
 /**
  * The Glass favicon, the default, as the tab shows it: the brand studio's
@@ -223,9 +228,8 @@ export const FAVICON_ICO_BASE64 = /* @__PURE__ */ [
 
 export const FAVICON_ICO_DATA_URL = `data:image/x-icon;base64,${FAVICON_ICO_BASE64}`;
 
-export const FAVICON_ICO_BYTES = /* @__PURE__ */ Uint8Array.from(
-  atob(FAVICON_ICO_BASE64),
-  (char) => char.charCodeAt(0),
+export const FAVICON_ICO_BYTES = /* @__PURE__ */ Uint8Array.from(atob(FAVICON_ICO_BASE64), (char) =>
+  char.charCodeAt(0),
 );
 
 /**
@@ -630,33 +634,39 @@ export const CLASSIC_FAVICON_DATA_URL = `data:image/svg+xml;base64,${/* @__PURE_
  * .ico (the tab picks the 16 or 32 frame), Face is its PNG.
  */
 export function faviconDataUrl(style: FaviconStyle): string {
-  if (style === 'yellow') return YELLOW_FAVICON_ICO_DATA_URL;
-  if (style === 'totman') return FACE_FAVICON_PNG_DATA_URL;
+  if (style === "yellow") return YELLOW_FAVICON_ICO_DATA_URL;
+  if (style === "totman") return FACE_FAVICON_PNG_DATA_URL;
   return FAVICON_ICO_DATA_URL;
 }
 
 /** A style's icon as one PNG (what `/favicon.png` serves); the Inbox draws its tab-count badge over it. */
 export function faviconPngDataUrl(style: FaviconStyle): string {
-  if (style === 'yellow') return YELLOW_FAVICON_PNG_DATA_URL;
-  if (style === 'totman') return FACE_FAVICON_PNG_DATA_URL;
+  if (style === "yellow") return YELLOW_FAVICON_PNG_DATA_URL;
+  if (style === "totman") return FACE_FAVICON_PNG_DATA_URL;
   return FAVICON_PNG_DATA_URL;
 }
 
 /** What a `<link rel="icon">` declares for a style: its type, and the sizes it holds. */
-export function faviconLinkType(style: FaviconStyle): { type: 'image/png' | 'image/x-icon'; sizes: string } {
-  if (style === 'yellow') return { type: 'image/x-icon', sizes: FAVICON_ICO_SIZES };
-  if (style === 'totman') return { type: 'image/png', sizes: '64x64' };
-  return { type: 'image/x-icon', sizes: FAVICON_ICO_SIZES };
+export function faviconLinkType(style: FaviconStyle): {
+  type: "image/png" | "image/x-icon";
+  sizes: string;
+} {
+  if (style === "yellow") return { type: "image/x-icon", sizes: FAVICON_ICO_SIZES };
+  if (style === "totman") return { type: "image/png", sizes: "64x64" };
+  return { type: "image/x-icon", sizes: FAVICON_ICO_SIZES };
 }
 
 /** The frames in the Glass and Yellow .ico files, as a `sizes` attribute. */
-export const FAVICON_ICO_SIZES = '16x16 32x32 48x48';
+export const FAVICON_ICO_SIZES = "16x16 32x32 48x48";
 
 /** What `/favicon.png` answers for a style (any value that is not a style answers the default). */
-export function faviconBody(style: unknown): { body: Uint8Array<ArrayBuffer>; contentType: 'image/png' } {
-  if (style === 'yellow') return { body: YELLOW_FAVICON_PNG_BYTES, contentType: 'image/png' };
-  if (style === 'totman') return { body: FACE_FAVICON_PNG_BYTES, contentType: 'image/png' };
-  return { body: FAVICON_PNG_BYTES, contentType: 'image/png' };
+export function faviconBody(style: unknown): {
+  body: Uint8Array<ArrayBuffer>;
+  contentType: "image/png";
+} {
+  if (style === "yellow") return { body: YELLOW_FAVICON_PNG_BYTES, contentType: "image/png" };
+  if (style === "totman") return { body: FACE_FAVICON_PNG_BYTES, contentType: "image/png" };
+  return { body: FAVICON_PNG_BYTES, contentType: "image/png" };
 }
 
 /**
@@ -664,8 +674,11 @@ export function faviconBody(style: unknown): { body: Uint8Array<ArrayBuffer>; co
  * Glass and Yellow are their .ico; Face has no .ico, so its PNG (a browser reads an
  * icon by its bytes and Content-Type, not by the URL's extension).
  */
-export function faviconIcoBody(style: unknown): { body: Uint8Array<ArrayBuffer>; contentType: 'image/png' | 'image/x-icon' } {
-  if (style === 'yellow') return { body: YELLOW_FAVICON_ICO_BYTES, contentType: 'image/x-icon' };
-  if (style === 'totman') return faviconBody(style);
-  return { body: FAVICON_ICO_BYTES, contentType: 'image/x-icon' };
+export function faviconIcoBody(style: unknown): {
+  body: Uint8Array<ArrayBuffer>;
+  contentType: "image/png" | "image/x-icon";
+} {
+  if (style === "yellow") return { body: YELLOW_FAVICON_ICO_BYTES, contentType: "image/x-icon" };
+  if (style === "totman") return faviconBody(style);
+  return { body: FAVICON_ICO_BYTES, contentType: "image/x-icon" };
 }

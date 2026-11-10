@@ -39,33 +39,33 @@ export function planEmbedInsert(
 ): EmbedInsertPlan {
   // Extend the replacement to the start of the line. The picker only fires
   // when everything before the typed query is whitespace.
-  let lineStart = body.lastIndexOf('\n', from - 1) + 1;
+  let lineStart = body.lastIndexOf("\n", from - 1) + 1;
   if (from === 0) lineStart = 0;
 
   // No blank line is needed before an embed at the document start or when
   // the previous line is already blank (including whitespace-only lines).
-  let prefix = '';
+  let prefix = "";
   if (lineStart > 0) {
-    const previousLineStart = body.lastIndexOf('\n', lineStart - 2) + 1;
+    const previousLineStart = body.lastIndexOf("\n", lineStart - 2) + 1;
     const previousLine = body.slice(previousLineStart, lineStart - 1);
-    if (!/^\s*$/.test(previousLine)) prefix = '\n';
+    if (!/^\s*$/.test(previousLine)) prefix = "\n";
   }
 
   // Normalize the paragraph after the embed according to what follows the
   // replaced range. Existing blank lines are retained instead of doubled.
-  let lineEnd = body.indexOf('\n', to);
+  let lineEnd = body.indexOf("\n", to);
   if (lineEnd === -1) lineEnd = body.length;
   const restOfLine = body.slice(to, lineEnd);
   let suffix: string;
   if (!/^\s*$/.test(restOfLine)) {
-    suffix = '\n\n';
+    suffix = "\n\n";
   } else if (lineEnd >= body.length) {
-    suffix = '\n';
+    suffix = "\n";
   } else {
-    let nextLineEnd = body.indexOf('\n', lineEnd + 1);
+    let nextLineEnd = body.indexOf("\n", lineEnd + 1);
     if (nextLineEnd === -1) nextLineEnd = body.length;
     const nextLine = body.slice(lineEnd + 1, nextLineEnd);
-    suffix = /^\s*$/.test(nextLine) ? '' : '\n';
+    suffix = /^\s*$/.test(nextLine) ? "" : "\n";
   }
 
   const embedEnd = lineStart + prefix.length + embedLine.length;

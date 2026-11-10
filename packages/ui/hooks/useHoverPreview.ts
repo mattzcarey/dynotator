@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /** How long the pointer rests on an anchor before the preview is fetched. */
 export const HOVER_PREVIEW_SHOW_DELAY_MS = 150;
@@ -40,10 +40,16 @@ export function useHoverPreview<T>(load: () => Promise<T | null>, enabled = true
   loadRef.current = load;
 
   const cancelShow = useCallback(() => {
-    if (showTimerRef.current) { clearTimeout(showTimerRef.current); showTimerRef.current = null; }
+    if (showTimerRef.current) {
+      clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
+    }
   }, []);
   const cancelHide = useCallback(() => {
-    if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
   }, []);
 
   const scheduleHide = useCallback(() => {
@@ -78,10 +84,13 @@ export function useHoverPreview<T>(load: () => Promise<T | null>, enabled = true
     setPreview(null);
   }, [cancelShow, cancelHide]);
 
-  useEffect(() => () => {
-    cancelShow();
-    cancelHide();
-  }, [cancelShow, cancelHide]);
+  useEffect(
+    () => () => {
+      cancelShow();
+      cancelHide();
+    },
+    [cancelShow, cancelHide],
+  );
 
   return {
     preview,

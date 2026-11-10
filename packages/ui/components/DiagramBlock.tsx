@@ -1,23 +1,37 @@
-import React, { lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { diagramTargetText, type DiagramAnchor, type DiagramKind } from '@dynotator/core/diagram-anchor';
-import type { AnnotationRestoreReport } from '../hooks/useAnnotationHighlighter';
-import { AnnotationType, type Annotation, type Block } from '../types';
-import { useConfigValue } from '../config';
-import type { DiagramTheme } from '../utils/diagram-render';
-import { diagramShadowAmount } from '../utils/diagramShadow';
-import { getIdentity } from '../utils/identity';
-import { createRuntimeRetryEpoch } from '../utils/runtimeRetry';
-import { DiagramAnchorClaims, DiagramAnchorClaimsContext } from './diagram/anchorClaims';
-import { DiagramPending, DiagramInlineSource } from './diagram/DiagramPending';
-import { DiagramViewer, type DiagramAskAI } from './diagram/DiagramViewer';
-import type { CommentAskAIHandler } from './CommentPopover';
-import { diagramAskAIContext } from '../utils/diagramAskAI';
-import { svgContentSize } from './diagram/svgContentSize';
-import type { DiagramComment, DiagramCreateComment } from './diagram/useDiagramComments';
-import type { DiagramRenderState } from './diagram/useDiagramRender';
-import type { DiagramReopenRequest } from './diagram/reopen';
-import { useTheme } from './ThemeProvider';
-import { LazyBlockBoundary } from './LazyBlockBoundary';
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import {
+  diagramTargetText,
+  type DiagramAnchor,
+  type DiagramKind,
+} from "@dynotator/core/diagram-anchor";
+import type { AnnotationRestoreReport } from "../hooks/useAnnotationHighlighter";
+import { AnnotationType, type Annotation, type Block } from "../types";
+import { useConfigValue } from "../config";
+import type { DiagramTheme } from "../utils/diagram-render";
+import { diagramShadowAmount } from "../utils/diagramShadow";
+import { getIdentity } from "../utils/identity";
+import { createRuntimeRetryEpoch } from "../utils/runtimeRetry";
+import { DiagramAnchorClaims, DiagramAnchorClaimsContext } from "./diagram/anchorClaims";
+import { DiagramPending, DiagramInlineSource } from "./diagram/DiagramPending";
+import { DiagramViewer, type DiagramAskAI } from "./diagram/DiagramViewer";
+import type { CommentAskAIHandler } from "./CommentPopover";
+import { diagramAskAIContext } from "../utils/diagramAskAI";
+import { svgContentSize } from "./diagram/svgContentSize";
+import type { DiagramComment, DiagramCreateComment } from "./diagram/useDiagramComments";
+import type { DiagramRenderState } from "./diagram/useDiagramRender";
+import type { DiagramReopenRequest } from "./diagram/reopen";
+import { useTheme } from "./ThemeProvider";
+import { LazyBlockBoundary } from "./LazyBlockBoundary";
 
 /**
  * A diagram fence in the document: the fence's language picks the engine
@@ -39,12 +53,14 @@ const RETRY_EPOCHS: Record<DiagramKind, ReturnType<typeof createRuntimeRetryEpoc
   graphviz: createRuntimeRetryEpoch(),
 };
 
-const LABELS: Record<DiagramKind, string> = { mermaid: 'Mermaid', graphviz: 'Graphviz' };
+const LABELS: Record<DiagramKind, string> = { mermaid: "Mermaid", graphviz: "Graphviz" };
 
 /** The full-size popout is only ever reached by pressing Expand, so it loads
  * then and not with the document. Its fallback is null: the overlay simply
  * has not opened yet, and nothing in the document flow moves. */
-const DiagramPopout = lazy(async () => ({ default: (await import('./diagram/DiagramPopout')).DiagramPopout }));
+const DiagramPopout = lazy(async () => ({
+  default: (await import("./diagram/DiagramPopout")).DiagramPopout,
+}));
 
 /** The inline box height from the diagram's aspect at a nominal width, so
  * a wide flowchart is not letterboxed in a tall box and a tall state
@@ -56,14 +72,14 @@ const MAX_HEIGHT_PX = 36 * 16;
 
 function inlineHeight(state: DiagramRenderState | null): string {
   const size = state?.svgNode ? svgContentSize(state.svgNode) : null;
-  if (size === null) return 'min(65vh, 24rem)';
+  if (size === null) return "min(65vh, 24rem)";
   const px = Math.round(size.height * (NOMINAL_WIDTH_PX / size.width)) + 48;
   return `min(65vh, ${Math.min(MAX_HEIGHT_PX, Math.max(MIN_HEIGHT_PX, px))}px)`;
 }
 
 function newAnnotationId(): string {
   const c = globalThis.crypto;
-  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  if (c && typeof c.randomUUID === "function") return c.randomUUID();
   return `ann-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
@@ -99,7 +115,11 @@ export interface DiagramBlockProps {
   /** Opt-in: the part the diagram's composer is on as it opens, null as it
    * closes (`where`: the inline diagram's or the popout's composer). Reads
    * only. Absent: nothing changes. */
-  onComposerAnchor?: (blockId: string, where: 'inline' | 'popout', anchor: DiagramAnchor | null) => void;
+  onComposerAnchor?: (
+    blockId: string,
+    where: "inline" | "popout",
+    anchor: DiagramAnchor | null,
+  ) => void;
 }
 
 const NO_ANNOTATIONS: readonly Annotation[] = [];
@@ -122,8 +142,14 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
   const label = LABELS[kind];
   const onComposerAnchorRef = useRef(onComposerAnchor);
   onComposerAnchorRef.current = onComposerAnchor;
-  const inlineComposerAnchor = useCallback((anchor: DiagramAnchor | null) => onComposerAnchorRef.current?.(block.id, 'inline', anchor), [block.id]);
-  const popoutComposerAnchor = useCallback((anchor: DiagramAnchor | null) => onComposerAnchorRef.current?.(block.id, 'popout', anchor), [block.id]);
+  const inlineComposerAnchor = useCallback(
+    (anchor: DiagramAnchor | null) => onComposerAnchorRef.current?.(block.id, "inline", anchor),
+    [block.id],
+  );
+  const popoutComposerAnchor = useCallback(
+    (anchor: DiagramAnchor | null) => onComposerAnchorRef.current?.(block.id, "popout", anchor),
+    [block.id],
+  );
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [showSource, setShowSource] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -140,11 +166,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
   // The node shadow reaches the renderer the same way the palette does: as
   // part of the theme key, so changing it re-initializes Mermaid and re-renders
   // every mounted diagram.
-  const diagramShadow = useConfigValue('diagramShadow');
+  const diagramShadow = useConfigValue("diagramShadow");
   const theme = useMemo<DiagramTheme>(
     () => ({
       colorTheme,
-      mode: resolvedMode === 'light' ? 'light' : 'dark',
+      mode: resolvedMode === "light" ? "light" : "dark",
       shadowAmount: diagramShadowAmount(diagramShadow),
     }),
     [colorTheme, resolvedMode, diagramShadow],
@@ -174,7 +200,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
   const sharedClaims = useContext(DiagramAnchorClaimsContext);
   const ownClaims = useMemo(() => new DiagramAnchorClaims([block.id]), [block.id]);
   const claims = sharedClaims ?? ownClaims;
-  const claimsVersion = useSyncExternalStore(claims.subscribe, claims.getVersion, claims.getVersion);
+  const claimsVersion = useSyncExternalStore(
+    claims.subscribe,
+    claims.getVersion,
+    claims.getVersion,
+  );
 
   // `diagramAnchor` is read defensively everywhere: a row can reach the
   // renderer from any local ingest (the external-annotations API, a draft, a
@@ -192,7 +222,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
           ann.blockId !== block.id &&
           !claims.blockIds.includes(ann.blockId) &&
           // A Graphviz anchor names a DOT part; it is never a Mermaid one.
-          (ann.diagramAnchor?.family === 'graphviz') === (kind === 'graphviz'),
+          (ann.diagramAnchor?.family === "graphviz") === (kind === "graphviz"),
       ),
     [annotations, block.id, claims, kind],
   );
@@ -208,18 +238,21 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
     return [...ownAnnotations, ...tried].map((ann) => ({
       id: ann.id,
       anchor: ann.diagramAnchor!,
-      text: ann.text ?? '',
+      text: ann.text ?? "",
       author: ann.author,
     }));
   }, [block.id, claims, claimsVersion, ownAnnotations, unownedAnnotations]);
 
   const selectedCommentId = useMemo(
-    () => (selectedAnnotationId !== null && comments.some((c) => c.id === selectedAnnotationId) ? selectedAnnotationId : null),
+    () =>
+      selectedAnnotationId !== null && comments.some((c) => c.id === selectedAnnotationId)
+        ? selectedAnnotationId
+        : null,
     [comments, selectedAnnotationId],
   );
   useEffect(() => {
     if (selectedCommentId === null) return;
-    rootRef.current?.scrollIntoView?.({ block: 'nearest' });
+    rootRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [selectedCommentId]);
 
   const handleCreate = useMemo<DiagramCreateComment | undefined>(() => {
@@ -308,7 +341,16 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
       }
     }
     if (attempted.length > 0) onRestoreReport({ attempted, unanchored });
-  }, [block.id, claims, claimsVersion, onRestoreReport, ownAnnotations, renderFailed, resolution, unownedAnnotations]);
+  }, [
+    block.id,
+    claims,
+    claimsVersion,
+    onRestoreReport,
+    ownAnnotations,
+    renderFailed,
+    resolution,
+    unownedAnnotations,
+  ]);
 
   const renderFallback = useCallback(
     (state: DiagramRenderState) => {
@@ -319,8 +361,18 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
         return (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 overflow-hidden">
             <div className="px-3 py-2 bg-destructive/10 border-b border-destructive/20 flex items-center gap-2">
-              <svg className="w-4 h-4 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                className="w-4 h-4 text-destructive"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
               <span className="text-xs text-destructive font-medium">{label} Error</span>
               {state.error.runtimeUnavailable && (
@@ -334,7 +386,9 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
                 </button>
               )}
             </div>
-            <pre className="p-3 text-xs text-destructive/80 overflow-x-auto">{state.error.message}</pre>
+            <pre className="p-3 text-xs text-destructive/80 overflow-x-auto">
+              {state.error.message}
+            </pre>
             <pre className="p-3 text-xs text-muted-foreground bg-muted/30 border-t border-border/30 overflow-x-auto">
               <code>{block.content}</code>
             </pre>
@@ -367,9 +421,18 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
       {/* `annotation-exclude`: the text highlighter never enters a diagram,
           so a text restore (a reply that lost its anchor, a quote that also
           appears in a node label) can never wrap a <mark> inside the svg. */}
-      <div ref={rootRef} className="annotation-exclude my-5 group relative" data-block-id={block.id} data-pinpoint-ignore="" data-diagram-block={kind}>
+      <div
+        ref={rootRef}
+        className="annotation-exclude my-5 group relative"
+        data-block-id={block.id}
+        data-pinpoint-ignore=""
+        data-diagram-block={kind}
+      >
         {svgReady && !showSource && (
-          <div data-print-hide="" className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+          <div
+            data-print-hide=""
+            className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity"
+          >
             <button
               type="button"
               onClick={() => setShowSource(true)}
@@ -377,8 +440,18 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               title="Show source"
               aria-label="Show source"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                />
               </svg>
             </button>
             <button
@@ -389,8 +462,18 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               aria-label="Expand diagram"
               data-diagram-expand=""
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"
+                />
               </svg>
             </button>
           </div>
@@ -404,8 +487,18 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               title="Show diagram"
               aria-label="Show diagram"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
             </button>
             <DiagramInlineSource block={block} kind={kind} />
@@ -413,7 +506,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
         ) : (
           <div
             data-diagram-inline=""
-            className={svgReady ? 'rounded-xl bg-muted/30 border border-border/30 overflow-hidden' : undefined}
+            className={
+              svgReady
+                ? "rounded-xl bg-muted/30 border border-border/30 overflow-hidden"
+                : undefined
+            }
             style={svgReady ? { height: inlineHeight(renderState) } : undefined}
           >
             <DiagramViewer
@@ -429,7 +526,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
           </div>
         )}
       </div>
-      {isExpanded && svgReady && typeof document !== 'undefined' && (
+      {isExpanded && svgReady && typeof document !== "undefined" && (
         // A popout chunk that cannot load leaves the inline diagram as it is
         // and says so under it.
         <LazyBlockBoundary fallback={(notice) => <div className="mb-5">{notice}</div>}>
@@ -442,7 +539,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               renderId={`${kind}-${block.id}-popout`}
               onAskAI={handlePopoutAskAI}
               onComposerAnchor={popoutComposerAnchor}
-              dataAttributes={{ 'data-block-id': block.id }}
+              dataAttributes={{ "data-block-id": block.id }}
             />
           </Suspense>
         </LazyBlockBoundary>

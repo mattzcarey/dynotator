@@ -63,7 +63,9 @@ export function parseAgentSwitchConfig(value: unknown): AgentSwitchChoice | unde
  * field with a name, which keeps its own shape so the Settings dialog shows
  * the Custom field again instead of "<name> (not found)".
  */
-export function agentSwitchConfigValue(choice: AgentSwitchChoice): AgentSwitchConfigValue | undefined {
+export function agentSwitchConfigValue(
+  choice: AgentSwitchChoice,
+): AgentSwitchConfigValue | undefined {
   if (choice.switchTo === "custom" && isAgentSwitchName(choice.customName)) {
     return { switchTo: "custom", customName: choice.customName };
   }

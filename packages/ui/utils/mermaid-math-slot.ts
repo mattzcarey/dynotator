@@ -31,7 +31,7 @@
  * the chunk it exists to remove (`tests/entry-assets.test.ts` pins that).
  */
 
-import { getMathRenderer, type MathRenderer } from './math';
+import { getMathRenderer, type MathRenderer } from "./math";
 
 /** Mermaid's own test for a math label (`katexRegex` in the runtime). */
 const MERMAID_MATH_REGEX = /\$\$(.*)\$\$/;
@@ -43,7 +43,7 @@ export function hasMermaidMath(source: string): boolean {
 
 /** Thrown when Mermaid asks for KaTeX while the math slot is still empty. */
 export const MERMAID_MATH_SLOT_EMPTY_MESSAGE =
-  'Math label: no math renderer is registered (the mathRendererLoader did not resolve before the diagram rendered)';
+  "Math label: no math renderer is registered (the mathRendererLoader did not resolve before the diagram rendered)";
 
 const slotRenderer: MathRenderer = {
   renderToString(tex, options) {

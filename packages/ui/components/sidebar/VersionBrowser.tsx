@@ -96,9 +96,7 @@ export const VersionBrowser: React.FC<VersionBrowserProps> = ({
           </div>
 
           {isLoading ? (
-            <div className="text-xs text-muted-foreground py-2 text-center">
-              Loading...
-            </div>
+            <div className="text-xs text-muted-foreground py-2 text-center">Loading...</div>
           ) : (
             <div className="space-y-0.5">
               {versions

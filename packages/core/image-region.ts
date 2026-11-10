@@ -53,13 +53,13 @@ export const MAX_IMAGE_REGION_DIMENSION = 1_000_000;
 /** The wire key a host that stores anchors as an opaque JSON blob uses;
  * Plannotator carries the region on the annotation itself under
  * `imageRegion`. */
-export const IMAGE_REGION_KEY = 'imageRegion';
+export const IMAGE_REGION_KEY = "imageRegion";
 
 const isPositiveInt = (value: unknown, max = MAX_IMAGE_REGION_DIMENSION): value is number =>
-  typeof value === 'number' && Number.isSafeInteger(value) && value > 0 && value <= max;
+  typeof value === "number" && Number.isSafeInteger(value) && value > 0 && value <= max;
 
 const isNonNegativeInt = (value: unknown, max = MAX_IMAGE_REGION_DIMENSION): value is number =>
-  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= max;
+  typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= max;
 
 // C0 / C1 controls and line breaks: a src is one token on one line.
 // eslint-disable-next-line no-control-regex
@@ -72,11 +72,16 @@ const CONTROL = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/;
  * unknown version. `sourceLine` absent reads as null.
  */
 export function parseImageRegion(value: unknown): ImageRegion | null {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
   const v = value as Record<string, unknown>;
   if (v.v !== 1) return null;
   const src = v.src;
-  if (typeof src !== 'string' || src.trim() === '' || src.length > MAX_IMAGE_REGION_SRC_LENGTH || CONTROL.test(src)) {
+  if (
+    typeof src !== "string" ||
+    src.trim() === "" ||
+    src.length > MAX_IMAGE_REGION_SRC_LENGTH ||
+    CONTROL.test(src)
+  ) {
     return null;
   }
   let sourceLine: number | null = null;
@@ -87,9 +92,10 @@ export function parseImageRegion(value: unknown): ImageRegion | null {
   const { naturalWidth, naturalHeight } = v;
   if (!isPositiveInt(naturalWidth) || !isPositiveInt(naturalHeight)) return null;
   const box = v.box;
-  if (box === null || typeof box !== 'object' || Array.isArray(box)) return null;
+  if (box === null || typeof box !== "object" || Array.isArray(box)) return null;
   const { x, y, w, h } = box as Record<string, unknown>;
-  if (!isNonNegativeInt(x) || !isNonNegativeInt(y) || !isPositiveInt(w) || !isPositiveInt(h)) return null;
+  if (!isNonNegativeInt(x) || !isNonNegativeInt(y) || !isPositiveInt(w) || !isPositiveInt(h))
+    return null;
   if (x + w > naturalWidth || y + h > naturalHeight) return null;
   return { v: 1, src, sourceLine, box: { x, y, w, h }, naturalWidth, naturalHeight };
 }
@@ -108,7 +114,7 @@ export function imageRegionFileName(src: string): string {
 }
 
 /** `420 × 160 px`: the box's size in the image's own pixels. */
-export function imageRegionSize(region: Pick<ImageRegion, 'box'>): string {
+export function imageRegionSize(region: Pick<ImageRegion, "box">): string {
   return `${region.box.w} × ${region.box.h} px`;
 }
 
@@ -120,7 +126,7 @@ export function imageRegionBoxLine(region: ImageRegion): string {
 
 /** `Image: figures/status-colors.png (line 63)`; no line part when unknown. */
 export function imageRegionImageLine(region: ImageRegion): string {
-  return `Image: ${region.src}${region.sourceLine !== null ? ` (line ${region.sourceLine})` : ''}`;
+  return `Image: ${region.src}${region.sourceLine !== null ? ` (line ${region.sourceLine})` : ""}`;
 }
 
 /**
@@ -135,6 +141,6 @@ export function imageRegionLocationLines(region: ImageRegion): string {
 }
 
 /** Two regions name the same image (the src as written). */
-export function sameRegionImage(a: Pick<ImageRegion, 'src'>, b: Pick<ImageRegion, 'src'>): boolean {
+export function sameRegionImage(a: Pick<ImageRegion, "src">, b: Pick<ImageRegion, "src">): boolean {
   return a.src === b.src;
 }

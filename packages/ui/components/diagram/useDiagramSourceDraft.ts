@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * The draft-and-save model behind the Source pane: the pane's buffer is
@@ -25,7 +25,9 @@ export const PREVIEW_DEBOUNCE_MS = 250;
  * baseline; `stale` means someone else saved first and the host hands back
  * what is there now, which Reload adopts. Any other failure is a thrown
  * error, shown as the save error with its message. */
-export type SaveResult = { readonly status: 'ok' } | { readonly status: 'stale'; readonly currentSource: string };
+export type SaveResult =
+  | { readonly status: "ok" }
+  | { readonly status: "stale"; readonly currentSource: string };
 
 export interface DiagramSourceDraft {
   /** The buffer's text. */
@@ -109,14 +111,16 @@ export function useDiagramSourceDraft({
     setSaveError(null);
     try {
       const result = await onSave(text);
-      if (result.status === 'stale') {
+      if (result.status === "stale") {
         setNewer(result.currentSource);
       } else {
         setBaseline(text);
         setNewer(null);
       }
     } catch (error) {
-      setSaveError(error instanceof Error && error.message ? error.message : 'The diagram could not be saved.');
+      setSaveError(
+        error instanceof Error && error.message ? error.message : "The diagram could not be saved.",
+      );
     } finally {
       setSaving(false);
     }
@@ -139,5 +143,17 @@ export function useDiagramSourceDraft({
     setNewer(null);
   }, [newer]);
 
-  return { draft, preview, baseline, dirty, saving, stale, saveError, setDraft, save, discard, reload };
+  return {
+    draft,
+    preview,
+    baseline,
+    dirty,
+    saving,
+    stale,
+    saveError,
+    setDraft,
+    save,
+    discard,
+    reload,
+  };
 }

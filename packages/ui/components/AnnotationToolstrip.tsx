@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import type { EditorMode, InputMethod } from '../types';
-import { TaterSpritePullup } from './TaterSpritePullup';
+import React, { useState, useEffect } from "react";
+import type { EditorMode, InputMethod } from "../types";
+import { TaterSpritePullup } from "./TaterSpritePullup";
 
 /** Props for the shared annotation input and action mode toolstrip. */
 export interface AnnotationToolstripProps {
@@ -66,7 +66,7 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
   hideActionModes = false,
 }) => {
   const [showHelp, setShowHelp] = useState(false);
-  const [helpTab, setHelpTab] = useState<'selection' | 'plannotator'>('selection');
+  const [helpTab, setHelpTab] = useState<"selection" | "plannotator">("selection");
   const [mounted, setMounted] = useState(false);
 
   // Enable transitions only after first paint
@@ -76,114 +76,168 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
 
   return (
     <>
-      <div className={`flex items-center flex-wrap ${compact ? 'gap-1' : 'gap-1.5'}`}>
+      <div className={`flex items-center flex-wrap ${compact ? "gap-1" : "gap-1.5"}`}>
         {/* Input method group */}
         {!hideInputMethodSwitch && (
-        <div className="inline-flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/30">
-          <ToolstripButton
-            active={inputMethod === 'drag'}
-            onClick={() => onInputMethodChange('drag')}
-            label="Select"
-            color="primary"
-            mounted={mounted}
-            compact={compact}
-            iconOnly={iconOnly}
-            icon={
-              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h-1a2 2 0 0 1-2-2 2 2 0 0 1-2 2H6"/>
-                <path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/>
-                <path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/>
-                <path d="M6 4h1a2 2 0 0 1 2 2 2 2 0 0 1 2-2h1"/>
-                <path d="M9 6v12"/>
-              </svg>
-            }
-          />
-          <ToolstripButton
-            active={inputMethod === 'pinpoint'}
-            onClick={() => onInputMethodChange('pinpoint')}
-            label="Pinpoint"
-            color="primary"
-            mounted={mounted}
-            compact={compact}
-            iconOnly={iconOnly}
-            icon={
-              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v4" />
-                <path d="M12 18v4" />
-                <path d="M2 12h4" />
-                <path d="M18 12h4" />
-              </svg>
-            }
-          />
-        </div>
-        )}
-
-        {/* Action mode group */}
-        {!hideActionModes && (
-        <div className="inline-flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/30">
-          <ToolstripButton
-            active={mode === 'selection'}
-            onClick={() => onModeChange('selection')}
-            label="Markup"
-            color="secondary"
-            mounted={mounted}
-            compact={compact}
-            iconOnly={iconOnly}
-            icon={
-              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-            }
-          />
-          <ToolstripButton
-            active={mode === 'comment'}
-            onClick={() => onModeChange('comment')}
-            label="Comment"
-            color="accent"
-            mounted={mounted}
-            compact={compact}
-            iconOnly={iconOnly}
-            icon={
-              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-              </svg>
-            }
-          />
-          {!hideRedline && (
-          <ToolstripButton
-            active={mode === 'redline'}
-            onClick={() => onModeChange('redline')}
-            label="Redline"
-            color="destructive"
-            mounted={mounted}
-            compact={compact}
-            iconOnly={iconOnly}
-            icon={
-              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z" />
-              </svg>
-            }
-          />
-          )}
-          {!hideQuickLabel && (
+          <div className="inline-flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/30">
             <ToolstripButton
-              active={mode === 'quickLabel'}
-              onClick={() => onModeChange('quickLabel')}
-              label="Label"
-              color="warning"
+              active={inputMethod === "drag"}
+              onClick={() => onInputMethodChange("drag")}
+              label="Select"
+              color="primary"
               mounted={mounted}
               compact={compact}
               iconOnly={iconOnly}
               icon={
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <svg
+                  className="w-3.5 h-3.5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 20h-1a2 2 0 0 1-2-2 2 2 0 0 1-2 2H6" />
+                  <path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7" />
+                  <path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1" />
+                  <path d="M6 4h1a2 2 0 0 1 2 2 2 2 0 0 1 2-2h1" />
+                  <path d="M9 6v12" />
                 </svg>
               }
             />
-          )}
-        </div>
+            <ToolstripButton
+              active={inputMethod === "pinpoint"}
+              onClick={() => onInputMethodChange("pinpoint")}
+              label="Pinpoint"
+              color="primary"
+              mounted={mounted}
+              compact={compact}
+              iconOnly={iconOnly}
+              icon={
+                <svg
+                  className="w-3.5 h-3.5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v4" />
+                  <path d="M12 18v4" />
+                  <path d="M2 12h4" />
+                  <path d="M18 12h4" />
+                </svg>
+              }
+            />
+          </div>
+        )}
+
+        {/* Action mode group */}
+        {!hideActionModes && (
+          <div className="inline-flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/30">
+            <ToolstripButton
+              active={mode === "selection"}
+              onClick={() => onModeChange("selection")}
+              label="Markup"
+              color="secondary"
+              mounted={mounted}
+              compact={compact}
+              iconOnly={iconOnly}
+              icon={
+                <svg
+                  className="w-3.5 h-3.5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              }
+            />
+            <ToolstripButton
+              active={mode === "comment"}
+              onClick={() => onModeChange("comment")}
+              label="Comment"
+              color="accent"
+              mounted={mounted}
+              compact={compact}
+              iconOnly={iconOnly}
+              icon={
+                <svg
+                  className="w-3.5 h-3.5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                  />
+                </svg>
+              }
+            />
+            {!hideRedline && (
+              <ToolstripButton
+                active={mode === "redline"}
+                onClick={() => onModeChange("redline")}
+                label="Redline"
+                color="destructive"
+                mounted={mounted}
+                compact={compact}
+                iconOnly={iconOnly}
+                icon={
+                  <svg
+                    className="w-3.5 h-3.5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z"
+                    />
+                  </svg>
+                }
+              />
+            )}
+            {!hideQuickLabel && (
+              <ToolstripButton
+                active={mode === "quickLabel"}
+                onClick={() => onModeChange("quickLabel")}
+                label="Label"
+                color="warning"
+                mounted={mounted}
+                compact={compact}
+                iconOnly={iconOnly}
+                icon={
+                  <svg
+                    className="w-3.5 h-3.5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                }
+              />
+            )}
+          </div>
         )}
 
         {/* Help */}
@@ -205,27 +259,27 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
         >
           <div
             className="bg-card border border-border rounded-xl w-full max-w-2xl shadow-2xl relative"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             {taterMode && <TaterSpritePullup />}
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
                 <button
-                  onClick={() => setHelpTab('selection')}
+                  onClick={() => setHelpTab("selection")}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    helpTab === 'selection'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                    helpTab === "selection"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Selection Modes
                 </button>
                 <button
-                  onClick={() => setHelpTab('plannotator')}
+                  onClick={() => setHelpTab("plannotator")}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    helpTab === 'plannotator'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                    helpTab === "plannotator"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   How Plannotator Works
@@ -235,7 +289,13 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
                 onClick={() => setShowHelp(false)}
                 className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -245,11 +305,14 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
                 key={helpTab}
                 width="100%"
                 height="100%"
-                src={helpTab === 'selection'
-                  ? 'https://www.youtube-nocookie.com/embed/ZNt9jtfx9TY?autoplay=1'
-                  : 'https://www.youtube-nocookie.com/embed/a_AT7cEN_9I?autoplay=1'
+                src={
+                  helpTab === "selection"
+                    ? "https://www.youtube-nocookie.com/embed/ZNt9jtfx9TY?autoplay=1"
+                    : "https://www.youtube-nocookie.com/embed/a_AT7cEN_9I?autoplay=1"
                 }
-                title={helpTab === 'selection' ? 'How Selection Modes Work' : 'How Plannotator Works'}
+                title={
+                  helpTab === "selection" ? "How Selection Modes Work" : "How Plannotator Works"
+                }
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -266,29 +329,29 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
 
 const colorStyles = {
   primary: {
-    active: 'bg-background text-foreground shadow-sm',
-    hover: 'text-primary/80 bg-primary/8',
-    inactive: 'text-muted-foreground hover:text-foreground',
+    active: "bg-background text-foreground shadow-sm",
+    hover: "text-primary/80 bg-primary/8",
+    inactive: "text-muted-foreground hover:text-foreground",
   },
   secondary: {
-    active: 'bg-background text-foreground shadow-sm',
-    hover: 'text-secondary/80 bg-secondary/8',
-    inactive: 'text-muted-foreground hover:text-foreground',
+    active: "bg-background text-foreground shadow-sm",
+    hover: "text-secondary/80 bg-secondary/8",
+    inactive: "text-muted-foreground hover:text-foreground",
   },
   accent: {
-    active: 'bg-background text-foreground shadow-sm',
-    hover: 'text-annotation-comment/80 bg-annotation-comment/8',
-    inactive: 'text-muted-foreground hover:text-foreground',
+    active: "bg-background text-foreground shadow-sm",
+    hover: "text-annotation-comment/80 bg-annotation-comment/8",
+    inactive: "text-muted-foreground hover:text-foreground",
   },
   destructive: {
-    active: 'bg-background text-foreground shadow-sm',
-    hover: 'text-destructive/80 bg-destructive/8',
-    inactive: 'text-muted-foreground hover:text-foreground',
+    active: "bg-background text-foreground shadow-sm",
+    hover: "text-destructive/80 bg-destructive/8",
+    inactive: "text-muted-foreground hover:text-foreground",
   },
   warning: {
-    active: 'bg-background text-foreground shadow-sm',
-    hover: 'text-amber-500/80 bg-amber-500/8',
-    inactive: 'text-muted-foreground hover:text-foreground',
+    active: "bg-background text-foreground shadow-sm",
+    hover: "text-amber-500/80 bg-amber-500/8",
+    inactive: "text-muted-foreground hover:text-foreground",
   },
 } as const;
 
@@ -296,13 +359,13 @@ type ButtonColor = keyof typeof colorStyles;
 
 /* ─── Constants ─── */
 
-const ICON_SIZE = 28;       // collapsed button width (px)
-const H_PAD = 10;           // horizontal padding when expanded (px) — matches px-2.5
-const GAP = 6;              // gap between icon and label (px) — matches gap-1.5
-const ICON_INNER = 14;      // icon element width (px)
+const ICON_SIZE = 28; // collapsed button width (px)
+const H_PAD = 10; // horizontal padding when expanded (px) — matches px-2.5
+const GAP = 6; // gap between icon and label (px) — matches gap-1.5
+const ICON_INNER = 14; // icon element width (px)
 const COLLAPSED_PAD = (ICON_SIZE - ICON_INNER) / 2;
-const DURATION = 180;       // transition ms
-const EASE = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+const DURATION = 180; // transition ms
+const EASE = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 
 /* ─── Button ─── */
 
@@ -332,28 +395,20 @@ const ToolstripButton: React.FC<{
 }> = ({ active, onClick, icon, label, color, mounted, compact = false, iconOnly = false }) => {
   const [hovered, setHovered] = useState(false);
   const styles = colorStyles[color];
-  const [isTouchDevice] = useState(() => 'ontouchstart' in window || navigator.maxTouchPoints > 0);
+  const [isTouchDevice] = useState(() => "ontouchstart" in window || navigator.maxTouchPoints > 0);
 
   // iconOnly: never expand (mobile sticky lane).
   // compact: only active expands (sm+ sticky lane — shows current mode).
   // default: active or hovered expands (top-of-doc full toolstrip).
-  const expanded = iconOnly
-    ? false
-    : compact
-      ? active
-      : (active || hovered || isTouchDevice);
+  const expanded = iconOnly ? false : compact ? active : active || hovered || isTouchDevice;
   const pad = expanded ? H_PAD : COLLAPSED_PAD;
 
-  const colorClass = active
-    ? styles.active
-    : hovered
-      ? styles.hover
-      : styles.inactive;
+  const colorClass = active ? styles.active : hovered ? styles.hover : styles.inactive;
 
   const slide = (property: string) => `${property} ${DURATION}ms ${EASE}`;
   const transition = mounted
-    ? `${slide('padding-inline-start')}, ${slide('padding-inline-end')}, background-color ${DURATION}ms ease, color ${DURATION}ms ease, box-shadow ${DURATION}ms ease`
-    : 'none';
+    ? `${slide("padding-inline-start")}, ${slide("padding-inline-end")}, background-color ${DURATION}ms ease, color ${DURATION}ms ease, box-shadow ${DURATION}ms ease`
+    : "none";
 
   return (
     <button
@@ -372,8 +427,8 @@ const ToolstripButton: React.FC<{
           insetInlineStart: pad + ICON_INNER + GAP,
           opacity: expanded ? 1 : 0,
           transition: mounted
-            ? `${slide('inset-inline-start')}, opacity ${expanded ? DURATION : DURATION * 0.6}ms ease ${expanded ? '60ms' : '0ms'}`
-            : 'none',
+            ? `${slide("inset-inline-start")}, opacity ${expanded ? DURATION : DURATION * 0.6}ms ease ${expanded ? "60ms" : "0ms"}`
+            : "none",
         }}
       >
         {label}
@@ -383,13 +438,15 @@ const ToolstripButton: React.FC<{
       <span
         aria-hidden
         style={{
-          display: 'grid',
-          gridTemplateColumns: expanded ? '1fr' : '0fr',
-          transition: mounted ? slide('grid-template-columns') : 'none',
+          display: "grid",
+          gridTemplateColumns: expanded ? "1fr" : "0fr",
+          transition: mounted ? slide("grid-template-columns") : "none",
         }}
       >
-        <span style={{ minWidth: 0, overflow: 'hidden', visibility: 'hidden' }}>
-          <span className="block text-xs font-medium" style={{ paddingInlineStart: GAP }}>{label}</span>
+        <span style={{ minWidth: 0, overflow: "hidden", visibility: "hidden" }}>
+          <span className="block text-xs font-medium" style={{ paddingInlineStart: GAP }}>
+            {label}
+          </span>
         </span>
       </span>
     </button>

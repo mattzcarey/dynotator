@@ -6,8 +6,8 @@
  * fragment stay plain text unless a heading is literally named that way.
  */
 
-import { buildHeadingSlugMap } from './slugify';
-import { transformPlainText } from './inlineTransforms';
+import { buildHeadingSlugMap } from "./slugify";
+import { transformPlainText } from "./inlineTransforms";
 
 export interface SectionRefSegment {
   /** The heading text, shown as the link label. */
@@ -21,9 +21,9 @@ export type SectionRefPart = string | SectionRefSegment;
 /** A heading's text without its inline markdown syntax. */
 function stripHeadingMarkdown(content: string): string {
   return content
-    .replace(/\[\[([^\]]+)\]\]/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[*_`~]/g, '');
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_`~]/g, "");
 }
 
 /**
@@ -48,7 +48,7 @@ export function buildSectionRefIndex(
   };
 
   for (const block of blocks) {
-    if (block.type !== 'heading') continue;
+    if (block.type !== "heading") continue;
     const anchor = slugs.get(block.id);
     if (!anchor) continue;
     const stripped = stripHeadingMarkdown(block.content);
@@ -88,36 +88,34 @@ function matchAt(text: string, hash: number, titles: string[]): string | null {
  * `[text]` when nothing resolves. Text inside backticks is never linked.
  */
 export function parseSectionRefs(text: string, index: Map<string, string>): SectionRefPart[] {
-  if (!text || index.size === 0 || !text.includes('#')) return [text];
+  if (!text || index.size === 0 || !text.includes("#")) return [text];
 
   const titles = [...index.keys()].sort((a, b) => b.length - a.length);
   const parts: SectionRefPart[] = [];
-  let plain = '';
+  let plain = "";
   let i = 0;
 
   while (i < text.length) {
     const ch = text[i]!;
-    const close = ch === '`' ? text.indexOf('`', i + 1) : -1;
+    const close = ch === "`" ? text.indexOf("`", i + 1) : -1;
     if (close !== -1) {
       plain += text.slice(i, close + 1);
       i = close + 1;
       continue;
     }
     const title =
-      ch === '#' && (i === 0 || REF_START.test(text[i - 1]!))
-        ? matchAt(text, i, titles)
-        : null;
+      ch === "#" && (i === 0 || REF_START.test(text[i - 1]!)) ? matchAt(text, i, titles) : null;
     if (!title) {
       plain += ch;
       i += 1;
       continue;
     }
     if (plain) parts.push(plain);
-    plain = '';
+    plain = "";
     parts.push({ label: title, anchor: index.get(title)! });
     i += 1 + title.length;
   }
 
   if (plain) parts.push(plain);
-  return parts.some((p) => typeof p !== 'string') ? parts : [text];
+  return parts.some((p) => typeof p !== "string") ? parts : [text];
 }

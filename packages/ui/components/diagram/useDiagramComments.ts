@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   buildDiagramAnchorValue,
   diagramFirstSourceLine,
   type DiagramAnchor,
   type DiagramFamily,
   type DiagramTarget,
-} from '@dynotator/core/diagram-anchor';
-import type { DiagramFinder } from '../../utils/diagram-anchor';
+} from "@dynotator/core/diagram-anchor";
+import type { DiagramFinder } from "../../utils/diagram-anchor";
 
 /**
  * Diagram comments: the html-annotation grammar adapted to an app-owned
@@ -157,7 +157,7 @@ export function useDiagramComments({
           additional: [],
           label: anchor.label,
           resolved: comment.resolved === true,
-          whole: anchor.kind === 'diagram',
+          whole: anchor.kind === "diagram",
         };
       }
       const element = finder.findTarget(svgRoot, anchor, renderId);
@@ -171,7 +171,7 @@ export function useDiagramComments({
         additional,
         label: anchor.label,
         resolved: comment.resolved === true,
-        whole: anchor.kind === 'diagram',
+        whole: anchor.kind === "diagram",
       };
     });
   }, [comments, finder, renderId, renderVersion, svgRoot]);
@@ -179,7 +179,7 @@ export function useDiagramComments({
   const lastResolutionRef = useRef<string | null>(null);
   useEffect(() => {
     if (svgRoot === null || onResolutionChange === undefined) return;
-    const key = resolved.map((entry) => `${entry.id}:${entry.element === null ? 0 : 1}`).join('\n');
+    const key = resolved.map((entry) => `${entry.id}:${entry.element === null ? 0 : 1}`).join("\n");
     if (key === lastResolutionRef.current) return;
     lastResolutionRef.current = key;
     onResolutionChange(new Map(resolved.map((entry) => [entry.id, entry.element !== null])));
@@ -191,8 +191,10 @@ export function useDiagramComments({
   const lastReportedRef = useRef<string | null>(null);
   useEffect(() => {
     if (svgRoot === null || onUnanchoredChange === undefined) return;
-    const ids = new Set(resolved.filter((entry) => entry.element === null).map((entry) => entry.id));
-    const key = [...ids].sort().join('\n');
+    const ids = new Set(
+      resolved.filter((entry) => entry.element === null).map((entry) => entry.id),
+    );
+    const key = [...ids].sort().join("\n");
     if (key === lastReportedRef.current) return;
     lastReportedRef.current = key;
     onUnanchoredChange(ids);
@@ -232,8 +234,10 @@ export function useDiagramComments({
   const pickTarget = useCallback(
     (candidates: readonly Element[]): Element | null => {
       if (svgRoot === null || renderId === null) return candidates[0] ?? null;
-      const kinds = candidates.map((el) => finder.targetFromElement(svgRoot, el, renderId)?.kind ?? null);
-      for (const kind of ['node', 'edge', 'cluster'] as const) {
+      const kinds = candidates.map(
+        (el) => finder.targetFromElement(svgRoot, el, renderId)?.kind ?? null,
+      );
+      for (const kind of ["node", "edge", "cluster"] as const) {
         const at = kinds.indexOf(kind);
         if (at !== -1) return candidates[at] ?? null;
       }
@@ -268,15 +272,25 @@ export function useDiagramComments({
         }
         part = {
           element: svgRoot,
-          target: { family: familyOf(svgRoot), kind: 'diagram', label: diagramFirstSourceLine(savedSource) },
+          target: {
+            family: familyOf(svgRoot),
+            kind: "diagram",
+            label: diagramFirstSourceLine(savedSource),
+          },
         };
       }
       if (!canCreate) return;
       setSubmitError(null);
       setComposer((current) => {
-        if (shiftKey && current !== null && part.target.kind !== 'diagram' && current.primary.target.kind !== 'diagram') {
+        if (
+          shiftKey &&
+          current !== null &&
+          part.target.kind !== "diagram" &&
+          current.primary.target.kind !== "diagram"
+        ) {
           const already =
-            current.primary.element === part.element || current.additional.some((extra) => extra.element === part.element);
+            current.primary.element === part.element ||
+            current.additional.some((extra) => extra.element === part.element);
           if (already || current.additional.length >= maxAdditionalTargets) {
             return current;
           }
@@ -286,11 +300,21 @@ export function useDiagramComments({
         return {
           primary: part,
           additional: [],
-          sourceLine: line === null ? null : [line[0] + sourceLineOffset, line[1] + sourceLineOffset],
+          sourceLine:
+            line === null ? null : [line[0] + sourceLineOffset, line[1] + sourceLineOffset],
         };
       });
     },
-    [canCreate, describe, familyOf, finder, maxAdditionalTargets, savedSource, sourceLineOffset, svgRoot],
+    [
+      canCreate,
+      describe,
+      familyOf,
+      finder,
+      maxAdditionalTargets,
+      savedSource,
+      sourceLineOffset,
+      svgRoot,
+    ],
   );
 
   const cancel = useCallback(() => {
@@ -301,7 +325,9 @@ export function useDiagramComments({
   const openAt = useCallback(
     (target: DiagramTarget): boolean => {
       if (!canCreate || svgRoot === null || renderId === null) return false;
-      const element = finder.findTarget(svgRoot, target, renderId) ?? (target.kind === 'diagram' ? svgRoot : null);
+      const element =
+        finder.findTarget(svgRoot, target, renderId) ??
+        (target.kind === "diagram" ? svgRoot : null);
       if (element === null) return false;
       const part: DiagramTarget = {
         family: target.family,
@@ -327,11 +353,11 @@ export function useDiagramComments({
     async (body: string) => {
       if (composer === null || submitting || onCreateComment === undefined) return;
       if (composer.sourceLine === null && sourceDirty) {
-        setSubmitError('Save the draft before commenting on a part that only exists in it.');
+        setSubmitError("Save the draft before commenting on a part that only exists in it.");
         return;
       }
       const text = body.trim();
-      if (text === '') return;
+      if (text === "") return;
       setSubmitting(true);
       setSubmitError(null);
       try {
@@ -343,7 +369,11 @@ export function useDiagramComments({
         setComposer(null);
       } catch (error) {
         // The draft stays open with its text; the person retries.
-        setSubmitError(error instanceof Error && error.message ? error.message : "Couldn't save the comment. Try again.");
+        setSubmitError(
+          error instanceof Error && error.message
+            ? error.message
+            : "Couldn't save the comment. Try again.",
+        );
       } finally {
         setSubmitting(false);
       }

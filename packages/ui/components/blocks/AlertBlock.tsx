@@ -1,9 +1,14 @@
-import React from 'react';
-import type { AlertKind } from '../../types';
-import { renderProseBody } from './proseBody';
-import { CalloutBlocks, calloutNeedsBlocks, parseQuoteBody, useAtQuoteDepthCap } from './BlockquoteBlock';
-import { InlineMarkdown } from '../InlineMarkdown';
-import { parseAlertTitleLine } from '../../utils/alertTitle';
+import React from "react";
+import type { AlertKind } from "../../types";
+import { renderProseBody } from "./proseBody";
+import {
+  CalloutBlocks,
+  calloutNeedsBlocks,
+  parseQuoteBody,
+  useAtQuoteDepthCap,
+} from "./BlockquoteBlock";
+import { InlineMarkdown } from "../InlineMarkdown";
+import { parseAlertTitleLine } from "../../utils/alertTitle";
 
 interface AlertBlockProps {
   blockId: string;
@@ -19,11 +24,11 @@ interface AlertBlockProps {
 }
 
 const TITLE: Record<AlertKind, string> = {
-  note: 'Note',
-  tip: 'Tip',
-  warning: 'Warning',
-  caution: 'Caution',
-  important: 'Important',
+  note: "Note",
+  tip: "Tip",
+  warning: "Warning",
+  caution: "Caution",
+  important: "Important",
 };
 
 /**
@@ -46,25 +51,68 @@ export function resetAlertIconRenderer(): void {
 }
 
 const Icon: React.FC<{ kind: AlertKind }> = ({ kind }) => {
-  const common = { viewBox: '0 0 16 16', width: '16', height: '16', fill: 'currentColor', 'aria-hidden': true as const };
+  const common = {
+    viewBox: "0 0 16 16",
+    width: "16",
+    height: "16",
+    fill: "currentColor",
+    "aria-hidden": true as const,
+  };
   switch (kind) {
-    case 'note':
-      return <svg {...common}><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg>;
-    case 'tip':
-      return <svg {...common}><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"/></svg>;
-    case 'warning':
-      return <svg {...common}><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>;
-    case 'caution':
-      return <svg {...common}><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg>;
-    case 'important':
-      return <svg {...common}><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>;
+    case "note":
+      return (
+        <svg {...common}>
+          <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
+        </svg>
+      );
+    case "tip":
+      return (
+        <svg {...common}>
+          <path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" />
+        </svg>
+      );
+    case "warning":
+      return (
+        <svg {...common}>
+          <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+        </svg>
+      );
+    case "caution":
+      return (
+        <svg {...common}>
+          <path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
+        </svg>
+      );
+    case "important":
+      return (
+        <svg {...common}>
+          <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+        </svg>
+      );
   }
 };
 
 export const AlertBlock: React.FC<AlertBlockProps> = ({
-  blockId, kind, body, onOpenLinkedDoc, onOpenCodeFile, imageBaseDir, onImageClick, githubRepo, repoHost, onNavigateAnchor,
+  blockId,
+  kind,
+  body,
+  onOpenLinkedDoc,
+  onOpenCodeFile,
+  imageBaseDir,
+  onImageClick,
+  githubRepo,
+  repoHost,
+  onNavigateAnchor,
 }) => {
-  const proseProps = { imageBaseDir, onImageClick, onOpenLinkedDoc, onOpenCodeFile, onNavigateAnchor, githubRepo, repoHost };
+  const proseProps = {
+    imageBaseDir,
+    onImageClick,
+    onOpenLinkedDoc,
+    onOpenCodeFile,
+    onNavigateAnchor,
+    githubRepo,
+    repoHost,
+  };
 
   // A bold-only first line (optionally led by one emoji, optionally trailed by
   // an `<!-- icon: name -->` comment) is the alert's title and rides the icon
@@ -80,14 +128,26 @@ export const AlertBlock: React.FC<AlertBlockProps> = ({
   // Paragraphs and lists render as they always have; a fence, a table, a heading
   // or a nested quote needs the block layout a plain quote gets.
   const renderBody = () =>
-    calloutNeedsBlocks(inner)
-      ? <CalloutBlocks inner={inner} className="text-[15px] leading-relaxed text-foreground/90" {...proseProps} />
-      : renderProseBody({ body: bodyText, ...proseProps });
+    calloutNeedsBlocks(inner) ? (
+      <CalloutBlocks
+        inner={inner}
+        className="text-[15px] leading-relaxed text-foreground/90"
+        {...proseProps}
+      />
+    ) : (
+      renderProseBody({ body: bodyText, ...proseProps })
+    );
   // The emoji wins outright: the host renderer is consulted only for a title
   // line that carries an icon comment and no emoji (the seam contract).
-  const icon = titleLine?.emoji
-    ? <span aria-hidden="true" className="alert-emoji text-base leading-none">{titleLine.emoji}</span>
-    : (titleLine?.icon && alertIconRenderer ? alertIconRenderer(titleLine.icon) : null) ?? <Icon kind={kind} />;
+  const icon = titleLine?.emoji ? (
+    <span aria-hidden="true" className="alert-emoji text-base leading-none">
+      {titleLine.emoji}
+    </span>
+  ) : (
+    ((titleLine?.icon && alertIconRenderer ? alertIconRenderer(titleLine.icon) : null) ?? (
+      <Icon kind={kind} />
+    ))
+  );
 
   return (
     <div
@@ -99,10 +159,9 @@ export const AlertBlock: React.FC<AlertBlockProps> = ({
       <div className="alert-title flex items-center gap-2 font-semibold mb-1">
         {icon}
         <span>
-          {titleLine?.title
-            ? (
-              <>
-                {/* The type word stays part of the accessible name. A visually
+          {titleLine?.title ? (
+            <>
+              {/* The type word stays part of the accessible name. A visually
                     hidden span is read by every engine; an aria-label on this
                     generic div is prohibited by ARIA and dropped by WebKit.
                     `annotation-exclude` keeps it out of the annotation text
@@ -110,20 +169,23 @@ export const AlertBlock: React.FC<AlertBlockProps> = ({
                     the invisible word ("Warning:Named icon title"), which is
                     what the panel shows, what the agent is handed, and a quote
                     no share-link restore can find again. */}
-                <span className="sr-only annotation-exclude">{TITLE[kind]}: </span>
-                <InlineMarkdown text={titleLine.title} {...proseProps} />
-              </>
-            )
-            : TITLE[kind]}
+              <span className="sr-only annotation-exclude">{TITLE[kind]}: </span>
+              <InlineMarkdown text={titleLine.title} {...proseProps} />
+            </>
+          ) : (
+            TITLE[kind]
+          )}
         </span>
       </div>
-      {titleLine
-        ? (titleLine.rest.trim()
-            // Indent the body by the icon's width plus the row gap so it starts
-            // at the title's left edge (16px icon + 8px gap = pl-6).
-            ? <div className="alert-body pl-6">{renderBody()}</div>
-            : null)
-        : renderBody()}
+      {titleLine ? (
+        titleLine.rest.trim() ? (
+          // Indent the body by the icon's width plus the row gap so it starts
+          // at the title's left edge (16px icon + 8px gap = pl-6).
+          <div className="alert-body pl-6">{renderBody()}</div>
+        ) : null
+      ) : (
+        renderBody()
+      )}
     </div>
   );
 };

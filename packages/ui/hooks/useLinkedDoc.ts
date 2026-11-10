@@ -61,8 +61,8 @@ export interface LinkedDocLoadData {
  * missing-on-disk openLoaded path, which never fetches /api/doc).
  */
 export function resolveDiffBaseline(
-  cached: Pick<CachedDocState, 'previousPlan' | 'versionInfo'> | undefined,
-  data: Pick<LinkedDocLoadData, 'previousPlan' | 'versionInfo'>,
+  cached: Pick<CachedDocState, "previousPlan" | "versionInfo"> | undefined,
+  data: Pick<LinkedDocLoadData, "previousPlan" | "versionInfo">,
 ): { previousPlan: string | null | undefined; versionInfo: VersionInfo | null | undefined } {
   if (cached && cached.versionInfo !== undefined) {
     return { previousPlan: cached.previousPlan, versionInfo: cached.versionInfo };
@@ -235,7 +235,11 @@ export interface UseLinkedDocReturn {
    * paths not taken: the active document's comments are host state.
    */
   restoreStoredDocuments: (
-    documents: ReadonlyArray<{ path: string; annotations: Annotation[]; globalAttachments: ImageAttachment[] }>,
+    documents: ReadonlyArray<{
+      path: string;
+      annotations: Annotation[];
+      globalAttachments: ImageAttachment[];
+    }>,
   ) => string[];
   /** Snapshot the root document plus linked-doc cache for cross-document session swaps */
   snapshotSession: () => LinkedDocSessionState;
@@ -262,7 +266,7 @@ const HIGHLIGHT_REAPPLY_DELAY = 100;
 const SCROLL_RESTORE_SETTLE_DELAYS = [HIGHLIGHT_REAPPLY_DELAY + 50, 400, 1000];
 const SCROLL_RESTORE_MAX_WAIT_FRAMES = 60;
 /** The reader's own input, which ends a restore still settling. */
-const READER_INPUT_EVENTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+const READER_INPUT_EVENTS = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
 
 export function useLinkedDoc(options: UseLinkedDocOptions): UseLinkedDocReturn {
   const {
@@ -333,320 +337,363 @@ export function useLinkedDoc(options: UseLinkedDocOptions): UseLinkedDocReturn {
 
   const defaultBuildUrl = useCallback(
     (path: string) => `/api/doc?path=${encodeURIComponent(path)}`,
-    []
+    [],
   );
 
-  const restoreScrollAnchorSettled = useCallback((anchor: ScrollAnchor) => {
-    cancelScrollRestore();
-    let stopped = false;
-    const frames = new Set<number>();
-    const timers = new Set<ReturnType<typeof setTimeout>>();
-    const win = typeof window === 'undefined' ? null : window;
-    const stop = () => {
-      if (stopped) return;
-      stopped = true;
-      for (const id of frames) cancelAnimationFrame(id);
-      for (const id of timers) clearTimeout(id);
-      frames.clear();
-      timers.clear();
-      for (const type of READER_INPUT_EVENTS) win?.removeEventListener(type, onReaderInput, true);
-      if (stopScrollRestoreRef.current === stop) stopScrollRestoreRef.current = null;
-    };
-    // Any input of the reader's own ends the restore: from then on, where the
-    // page is is theirs.
-    function onReaderInput() { stop(); }
-    for (const type of READER_INPUT_EVENTS) {
-      win?.addEventListener(type, onReaderInput, { capture: true, passive: true });
-    }
-    stopScrollRestoreRef.current = stop;
-
-    const frame = (fn: () => void) => {
-      const id = requestAnimationFrame(() => { frames.delete(id); fn(); });
-      frames.add(id);
-    };
-    const later = (fn: () => void, ms: number) => {
-      const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
-      timers.add(id);
-    };
-
-    let lastTop: number | null = null;
-    const apply = () => {
-      const viewport = scrollViewportRef.current;
-      if (stopped || !viewport) return;
-      // Something else scrolled since the last re-anchor (the reader, or the
-      // host scrolling to a target): that position wins.
-      if (lastTop !== null && Math.abs(getScrollViewportTop(viewport) - lastTop) > 2) {
-        stop();
-        return;
-      }
-      lastTop = restoreScrollAnchor(viewport, anchor);
-    };
-    let waited = 0;
-    const firstApply = () => {
-      if (stopped) return;
-      const viewport = scrollViewportRef.current;
-      if (viewport && scrollAnchorReady(viewport, anchor)) {
-        apply();
+  const restoreScrollAnchorSettled = useCallback(
+    (anchor: ScrollAnchor) => {
+      cancelScrollRestore();
+      let stopped = false;
+      const frames = new Set<number>();
+      const timers = new Set<ReturnType<typeof setTimeout>>();
+      const win = typeof window === "undefined" ? null : window;
+      const stop = () => {
         if (stopped) return;
-        const last = SCROLL_RESTORE_SETTLE_DELAYS[SCROLL_RESTORE_SETTLE_DELAYS.length - 1];
-        for (const delay of SCROLL_RESTORE_SETTLE_DELAYS) {
-          later(() => { apply(); if (delay === last) stop(); }, delay);
-        }
-        return;
-      }
-      if (++waited > SCROLL_RESTORE_MAX_WAIT_FRAMES) {
-        if (viewport) apply();
-        stop();
-        return;
-      }
-      frame(firstApply);
-    };
-    // Two frames: the swap commits, then layout settles.
-    frame(() => frame(firstApply));
-  }, [cancelScrollRestore]);
-
-  const back = useCallback((backOptions?: { restoreScroll?: boolean }) => {
-    if (!savedPlanState.current) return;
-    // `back` may be handed straight to an onClick, so only an explicit false
-    // turns the restore off.
-    const restoreScroll = backOptions?.restoreScroll !== false;
-    onBeforeNavigate?.();
-
-    // Clear web-highlighter marks before swapping content to prevent React DOM mismatch
-    viewerRef.current?.clearAllHighlights();
-
-    // Cache current linked doc annotations
-    if (linkedDoc) {
-      docCache.current.set(linkedDoc.filepath, {
-        annotations: [...annotations],
-        globalAttachments: [...globalAttachments],
-        markdown: getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
-        isConverted: linkedDoc.isConverted,
-        previousPlan: linkedDoc.previousPlan,
-        versionInfo: linkedDoc.versionInfo,
-      });
-      // Update reactive count so button labels can respond
-      let total = 0;
-      for (const cached of docCache.current.values()) {
-        total += cached.annotations.length + cached.globalAttachments.length;
-      }
-      setDocAnnotationCount(total);
-    }
-
-    // Restore plan state (including render mode — an HTML base restores to HTML)
-    const saved = savedPlanState.current;
-    setRenderAs(saved.renderAs);
-    setRawHtml(saved.rawHtml);
-    setShareHtml(saved.shareHtml);
-    setMarkdown(saved.markdown);
-    setAnnotations(saved.annotations);
-    setGlobalAttachments(saved.globalAttachments);
-    setSelectedAnnotationId(saved.selectedAnnotationId);
-    setLinkedDoc(null);
-    setError(null);
-    savedPlanState.current = null;
-    onAfterBack?.();
-    if (restoreScroll && saved.scrollAnchor) restoreScrollAnchorSettled(saved.scrollAnchor);
-    else cancelScrollRestore();
-
-    // Re-apply plan annotation highlights after DOM settles
-    if (saved.annotations.length) {
-      setTimeout(() => {
-        viewerRef.current?.clearAllHighlights();
-        viewerRef.current?.applySharedAnnotations(saved.annotations.filter(annotationOwnsHighlight));
-      }, HIGHLIGHT_REAPPLY_DELAY);
-    }
-  }, [
-    linkedDoc,
-    annotations,
-    globalAttachments,
-    setMarkdown,
-    setAnnotations,
-    setSelectedAnnotationId,
-    setGlobalAttachments,
-    setRenderAs,
-    setRawHtml,
-    setShareHtml,
-    viewerRef,
-    onBeforeNavigate,
-    getDocumentMarkdown,
-    onAfterBack,
-    restoreScrollAnchorSettled,
-    cancelScrollRestore,
-  ]);
-
-  const activateDocument = useCallback((
-    data: LinkedDocLoadData & { filepath: string },
-    targetTab?: SidebarTab,
-    options: {
-      snapshotCurrent?: boolean;
-      notifyDocumentLoaded?: boolean;
-      revealSidebar?: boolean;
-      restoreScroll?: boolean;
-    } = {},
-  ) => {
-    const snapshotCurrent = options.snapshotCurrent ?? true;
-    const notifyDocumentLoaded = options.notifyDocumentLoaded ?? true;
-    // Opening a document reveals the sidebar so its "Viewing / Back to …"
-    // header is in reach. A host whose surface has its own way back (the
-    // raw-HTML header's Back control) passes false, and the sidebar is left
-    // exactly as the user had it — closed stays closed, open stays put.
-    const revealSidebar = options.revealSidebar ?? true;
-    if (snapshotCurrent) onBeforeNavigate?.();
-
-    // Backlink detection: if a linked doc links back to the source file (e.g.,
-    // original.md → design.md → link back to original.md), opening it as a linked
-    // doc would create two competing Map entries for the same filepath in
-    // getDocAnnotations(), and the empty linked-doc entry would overwrite the
-    // stashed annotations. Instead, treat the backlink as a back() navigation —
-    // the current linked doc gets cached and the source file restores with its
-    // annotations intact.
-    if (sourceFilePath && data.filepath === sourceFilePath && savedPlanState.current) {
-      back();
-      onDocumentActivated?.(data);
-      return;
-    }
-
-    // Clear web-highlighter marks before swapping content to prevent React DOM mismatch
-    viewerRef.current?.clearAllHighlights();
-
-    // A restore of an earlier back() must not pull the new document around.
-    cancelScrollRestore();
-
-    // Save current state (plan or another linked doc)
-    if (!savedPlanState.current) {
-      const viewport = scrollViewportRef.current;
-      savedPlanState.current = {
-        scrollAnchor: viewport ? captureScrollAnchor(viewport) : null,
-        markdown,
-        annotations: [...annotations],
-        selectedAnnotationId,
-        globalAttachments: [...globalAttachments],
-        renderAs,
-        rawHtml,
-        shareHtml,
+        stopped = true;
+        for (const id of frames) cancelAnimationFrame(id);
+        for (const id of timers) clearTimeout(id);
+        frames.clear();
+        timers.clear();
+        for (const type of READER_INPUT_EVENTS) win?.removeEventListener(type, onReaderInput, true);
+        if (stopScrollRestoreRef.current === stop) stopScrollRestoreRef.current = null;
       };
-      let total = annotations.length + globalAttachments.length;
-      for (const [fp, cached] of docCache.current.entries()) {
-        if (fp === data.filepath) continue; // destination becomes active — don't double-count
-        total += cached.annotations.length + cached.globalAttachments.length;
+      // Any input of the reader's own ends the restore: from then on, where the
+      // page is is theirs.
+      function onReaderInput() {
+        stop();
       }
-      setDocAnnotationCount(total);
-    } else if (linkedDoc) {
-      // Already viewing a linked doc — remember the reader's place in it and
-      // cache its annotations before moving on
-      const viewport = scrollViewportRef.current;
-      if (viewport) {
-        docScrollAnchors.current.set(normalizeBrowserPath(linkedDoc.filepath), captureScrollAnchor(viewport));
+      for (const type of READER_INPUT_EVENTS) {
+        win?.addEventListener(type, onReaderInput, { capture: true, passive: true });
       }
-      docCache.current.set(linkedDoc.filepath, {
-        annotations: [...annotations],
-        globalAttachments: [...globalAttachments],
-        markdown: getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
-        isConverted: linkedDoc.isConverted,
-        previousPlan: linkedDoc.previousPlan,
-        versionInfo: linkedDoc.versionInfo,
+      stopScrollRestoreRef.current = stop;
+
+      const frame = (fn: () => void) => {
+        const id = requestAnimationFrame(() => {
+          frames.delete(id);
+          fn();
+        });
+        frames.add(id);
+      };
+      const later = (fn: () => void, ms: number) => {
+        const id = setTimeout(() => {
+          timers.delete(id);
+          fn();
+        }, ms);
+        timers.add(id);
+      };
+
+      let lastTop: number | null = null;
+      const apply = () => {
+        const viewport = scrollViewportRef.current;
+        if (stopped || !viewport) return;
+        // Something else scrolled since the last re-anchor (the reader, or the
+        // host scrolling to a target): that position wins.
+        if (lastTop !== null && Math.abs(getScrollViewportTop(viewport) - lastTop) > 2) {
+          stop();
+          return;
+        }
+        lastTop = restoreScrollAnchor(viewport, anchor);
+      };
+      let waited = 0;
+      const firstApply = () => {
+        if (stopped) return;
+        const viewport = scrollViewportRef.current;
+        if (viewport && scrollAnchorReady(viewport, anchor)) {
+          apply();
+          if (stopped) return;
+          const last = SCROLL_RESTORE_SETTLE_DELAYS[SCROLL_RESTORE_SETTLE_DELAYS.length - 1];
+          for (const delay of SCROLL_RESTORE_SETTLE_DELAYS) {
+            later(() => {
+              apply();
+              if (delay === last) stop();
+            }, delay);
+          }
+          return;
+        }
+        if (++waited > SCROLL_RESTORE_MAX_WAIT_FRAMES) {
+          if (viewport) apply();
+          stop();
+          return;
+        }
+        frame(firstApply);
+      };
+      // Two frames: the swap commits, then layout settles.
+      frame(() => frame(firstApply));
+    },
+    [cancelScrollRestore],
+  );
+
+  const back = useCallback(
+    (backOptions?: { restoreScroll?: boolean }) => {
+      if (!savedPlanState.current) return;
+      // `back` may be handed straight to an onClick, so only an explicit false
+      // turns the restore off.
+      const restoreScroll = backOptions?.restoreScroll !== false;
+      onBeforeNavigate?.();
+
+      // Clear web-highlighter marks before swapping content to prevent React DOM mismatch
+      viewerRef.current?.clearAllHighlights();
+
+      // Cache current linked doc annotations
+      if (linkedDoc) {
+        docCache.current.set(linkedDoc.filepath, {
+          annotations: [...annotations],
+          globalAttachments: [...globalAttachments],
+          markdown:
+            getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
+          isConverted: linkedDoc.isConverted,
+          previousPlan: linkedDoc.previousPlan,
+          versionInfo: linkedDoc.versionInfo,
+        });
+        // Update reactive count so button labels can respond
+        let total = 0;
+        for (const cached of docCache.current.values()) {
+          total += cached.annotations.length + cached.globalAttachments.length;
+        }
+        setDocAnnotationCount(total);
+      }
+
+      // Restore plan state (including render mode — an HTML base restores to HTML)
+      const saved = savedPlanState.current;
+      setRenderAs(saved.renderAs);
+      setRawHtml(saved.rawHtml);
+      setShareHtml(saved.shareHtml);
+      setMarkdown(saved.markdown);
+      setAnnotations(saved.annotations);
+      setGlobalAttachments(saved.globalAttachments);
+      setSelectedAnnotationId(saved.selectedAnnotationId);
+      setLinkedDoc(null);
+      setError(null);
+      savedPlanState.current = null;
+      onAfterBack?.();
+      if (restoreScroll && saved.scrollAnchor) restoreScrollAnchorSettled(saved.scrollAnchor);
+      else cancelScrollRestore();
+
+      // Re-apply plan annotation highlights after DOM settles
+      if (saved.annotations.length) {
+        setTimeout(() => {
+          viewerRef.current?.clearAllHighlights();
+          viewerRef.current?.applySharedAnnotations(
+            saved.annotations.filter(annotationOwnsHighlight),
+          );
+        }, HIGHLIGHT_REAPPLY_DELAY);
+      }
+    },
+    [
+      linkedDoc,
+      annotations,
+      globalAttachments,
+      setMarkdown,
+      setAnnotations,
+      setSelectedAnnotationId,
+      setGlobalAttachments,
+      setRenderAs,
+      setRawHtml,
+      setShareHtml,
+      viewerRef,
+      onBeforeNavigate,
+      getDocumentMarkdown,
+      onAfterBack,
+      restoreScrollAnchorSettled,
+      cancelScrollRestore,
+    ],
+  );
+
+  const activateDocument = useCallback(
+    (
+      data: LinkedDocLoadData & { filepath: string },
+      targetTab?: SidebarTab,
+      options: {
+        snapshotCurrent?: boolean;
+        notifyDocumentLoaded?: boolean;
+        revealSidebar?: boolean;
+        restoreScroll?: boolean;
+      } = {},
+    ) => {
+      const snapshotCurrent = options.snapshotCurrent ?? true;
+      const notifyDocumentLoaded = options.notifyDocumentLoaded ?? true;
+      // Opening a document reveals the sidebar so its "Viewing / Back to …"
+      // header is in reach. A host whose surface has its own way back (the
+      // raw-HTML header's Back control) passes false, and the sidebar is left
+      // exactly as the user had it — closed stays closed, open stays put.
+      const revealSidebar = options.revealSidebar ?? true;
+      if (snapshotCurrent) onBeforeNavigate?.();
+
+      // Backlink detection: if a linked doc links back to the source file (e.g.,
+      // original.md → design.md → link back to original.md), opening it as a linked
+      // doc would create two competing Map entries for the same filepath in
+      // getDocAnnotations(), and the empty linked-doc entry would overwrite the
+      // stashed annotations. Instead, treat the backlink as a back() navigation —
+      // the current linked doc gets cached and the source file restores with its
+      // annotations intact.
+      if (sourceFilePath && data.filepath === sourceFilePath && savedPlanState.current) {
+        back();
+        onDocumentActivated?.(data);
+        return;
+      }
+
+      // Clear web-highlighter marks before swapping content to prevent React DOM mismatch
+      viewerRef.current?.clearAllHighlights();
+
+      // A restore of an earlier back() must not pull the new document around.
+      cancelScrollRestore();
+
+      // Save current state (plan or another linked doc)
+      if (!savedPlanState.current) {
+        const viewport = scrollViewportRef.current;
+        savedPlanState.current = {
+          scrollAnchor: viewport ? captureScrollAnchor(viewport) : null,
+          markdown,
+          annotations: [...annotations],
+          selectedAnnotationId,
+          globalAttachments: [...globalAttachments],
+          renderAs,
+          rawHtml,
+          shareHtml,
+        };
+        let total = annotations.length + globalAttachments.length;
+        for (const [fp, cached] of docCache.current.entries()) {
+          if (fp === data.filepath) continue; // destination becomes active — don't double-count
+          total += cached.annotations.length + cached.globalAttachments.length;
+        }
+        setDocAnnotationCount(total);
+      } else if (linkedDoc) {
+        // Already viewing a linked doc — remember the reader's place in it and
+        // cache its annotations before moving on
+        const viewport = scrollViewportRef.current;
+        if (viewport) {
+          docScrollAnchors.current.set(
+            normalizeBrowserPath(linkedDoc.filepath),
+            captureScrollAnchor(viewport),
+          );
+        }
+        docCache.current.set(linkedDoc.filepath, {
+          annotations: [...annotations],
+          globalAttachments: [...globalAttachments],
+          markdown:
+            getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
+          isConverted: linkedDoc.isConverted,
+          previousPlan: linkedDoc.previousPlan,
+          versionInfo: linkedDoc.versionInfo,
+        });
+        let total = 0;
+        for (const [fp, cached] of docCache.current.entries()) {
+          if (fp === data.filepath) continue; // destination becomes active — don't double-count
+          total += cached.annotations.length + cached.globalAttachments.length;
+        }
+        if (savedPlanState.current) {
+          total +=
+            savedPlanState.current.annotations.length +
+            savedPlanState.current.globalAttachments.length;
+        }
+        setDocAnnotationCount(total);
+      }
+
+      // Check cache for previous annotations on this file
+      const cached = docCache.current.get(data.filepath);
+
+      // Swap to linked doc — an .html file renders raw (HtmlViewer), a markdown
+      // file parses to blocks (Viewer). Drive renderAs/rawHtml per file so the
+      // App's renderAs === 'html' ? HtmlViewer : Viewer switch flips automatically.
+      // A diagram source (.mmd/.dot) keeps the markdown state path — the raw
+      // text is the document body — but names its engine so the App renders it
+      // as one diagram instead of parsing it as markdown. AsciiDoc does the same
+      // for its own block parser.
+      const docRenderAs: DocumentRenderAs =
+        data.renderAs === "html"
+          ? "html"
+          : isDocumentRenderKind(data.renderAs)
+            ? data.renderAs
+            : "markdown";
+      const hostMarkdown =
+        docRenderAs === "html" || !notifyDocumentLoaded ? undefined : onDocumentLoaded?.(data);
+      const nextMarkdown = notifyDocumentLoaded
+        ? (hostMarkdown ?? cached?.markdown ?? data.markdown ?? "")
+        : (data.markdown ?? cached?.markdown ?? "");
+      setRenderAs(docRenderAs);
+      setRawHtml(docRenderAs === "html" ? (data.rawHtml ?? "") : "");
+      setShareHtml(docRenderAs === "html" ? (data.shareHtml ?? "") : "");
+      setMarkdown(docRenderAs === "html" ? "" : nextMarkdown);
+      setAnnotations(cached?.annotations ?? []);
+      setGlobalAttachments(cached?.globalAttachments ?? []);
+      setSelectedAnnotationId(null);
+      const diffBaseline = resolveDiffBaseline(cached, data);
+      setLinkedDoc({
+        filepath: data.filepath,
+        isConverted: !!data.isConverted,
+        markdown: nextMarkdown,
+        previousPlan: diffBaseline.previousPlan,
+        versionInfo: diffBaseline.versionInfo,
       });
-      let total = 0;
-      for (const [fp, cached] of docCache.current.entries()) {
-        if (fp === data.filepath) continue; // destination becomes active — don't double-count
-        total += cached.annotations.length + cached.globalAttachments.length;
+      setError(null);
+      if (revealSidebar) sidebar.open(targetTab ?? "toc");
+      onDocumentActivated?.(data);
+
+      // Back to a linked document the reader left for another one: put them
+      // back where they were, exactly as back() does for the root.
+      const scrollAnchor = options.restoreScroll
+        ? docScrollAnchors.current.get(normalizeBrowserPath(data.filepath))
+        : undefined;
+      if (scrollAnchor) restoreScrollAnchorSettled(scrollAnchor);
+
+      // Re-apply cached annotations after DOM settles
+      if (cached?.annotations.length) {
+        setTimeout(() => {
+          viewerRef.current?.clearAllHighlights();
+          viewerRef.current?.applySharedAnnotations(
+            cached.annotations.filter(annotationOwnsHighlight),
+          );
+        }, HIGHLIGHT_REAPPLY_DELAY);
       }
-      if (savedPlanState.current) {
-        total += savedPlanState.current.annotations.length + savedPlanState.current.globalAttachments.length;
-      }
-      setDocAnnotationCount(total);
-    }
+    },
+    [
+      markdown,
+      annotations,
+      selectedAnnotationId,
+      globalAttachments,
+      renderAs,
+      rawHtml,
+      shareHtml,
+      linkedDoc,
+      setMarkdown,
+      setAnnotations,
+      setSelectedAnnotationId,
+      setGlobalAttachments,
+      setRenderAs,
+      setRawHtml,
+      setShareHtml,
+      viewerRef,
+      sidebar,
+      sourceFilePath,
+      onBeforeNavigate,
+      onDocumentLoaded,
+      onDocumentActivated,
+      getDocumentMarkdown,
+      back,
+      cancelScrollRestore,
+      restoreScrollAnchorSettled,
+    ],
+  );
 
-    // Check cache for previous annotations on this file
-    const cached = docCache.current.get(data.filepath);
-
-    // Swap to linked doc — an .html file renders raw (HtmlViewer), a markdown
-    // file parses to blocks (Viewer). Drive renderAs/rawHtml per file so the
-    // App's renderAs === 'html' ? HtmlViewer : Viewer switch flips automatically.
-    // A diagram source (.mmd/.dot) keeps the markdown state path — the raw
-    // text is the document body — but names its engine so the App renders it
-    // as one diagram instead of parsing it as markdown. AsciiDoc does the same
-    // for its own block parser.
-    const docRenderAs: DocumentRenderAs =
-      data.renderAs === 'html' ? 'html' : isDocumentRenderKind(data.renderAs) ? data.renderAs : 'markdown';
-    const hostMarkdown = docRenderAs === 'html' || !notifyDocumentLoaded ? undefined : onDocumentLoaded?.(data);
-    const nextMarkdown = notifyDocumentLoaded
-      ? hostMarkdown ?? cached?.markdown ?? data.markdown ?? ''
-      : data.markdown ?? cached?.markdown ?? '';
-    setRenderAs(docRenderAs);
-    setRawHtml(docRenderAs === 'html' ? (data.rawHtml ?? '') : '');
-    setShareHtml(docRenderAs === 'html' ? (data.shareHtml ?? '') : '');
-    setMarkdown(docRenderAs === 'html' ? '' : nextMarkdown);
-    setAnnotations(cached?.annotations ?? []);
-    setGlobalAttachments(cached?.globalAttachments ?? []);
-    setSelectedAnnotationId(null);
-    const diffBaseline = resolveDiffBaseline(cached, data);
-    setLinkedDoc({
-      filepath: data.filepath,
-      isConverted: !!data.isConverted,
-      markdown: nextMarkdown,
-      previousPlan: diffBaseline.previousPlan,
-      versionInfo: diffBaseline.versionInfo,
-    });
-    setError(null);
-    if (revealSidebar) sidebar.open(targetTab ?? "toc");
-    onDocumentActivated?.(data);
-
-    // Back to a linked document the reader left for another one: put them
-    // back where they were, exactly as back() does for the root.
-    const scrollAnchor = options.restoreScroll
-      ? docScrollAnchors.current.get(normalizeBrowserPath(data.filepath))
-      : undefined;
-    if (scrollAnchor) restoreScrollAnchorSettled(scrollAnchor);
-
-    // Re-apply cached annotations after DOM settles
-    if (cached?.annotations.length) {
-      setTimeout(() => {
-        viewerRef.current?.clearAllHighlights();
-        viewerRef.current?.applySharedAnnotations(cached.annotations.filter(annotationOwnsHighlight));
-      }, HIGHLIGHT_REAPPLY_DELAY);
-    }
-  }, [
-    markdown,
-    annotations,
-    selectedAnnotationId,
-    globalAttachments,
-    renderAs,
-    rawHtml,
-    shareHtml,
-    linkedDoc,
-    setMarkdown,
-    setAnnotations,
-    setSelectedAnnotationId,
-    setGlobalAttachments,
-    setRenderAs,
-    setRawHtml,
-    setShareHtml,
-    viewerRef,
-    sidebar,
-    sourceFilePath,
-    onBeforeNavigate,
-    onDocumentLoaded,
-    onDocumentActivated,
-    getDocumentMarkdown,
-    back,
-    cancelScrollRestore,
-    restoreScrollAnchorSettled,
-  ]);
-
-  const openLoaded = useCallback((
-    doc: LinkedDocLoadData & { filepath: string },
-    targetTab?: SidebarTab,
-    options?: { notifyDocumentLoaded?: boolean; revealSidebar?: boolean; restoreScroll?: boolean },
-  ) => {
-    activateDocument(doc, targetTab, {
-      snapshotCurrent: true,
-      notifyDocumentLoaded: options?.notifyDocumentLoaded,
-      revealSidebar: options?.revealSidebar,
-      restoreScroll: options?.restoreScroll,
-    });
-  }, [activateDocument]);
+  const openLoaded = useCallback(
+    (
+      doc: LinkedDocLoadData & { filepath: string },
+      targetTab?: SidebarTab,
+      options?: {
+        notifyDocumentLoaded?: boolean;
+        revealSidebar?: boolean;
+        restoreScroll?: boolean;
+      },
+    ) => {
+      activateDocument(doc, targetTab, {
+        snapshotCurrent: true,
+        notifyDocumentLoaded: options?.notifyDocumentLoaded,
+        revealSidebar: options?.revealSidebar,
+        restoreScroll: options?.restoreScroll,
+      });
+    },
+    [activateDocument],
+  );
 
   const open = useCallback(
     async (
@@ -687,10 +734,7 @@ export function useLinkedDoc(options: UseLinkedDocOptions): UseLinkedDocReturn {
         setIsLoading(false);
       }
     },
-    [
-      onBeforeNavigate,
-      activateDocument,
-    ]
+    [onBeforeNavigate, activateDocument],
   );
 
   const dismissError = useCallback(() => setError(null), []);
@@ -701,7 +745,8 @@ export function useLinkedDoc(options: UseLinkedDocOptions): UseLinkedDocReturn {
       docs.set(linkedDoc.filepath, {
         annotations: [...annotations],
         globalAttachments: [...globalAttachments],
-        markdown: getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
+        markdown:
+          getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
         isConverted: linkedDoc.isConverted,
         previousPlan: linkedDoc.previousPlan,
         versionInfo: linkedDoc.versionInfo,
@@ -729,135 +774,171 @@ export function useLinkedDoc(options: UseLinkedDocOptions): UseLinkedDocReturn {
         };
 
     return { root, docs };
-  }, [linkedDoc, annotations, globalAttachments, markdown, renderAs, rawHtml, shareHtml, selectedAnnotationId, getDocumentMarkdown]);
-
-  const restoreSession = useCallback((state: LinkedDocSessionState) => {
-    viewerRef.current?.clearAllHighlights();
-    cancelScrollRestore();
-
-    savedPlanState.current = null;
-    docCache.current = new Map(state.docs);
-    docScrollAnchors.current = new Map();
-    let total = 0;
-    for (const cached of docCache.current.values()) {
-      total += cached.annotations.length + cached.globalAttachments.length;
-    }
-    setDocAnnotationCount(total);
-
-    setMarkdown(state.root.markdown);
-    setRenderAs(state.root.renderAs);
-    setRawHtml(state.root.rawHtml);
-    setShareHtml(state.root.shareHtml);
-    setAnnotations([...state.root.annotations]);
-    setGlobalAttachments([...state.root.globalAttachments]);
-    setSelectedAnnotationId(state.root.selectedAnnotationId);
-    setLinkedDoc(null);
-    setError(null);
-
-    if (state.root.annotations.length) {
-      setTimeout(() => {
-        viewerRef.current?.clearAllHighlights();
-        viewerRef.current?.applySharedAnnotations(state.root.annotations.filter(annotationOwnsHighlight));
-      }, HIGHLIGHT_REAPPLY_DELAY);
-    }
   }, [
-    setMarkdown,
-    setAnnotations,
-    setSelectedAnnotationId,
-    setGlobalAttachments,
-    setRenderAs,
-    setRawHtml,
-    setShareHtml,
-    viewerRef,
+    linkedDoc,
+    annotations,
+    globalAttachments,
+    markdown,
+    renderAs,
+    rawHtml,
+    shareHtml,
+    selectedAnnotationId,
+    getDocumentMarkdown,
   ]);
 
-  const updateStoredAnnotations = useCallback((
-    filepath: string,
-    update: (annotations: Annotation[]) => Annotation[],
-  ): boolean => {
-    // Callers address documents by whatever spelling their list carries — the
-    // panel's groups are normalized (forward slashes, collapsed separators)
-    // while the cache is keyed by the raw server path. On Windows those differ
-    // (`C:/repo/a.md` vs `C:\repo\a.md`) and an unnormalized lookup missed
-    // every time, so a cross-file edit or delete silently did nothing.
-    const wanted = normalizeBrowserPath(filepath);
+  const restoreSession = useCallback(
+    (state: LinkedDocSessionState) => {
+      viewerRef.current?.clearAllHighlights();
+      cancelScrollRestore();
 
-    // The active document's annotations live in host state, not the cache — a
-    // write here would be silently overwritten the next time it is cached.
-    if (linkedDoc && wanted === normalizeBrowserPath(linkedDoc.filepath)) return false;
-
-    let cacheKey: string | undefined;
-    for (const key of docCache.current.keys()) {
-      if (normalizeBrowserPath(key) === wanted) { cacheKey = key; break; }
-    }
-    const cached = cacheKey === undefined ? undefined : docCache.current.get(cacheKey);
-    if (cached && cacheKey !== undefined) {
-      docCache.current.set(cacheKey, { ...cached, annotations: update([...cached.annotations]) });
-    } else if (savedPlanState.current && sourceFilePath && wanted === normalizeBrowserPath(sourceFilePath)) {
-      const saved = savedPlanState.current;
-      savedPlanState.current = { ...saved, annotations: update([...saved.annotations]) };
-    } else {
-      return false;
-    }
-
-    // Same accounting as activateDocument/back: everything except the document
-    // that is active right now.
-    let total = 0;
-    for (const [fp, entry] of docCache.current.entries()) {
-      if (linkedDoc && fp === linkedDoc.filepath) continue;
-      total += entry.annotations.length + entry.globalAttachments.length;
-    }
-    if (linkedDoc && savedPlanState.current) {
-      total += savedPlanState.current.annotations.length + savedPlanState.current.globalAttachments.length;
-    }
-    setDocAnnotationCount(total);
-    setStoreRevision((r) => r + 1);
-    return true;
-  }, [linkedDoc, sourceFilePath]);
-
-  const restoreStoredDocuments = useCallback((
-    documents: ReadonlyArray<{ path: string; annotations: Annotation[]; globalAttachments: ImageAttachment[] }>,
-  ): string[] => {
-    const notTaken: string[] = [];
-    let changed = false;
-    for (const doc of documents) {
-      const wanted = normalizeBrowserPath(doc.path);
-      if (linkedDoc && wanted === normalizeBrowserPath(linkedDoc.filepath)) {
-        notTaken.push(doc.path);
-        continue;
+      savedPlanState.current = null;
+      docCache.current = new Map(state.docs);
+      docScrollAnchors.current = new Map();
+      let total = 0;
+      for (const cached of docCache.current.values()) {
+        total += cached.annotations.length + cached.globalAttachments.length;
       }
+      setDocAnnotationCount(total);
+
+      setMarkdown(state.root.markdown);
+      setRenderAs(state.root.renderAs);
+      setRawHtml(state.root.rawHtml);
+      setShareHtml(state.root.shareHtml);
+      setAnnotations([...state.root.annotations]);
+      setGlobalAttachments([...state.root.globalAttachments]);
+      setSelectedAnnotationId(state.root.selectedAnnotationId);
+      setLinkedDoc(null);
+      setError(null);
+
+      if (state.root.annotations.length) {
+        setTimeout(() => {
+          viewerRef.current?.clearAllHighlights();
+          viewerRef.current?.applySharedAnnotations(
+            state.root.annotations.filter(annotationOwnsHighlight),
+          );
+        }, HIGHLIGHT_REAPPLY_DELAY);
+      }
+    },
+    [
+      setMarkdown,
+      setAnnotations,
+      setSelectedAnnotationId,
+      setGlobalAttachments,
+      setRenderAs,
+      setRawHtml,
+      setShareHtml,
+      viewerRef,
+    ],
+  );
+
+  const updateStoredAnnotations = useCallback(
+    (filepath: string, update: (annotations: Annotation[]) => Annotation[]): boolean => {
+      // Callers address documents by whatever spelling their list carries — the
+      // panel's groups are normalized (forward slashes, collapsed separators)
+      // while the cache is keyed by the raw server path. On Windows those differ
+      // (`C:/repo/a.md` vs `C:\repo\a.md`) and an unnormalized lookup missed
+      // every time, so a cross-file edit or delete silently did nothing.
+      const wanted = normalizeBrowserPath(filepath);
+
+      // The active document's annotations live in host state, not the cache — a
+      // write here would be silently overwritten the next time it is cached.
+      if (linkedDoc && wanted === normalizeBrowserPath(linkedDoc.filepath)) return false;
+
       let cacheKey: string | undefined;
       for (const key of docCache.current.keys()) {
-        if (normalizeBrowserPath(key) === wanted) { cacheKey = key; break; }
+        if (normalizeBrowserPath(key) === wanted) {
+          cacheKey = key;
+          break;
+        }
       }
       const cached = cacheKey === undefined ? undefined : docCache.current.get(cacheKey);
-      const heldIds = new Set((cached?.annotations ?? []).map((a) => a.id));
-      const heldPaths = new Set((cached?.globalAttachments ?? []).map((g) => g.path));
-      const annotations = doc.annotations.filter((a) => !heldIds.has(a.id));
-      const globalAttachments = doc.globalAttachments.filter((g) => !heldPaths.has(g.path));
-      if (annotations.length === 0 && globalAttachments.length === 0) continue;
-      docCache.current.set(cacheKey ?? doc.path, {
-        ...(cached ?? {}),
-        annotations: [...(cached?.annotations ?? []), ...annotations],
-        globalAttachments: [...(cached?.globalAttachments ?? []), ...globalAttachments],
-      });
-      changed = true;
-    }
-    if (changed) {
-      // Same accounting as updateStoredAnnotations.
+      if (cached && cacheKey !== undefined) {
+        docCache.current.set(cacheKey, { ...cached, annotations: update([...cached.annotations]) });
+      } else if (
+        savedPlanState.current &&
+        sourceFilePath &&
+        wanted === normalizeBrowserPath(sourceFilePath)
+      ) {
+        const saved = savedPlanState.current;
+        savedPlanState.current = { ...saved, annotations: update([...saved.annotations]) };
+      } else {
+        return false;
+      }
+
+      // Same accounting as activateDocument/back: everything except the document
+      // that is active right now.
       let total = 0;
       for (const [fp, entry] of docCache.current.entries()) {
         if (linkedDoc && fp === linkedDoc.filepath) continue;
         total += entry.annotations.length + entry.globalAttachments.length;
       }
       if (linkedDoc && savedPlanState.current) {
-        total += savedPlanState.current.annotations.length + savedPlanState.current.globalAttachments.length;
+        total +=
+          savedPlanState.current.annotations.length +
+          savedPlanState.current.globalAttachments.length;
       }
       setDocAnnotationCount(total);
       setStoreRevision((r) => r + 1);
-    }
-    return notTaken;
-  }, [linkedDoc]);
+      return true;
+    },
+    [linkedDoc, sourceFilePath],
+  );
+
+  const restoreStoredDocuments = useCallback(
+    (
+      documents: ReadonlyArray<{
+        path: string;
+        annotations: Annotation[];
+        globalAttachments: ImageAttachment[];
+      }>,
+    ): string[] => {
+      const notTaken: string[] = [];
+      let changed = false;
+      for (const doc of documents) {
+        const wanted = normalizeBrowserPath(doc.path);
+        if (linkedDoc && wanted === normalizeBrowserPath(linkedDoc.filepath)) {
+          notTaken.push(doc.path);
+          continue;
+        }
+        let cacheKey: string | undefined;
+        for (const key of docCache.current.keys()) {
+          if (normalizeBrowserPath(key) === wanted) {
+            cacheKey = key;
+            break;
+          }
+        }
+        const cached = cacheKey === undefined ? undefined : docCache.current.get(cacheKey);
+        const heldIds = new Set((cached?.annotations ?? []).map((a) => a.id));
+        const heldPaths = new Set((cached?.globalAttachments ?? []).map((g) => g.path));
+        const annotations = doc.annotations.filter((a) => !heldIds.has(a.id));
+        const globalAttachments = doc.globalAttachments.filter((g) => !heldPaths.has(g.path));
+        if (annotations.length === 0 && globalAttachments.length === 0) continue;
+        docCache.current.set(cacheKey ?? doc.path, {
+          ...(cached ?? {}),
+          annotations: [...(cached?.annotations ?? []), ...annotations],
+          globalAttachments: [...(cached?.globalAttachments ?? []), ...globalAttachments],
+        });
+        changed = true;
+      }
+      if (changed) {
+        // Same accounting as updateStoredAnnotations.
+        let total = 0;
+        for (const [fp, entry] of docCache.current.entries()) {
+          if (linkedDoc && fp === linkedDoc.filepath) continue;
+          total += entry.annotations.length + entry.globalAttachments.length;
+        }
+        if (linkedDoc && savedPlanState.current) {
+          total +=
+            savedPlanState.current.annotations.length +
+            savedPlanState.current.globalAttachments.length;
+        }
+        setDocAnnotationCount(total);
+        setStoreRevision((r) => r + 1);
+      }
+      return notTaken;
+    },
+    [linkedDoc],
+  );
 
   const getDocAnnotations = useCallback((): Map<string, CachedDocState> => {
     const result = new Map(docCache.current);
@@ -874,14 +955,23 @@ export function useLinkedDoc(options: UseLinkedDocOptions): UseLinkedDocReturn {
       result.set(linkedDoc.filepath, {
         annotations: [...annotations],
         globalAttachments: [...globalAttachments],
-        markdown: getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
+        markdown:
+          getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
         isConverted: linkedDoc.isConverted,
       });
     }
     return result;
     // storeRevision: cross-file edits mutate docCache in place, so the
     // identity of this callback is what tells memoized readers to recompute.
-  }, [linkedDoc, annotations, globalAttachments, sourceFilePath, sourceConverted, getDocumentMarkdown, storeRevision]);
+  }, [
+    linkedDoc,
+    annotations,
+    globalAttachments,
+    sourceFilePath,
+    sourceConverted,
+    getDocumentMarkdown,
+    storeRevision,
+  ]);
 
   const getFeedbackDocuments = useCallback((): FeedbackDocuments => {
     const documents = new Map(docCache.current);
@@ -889,7 +979,8 @@ export function useLinkedDoc(options: UseLinkedDocOptions): UseLinkedDocReturn {
       documents.set(linkedDoc.filepath, {
         annotations: [...annotations],
         globalAttachments: [...globalAttachments],
-        markdown: getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
+        markdown:
+          getDocumentMarkdown?.(linkedDoc.filepath, linkedDoc.markdown) ?? linkedDoc.markdown,
         isConverted: linkedDoc.isConverted,
       });
     }
@@ -912,7 +1003,14 @@ export function useLinkedDoc(options: UseLinkedDocOptions): UseLinkedDocReturn {
       documents,
     };
     // storeRevision: same reason as getDocAnnotations above.
-  }, [linkedDoc, annotations, globalAttachments, sourceConverted, getDocumentMarkdown, storeRevision]);
+  }, [
+    linkedDoc,
+    annotations,
+    globalAttachments,
+    sourceConverted,
+    getDocumentMarkdown,
+    storeRevision,
+  ]);
 
   return {
     isActive: linkedDoc !== null,

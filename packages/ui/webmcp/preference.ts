@@ -12,10 +12,10 @@
  *
  * Cookie: `plannotator-webmcp-tools=false` while opted out; absent otherwise.
  */
-import { useSyncExternalStore } from 'react';
-import { storage } from '../utils/storage';
+import { useSyncExternalStore } from "react";
+import { storage } from "../utils/storage";
 
-export const WEBMCP_TOOLS_COOKIE = 'plannotator-webmcp-tools';
+export const WEBMCP_TOOLS_COOKIE = "plannotator-webmcp-tools";
 
 const listeners = new Set<() => void>();
 /** Resolved lazily on first read; write-through afterwards so the snapshot is stable for useSyncExternalStore. */
@@ -23,7 +23,7 @@ let cached: boolean | null = null;
 
 /** Whether the tools are enabled for this browser (default true; only an explicit opt-out disables). */
 export function getWebMcpToolsEnabled(): boolean {
-  if (cached === null) cached = storage.getItem(WEBMCP_TOOLS_COOKIE) !== 'false';
+  if (cached === null) cached = storage.getItem(WEBMCP_TOOLS_COOKIE) !== "false";
   return cached;
 }
 
@@ -32,7 +32,7 @@ export function setWebMcpToolsEnabled(enabled: boolean): void {
   if (enabled) {
     if (storage.getItem(WEBMCP_TOOLS_COOKIE) !== null) storage.removeItem(WEBMCP_TOOLS_COOKIE);
   } else {
-    storage.setItem(WEBMCP_TOOLS_COOKIE, 'false');
+    storage.setItem(WEBMCP_TOOLS_COOKIE, "false");
   }
   cached = enabled;
   for (const listener of listeners) listener();
@@ -46,5 +46,9 @@ export function subscribeWebMcpToolsEnabled(listener: () => void): () => void {
 }
 
 export function useWebMcpToolsEnabled(): boolean {
-  return useSyncExternalStore(subscribeWebMcpToolsEnabled, getWebMcpToolsEnabled, getWebMcpToolsEnabled);
+  return useSyncExternalStore(
+    subscribeWebMcpToolsEnabled,
+    getWebMcpToolsEnabled,
+    getWebMcpToolsEnabled,
+  );
 }

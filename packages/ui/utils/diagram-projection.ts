@@ -26,7 +26,7 @@ interface HostRect {
 
 export function projectElement(el: Element, host: HostRect): ScreenRect | null {
   const graphic = el as SVGGraphicsElement;
-  if (typeof graphic.getBBox !== 'function' || typeof graphic.getScreenCTM !== 'function') {
+  if (typeof graphic.getBBox !== "function" || typeof graphic.getScreenCTM !== "function") {
     return null;
   }
   let box: DOMRect;

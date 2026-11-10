@@ -57,7 +57,7 @@ function normalizeRoot(path: string): string {
 
 function remapWorkspaceStatusForDir(
   status: WorkspaceStatusPayload | undefined,
-  dirPath: string
+  dirPath: string,
 ): WorkspaceStatusPayload | undefined {
   if (!status?.rootPath) return status;
   const fromRoot = normalizeRoot(status.rootPath);
@@ -67,15 +67,17 @@ function remapWorkspaceStatusForDir(
   const files: WorkspaceStatusPayload["files"] = {};
   for (const [path, change] of Object.entries(status.files)) {
     const normalizedPath = normalizeRoot(path);
-    const nextPath = normalizedPath === fromRoot
-      ? toRoot
-      : normalizedPath.startsWith(`${fromRoot}/`)
-        ? `${toRoot}${normalizedPath.slice(fromRoot.length)}`
-        : normalizedPath;
+    const nextPath =
+      normalizedPath === fromRoot
+        ? toRoot
+        : normalizedPath.startsWith(`${fromRoot}/`)
+          ? `${toRoot}${normalizedPath.slice(fromRoot.length)}`
+          : normalizedPath;
     const normalizedOldPath = change.oldPath ? normalizeRoot(change.oldPath) : undefined;
-    const nextOldPath = normalizedOldPath && normalizedOldPath.startsWith(`${fromRoot}/`)
-      ? `${toRoot}${normalizedOldPath.slice(fromRoot.length)}`
-      : normalizedOldPath;
+    const nextOldPath =
+      normalizedOldPath && normalizedOldPath.startsWith(`${fromRoot}/`)
+        ? `${toRoot}${normalizedOldPath.slice(fromRoot.length)}`
+        : normalizedOldPath;
     files[nextPath] = {
       ...change,
       path: nextPath,
@@ -127,10 +129,13 @@ const defaultFileTreeBackend: FileTreeBackend = {
     const scheduleFetch = (path: string) => {
       const existing = timers.get(path);
       if (existing) clearTimeout(existing);
-      timers.set(path, setTimeout(() => {
-        timers.delete(path);
-        onChange(path);
-      }, 120));
+      timers.set(
+        path,
+        setTimeout(() => {
+          timers.delete(path);
+          onChange(path);
+        }, 120),
+      );
     };
     const scheduleEventFetch = (dirPath: unknown) => {
       if (typeof dirPath === "string" && paths.includes(dirPath)) {
@@ -208,11 +213,18 @@ export function useFileBrowser(): UseFileBrowserReturn {
       if (exists) {
         return prev.map((d) =>
           d.path === dirPath
-            ? { ...d, isLoading: options.quiet ? d.isLoading : true, error: options.quiet ? d.error : null }
-            : d
+            ? {
+                ...d,
+                isLoading: options.quiet ? d.isLoading : true,
+                error: options.quiet ? d.error : null,
+              }
+            : d,
         );
       }
-      return [...prev, { path: dirPath, name, tree: [], isLoading: true, error: null, hasLoadedTree: false }];
+      return [
+        ...prev,
+        { path: dirPath, name, tree: [], isLoading: true, error: null, hasLoadedTree: false },
+      ];
     });
 
     try {
@@ -227,16 +239,16 @@ export function useFileBrowser(): UseFileBrowserReturn {
             d.path === dirPath
               ? shouldSurfaceError
                 ? {
-                  ...d,
-                  tree: options.quiet ? [] : d.tree,
-                  workspaceStatus: options.quiet ? undefined : d.workspaceStatus,
-                  isLoading: false,
-                  hasLoadedTree: false,
-                  error,
-                }
+                    ...d,
+                    tree: options.quiet ? [] : d.tree,
+                    workspaceStatus: options.quiet ? undefined : d.workspaceStatus,
+                    isLoading: false,
+                    hasLoadedTree: false,
+                    error,
+                  }
                 : { ...d, isLoading: false, error: d.error }
-              : d
-          )
+              : d,
+          ),
         );
         return;
       }
@@ -246,17 +258,20 @@ export function useFileBrowser(): UseFileBrowserReturn {
         prev.map((d) =>
           d.path === dirPath
             ? {
-              ...d,
-              tree: data.tree,
-              workspaceStatus,
-              isLoading: false,
-              hasLoadedTree: true,
-              error: null,
-              truncated: data.truncated === true,
-              fileLimit: typeof data.fileLimit === "number" && data.fileLimit > 0 ? data.fileLimit : undefined,
-            }
-            : d
-        )
+                ...d,
+                tree: data.tree,
+                workspaceStatus,
+                isLoading: false,
+                hasLoadedTree: true,
+                error: null,
+                truncated: data.truncated === true,
+                fileLimit:
+                  typeof data.fileLimit === "number" && data.fileLimit > 0
+                    ? data.fileLimit
+                    : undefined,
+              }
+            : d,
+        ),
       );
 
       if (!options.quiet) {
@@ -273,9 +288,13 @@ export function useFileBrowser(): UseFileBrowserReturn {
       setDirs((prev) =>
         prev.map((d) =>
           d.path === dirPath
-            ? { ...d, isLoading: false, error: options.quiet ? d.error : "Failed to connect to server" }
-            : d
-        )
+            ? {
+                ...d,
+                isLoading: false,
+                error: options.quiet ? d.error : "Failed to connect to server",
+              }
+            : d,
+        ),
       );
     }
   }, []);
@@ -306,7 +325,7 @@ export function useFileBrowser(): UseFileBrowserReturn {
       });
       directories.forEach((d) => fetchTree(d));
     },
-    [fetchTree]
+    [fetchTree],
   );
 
   const clearVaultDirs = useCallback(() => {
@@ -319,7 +338,10 @@ export function useFileBrowser(): UseFileBrowserReturn {
     // Atomically replace any existing vault dirs (handles vault path change without accumulating stale entries)
     setDirs((prev) => {
       const nonVaultDirs = prev.filter((d) => !d.isVault);
-      return [...nonVaultDirs, { path: vaultPath, name, tree: [], isLoading: true, error: null, isVault: true }];
+      return [
+        ...nonVaultDirs,
+        { path: vaultPath, name, tree: [], isLoading: true, error: null, isVault: true },
+      ];
     });
 
     try {
@@ -329,16 +351,18 @@ export function useFileBrowser(): UseFileBrowserReturn {
       if (!res.ok || data.error) {
         setDirs((prev) =>
           prev.map((d) =>
-            d.path === vaultPath ? { ...d, isLoading: false, error: data.error || "Failed to load" } : d
-          )
+            d.path === vaultPath
+              ? { ...d, isLoading: false, error: data.error || "Failed to load" }
+              : d,
+          ),
         );
         return;
       }
 
       setDirs((prev) =>
         prev.map((d) =>
-          d.path === vaultPath ? { ...d, tree: data.tree, isLoading: false, isVault: true } : d
-        )
+          d.path === vaultPath ? { ...d, tree: data.tree, isLoading: false, isVault: true } : d,
+        ),
       );
 
       const rootFolders = (data.tree as VaultNode[])
@@ -352,8 +376,10 @@ export function useFileBrowser(): UseFileBrowserReturn {
     } catch {
       setDirs((prev) =>
         prev.map((d) =>
-          d.path === vaultPath ? { ...d, isLoading: false, error: "Failed to connect to server" } : d
-        )
+          d.path === vaultPath
+            ? { ...d, isLoading: false, error: "Failed to connect to server" }
+            : d,
+        ),
       );
     }
   }, []);
@@ -370,22 +396,21 @@ export function useFileBrowser(): UseFileBrowserReturn {
     });
   }, []);
 
-  const watchDirsKey = useMemo(
-    () => {
-      const regularDirs = dirs.filter((dir) => !dir.isVault);
-      const initialLoadPending = regularDirs.some((dir) => dir.isLoading && !dir.hasLoadedTree);
-      if (initialLoadPending) return "";
+  const watchDirsKey = useMemo(() => {
+    const regularDirs = dirs.filter((dir) => !dir.isVault);
+    const initialLoadPending = regularDirs.some((dir) => dir.isLoading && !dir.hasLoadedTree);
+    if (initialLoadPending) return "";
 
-      return regularDirs
+    return (
+      regularDirs
         // Subscribe only after the initial snapshot is visible. Live updates are
         // for future freshness; they must not compete with first paint.
         .filter((dir) => !dir.error && dir.hasLoadedTree)
         .map((dir) => dir.path)
         .sort()
-        .join("\n");
-    },
-    [dirs]
-  );
+        .join("\n")
+    );
+  }, [dirs]);
 
   useEffect(() => {
     if (!watchDirsKey) return;
@@ -406,7 +431,9 @@ export function useFileBrowser(): UseFileBrowserReturn {
     addVaultDir,
     clearVaultDirs,
     activeFile,
-    activeDirPath: activeFile ? (dirs.find((d) => activeFile.startsWith(d.path + "/"))?.path ?? null) : null,
+    activeDirPath: activeFile
+      ? (dirs.find((d) => activeFile.startsWith(d.path + "/"))?.path ?? null)
+      : null,
     setActiveFile,
   };
 }

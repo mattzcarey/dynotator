@@ -6,11 +6,11 @@
  * anywhere retires it everywhere.
  */
 
-import { storage } from './storage';
+import { storage } from "./storage";
 
-const STORAGE_KEY = 'plannotator-announce-tui-herdr-seen';
+const STORAGE_KEY = "plannotator-announce-tui-herdr-seen";
 // Bump to re-announce after a meaningful revision.
-const CURRENT_VERSION = '1';
+const CURRENT_VERSION = "1";
 
 export function needsTerminalToolsAnnouncement(): boolean {
   return storage.getItem(STORAGE_KEY) !== CURRENT_VERSION;

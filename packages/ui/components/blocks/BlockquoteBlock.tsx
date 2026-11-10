@@ -1,16 +1,17 @@
-import React, { createContext, useContext, useMemo } from 'react';
-import type { Block } from '../../types';
-import { computeListIndices, groupBlocks, parseMarkdownToBlocks } from '../../utils/parser';
-import { isQuestionDirectiveKind } from '@dynotator/core/question-block';
-import { InlineMarkdown } from '../InlineMarkdown';
-import { Callout } from './Callout';
+import React, { createContext, useContext, useMemo } from "react";
+import type { Block } from "../../types";
+import { computeListIndices, groupBlocks, parseMarkdownToBlocks } from "../../utils/parser";
+import { isQuestionDirectiveKind } from "@dynotator/core/question-block";
+import { InlineMarkdown } from "../InlineMarkdown";
+import { Callout } from "./Callout";
 // BlockRenderer renders this, and this renders the quote's inner blocks with
 // BlockRenderer: a cycle that only meets at render time, after both modules
 // have loaded (the QuestionContext precedent).
-import { BlockRenderer } from '../BlockRenderer';
+import { BlockRenderer } from "../BlockRenderer";
 
 /** The quote's look. Shared by both render paths so they cannot drift. */
-export const BLOCKQUOTE_CLASS_NAME = 'border-l-2 border-primary/50 pl-4 my-4 text-muted-foreground italic';
+export const BLOCKQUOTE_CLASS_NAME =
+  "border-l-2 border-primary/50 pl-4 my-4 text-muted-foreground italic";
 
 /**
  * Spacing and tone for a quote whose content has block structure. A
@@ -39,7 +40,7 @@ export const parseQuoteBody = (content: string): Block[] =>
  * takes the structured path.
  */
 export const isProseQuote = (inner: readonly Block[]): boolean =>
-  inner.every((block) => block.type === 'paragraph');
+  inner.every((block) => block.type === "paragraph");
 
 /**
  * How deep quotes may nest before the rest renders as text. Each level is a
@@ -53,7 +54,8 @@ export const MAX_QUOTE_DEPTH = 12;
 const QuoteDepthContext = createContext(0);
 
 /** Whether a quote or callout rendering here is at MAX_QUOTE_DEPTH and must not parse its body. */
-export const useAtQuoteDepthCap = (): boolean => useContext(QuoteDepthContext) + 1 >= MAX_QUOTE_DEPTH;
+export const useAtQuoteDepthCap = (): boolean =>
+  useContext(QuoteDepthContext) + 1 >= MAX_QUOTE_DEPTH;
 
 export interface BlockquoteBlockProps {
   block: Block;
@@ -88,14 +90,14 @@ export const BlockquoteBlock: React.FC<BlockquoteBlockProps> = ({ block, ...inli
     // `> a\n>\n> b` renders as two <p> children. Lines are trimmed as the
     // parser used to trim them, so the text is what it always was.
     const paragraphs = block.content
-      .split('\n')
+      .split("\n")
       .map((line) => line.trim())
-      .join('\n')
+      .join("\n")
       .split(/\n\n+/);
     return (
       <blockquote className={BLOCKQUOTE_CLASS_NAME} data-block-id={block.id}>
         {paragraphs.map((para, i) => (
-          <p key={i} className={i > 0 ? 'mt-2' : ''}>
+          <p key={i} className={i > 0 ? "mt-2" : ""}>
             <InlineMarkdown text={para} {...inlineProps} />
           </p>
         ))}
@@ -106,7 +108,9 @@ export const BlockquoteBlock: React.FC<BlockquoteBlockProps> = ({ block, ...inli
   return (
     <blockquote className={`${BLOCKQUOTE_CLASS_NAME} pn-quote-body`} data-block-id={block.id}>
       {/* React hoists this into <head> once for every quote. */}
-      <style href="plannotator-quote-body" precedence="default">{QUOTE_BODY_CSS}</style>
+      <style href="plannotator-quote-body" precedence="default">
+        {QUOTE_BODY_CSS}
+      </style>
       <QuoteDepthContext.Provider value={depth + 1}>
         <QuoteBody inner={inner} {...inlineProps} />
       </QuoteDepthContext.Provider>
@@ -118,21 +122,29 @@ export const BlockquoteBlock: React.FC<BlockquoteBlockProps> = ({ block, ...inli
  *  renderers omit `data-block-id`. */
 const anonymous = (block: Block): Block => ({ ...block, id: undefined as unknown as string });
 
-const QuoteBody: React.FC<Omit<BlockquoteBlockProps, 'block'> & { inner: Block[] }> = ({ inner, ...inlineProps }) => (
+const QuoteBody: React.FC<Omit<BlockquoteBlockProps, "block"> & { inner: Block[] }> = ({
+  inner,
+  ...inlineProps
+}) => (
   <>
     {groupBlocks(inner).map((group, i) => {
-      if (group.type === 'list-group') {
+      if (group.type === "list-group") {
         const indices = computeListIndices(group.blocks);
         return (
           <div key={`l-${i}`} data-quote-list="">
             {group.blocks.map((block, j) => (
-              <BlockRenderer key={j} block={anonymous(block)} orderedIndex={indices[j]} {...inlineProps} />
+              <BlockRenderer
+                key={j}
+                block={anonymous(block)}
+                orderedIndex={indices[j]}
+                {...inlineProps}
+              />
             ))}
           </div>
         );
       }
       const block = group.block;
-      if (block.type === 'paragraph') {
+      if (block.type === "paragraph") {
         // The prose quote's paragraph, so text reads the same with or
         // without a fence beside it.
         return (
@@ -141,8 +153,8 @@ const QuoteBody: React.FC<Omit<BlockquoteBlockProps, 'block'> & { inner: Block[]
           </p>
         );
       }
-      if (block.type === 'directive' && isQuestionDirectiveKind(block.directiveKind)) {
-        const kind = block.directiveKind || 'note';
+      if (block.type === "directive" && isQuestionDirectiveKind(block.directiveKind)) {
+        const kind = block.directiveKind || "note";
         return (
           <Callout
             key={`b-${i}`}
@@ -163,18 +175,22 @@ const QuoteBody: React.FC<Omit<BlockquoteBlockProps, 'block'> & { inner: Block[]
 
 /** Whether a callout body needs block layout: anything beyond paragraphs and list items. */
 export const calloutNeedsBlocks = (inner: readonly Block[]): boolean =>
-  inner.some((block) => block.type !== 'paragraph' && block.type !== 'list-item');
+  inner.some((block) => block.type !== "paragraph" && block.type !== "list-item");
 
 /**
  * A callout body that holds more than prose (a fence, a table, a heading, a
  * nested quote): its blocks laid out as a quote's are, one quote level
  * deeper and without ids of their own, so the callout stays one block.
  */
-export const CalloutBlocks: React.FC<Omit<BlockquoteBlockProps, 'block'> & { inner: Block[]; className?: string }> = ({ inner, className, ...inlineProps }) => {
+export const CalloutBlocks: React.FC<
+  Omit<BlockquoteBlockProps, "block"> & { inner: Block[]; className?: string }
+> = ({ inner, className, ...inlineProps }) => {
   const depth = useContext(QuoteDepthContext);
   return (
-    <div className={className ? `pn-quote-body ${className}` : 'pn-quote-body'}>
-      <style href="plannotator-quote-body" precedence="default">{QUOTE_BODY_CSS}</style>
+    <div className={className ? `pn-quote-body ${className}` : "pn-quote-body"}>
+      <style href="plannotator-quote-body" precedence="default">
+        {QUOTE_BODY_CSS}
+      </style>
       <QuoteDepthContext.Provider value={depth + 1}>
         <QuoteBody inner={inner} {...inlineProps} />
       </QuoteDepthContext.Provider>

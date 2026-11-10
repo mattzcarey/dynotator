@@ -6,11 +6,11 @@
 export function slugifyHeading(text: string): string {
   return text
     .toLowerCase()
-    .replace(/\[\[([^\]]+)\]\]/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[*_`~]/g, '')
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_`~]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 /**
@@ -25,7 +25,7 @@ export function buildHeadingSlugMap(
   const map = new Map<string, string>();
   const counts = new Map<string, number>();
   for (const block of blocks) {
-    if (block.type !== 'heading') continue;
+    if (block.type !== "heading") continue;
     const base = slugifyHeading(block.content);
     if (!base) continue;
     const n = counts.get(base) ?? 0;

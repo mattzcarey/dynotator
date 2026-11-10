@@ -21,13 +21,13 @@
  * failures degrade to the name + directory fallback, never an error.
  */
 
-import type { SkillCatalogEntry, SkillExportContent, SkillRootId } from './skillReferences';
+import type { SkillCatalogEntry, SkillExportContent, SkillRootId } from "./skillReferences";
 import {
   extractSkillReferences,
   registerSkillContentForExport,
   resetSkillContentsForExport,
   setSkillCatalogForExport,
-} from './skillReferences';
+} from "./skillReferences";
 
 const CATALOG_TTL_MS = 30_000;
 
@@ -38,22 +38,24 @@ const CATALOG_TTL_MS = 30_000;
 export type SkillCatalogTransport = () => Promise<SkillCatalogEntry[]>;
 
 function normalizeEntry(raw: unknown): SkillCatalogEntry | null {
-  if (!raw || typeof raw !== 'object') return null;
+  if (!raw || typeof raw !== "object") return null;
   const { name, root, description, humanOnly, dir } = raw as Record<string, unknown>;
-  if (typeof name !== 'string' || !name) return null;
+  if (typeof name !== "string" || !name) return null;
   const rootId: SkillRootId =
-    root === 'claude' || root === 'codex' || root === 'universal' || root === 'plannotator' ? root : 'universal';
+    root === "claude" || root === "codex" || root === "universal" || root === "plannotator"
+      ? root
+      : "universal";
   return {
     name,
     root: rootId,
-    ...(typeof description === 'string' && description ? { description } : {}),
+    ...(typeof description === "string" && description ? { description } : {}),
     humanOnly: humanOnly === true,
-    ...(typeof dir === 'string' && dir ? { dir } : {}),
+    ...(typeof dir === "string" && dir ? { dir } : {}),
   };
 }
 
 const defaultTransport: SkillCatalogTransport = async () => {
-  const res = await fetch('/api/skills');
+  const res = await fetch("/api/skills");
   if (!res.ok) return [];
   const data = (await res.json()) as { skills?: unknown };
   if (!Array.isArray(data.skills)) return [];
@@ -211,11 +213,11 @@ export function resetSkillContentTransport(): void {
 
 /** A raw `{ content, truncated, dir, path }` record as an export content, or null when any part is missing. */
 export function normalizeSkillContent(raw: unknown): SkillExportContent | null {
-  if (!raw || typeof raw !== 'object') return null;
+  if (!raw || typeof raw !== "object") return null;
   const { content, truncated, dir, path } = raw as Record<string, unknown>;
-  if (typeof content !== 'string' || !content) return null;
-  if (typeof dir !== 'string' || !dir) return null;
-  if (typeof path !== 'string' || !path) return null;
+  if (typeof content !== "string" || !content) return null;
+  if (typeof dir !== "string" || !dir) return null;
+  if (typeof path !== "string" || !path) return null;
   return { content, truncated: truncated === true, dir, path };
 }
 

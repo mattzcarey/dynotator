@@ -90,7 +90,9 @@ pre code.pn-code[data-keep-layout] {
    ======================================== */
 
 .sidebar-tab-flag {
-  transition: transform 200ms ease, opacity 200ms ease;
+  transition:
+    transform 200ms ease,
+    opacity 200ms ease;
 }
 .sidebar-tab-flag:hover {
   transform: translateX(2px);

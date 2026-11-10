@@ -32,17 +32,17 @@
  * in an svg `<a href>`, which would turn the pinpoint click on that node
  * into a navigation. The canvas owns every click.
  */
-import DOMPurify from 'dompurify';
-import type { DiagramKind } from '@dynotator/core/diagram-anchor';
-import { MERMAID_FINDER, type DiagramFinder } from './diagram-anchor';
-import { GRAPHVIZ_FINDER } from './diagram-anchor-graphviz';
-import { getGraphvizRetryDelayMs, loadGraphvizRuntime, type GraphvizRuntime } from './graphviz';
-import { loadMathRenderer } from './math';
-import { getMermaidRetryDelayMs, loadMermaidRuntime } from './mermaid';
-import { hasMermaidMath } from './mermaid-math-slot';
-import { applyMermaidTheme, mermaidThemeKey, type MermaidThemeMode } from './mermaidTheme';
+import DOMPurify from "dompurify";
+import type { DiagramKind } from "@dynotator/core/diagram-anchor";
+import { MERMAID_FINDER, type DiagramFinder } from "./diagram-anchor";
+import { GRAPHVIZ_FINDER } from "./diagram-anchor-graphviz";
+import { getGraphvizRetryDelayMs, loadGraphvizRuntime, type GraphvizRuntime } from "./graphviz";
+import { loadMathRenderer } from "./math";
+import { getMermaidRetryDelayMs, loadMermaidRuntime } from "./mermaid";
+import { hasMermaidMath } from "./mermaid-math-slot";
+import { applyMermaidTheme, mermaidThemeKey, type MermaidThemeMode } from "./mermaidTheme";
 
-export type { DiagramKind } from '@dynotator/core/diagram-anchor';
+export type { DiagramKind } from "@dynotator/core/diagram-anchor";
 
 type Mermaid = Awaited<ReturnType<typeof loadMermaidRuntime>>;
 
@@ -80,7 +80,7 @@ export type DiagramRenderResult =
       /** The sanitized svg root, ready to mount. The viewer never holds
        * the markup: see the header. */
       readonly svgNode: SVGSVGElement;
-      readonly findTarget: DiagramFinder['findTarget'];
+      readonly findTarget: DiagramFinder["findTarget"];
     }
   | DiagramRenderError;
 
@@ -92,7 +92,7 @@ interface DiagramRenderer {
 /** Elements that never belong in a rendered diagram. DOMPurify's profiles
  * already drop every one of them; the sweep below is the belt that does not
  * depend on which profile a later config edit turns on. */
-const FORBIDDEN_ELEMENTS = 'script, iframe, object, embed, link, meta';
+const FORBIDDEN_ELEMENTS = "script, iframe, object, embed, link, meta";
 
 /**
  * The belt over the engine's output (see the header). DOMPurify parses the
@@ -123,15 +123,15 @@ export function sanitizeDiagramSvg(svg: string): SVGSVGElement | null {
  * document, or when the fragment cannot be adopted.
  */
 export function parseDiagramSvg(svg: string): SVGSVGElement | null {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === "undefined") return null;
   const fragment = DOMPurify.sanitize(svg, {
     USE_PROFILES: { svg: true, svgFilters: true, html: true },
-    ADD_TAGS: ['foreignobject'],
-    ADD_ATTR: ['dominant-baseline'],
+    ADD_TAGS: ["foreignobject"],
+    ADD_ATTR: ["dominant-baseline"],
     HTML_INTEGRATION_POINTS: { foreignobject: true },
     RETURN_DOM_FRAGMENT: true,
   });
-  const root = fragment.querySelector('svg');
+  const root = fragment.querySelector("svg");
   if (root === null) return null;
   try {
     return document.adoptNode(root) as SVGSVGElement;
@@ -155,15 +155,15 @@ export function scrubDiagramSvg(root: SVGSVGElement): void {
   // restyle elements OUTSIDE the diagram and fetch (`@import`, `url(`).
   // Mermaid needs its own scoped sheet, so style elements are not dropped
   // wholesale; each keeps only rules scoped under the svg's root id.
-  const rootId = root.getAttribute('id') ?? '';
-  for (const style of Array.from(root.querySelectorAll('style'))) {
-    const kept = scopeDiagramCss(style.textContent ?? '', rootId);
-    if (kept === '') style.remove();
+  const rootId = root.getAttribute("id") ?? "";
+  for (const style of Array.from(root.querySelectorAll("style"))) {
+    const kept = scopeDiagramCss(style.textContent ?? "", rootId);
+    if (kept === "") style.remove();
     else style.textContent = kept;
   }
-  for (const anchor of Array.from(root.querySelectorAll('a'))) {
-    anchor.removeAttribute('href');
-    anchor.removeAttribute('xlink:href');
+  for (const anchor of Array.from(root.querySelectorAll("a"))) {
+    anchor.removeAttribute("href");
+    anchor.removeAttribute("xlink:href");
   }
   const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
@@ -176,16 +176,16 @@ function scrubAttributes(el: Element): void {
   for (const attribute of Array.from(el.attributes)) {
     const name = attribute.name.toLowerCase();
     const value = attribute.value.trim().toLowerCase();
-    if (name.startsWith('on')) {
+    if (name.startsWith("on")) {
       el.removeAttribute(attribute.name);
       continue;
     }
     if (
-      (name === 'href' || name === 'xlink:href' || name === 'src') &&
-      !value.startsWith('#') &&
-      !value.startsWith('http://') &&
-      !value.startsWith('https://') &&
-      value !== ''
+      (name === "href" || name === "xlink:href" || name === "src") &&
+      !value.startsWith("#") &&
+      !value.startsWith("http://") &&
+      !value.startsWith("https://") &&
+      value !== ""
     ) {
       el.removeAttribute(attribute.name);
     }
@@ -195,9 +195,9 @@ function scrubAttributes(el: Element): void {
 /** The attribute an edge's widened hit path carries (its value is the
  * edge's index in the layer); `diagramHitSource` maps one back to the
  * visible edge it stands for. */
-export const DIAGRAM_HIT_ATTR = 'data-diagram-hit';
+export const DIAGRAM_HIT_ATTR = "data-diagram-hit";
 /** The one group, appended LAST in the svg root, that holds every hit path. */
-export const DIAGRAM_HIT_LAYER_ATTR = 'data-diagram-hit-layer';
+export const DIAGRAM_HIT_LAYER_ATTR = "data-diagram-hit-layer";
 /** The invisible stroke width of an edge hit path. A rendered edge is a 1–2
  * px stroke that the pointer can only catch at random spots (owner
  * feedback); 14 px is a comfortable target without swallowing its
@@ -208,22 +208,22 @@ export const EDGE_HIT_STROKE_WIDTH = 14;
  * state transitions, class relations, ER relationship lines) and the
  * sequence diagram's message lines; Graphviz's edge paths. */
 const EDGE_SELECTOR = [
-  'g.edgePaths > path',
-  'path.flowchart-link',
-  'path.transition',
-  'path.relation',
-  'path.relationshipLine',
-  'line.messageLine0',
-  'line.messageLine1',
-  'path.messageLine0',
-  'path.messageLine1',
-  'g.edge > path',
-].join(', ');
+  "g.edgePaths > path",
+  "path.flowchart-link",
+  "path.transition",
+  "path.relation",
+  "path.relationshipLine",
+  "line.messageLine0",
+  "line.messageLine1",
+  "path.messageLine0",
+  "path.messageLine1",
+  "g.edge > path",
+].join(", ");
 
 /** The geometry a hit path keeps from its edge; everything else (id, class,
  * every `data-*`, markers, inline style, dash pattern) is left behind, so a
  * host's `[data-id="L_A_B_0"]` still matches exactly one element. */
-const HIT_GEOMETRY_ATTRS = ['d', 'x1', 'y1', 'x2', 'y2', 'points'];
+const HIT_GEOMETRY_ATTRS = ["d", "x1", "y1", "x2", "y2", "points"];
 
 const hitSources = new WeakMap<Element, Element>();
 
@@ -240,10 +240,10 @@ export function diagramHitSource(el: Element): Element | null {
 function transformToRoot(el: Element, root: Element): string {
   const parts: string[] = [];
   for (let node: Element | null = el; node !== null && node !== root; node = node.parentElement) {
-    const transform = node.getAttribute('transform');
-    if (transform !== null && transform.trim() !== '') parts.unshift(transform.trim());
+    const transform = node.getAttribute("transform");
+    if (transform !== null && transform.trim() !== "") parts.unshift(transform.trim());
   }
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
 /**
@@ -266,31 +266,34 @@ export function widenEdgeHitAreas(svg: SVGSVGElement): void {
   svg.querySelector(`:scope > [${DIAGRAM_HIT_LAYER_ATTR}]`)?.remove();
   const edges = Array.from(new Set(Array.from(svg.querySelectorAll(EDGE_SELECTOR))));
   if (edges.length === 0) return;
-  const layer = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
-  layer.setAttribute(DIAGRAM_HIT_LAYER_ATTR, '');
-  layer.setAttribute('aria-hidden', 'true');
+  const layer = doc.createElementNS("http://www.w3.org/2000/svg", "g");
+  layer.setAttribute(DIAGRAM_HIT_LAYER_ATTR, "");
+  layer.setAttribute("aria-hidden", "true");
   edges.forEach((edge, index) => {
-    const hit = doc.createElementNS('http://www.w3.org/2000/svg', edge.tagName.toLowerCase()) as SVGElement;
+    const hit = doc.createElementNS(
+      "http://www.w3.org/2000/svg",
+      edge.tagName.toLowerCase(),
+    ) as SVGElement;
     for (const name of HIT_GEOMETRY_ATTRS) {
       const value = edge.getAttribute(name);
       if (value !== null) hit.setAttribute(name, value);
     }
     const transform = transformToRoot(edge, svg);
-    if (transform !== '') hit.setAttribute('transform', transform);
+    if (transform !== "") hit.setAttribute("transform", transform);
     hit.setAttribute(DIAGRAM_HIT_ATTR, String(index));
-    hit.setAttribute('fill', 'none');
-    hit.setAttribute('stroke', 'transparent');
-    hit.setAttribute('stroke-width', String(EDGE_HIT_STROKE_WIDTH));
-    hit.setAttribute('pointer-events', 'stroke');
+    hit.setAttribute("fill", "none");
+    hit.setAttribute("stroke", "transparent");
+    hit.setAttribute("stroke-width", String(EDGE_HIT_STROKE_WIDTH));
+    hit.setAttribute("pointer-events", "stroke");
     const style = hit.style;
     if (style) {
-      style.setProperty('fill', 'none', 'important');
-      style.setProperty('stroke', 'transparent', 'important');
-      style.setProperty('stroke-width', `${EDGE_HIT_STROKE_WIDTH}px`, 'important');
-      style.setProperty('stroke-dasharray', 'none', 'important');
-      style.setProperty('marker-start', 'none', 'important');
-      style.setProperty('marker-end', 'none', 'important');
-      style.setProperty('pointer-events', 'stroke', 'important');
+      style.setProperty("fill", "none", "important");
+      style.setProperty("stroke", "transparent", "important");
+      style.setProperty("stroke-width", `${EDGE_HIT_STROKE_WIDTH}px`, "important");
+      style.setProperty("stroke-dasharray", "none", "important");
+      style.setProperty("marker-start", "none", "important");
+      style.setProperty("marker-end", "none", "important");
+      style.setProperty("pointer-events", "stroke", "important");
     }
     hitSources.set(hit, edge);
     layer.appendChild(hit);
@@ -304,18 +307,25 @@ const CSS_FETCHERS = /(?:^|[^a-z-])(?:image-set|image|src|cross-fade|paint|eleme
 /** Resolve CSS escapes (`u\72l(` IS `url(` to a browser) so the checks
  * below read what the engine would. */
 function decodeCssEscapes(css: string): string {
-  return css.replace(/\\([0-9a-f]{1,6})\s?|\\(.)/giu, (_m, hex: string | undefined, ch: string | undefined) =>
-    hex !== undefined ? String.fromCodePoint(Math.min(Number.parseInt(hex, 16) || 0xfffd, 0x10ffff)) : (ch ?? ''),
+  return css.replace(
+    /\\([0-9a-f]{1,6})\s?|\\(.)/giu,
+    (_m, hex: string | undefined, ch: string | undefined) =>
+      hex !== undefined
+        ? String.fromCodePoint(Math.min(Number.parseInt(hex, 16) || 0xfffd, 0x10ffff))
+        : (ch ?? ""),
   );
 }
 
 function cssFetches(block: string): boolean {
   const decoded = decodeCssEscapes(block).toLowerCase();
-  if (decoded.includes('@import')) return true;
+  if (decoded.includes("@import")) return true;
   if (CSS_FETCHERS.test(decoded)) return true;
-  for (let at = decoded.indexOf('url('); at !== -1; at = decoded.indexOf('url(', at + 4)) {
-    const arg = decoded.slice(at + 4).trimStart().replace(/^["']/u, '');
-    if (!arg.startsWith('#')) return true;
+  for (let at = decoded.indexOf("url("); at !== -1; at = decoded.indexOf("url(", at + 4)) {
+    const arg = decoded
+      .slice(at + 4)
+      .trimStart()
+      .replace(/^["']/u, "");
+    if (!arg.startsWith("#")) return true;
   }
   return false;
 }
@@ -324,22 +334,22 @@ function cssFetches(block: string): boolean {
 function splitSelectors(list: string): string[] {
   const out: string[] = [];
   let depth = 0;
-  let quote = '';
-  let current = '';
+  let quote = "";
+  let current = "";
   for (const ch of list) {
-    if (quote !== '') {
-      if (ch === quote) quote = '';
+    if (quote !== "") {
+      if (ch === quote) quote = "";
     } else if (ch === '"' || ch === "'") quote = ch;
-    else if (ch === '(' || ch === '[') depth += 1;
-    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
-    else if (ch === ',' && depth === 0) {
+    else if (ch === "(" || ch === "[") depth += 1;
+    else if (ch === ")" || ch === "]") depth = Math.max(0, depth - 1);
+    else if (ch === "," && depth === 0) {
       out.push(current.trim());
-      current = '';
+      current = "";
       continue;
     }
     current += ch;
   }
-  if (current.trim() !== '') out.push(current.trim());
+  if (current.trim() !== "") out.push(current.trim());
   return out;
 }
 
@@ -354,32 +364,32 @@ function splitSelectors(list: string): string[] {
  * pass over the text: a detached `<style>` has no CSSOM to ask.
  */
 export function scopeDiagramCss(css: string, rootId: string): string {
-  const text = css.replace(/\/\*[\s\S]*?\*\//gu, '');
+  const text = css.replace(/\/\*[\s\S]*?\*\//gu, "");
   const scoped = (selector: string): boolean => {
-    if (rootId === '') return false;
+    if (rootId === "") return false;
     const decoded = decodeCssEscapes(selector).trim();
     if (!decoded.startsWith(`#${rootId}`)) return false;
     const next = decoded[rootId.length + 1];
     return next === undefined || !/[\w-]/u.test(next);
   };
-  let out = '';
+  let out = "";
   let i = 0;
   while (i < text.length) {
     // The prelude runs to the first top-level `{` or `;`.
     let j = i;
-    let quote = '';
+    let quote = "";
     while (j < text.length) {
       const ch = text[j] as string;
-      if (quote !== '') {
-        if (ch === '\\') j += 1;
-        else if (ch === quote) quote = '';
+      if (quote !== "") {
+        if (ch === "\\") j += 1;
+        else if (ch === quote) quote = "";
       } else if (ch === '"' || ch === "'") quote = ch;
-      else if (ch === '{' || ch === ';') break;
+      else if (ch === "{" || ch === ";") break;
       j += 1;
     }
     const prelude = text.slice(i, j).trim();
     if (j >= text.length) break;
-    if (text[j] === ';') {
+    if (text[j] === ";") {
       // A statement at-rule (`@import …;`, `@charset`, `@namespace`): dropped.
       i = j + 1;
       continue;
@@ -387,30 +397,35 @@ export function scopeDiagramCss(css: string, rootId: string): string {
     // The block runs to its matching `}`.
     let depth = 0;
     let k = j;
-    quote = '';
+    quote = "";
     for (; k < text.length; k += 1) {
       const ch = text[k] as string;
-      if (quote !== '') {
-        if (ch === '\\') k += 1;
-        else if (ch === quote) quote = '';
+      if (quote !== "") {
+        if (ch === "\\") k += 1;
+        else if (ch === quote) quote = "";
       } else if (ch === '"' || ch === "'") quote = ch;
-      else if (ch === '{') depth += 1;
-      else if (ch === '}') {
+      else if (ch === "{") depth += 1;
+      else if (ch === "}") {
         depth -= 1;
         if (depth === 0) break;
       }
     }
     const body = text.slice(j + 1, k);
     i = k + 1;
-    if (prelude === '') continue;
-    if (prelude.startsWith('@')) {
-      const name = /^@([\w-]+)/u.exec(prelude)?.[1]?.toLowerCase() ?? '';
+    if (prelude === "") continue;
+    if (prelude.startsWith("@")) {
+      const name = /^@([\w-]+)/u.exec(prelude)?.[1]?.toLowerCase() ?? "";
       if (/^(?:-\w+-)?keyframes$/u.test(name)) {
         if (!cssFetches(prelude) && !cssFetches(body)) out += `${prelude}{${body}}`;
-      } else if (name === 'media' || name === 'supports' || name === 'container' || name === 'layer') {
+      } else if (
+        name === "media" ||
+        name === "supports" ||
+        name === "container" ||
+        name === "layer"
+      ) {
         if (cssFetches(prelude)) continue;
         const inner = scopeDiagramCss(body, rootId);
-        if (inner !== '') out += `${prelude}{${inner}}`;
+        if (inner !== "") out += `${prelude}{${inner}}`;
       }
       continue;
     }
@@ -432,7 +447,9 @@ let parseSvg: (svg: string) => SVGSVGElement | null = parseDiagramSvg;
  * parse through an inert `<template>` instead; `scrubDiagramSvg` still runs
  * on every test render. The real parse is proven in a browser.
  */
-export function __setDiagramSvgParserForTests(next: ((svg: string) => SVGSVGElement | null) | undefined): void {
+export function __setDiagramSvgParserForTests(
+  next: ((svg: string) => SVGSVGElement | null) | undefined,
+): void {
   parseSvg = next ?? parseDiagramSvg;
 }
 
@@ -440,10 +457,10 @@ export function __setDiagramSvgParserForTests(next: ((svg: string) => SVGSVGElem
  * line for the parser errors that have one); Graphviz's say "syntax error
  * in line N near '...'". */
 function errorLine(error: unknown): number | null {
-  if (typeof error === 'object' && error !== null) {
+  if (typeof error === "object" && error !== null) {
     const hash = (error as { hash?: { line?: unknown; loc?: { first_line?: unknown } } }).hash;
     const line = hash?.line ?? hash?.loc?.first_line;
-    if (typeof line === 'number' && Number.isFinite(line)) return line + 1;
+    if (typeof line === "number" && Number.isFinite(line)) return line + 1;
   }
   const message = error instanceof Error ? error.message : String(error);
   const m = /line (\d+)/iu.exec(message);
@@ -454,7 +471,7 @@ function errorMessage(error: unknown, fallback: string): string {
   const message = error instanceof Error ? error.message : String(error);
   // Mermaid appends the expected-token dump after the first line; the
   // first line is the human sentence.
-  return message.split('\n')[0]?.trim() || fallback;
+  return message.split("\n")[0]?.trim() || fallback;
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -474,19 +491,28 @@ async function loadWithRetry<T>(load: () => Promise<T>, delayMs: number): Promis
   }
 }
 
-async function renderMermaid(runtime: Mermaid, renderId: string, source: string): Promise<DiagramRenderResult> {
+async function renderMermaid(
+  runtime: Mermaid,
+  renderId: string,
+  source: string,
+): Promise<DiagramRenderResult> {
   try {
     const { svg } = await runtime.render(renderId, source);
     const svgNode = sanitizeDiagramSvg(svg);
     if (svgNode === null) {
-      return { ok: false, message: 'The diagram could not be rendered.', line: null, runtimeUnavailable: false };
+      return {
+        ok: false,
+        message: "The diagram could not be rendered.",
+        line: null,
+        runtimeUnavailable: false,
+      };
     }
     widenEdgeHitAreas(svgNode);
     return { ok: true, svgNode, findTarget: MERMAID_FINDER.findTarget };
   } catch (error) {
     return {
       ok: false,
-      message: errorMessage(error, 'Failed to render diagram'),
+      message: errorMessage(error, "Failed to render diagram"),
       line: errorLine(error),
       runtimeUnavailable: false,
     };
@@ -502,7 +528,7 @@ const mermaidRenderer: DiagramRenderer = {
     } catch (error) {
       return {
         ok: false,
-        message: errorMessage(error, 'Failed to render diagram'),
+        message: errorMessage(error, "Failed to render diagram"),
         line: null,
         runtimeUnavailable: true,
       };
@@ -536,12 +562,12 @@ const mermaidRenderer: DiagramRenderer = {
 function isGraphvizDefault(value: string | null, ...names: string[]): boolean {
   if (value === null) return false;
   const bare = value.trim().toLowerCase();
-  return names.includes(bare.startsWith('#') ? bare.slice(1) : bare);
+  return names.includes(bare.startsWith("#") ? bare.slice(1) : bare);
 }
 
-const BLACK = ['black', '000000', '000'];
-const WHITE = ['white', 'ffffff', 'fff'];
-const LIGHTGREY = ['lightgrey', 'lightgray', 'd3d3d3'];
+const BLACK = ["black", "000000", "000"];
+const WHITE = ["white", "ffffff", "fff"];
+const LIGHTGREY = ["lightgrey", "lightgray", "d3d3d3"];
 
 /**
  * Graphviz has no theme system; every color lands as a presentation
@@ -562,38 +588,42 @@ const LIGHTGREY = ['lightgrey', 'lightgray', 'd3d3d3'];
  * stroke widths and dash patterns. Idempotent.
  */
 export function themeGraphvizSvg(svg: SVGSVGElement): void {
-  const graph = svg.querySelector(':scope > g.graph');
-  const page = graph?.querySelector(':scope > polygon') ?? null;
-  if (page !== null && isGraphvizDefault(page.getAttribute('fill'), ...WHITE)) {
+  const graph = svg.querySelector(":scope > g.graph");
+  const page = graph?.querySelector(":scope > polygon") ?? null;
+  if (page !== null && isGraphvizDefault(page.getAttribute("fill"), ...WHITE)) {
     page.remove();
   }
-  const shapes = 'polygon, ellipse, circle, path, polyline, rect';
-  for (const group of Array.from(svg.querySelectorAll('g.node, g.cluster'))) {
-    const cluster = group.classList.contains('cluster');
-    for (const shape of Array.from(group.querySelectorAll(`:scope > ${shapes.replaceAll(', ', ', :scope > ')}`))) {
-      const fill = shape.getAttribute('fill');
-      if (isGraphvizDefault(fill, 'none', 'transparent')) {
-        shape.setAttribute('fill', 'var(--card)');
+  const shapes = "polygon, ellipse, circle, path, polyline, rect";
+  for (const group of Array.from(svg.querySelectorAll("g.node, g.cluster"))) {
+    const cluster = group.classList.contains("cluster");
+    for (const shape of Array.from(
+      group.querySelectorAll(`:scope > ${shapes.replaceAll(", ", ", :scope > ")}`),
+    )) {
+      const fill = shape.getAttribute("fill");
+      if (isGraphvizDefault(fill, "none", "transparent")) {
+        shape.setAttribute("fill", "var(--card)");
       } else if (isGraphvizDefault(fill, ...LIGHTGREY)) {
-        shape.setAttribute('fill', 'var(--muted)');
+        shape.setAttribute("fill", "var(--muted)");
       }
-      if (isGraphvizDefault(shape.getAttribute('stroke'), ...BLACK)) {
-        shape.setAttribute('stroke', cluster ? 'var(--border)' : 'var(--foreground)');
+      if (isGraphvizDefault(shape.getAttribute("stroke"), ...BLACK)) {
+        shape.setAttribute("stroke", cluster ? "var(--border)" : "var(--foreground)");
       }
     }
   }
-  for (const part of Array.from(svg.querySelectorAll('g.edge > path, g.edge > polygon, g.edge > ellipse'))) {
-    if (isGraphvizDefault(part.getAttribute('stroke'), ...BLACK)) {
-      part.setAttribute('stroke', 'var(--foreground)');
+  for (const part of Array.from(
+    svg.querySelectorAll("g.edge > path, g.edge > polygon, g.edge > ellipse"),
+  )) {
+    if (isGraphvizDefault(part.getAttribute("stroke"), ...BLACK)) {
+      part.setAttribute("stroke", "var(--foreground)");
     }
-    if (isGraphvizDefault(part.getAttribute('fill'), ...BLACK)) {
-      part.setAttribute('fill', 'var(--foreground)');
+    if (isGraphvizDefault(part.getAttribute("fill"), ...BLACK)) {
+      part.setAttribute("fill", "var(--foreground)");
     }
   }
-  for (const text of Array.from(svg.querySelectorAll('text'))) {
-    const fill = text.getAttribute('fill');
+  for (const text of Array.from(svg.querySelectorAll("text"))) {
+    const fill = text.getAttribute("fill");
     if (fill === null || isGraphvizDefault(fill, ...BLACK)) {
-      text.setAttribute('fill', 'var(--foreground)');
+      text.setAttribute("fill", "var(--foreground)");
     }
   }
 }
@@ -619,21 +649,26 @@ const graphvizRenderer: DiagramRenderer = {
     } catch (error) {
       return {
         ok: false,
-        message: errorMessage(error, 'The Graphviz engine could not be loaded.'),
+        message: errorMessage(error, "The Graphviz engine could not be loaded."),
         line: null,
         runtimeUnavailable: true,
       };
     }
     try {
-      const result = viz.render(source, { format: 'svg' });
-      if (result.status === 'failure') {
-        const first = result.errors.find((entry) => entry.level !== 'warning') ?? result.errors[0];
-        const message = first?.message.trim() || 'The graph could not be rendered.';
+      const result = viz.render(source, { format: "svg" });
+      if (result.status === "failure") {
+        const first = result.errors.find((entry) => entry.level !== "warning") ?? result.errors[0];
+        const message = first?.message.trim() || "The graph could not be rendered.";
         return { ok: false, message, line: errorLine(message), runtimeUnavailable: false };
       }
       const svgNode = sanitizeDiagramSvg(result.output);
       if (svgNode === null) {
-        return { ok: false, message: 'The graph could not be rendered.', line: null, runtimeUnavailable: false };
+        return {
+          ok: false,
+          message: "The graph could not be rendered.",
+          line: null,
+          runtimeUnavailable: false,
+        };
       }
       themeGraphvizSvg(svgNode);
       widenEdgeHitAreas(svgNode);
@@ -641,7 +676,7 @@ const graphvizRenderer: DiagramRenderer = {
     } catch (error) {
       return {
         ok: false,
-        message: errorMessage(error, 'Failed to render diagram'),
+        message: errorMessage(error, "Failed to render diagram"),
         line: errorLine(error),
         runtimeUnavailable: false,
       };

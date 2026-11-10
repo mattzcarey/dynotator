@@ -1,10 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState } from "react";
 import {
   parseAgentToolSetting,
   saveAgentToolSetting,
   withSavedAgentTool,
   type AgentToolSetting,
-} from '../utils/agentToolSetting';
+} from "../utils/agentToolSetting";
 
 export interface AgentToolSettingState {
   /** Undefined until a serverConfig reporting a tool host is adopted. */

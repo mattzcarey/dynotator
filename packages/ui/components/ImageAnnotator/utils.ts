@@ -1,5 +1,5 @@
-import getStroke from 'perfect-freehand';
-import type { Point, Stroke } from './types';
+import getStroke from "perfect-freehand";
+import type { Point, Stroke } from "./types";
 
 const STROKE_OPTIONS = {
   size: 4,
@@ -12,7 +12,7 @@ const STROKE_OPTIONS = {
  * Convert perfect-freehand output to SVG path data
  */
 function getSvgPathFromStroke(stroke: number[][]): string {
-  if (!stroke.length) return '';
+  if (!stroke.length) return "";
 
   const d = stroke.reduce(
     (acc, [x0, y0], i, arr) => {
@@ -20,11 +20,11 @@ function getSvgPathFromStroke(stroke: number[][]): string {
       acc.push(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
       return acc;
     },
-    ['M', ...stroke[0], 'Q']
+    ["M", ...stroke[0], "Q"],
   );
 
-  d.push('Z');
-  return d.join(' ');
+  d.push("Z");
+  return d.join(" ");
 }
 
 /**
@@ -35,11 +35,11 @@ export function renderPenStroke(
   points: Point[],
   color: string,
   size: number,
-  scale = 1
+  scale = 1,
 ) {
   if (points.length < 2) return;
 
-  const scaledPoints = points.map(p => [p.x * scale, p.y * scale, p.pressure ?? 0.5]);
+  const scaledPoints = points.map((p) => [p.x * scale, p.y * scale, p.pressure ?? 0.5]);
   const stroke = getStroke(scaledPoints, { ...STROKE_OPTIONS, size: size * scale });
 
   const path = new Path2D(getSvgPathFromStroke(stroke));
@@ -56,7 +56,7 @@ export function renderArrow(
   end: Point,
   color: string,
   size: number,
-  scale = 1
+  scale = 1,
 ) {
   const x1 = start.x * scale;
   const y1 = start.y * scale;
@@ -69,7 +69,7 @@ export function renderArrow(
   // Draw line
   ctx.strokeStyle = color;
   ctx.lineWidth = lineWidth;
-  ctx.lineCap = 'round';
+  ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
@@ -82,11 +82,11 @@ export function renderArrow(
   ctx.moveTo(x2, y2);
   ctx.lineTo(
     x2 - headLength * Math.cos(angle - Math.PI / 6),
-    y2 - headLength * Math.sin(angle - Math.PI / 6)
+    y2 - headLength * Math.sin(angle - Math.PI / 6),
   );
   ctx.lineTo(
     x2 - headLength * Math.cos(angle + Math.PI / 6),
-    y2 - headLength * Math.sin(angle + Math.PI / 6)
+    y2 - headLength * Math.sin(angle + Math.PI / 6),
   );
   ctx.closePath();
   ctx.fill();
@@ -101,7 +101,7 @@ export function renderCircle(
   end: Point,
   color: string,
   size: number,
-  scale = 1
+  scale = 1,
 ) {
   const x1 = start.x * scale;
   const y1 = start.y * scale;
@@ -126,22 +126,32 @@ export function renderCircle(
 /**
  * Render a stroke based on its tool type
  */
-export function renderStroke(
-  ctx: CanvasRenderingContext2D,
-  stroke: Stroke,
-  scale = 1
-) {
+export function renderStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, scale = 1) {
   if (stroke.points.length < 2) return;
 
   switch (stroke.tool) {
-    case 'pen':
+    case "pen":
       renderPenStroke(ctx, stroke.points, stroke.color, stroke.size, scale);
       break;
-    case 'arrow':
-      renderArrow(ctx, stroke.points[0], stroke.points[stroke.points.length - 1], stroke.color, stroke.size, scale);
+    case "arrow":
+      renderArrow(
+        ctx,
+        stroke.points[0],
+        stroke.points[stroke.points.length - 1],
+        stroke.color,
+        stroke.size,
+        scale,
+      );
       break;
-    case 'circle':
-      renderCircle(ctx, stroke.points[0], stroke.points[stroke.points.length - 1], stroke.color, stroke.size, scale);
+    case "circle":
+      renderCircle(
+        ctx,
+        stroke.points[0],
+        stroke.points[stroke.points.length - 1],
+        stroke.color,
+        stroke.size,
+        scale,
+      );
       break;
   }
 }

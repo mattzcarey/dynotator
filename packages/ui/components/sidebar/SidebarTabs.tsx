@@ -80,11 +80,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           stroke="currentColor"
           strokeWidth={2}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4 6h16M4 10h16M4 14h10M4 18h10"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h10M4 18h10" />
         </svg>
       </button>
 

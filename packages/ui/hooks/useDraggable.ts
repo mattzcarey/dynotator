@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from "react";
 
 const DRAG_THRESHOLD = 3;
 const VISIBLE_MIN = 50;
@@ -17,7 +17,10 @@ interface DragPosition {
  * @param options.keepInside - Opt-in: the whole element stays inside the window (an element larger than the window
  *   keeps its top left corner in). Absent: at least 50 px of it stays on screen, as before.
  */
-export function useDraggable(elementRef: React.RefObject<HTMLElement | null>, options: { keepInside?: boolean } = {}) {
+export function useDraggable(
+  elementRef: React.RefObject<HTMLElement | null>,
+  options: { keepInside?: boolean } = {},
+) {
   const keepInside = options.keepInside ?? false;
   const [dragPosition, setDragPosition] = useState<DragPosition | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -76,11 +79,11 @@ export function useDraggable(elementRef: React.RefObject<HTMLElement | null>, op
       }
     };
 
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
     return () => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
     };
   }, [isDragging, elementRef, keepInside]);
 
@@ -90,7 +93,7 @@ export function useDraggable(elementRef: React.RefObject<HTMLElement | null>, op
       if (e.button !== 0) return;
       // Don't drag if clicking on an interactive element inside the handle
       const target = e.target as HTMLElement;
-      if (target.closest('button, a, input, textarea, select')) return;
+      if (target.closest("button, a, input, textarea, select")) return;
 
       const el = elementRef.current;
       if (!el) return;
@@ -112,9 +115,9 @@ export function useDraggable(elementRef: React.RefObject<HTMLElement | null>, op
     dragHandleProps: {
       onPointerDown,
       style: {
-        cursor: isDragging ? 'grabbing' : 'grab',
-        userSelect: 'none' as const,
-        touchAction: 'none' as const,
+        cursor: isDragging ? "grabbing" : "grab",
+        userSelect: "none" as const,
+        touchAction: "none" as const,
       },
     },
   };

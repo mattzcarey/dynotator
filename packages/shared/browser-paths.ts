@@ -1,1 +1,1 @@
-export * from '@dynotator/core/browser-paths';
+export * from "@dynotator/core/browser-paths";

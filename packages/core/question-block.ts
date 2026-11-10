@@ -134,16 +134,18 @@ import {
   scanDisplayMath,
   splitFrontmatter,
   type TagCloseIndex,
-} from './markdown-structure';
+} from "./markdown-structure";
 
-export const QUESTION_DIRECTIVE_KINDS = ['question', 'question-multi', 'question-text'] as const;
+export const QUESTION_DIRECTIVE_KINDS = ["question", "question-multi", "question-text"] as const;
 export type QuestionDirectiveKind = (typeof QUESTION_DIRECTIVE_KINDS)[number];
 
-export const isQuestionDirectiveKind = (kind: string | undefined | null): kind is QuestionDirectiveKind =>
-  typeof kind === 'string' && (QUESTION_DIRECTIVE_KINDS as readonly string[]).includes(kind);
+export const isQuestionDirectiveKind = (
+  kind: string | undefined | null,
+): kind is QuestionDirectiveKind =>
+  typeof kind === "string" && (QUESTION_DIRECTIVE_KINDS as readonly string[]).includes(kind);
 
 /** How a question is answered. */
-export type QuestionKind = 'single' | 'multi' | 'text';
+export type QuestionKind = "single" | "multi" | "text";
 
 export interface QuestionChoice {
   /** Label as written (inline markdown). The export and answers quote it. */
@@ -198,7 +200,7 @@ export interface QuestionChoiceImage {
 /** `Shows:` — the one picture or file a question is about. */
 export interface QuestionShows {
   /** `image` for `![alt](src)`, `link` for `[name](src)`. */
-  kind: 'image' | 'link';
+  kind: "image" | "link";
   /** The alt text or the link's name, as written. */
   label: string;
   /** The target exactly as written. */
@@ -283,7 +285,8 @@ export const MAX_QUESTION_NOTE_CHARS = 2000;
 
 const CHOICE_RE = /^\s*(?:[-*+]|\d{1,3}[.)])\s+\[([ xX])\]\s+(.*)$/;
 const PLAIN_BULLET_RE = /^\s*[-*+]\s+(.*)$/;
-const RECOMMENDED_RE = /^\s*(?:[*_]{1,2})?(?:recommended|recommendation)(?:[*_]{1,2})?\s*:\s*(?:[*_]{1,2})?\s*(.*)$/i;
+const RECOMMENDED_RE =
+  /^\s*(?:[*_]{1,2})?(?:recommended|recommendation)(?:[*_]{1,2})?\s*:\s*(?:[*_]{1,2})?\s*(.*)$/i;
 const ARROW_RE = /^\s*(?:➡️|➡|->|=>|→)\s*(.*)$/;
 const LABEL_DESC_SEP_RE = /\s+(?:—|–|-)\s+/;
 // A `Context:` line (optionally in emphasis): context, never the continuation
@@ -292,7 +295,8 @@ const CONTEXT_LINE_RE = /^\s*(?:[*_]{1,2})?context(?:[*_]{1,2})?\s*:/i;
 // The contract lines (`Stakes:`, `Shows:`, `Why:`, `Reversible:`), with the
 // leniency of `Context:` and `Recommended:` (emphasis around the label, any
 // case, leading whitespace).
-const CONTRACT_LINE_RE = /^\s*(?:[*_]{1,2})?(stakes|shows|why|reversible)(?:[*_]{1,2})?\s*:\s*(?:[*_]{1,2})?\s*(.*?)\s*$/i;
+const CONTRACT_LINE_RE =
+  /^\s*(?:[*_]{1,2})?(stakes|shows|why|reversible)(?:[*_]{1,2})?\s*:\s*(?:[*_]{1,2})?\s*(.*?)\s*$/i;
 const SHOWS_IMAGE_RE = /^!\[([^\]\n]*)\]\(([^)\n]+)\)\.?$/;
 const SHOWS_LINK_RE = /^\[([^\]\n]+)\]\(([^)\n]+)\)\.?$/;
 const REVERSIBLE_NO_RE = /^(?:no|false|never)\b\s*(?:[—–:;,.]|-{1,2}(?=\s))?\s*(.*)$/i;
@@ -319,7 +323,10 @@ const DECISION_LINK_RE = /^\[([^\]]+)\]\((\S+)\)\.?$/;
 // "Replaces:" stays prose.
 const REPLACES_KEY = String.raw`q-[0-9a-f]{8}(?:-\d{1,3})?`;
 const REPLACES_TOKEN = String.raw`(?:msg_[0-9A-HJKMNP-TV-Z]{26}(?:/${REPLACES_KEY})?|${REPLACES_KEY})\.?`;
-const REPLACES_RE = new RegExp(String.raw`^\s*replaces\s*:\s*(${REPLACES_TOKEN}(?:[\s,;]+${REPLACES_TOKEN})*)[\s,;]*$`, 'i');
+const REPLACES_RE = new RegExp(
+  String.raw`^\s*replaces\s*:\s*(${REPLACES_TOKEN}(?:[\s,;]+${REPLACES_TOKEN})*)[\s,;]*$`,
+  "i",
+);
 // An asker's own label for the question before the prompt (`id: sd-approach`):
 // a lower-case `id` or `key`, optionally after a short `name_` / `name-`,
 // a colon, one token with no spaces that does not end in `?`. Shown as context.
@@ -327,7 +334,8 @@ const ID_LABEL_RE = /^\s*(?:[a-z][a-z0-9]{0,15}[_-])?(?:id|key)\s*:\s*\S{0,79}[^
 // A line (leading whitespace aside) that opens a block of its own (list item, heading,
 // quote, fence, directive, table row, HTML, rule) ends a plain bullet instead
 // of continuing it lazily.
-const STARTS_OTHER_BLOCK_RE = /^(?:[-*+]\s|\d{1,9}[.)]\s|#{1,6}(?:\s|$)|>|```|~~~|:::|\||<[A-Za-z/!]|(?:[-*_]\s*){3,}$)/;
+const STARTS_OTHER_BLOCK_RE =
+  /^(?:[-*+]\s|\d{1,9}[.)]\s|#{1,6}(?:\s|$)|>|```|~~~|:::|\||<[A-Za-z/!]|(?:[-*_]\s*){3,}$)/;
 
 /** A line under a `Recommended:` line that wraps it (a continuation of the
  *  same sentence) rather than starting a reason or new prose: the line so
@@ -335,7 +343,13 @@ const STARTS_OTHER_BLOCK_RE = /^(?:[-*+]\s|\d{1,9}[.)]\s|#{1,6}(?:\s|$)|>|```|~~
  *  and it starts no other block. Anything else stays context, as before. */
 const isRecommendationWrap = (soFar: string, line: string): boolean => {
   const next = line.trim();
-  if (PLAIN_BULLET_RE.test(line) || STARTS_OTHER_BLOCK_RE.test(next) || CONTEXT_LINE_RE.test(line) || CONTRACT_LINE_RE.test(line)) return false;
+  if (
+    PLAIN_BULLET_RE.test(line) ||
+    STARTS_OTHER_BLOCK_RE.test(next) ||
+    CONTEXT_LINE_RE.test(line) ||
+    CONTRACT_LINE_RE.test(line)
+  )
+    return false;
   if (/[.!?:;]["'”’)\]*_]*$/.test(soFar)) return false;
   return /^\p{Ll}/u.test(next);
 };
@@ -345,20 +359,20 @@ const isRecommendationWrap = (soFar: string, line: string): boolean => {
 const dedent = (line: string, columns: number): string => {
   let width = 0;
   let i = 0;
-  while (i < line.length && width < columns && (line[i] === ' ' || line[i] === '\t')) {
-    width += line[i] === '\t' ? 4 - (width % 4) : 1;
+  while (i < line.length && width < columns && (line[i] === " " || line[i] === "\t")) {
+    width += line[i] === "\t" ? 4 - (width % 4) : 1;
     i++;
   }
   // A tab that ran past the cut leaves its remaining columns as spaces.
-  return ' '.repeat(Math.max(0, width - columns)) + line.slice(i);
+  return " ".repeat(Math.max(0, width - columns)) + line.slice(i);
 };
 
 /** Leading whitespace width in columns (a tab counts 4). */
 const indentWidth = (line: string): number => {
   let width = 0;
   for (const ch of line) {
-    if (ch === ' ') width += 1;
-    else if (ch === '\t') width += 4 - (width % 4);
+    if (ch === " ") width += 1;
+    else if (ch === "\t") width += 4 - (width % 4);
     else break;
   }
   return width;
@@ -377,21 +391,23 @@ const parseDecisionLink = (value: string): QuestionDecisionLink | null => {
   } catch {
     return null;
   }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
   return { statement, url: m[2] };
 };
 
 /** `text` with each markdown image blanked to `#` (same length), so a
  *  separator inside an image's alt text or target never splits a label. */
 const maskImages = (text: string): string =>
-  text.includes('![') ? text.replace(new RegExp(CHOICE_IMAGE_RE.source, 'g'), (m) => '#'.repeat(m.length)) : text;
+  text.includes("![")
+    ? text.replace(new RegExp(CHOICE_IMAGE_RE.source, "g"), (m) => "#".repeat(m.length))
+    : text;
 
 /** The label as parsers before picture choices split it: at the first
  *  separator even inside an image (`![Drawer A - closest](a.png) Drawer A`
  *  gave `![Drawer A`). Kept only as an alias, so an answer stored then still
  *  selects its choice. Null when it is today's label. */
 const legacyImageSplitLabel = (raw: string): string | null => {
-  if (!raw.includes('![')) return null;
+  if (!raw.includes("![")) return null;
   const idx = raw.search(LABEL_DESC_SEP_RE);
   if (idx === -1) return null;
   const old = raw.slice(0, idx).trim();
@@ -415,7 +431,7 @@ const BOLD_LEAD_RE = /^\*\*(.+?)\*\*(.*)$/s;
 /** A choice written as a bold name and then prose (`**One per session:**
  *  "ramos · cloud-3", …`): the bold name is the label and the rest the
  *  description. Only when the name is set off by punctuation (a `:` `.` `?`
-  *  `!` closing the bold text, or `:` `,` `;` or a dash after it), so
+ *  `!` closing the bold text, or `:` `,` `;` or a dash after it), so
  *  `**Fast** mode with cache` and `**Fast** (cached)` stay one label. */
 const splitBoldLead = (raw: string): { label: string; description: string } | null => {
   const m = raw.trim().match(BOLD_LEAD_RE);
@@ -423,8 +439,8 @@ const splitBoldLead = (raw: string): { label: string; description: string } | nu
   const inner = m[1].trim();
   const rest = m[2];
   if (!/[:.?!]$/.test(inner) && !/^\s*[:,;—–]/.test(rest) && !/^\s+-\s/.test(rest)) return null;
-  const label = inner.replace(/\s*:$/, '').trim();
-  const description = rest.replace(/^\s*[:,;—–-]?\s*/, '').trim();
+  const label = inner.replace(/\s*:$/, "").trim();
+  const description = rest.replace(/^\s*[:,;—–-]?\s*/, "").trim();
   if (!label || !description) return null;
   return { label, description };
 };
@@ -434,15 +450,18 @@ const splitBoldLead = (raw: string): { label: string; description: string } | nu
  *  leads the description, so the card shows a short name. Nothing is
  *  dropped. Task-list labels keep their full length (an answer quotes up to
  *  `MAX_QUESTION_SELECTED_CHARS`). */
-const capChoiceLabel = (split: { label: string; description?: string }): { label: string; description?: string } => {
+const capChoiceLabel = (split: {
+  label: string;
+  description?: string;
+}): { label: string; description?: string } => {
   const { label, description } = split;
   if (label.length <= MAX_QUESTION_CHOICE_LABEL_CHARS) return split;
   const head = label.slice(0, MAX_QUESTION_CHOICE_LABEL_CHARS);
   const sentence = head.match(/^.+?[.!?]["'”’)\]]?(?=\s)/);
-  const space = head.lastIndexOf(' ');
+  const space = head.lastIndexOf(" ");
   const at = sentence ? sentence[0].length : space > 0 ? space : MAX_QUESTION_CHOICE_LABEL_CHARS;
   const tail = label.slice(at).trim();
-  const desc = [tail, description].filter(Boolean).join(' — ');
+  const desc = [tail, description].filter(Boolean).join(" — ");
   return { label: label.slice(0, at).trim(), ...(desc ? { description: desc } : {}) };
 };
 
@@ -457,16 +476,20 @@ type ChoiceSplit = { label: string; description?: string };
  *  including the bullet's first line and its dash-split label (what the
  *  label was before wrapped lines joined it), so a recommendation that
  *  matched before still matches. */
-const plainBulletSplits = (bullets: { text: string; first: string }[]): { splits: ChoiceSplit[]; names: string[][] } => {
+const plainBulletSplits = (
+  bullets: { text: string; first: string }[],
+): { splits: ChoiceSplit[]; names: string[][] } => {
   const texts = bullets.map((b) => b.text);
   const options = texts.map((text) => {
     const plain = splitLabel(text);
     const preferred = splitBoldLead(text) ?? plain;
     const list: ChoiceSplit[] = [capChoiceLabel(preferred), preferred, plain];
-    return list.filter((o, i) => list.findIndex((p) => p.label === o.label && p.description === o.description) === i);
+    return list.filter(
+      (o, i) => list.findIndex((p) => p.label === o.label && p.description === o.description) === i,
+    );
   });
   const pick = options.map(() => 0);
-  for (let changed = true; changed; ) {
+  for (let changed = true; changed;) {
     changed = false;
     const owners = new Map<string, number[]>();
     pick.forEach((p, i) => {
@@ -499,10 +522,10 @@ const plainBulletSplits = (bullets: { text: string; first: string }[]): { splits
  *  trimmed. */
 export const normalizeQuestionText = (value: string): string =>
   value
-    .replace(/[*_`]+/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[*_`]+/g, "")
+    .replace(/\s+/g, " ")
     .trim()
-    .replace(/[.!?:;,]+$/, '')
+    .replace(/[.!?:;,]+$/, "")
     .trim()
     .toLowerCase();
 
@@ -513,7 +536,7 @@ const hash8 = (value: string): string => {
     h ^= value.charCodeAt(i);
     h = Math.imul(h, 0x01000193);
   }
-  return (h >>> 0).toString(16).padStart(8, '0');
+  return (h >>> 0).toString(16).padStart(8, "0");
 };
 
 /** The same FNV-1a hash the question keys use, for a host's own block keys
@@ -546,12 +569,20 @@ export const recommendationHeadChoice = (
   if (!target) return -1;
   const begins = (value: string | undefined): boolean => {
     if (!value) return false;
-    const folded = value.replace(/[*_`]+/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const folded = value
+      .replace(/[*_`]+/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
     if (!folded.startsWith(target)) return false;
     const rest = folded.slice(target.length);
-    return LABEL_HEAD_SEP_RE.test(rest) || (LABEL_TOKEN_RE.test(target) && LABEL_TOKEN_SEP_RE.test(rest));
+    return (
+      LABEL_HEAD_SEP_RE.test(rest) || (LABEL_TOKEN_RE.test(target) && LABEL_TOKEN_SEP_RE.test(rest))
+    );
   };
-  const hits = names.flatMap((entry, i) => ((typeof entry === 'string' ? [entry] : entry).some(begins) ? [i] : []));
+  const hits = names.flatMap((entry, i) =>
+    (typeof entry === "string" ? [entry] : entry).some(begins) ? [i] : [],
+  );
   return hits.length === 1 ? hits[0] : -1;
 };
 
@@ -565,7 +596,9 @@ const plainWords = (value: string): string => normalizeQuestionText(stripInlineM
 const plainWordsChoice = (candidates: string[], texts: string[][]): number => {
   const targets = new Set(candidates.map(plainWords).filter(Boolean));
   if (targets.size === 0) return -1;
-  const hits = texts.flatMap((list, i) => (list.some((t) => t && targets.has(plainWords(t))) ? [i] : []));
+  const hits = texts.flatMap((list, i) =>
+    list.some((t) => t && targets.has(plainWords(t))) ? [i] : [],
+  );
   return hits.length === 1 ? hits[0] : -1;
 };
 
@@ -584,9 +617,9 @@ const matchRecommendation = (
     if (!target) return -1;
     return choices.findIndex(
       (c, i) =>
-        normalizeQuestionText(c.label) === target
-        || normalizeQuestionText(raws[i]) === target
-        || (names[i] ?? []).some((name) => normalizeQuestionText(name) === target),
+        normalizeQuestionText(c.label) === target ||
+        normalizeQuestionText(raws[i]) === target ||
+        (names[i] ?? []).some((name) => normalizeQuestionText(name) === target),
     );
   };
   const whole = match(text);
@@ -610,10 +643,10 @@ const matchRecommendation = (
   // same case, so `A. Smith's proposal` never names an `a.` choice.
   const letteredHit = (candidate: string): number => {
     if (!plainBullets) return -1;
-    const token = candidate.replace(/^[*_]+/, '').match(/^([A-Za-z]|\d{1,2})[.)]\s/)?.[1];
+    const token = candidate.replace(/^[*_]+/, "").match(/^([A-Za-z]|\d{1,2})[.)]\s/)?.[1];
     if (!token) return -1;
     const hits = choices.flatMap((c, i) => {
-      const label = c.label.replace(/^[*_]+/, '');
+      const label = c.label.replace(/^[*_]+/, "");
       return label.startsWith(`${token}.`) || label.startsWith(`${token})`) ? [i] : [];
     });
     return hits.length === 1 ? hits[0] : -1;
@@ -623,7 +656,10 @@ const matchRecommendation = (
   // names `Unpin it: the toast says…`. Zero or several such choices name
   // none, so the text stays a suggested answer.
   const headHit = (candidate: string): number =>
-    recommendationHeadChoice(candidate, choices.map((c, i) => [c.label, raws[i]]));
+    recommendationHeadChoice(
+      candidate,
+      choices.map((c, i) => [c.label, raws[i]]),
+    );
   const fallbackHit = (candidate: string): number => {
     const lettered = letteredHit(candidate);
     if (lettered !== -1) return lettered;
@@ -642,7 +678,10 @@ const matchRecommendation = (
     const wholeLabelHead = headHit(splitLabel(text).label);
     if (wholeLabelHead !== -1) return [wholeLabelHead];
     for (const sep of [/\s*;\s*/, /\s*,\s*|\s+(?:and|&|\+)\s+/i]) {
-      const parts = text.split(sep).map((p) => p.trim()).filter(Boolean);
+      const parts = text
+        .split(sep)
+        .map((p) => p.trim())
+        .filter(Boolean);
       if (parts.length < 2) continue;
       const hits = parts.map((p) => {
         const hit = match(p);
@@ -663,7 +702,7 @@ const matchRecommendation = (
       const pieces = text.split(sep);
       const parts = pieces.filter((_, i) => i % 2 === 0).map((p) => p.trim());
       if (parts.length < 2 || parts.some((p) => !p)) continue;
-      const span = (from: number, to: number) => pieces.slice(from * 2, to * 2 + 1).join('');
+      const span = (from: number, to: number) => pieces.slice(from * 2, to * 2 + 1).join("");
       const single = (i: number): number => {
         const hit = match(parts[i]);
         if (hit !== -1) return hit;
@@ -696,57 +735,64 @@ const matchRecommendation = (
   return fallback !== -1 ? [fallback] : [];
 };
 
-type ContractField = 'stakes' | 'shows' | 'why' | 'reversible' | 'prototype';
+type ContractField = "stakes" | "shows" | "why" | "reversible" | "prototype";
 type ContractValue =
-  | { field: 'stakes' | 'why'; value: string }
-  | { field: 'shows'; value: QuestionShows }
-  | { field: 'reversible'; value: QuestionIrreversible | null }
-  | { field: 'prototype'; value: QuestionPrototype };
+  | { field: "stakes" | "why"; value: string }
+  | { field: "shows"; value: QuestionShows }
+  | { field: "reversible"; value: QuestionIrreversible | null }
+  | { field: "prototype"; value: QuestionPrototype };
 
 // Option lines (`ParseQuestionBlockOptions.optionLines`): under a `- [ ]`
 // choice, `Pros:`, `Cons:` (aliases `Pro:`, `Con:`, `Trade-off:`) and
 // `Prototype:` (alias `Try:`), any case, emphasis around the label allowed.
-const OPTION_LINE_RE = /^[*_]{0,2}(pros?|cons?|trade-?offs?|prototype|try)[*_]{0,2}\s*:\s*[*_]{0,2}\s*(.*?)\s*$/i;
+const OPTION_LINE_RE =
+  /^[*_]{0,2}(pros?|cons?|trade-?offs?|prototype|try)[*_]{0,2}\s*:\s*[*_]{0,2}\s*(.*?)\s*$/i;
 const PROTOTYPE_LINK_RE = /^\[([^\]\n]*)\]\(\s*<?([^)\s>]+)>?\s*\)\.?$/;
 const PROTOTYPE_ANGLED_RE = /^<([^>\s]+)>\.?$/;
 
 /** A prototype line's value: `[Name](target)`, `<target>`, or one bare
  *  target (no spaces: "Try: run it twice" is prose). Null when it is none. */
 const readPrototypeValue = (raw: string): QuestionPrototype | null => {
-  const value = raw.replace(/[*_]{1,2}$/, '').trim();
+  const value = raw.replace(/[*_]{1,2}$/, "").trim();
   const link = value.match(PROTOTYPE_LINK_RE);
-  if (link) return link[2] ? { target: link[2], ...(link[1].trim() ? { label: link[1].trim() } : {}) } : null;
+  if (link)
+    return link[2]
+      ? { target: link[2], ...(link[1].trim() ? { label: link[1].trim() } : {}) }
+      : null;
   const angled = value.match(PROTOTYPE_ANGLED_RE);
   if (angled) return { target: angled[1] };
-  return /^\S+$/.test(value) ? { target: value.replace(/\.$/, '') } : null;
+  return /^\S+$/.test(value) ? { target: value.replace(/\.$/, "") } : null;
 };
 
 /** One option line read (`Pros:` and `Cons:` items, or a prototype), or
  *  null when the line is not one or its value is empty or not a target. */
 export const readOptionLine = (
   line: string,
-): { field: 'pros' | 'cons'; value: string[] } | { field: 'prototype'; value: QuestionPrototype } | null => {
+):
+  | { field: "pros" | "cons"; value: string[] }
+  | { field: "prototype"; value: QuestionPrototype }
+  | null => {
   const m = line.trim().match(OPTION_LINE_RE);
   if (!m) return null;
   const name = m[1].toLowerCase();
-  if (name === 'prototype' || name === 'try') {
+  if (name === "prototype" || name === "try") {
     const value = readPrototypeValue(m[2]);
-    return value ? { field: 'prototype', value } : null;
+    return value ? { field: "prototype", value } : null;
   }
   const items = m[2]
-    .replace(/[*_]{1,2}$/, '')
-    .split(';')
+    .replace(/[*_]{1,2}$/, "")
+    .split(";")
     .map((item) => item.trim())
     .filter(Boolean);
   if (items.length === 0) return null;
-  return { field: name.startsWith('pro') ? 'pros' : 'cons', value: items };
+  return { field: name.startsWith("pro") ? "pros" : "cons", value: items };
 };
 
 /** A question's own `Prototype:` (or `Try:`) line at the block's indent:
  *  one page for every option (option lines only). */
 const readSharedPrototypeLine = (line: string): ContractValue | null => {
   const read = readOptionLine(line);
-  return read && read.field === 'prototype' ? read : null;
+  return read && read.field === "prototype" ? read : null;
 };
 
 /** A contract line (`Stakes:`, `Shows:`, `Why:`, `Reversible:`) read, or
@@ -754,15 +800,15 @@ const readSharedPrototypeLine = (line: string): ContractValue | null => {
 const readContractLine = (line: string): ContractValue | null => {
   const m = line.match(CONTRACT_LINE_RE);
   if (!m) return null;
-  const field = m[1].toLowerCase() as Exclude<ContractField, 'prototype'>;
-  const value = m[2].replace(/[*_]{1,2}$/, '').trim();
+  const field = m[1].toLowerCase() as Exclude<ContractField, "prototype">;
+  const value = m[2].replace(/[*_]{1,2}$/, "").trim();
   if (!value) return null;
-  if (field === 'stakes' || field === 'why') return { field, value };
-  if (field === 'shows') {
+  if (field === "stakes" || field === "why") return { field, value };
+  if (field === "shows") {
     const image = value.match(SHOWS_IMAGE_RE);
-    if (image) return { field, value: { kind: 'image', label: image[1].trim(), src: image[2] } };
+    if (image) return { field, value: { kind: "image", label: image[1].trim(), src: image[2] } };
     const link = value.match(SHOWS_LINK_RE);
-    if (link) return { field, value: { kind: 'link', label: link[1].trim(), src: link[2] } };
+    if (link) return { field, value: { kind: "link", label: link[1].trim(), src: link[2] } };
     return null;
   }
   if (REVERSIBLE_YES_RE.test(value)) return { field, value: null };
@@ -780,7 +826,8 @@ const LABEL_REC_MARKER_RE = /^(.*?\S)\s*([*_]{1,2})?[([]\s*recommended\s*[)\]]\2
 // The same marker leading the label (`[Recommended] Foo`, `(Recommended):
 // Foo`, `**[Recommended]** Foo`, `**(Recommended) Foo**`): group 1 is the
 // label's own opening emphasis, kept; group 3 the label.
-const LABEL_LEAD_REC_MARKER_RE = /^([*_]{0,2})([*_]{1,2})?[([]\s*recommended\s*[)\]]\2?:?\s+(\S[\s\S]*)$/i;
+const LABEL_LEAD_REC_MARKER_RE =
+  /^([*_]{0,2})([*_]{1,2})?[([]\s*recommended\s*[)\]]\2?:?\s+(\S[\s\S]*)$/i;
 // The marker then a colon inside the label (`Foo (Recommended): cheap`, which
 // the choice split leaves whole): the label, then the description.
 const LABEL_COLON_REC_MARKER_RE = /^(.*?\S)\s*[([]\s*recommended\s*[)\]]:\s+(\S[\s\S]*)$/i;
@@ -788,7 +835,8 @@ const LABEL_COLON_REC_MARKER_RE = /^(.*?\S)\s*[([]\s*recommended\s*[)\]]:\s+(\S[
 // recommended`), or a bracketed marker leading it (`Foo — (Recommended)
 // cheap`). Words after a bare `Recommended` are prose (`Foo — Recommended:
 // no, too slow`, "recommended by the vendor"), never a marker.
-const DESC_REC_MARKER_RE = /^[*_]{0,2}(?:[([]\s*recommended\s*[)\]][*_]{0,2}\s*([\s\S]*)|recommended[*_]{0,2}[.!]?)$/i;
+const DESC_REC_MARKER_RE =
+  /^[*_]{0,2}(?:[([]\s*recommended\s*[)\]][*_]{0,2}\s*([\s\S]*)|recommended[*_]{0,2}[.!]?)$/i;
 
 /**
  * A choice whose label (or the start of its description) carries a
@@ -801,13 +849,14 @@ const DESC_REC_MARKER_RE = /^[*_]{0,2}(?:[([]\s*recommended\s*[)\]][*_]{0,2}\s*(
  * reads it (as the recommendation only when the block has no `Recommended:`
  * line); the Plannotator Inbox reads a stored label through it.
  */
-export const questionChoiceWithoutRecommendedMarker = (
-  choice: { label: string; description?: string | null },
-): { label: string; description?: string } | null => {
+export const questionChoiceWithoutRecommendedMarker = (choice: {
+  label: string;
+  description?: string | null;
+}): { label: string; description?: string } | null => {
   const inLabel = choice.label.match(LABEL_REC_MARKER_RE);
   if (inLabel) {
     // The label's own closing emphasis (`**Foo (recommended)**`) stays on it.
-    const label = `${inLabel[1]}${inLabel[2] ? '' : inLabel[3]}`.trim();
+    const label = `${inLabel[1]}${inLabel[2] ? "" : inLabel[3]}`.trim();
     if (!label) return null;
     return { label, ...(choice.description ? { description: choice.description } : {}) };
   }
@@ -819,14 +868,17 @@ export const questionChoiceWithoutRecommendedMarker = (
   }
   const colon = choice.label.match(LABEL_COLON_REC_MARKER_RE);
   if (colon) {
-    const description = [colon[2].trim(), choice.description?.trim()].filter(Boolean).join(' — ');
+    const description = [colon[2].trim(), choice.description?.trim()].filter(Boolean).join(" — ");
     return { label: colon[1].trim(), ...(description ? { description } : {}) };
   }
   const inDesc = choice.description?.trim().match(DESC_REC_MARKER_RE);
   if (inDesc) {
     // What follows the marker, without the separator written after it
     // (`(Recommended): cheap`, `[recommended] — cheap`, `(Recommended) - cheap`).
-    const description = (inDesc[1] ?? '').trim().replace(/^(?:[:—–]|-(?=\s|$))+\s*/, '').trim();
+    const description = (inDesc[1] ?? "")
+      .trim()
+      .replace(/^(?:[:—–]|-(?=\s|$))+\s*/, "")
+      .trim();
     return { label: choice.label, ...(description ? { description } : {}) };
   }
   return null;
@@ -840,7 +892,9 @@ export const questionChoiceWithoutRecommendedMarker = (
 export const questionLabelWithoutImage = (label: string): string | null => {
   const m = label.match(CHOICE_IMAGE_RE);
   if (!m || m.index === undefined) return null;
-  const rest = `${label.slice(0, m.index)} ${label.slice(m.index + m[0].length)}`.replace(/\s+/g, ' ').trim();
+  const rest = `${label.slice(0, m.index)} ${label.slice(m.index + m[0].length)}`
+    .replace(/\s+/g, " ")
+    .trim();
   const plain = rest || m[1].trim();
   return plain && plain !== label ? plain : null;
 };
@@ -853,7 +907,9 @@ export const questionLabelWithoutImage = (label: string): string | null => {
  * the label there (`![Drawer A - closest](a.png) Drawer A` was stored as the
  * label `![Drawer A`).
  */
-export const parseQuestionChoiceText = (raw: string): { label: string; description?: string; image?: QuestionChoiceImage } => {
+export const parseQuestionChoiceText = (
+  raw: string,
+): { label: string; description?: string; image?: QuestionChoiceImage } => {
   const split = splitLabel(raw);
   const choice: QuestionChoice = { ...split, settled: false, recommended: false };
   const picture = split.label ? pictureChoice(choice) : null;
@@ -874,16 +930,26 @@ const pictureChoice = (choice: QuestionChoice): QuestionChoice | null => {
     const label = questionLabelWithoutImage(choice.label);
     if (!label) return null;
     const aliases = [...new Set([...(choice.aliases ?? []), choice.label])];
-    return { ...choice, label, aliases, image: { alt: inLabel[1].trim() || label, src: inLabel[2] } };
+    return {
+      ...choice,
+      label,
+      aliases,
+      image: { alt: inLabel[1].trim() || label, src: inLabel[2] },
+    };
   }
   const desc = choice.description?.match(CHOICE_IMAGE_RE);
   if (!desc || desc.index === undefined || choice.description === undefined) return null;
-  const rest = `${choice.description.slice(0, desc.index)} ${choice.description.slice(desc.index + desc[0].length)}`
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/^[—–-]\s+/, '');
+  const rest =
+    `${choice.description.slice(0, desc.index)} ${choice.description.slice(desc.index + desc[0].length)}`
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/^[—–-]\s+/, "");
   const { description: _d, ...base } = choice;
-  return { ...base, ...(rest ? { description: rest } : {}), image: { alt: desc[1].trim() || choice.label, src: desc[2] } };
+  return {
+    ...base,
+    ...(rest ? { description: rest } : {}),
+    image: { alt: desc[1].trim() || choice.label, src: desc[2] },
+  };
 };
 
 /** Every choice that holds an image becomes a picture choice, unless that
@@ -891,8 +957,16 @@ const pictureChoice = (choice: QuestionChoice): QuestionChoice | null => {
 const withPictureChoices = (choices: QuestionChoice[]): QuestionChoice[] => {
   const next = choices.map((c) => pictureChoice(c) ?? c);
   const owners = new Map<string, number>();
-  for (const c of next) owners.set(normalizeQuestionText(c.label), (owners.get(normalizeQuestionText(c.label)) ?? 0) + 1);
-  return next.map((c, i) => (c.image && (owners.get(normalizeQuestionText(c.label)) ?? 0) > 1 && c.label !== choices[i].label ? choices[i] : c));
+  for (const c of next)
+    owners.set(
+      normalizeQuestionText(c.label),
+      (owners.get(normalizeQuestionText(c.label)) ?? 0) + 1,
+    );
+  return next.map((c, i) =>
+    c.image && (owners.get(normalizeQuestionText(c.label)) ?? 0) > 1 && c.label !== choices[i].label
+      ? choices[i]
+      : c,
+  );
 };
 
 /**
@@ -940,10 +1014,10 @@ export const parseQuestionBlock = (
   const readDecisionLines = options?.decisionLines !== false;
   const readContractLines = options?.contractLines !== false;
   const readOptionLines = options?.optionLines === true;
-  if (typeof body !== 'string' || body.length > MAX_QUESTION_BODY_CHARS) return null;
-  const lines = body.replace(/\r\n?/g, '\n').split('\n');
+  if (typeof body !== "string" || body.length > MAX_QUESTION_BODY_CHARS) return null;
+  const lines = body.replace(/\r\n?/g, "\n").split("\n");
 
-  let prompt = '';
+  let prompt = "";
   let promptLine = -1;
   // The text the key is hashed from when an id label came first: the label
   // line, which builds before the label was dropped read as the prompt, so a
@@ -958,7 +1032,12 @@ export const parseQuestionBlock = (
   const choiceNames: string[][] = [];
   // A plain bullet's context lines: its own line plus every continuation
   // line, so all of them leave the context when the bullets become choices.
-  const plainBullets: { text: string; first: string; contextIndices: number[]; legacyText?: string }[] = [];
+  const plainBullets: {
+    text: string;
+    first: string;
+    contextIndices: number[];
+    legacyText?: string;
+  }[] = [];
   // Context lines to drop at the end: plain bullets that became choices, and
   // the lines that wrap the final recommendation.
   const dropContext = new Set<number>();
@@ -982,11 +1061,22 @@ export const parseQuestionBlock = (
   // `legacy`: a `Context:` line ended the bullet, but builds before 0.28.27
   // read it (and the lines after it) as the bullet's wrapped text; they are
   // gathered into `legacyText` only, for an alias (see below).
-  let openBullet: { index: number; contentColumn: number; afterBlank: boolean; legacy?: true } | null = null;
+  let openBullet: {
+    index: number;
+    contentColumn: number;
+    afterBlank: boolean;
+    legacy?: true;
+  } | null = null;
   let decisionFlag = false;
   let decision: QuestionDecisionLink | undefined;
   const replaces: string[] = [];
-  const contract: { stakes?: string; shows?: QuestionShows; why?: string; reversible?: QuestionIrreversible | null; prototype?: QuestionPrototype } = {};
+  const contract: {
+    stakes?: string;
+    shows?: QuestionShows;
+    why?: string;
+    reversible?: QuestionIrreversible | null;
+    prototype?: QuestionPrototype;
+  } = {};
   // A code fence open anywhere in the body after the prompt: a contract line
   // inside it is code, never read.
   let bodyFence: string | null = null;
@@ -994,7 +1084,12 @@ export const parseQuestionBlock = (
     const marker = line.trimStart().match(/^(`{3,}|~{3,})/)?.[1];
     if (!marker) return;
     if (!bodyFence) bodyFence = marker;
-    else if (marker[0] === bodyFence[0] && marker.length >= bodyFence.length && line.trim() === marker) bodyFence = null;
+    else if (
+      marker[0] === bodyFence[0] &&
+      marker.length >= bodyFence.length &&
+      line.trim() === marker
+    )
+      bodyFence = null;
   };
 
   const pushContext = (line: string) => {
@@ -1007,19 +1102,24 @@ export const parseQuestionBlock = (
     const marker = line.trimStart().match(/^(`{3,}|~{3,})/)?.[1];
     if (!marker) return;
     if (!continuationFence) continuationFence = marker;
-    else if (marker[0] === continuationFence[0] && marker.length >= continuationFence.length && line.trim() === marker) continuationFence = null;
+    else if (
+      marker[0] === continuationFence[0] &&
+      marker.length >= continuationFence.length &&
+      line.trim() === marker
+    )
+      continuationFence = null;
   };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (line.trim() === '') {
+    if (line.trim() === "") {
       lastChoice = -1;
       if (openBullet) openBullet.afterBlank = true;
       recommendationOpen = false;
-      if (contextLines.length > 0 && contextLines[contextLines.length - 1] !== '') pushContext('');
+      if (contextLines.length > 0 && contextLines[contextLines.length - 1] !== "") pushContext("");
       continue;
     }
-    const choice = directiveKind === 'question-text' ? null : line.match(CHOICE_RE);
+    const choice = directiveKind === "question-text" ? null : line.match(CHOICE_RE);
     if (choice) {
       if (choices.length >= MAX_QUESTION_CHOICES) continue;
       const raw = choice[2].trim();
@@ -1030,7 +1130,7 @@ export const parseQuestionBlock = (
         label,
         ...(description ? { description } : {}),
         ...(legacyLabel ? { aliases: [legacyLabel] } : {}),
-        settled: choice[1].toLowerCase() === 'x',
+        settled: choice[1].toLowerCase() === "x",
         recommended: false,
       });
       raws.push(raw);
@@ -1043,7 +1143,7 @@ export const parseQuestionBlock = (
     const replacesLine = line.match(REPLACES_RE);
     if (replacesLine) {
       for (const raw of replacesLine[1].split(/[\s,;]+/)) {
-        const token = raw.replace(/\.$/, '');
+        const token = raw.replace(/\.$/, "");
         if (token && !replaces.includes(token)) replaces.push(token);
       }
       lastChoice = -1;
@@ -1054,7 +1154,7 @@ export const parseQuestionBlock = (
     const rec = line.match(RECOMMENDED_RE) ?? line.match(ARROW_RE);
     if (rec) {
       recommendationLine = true;
-      const text = rec[1].replace(/[*_]{1,2}$/, '').trim();
+      const text = rec[1].replace(/[*_]{1,2}$/, "").trim();
       if (text) {
         recommendation = recommendationWrapped = text;
         recommendationWrapIndices = [];
@@ -1069,7 +1169,7 @@ export const parseQuestionBlock = (
     // one stays the key's text (see `keyText`).
     if (!prompt && ID_LABEL_RE.test(line)) {
       if (keyText === undefined) {
-        keyText = line.trim().replace(/^#{1,6}\s+/, '');
+        keyText = line.trim().replace(/^#{1,6}\s+/, "");
         keyTextLine = i;
         keyTextContext = contextLines.length;
       }
@@ -1078,7 +1178,7 @@ export const parseQuestionBlock = (
     }
     if (!prompt) {
       // A heading marker on the prompt line (`### Which…?`) is dropped.
-      prompt = line.trim().replace(/^#{1,6}\s+/, '');
+      prompt = line.trim().replace(/^#{1,6}\s+/, "");
       promptLine = i;
       continue;
     }
@@ -1090,21 +1190,23 @@ export const parseQuestionBlock = (
     // same and is kept as context.
     const fenceBefore = bodyFence;
     trackBodyFence(line);
-    const atBlockIndent = indentWidth(line) <= indentWidth(lines[promptLine] ?? '');
+    const atBlockIndent = indentWidth(line) <= indentWidth(lines[promptLine] ?? "");
     const contractLine =
       fenceBefore || bodyFence || continuationFence || !atBlockIndent
         ? null
         : (readContractLine(line) ?? (readOptionLines ? readSharedPrototypeLine(line) : null));
     if (contractLine && !(contractLine.field in contract)) {
       (contract as Record<string, unknown>)[contractLine.field] = contractLine.value;
-      if (!readContractLines && contractLine.field !== 'prototype') pushContext(line.trim());
+      if (!readContractLines && contractLine.field !== "prototype") pushContext(line.trim());
       lastChoice = -1;
       recommendationOpen = false;
       if (openBullet) {
         // Builds before contract lines joined such a line onto the plain
         // bullet above it: keep that text as a name a stored answer may quote.
         const inItem = indentWidth(line) >= openBullet.contentColumn;
-        const continues = openBullet.afterBlank ? inItem : inItem || !STARTS_OTHER_BLOCK_RE.test(line.trimStart());
+        const continues = openBullet.afterBlank
+          ? inItem
+          : inItem || !STARTS_OTHER_BLOCK_RE.test(line.trimStart());
         if (continues) {
           const target = plainBullets[openBullet.index];
           target.legacyText = `${target.legacyText ?? target.text} ${line.trim()}`;
@@ -1142,7 +1244,10 @@ export const parseQuestionBlock = (
     }
     if (recommendationOpen) {
       if (recommendationWrapped && isRecommendationWrap(recommendationWrapped, line)) {
-        recommendationWrapped = `${recommendationWrapped} ${line.trim().replace(/[*_]{1,2}$/, '').trim()}`;
+        recommendationWrapped = `${recommendationWrapped} ${line
+          .trim()
+          .replace(/[*_]{1,2}$/, "")
+          .trim()}`;
         recommendationWrapIndices.push(contextLines.length);
         pushContext(line.trimEnd());
         continue;
@@ -1161,7 +1266,7 @@ export const parseQuestionBlock = (
       // An option line (`Pros:`, `Cons:`, `Prototype:`), read once per field: never the description.
       const optionLine = readOptionLines && !continuationFence ? readOptionLine(extra) : null;
       if (optionLine && c[optionLine.field] === undefined) {
-        if (optionLine.field === 'prototype') c.prototype = optionLine.value;
+        if (optionLine.field === "prototype") c.prototype = optionLine.value;
         else c[optionLine.field] = optionLine.value;
         continue;
       }
@@ -1200,7 +1305,11 @@ export const parseQuestionBlock = (
     openBullet = null;
     continuationFence = null;
     if (bullet && bullet[1].trim()) {
-      plainBullets.push({ text: bullet[1].trim(), first: bullet[1].trim(), contextIndices: [contextLines.length] });
+      plainBullets.push({
+        text: bullet[1].trim(),
+        first: bullet[1].trim(),
+        contextIndices: [contextLines.length],
+      });
       openBullet = {
         index: plainBullets.length - 1,
         contentColumn: indentWidth(line) + (line.trimStart().length - bullet[1].length),
@@ -1220,7 +1329,8 @@ export const parseQuestionBlock = (
   if (!prompt) return null;
 
   // A pick question written with plain bullets: the bullets are the choices.
-  const choicesArePlainBullets = choices.length === 0 && directiveKind !== 'question-text' && plainBullets.length > 0;
+  const choicesArePlainBullets =
+    choices.length === 0 && directiveKind !== "question-text" && plainBullets.length > 0;
   if (choicesArePlainBullets) {
     const bullets = plainBullets.slice(0, MAX_QUESTION_CHOICES);
     const { splits, names } = plainBulletSplits(bullets);
@@ -1232,13 +1342,19 @@ export const parseQuestionBlock = (
       // selects it.
       const legacy = bullet.legacyText
         ? (() => {
-          const plain = splitLabel(bullet.legacyText);
-          const preferred = splitBoldLead(bullet.legacyText) ?? plain;
-          return [bullet.legacyText, capChoiceLabel(preferred).label, preferred.label, plain.label];
-        })()
+            const plain = splitLabel(bullet.legacyText);
+            const preferred = splitBoldLead(bullet.legacyText) ?? plain;
+            return [
+              bullet.legacyText,
+              capChoiceLabel(preferred).label,
+              preferred.label,
+              plain.label,
+            ];
+          })()
         : [];
-      const aliases = [...new Set([bullet.text, ...names[i], ...legacy])]
-        .filter((name) => name && normalizeQuestionText(name) !== normalizeQuestionText(label));
+      const aliases = [...new Set([bullet.text, ...names[i], ...legacy])].filter(
+        (name) => name && normalizeQuestionText(name) !== normalizeQuestionText(label),
+      );
       choices.push({
         label,
         ...(description ? { description } : {}),
@@ -1251,15 +1367,19 @@ export const parseQuestionBlock = (
       for (const index of bullet.contextIndices) dropContext.add(index);
     });
   }
-  if (choices.some((c) => c.label.includes('![') || c.description?.includes('!['))) {
+  if (choices.some((c) => c.label.includes("![") || c.description?.includes("!["))) {
     choices.splice(0, choices.length, ...withPictureChoices(choices));
   }
   for (const index of recommendationWrapIndices) dropContext.add(index);
-  for (let i = contextLines.length - 1; i >= 0; i--) if (dropContext.has(i)) contextLines.splice(i, 1);
+  for (let i = contextLines.length - 1; i >= 0; i--)
+    if (dropContext.has(i)) contextLines.splice(i, 1);
 
-  const kind: QuestionKind = choices.length === 0 || directiveKind === 'question-text'
-    ? 'text'
-    : directiveKind === 'question-multi' ? 'multi' : 'single';
+  const kind: QuestionKind =
+    choices.length === 0 || directiveKind === "question-text"
+      ? "text"
+      : directiveKind === "question-multi"
+        ? "multi"
+        : "single";
 
   // No `Recommended:` line: a recommendation written into a choice's label
   // (`- [ ] Foo (Recommended) — why`) names that choice, so the card still
@@ -1268,14 +1388,18 @@ export const parseQuestionBlock = (
   // stay as written), any number on pick any. The marker leaves the label;
   // the raw label stays an alias, so an answer that quotes it still matches.
   // A label that would then twin another choice's keeps its marker.
-  const marked = kind === 'text' ? [] : choices.map((c) => questionChoiceWithoutRecommendedMarker(c));
+  const marked =
+    kind === "text" ? [] : choices.map((c) => questionChoiceWithoutRecommendedMarker(c));
   const markedAt = marked.flatMap((m, i) => (m ? [i] : []));
   const withoutMarker = (i: number) => {
     const c = choices[i];
     const next = marked[i]!;
-    const twin = choices.some((o, j) => j !== i && normalizeQuestionText(o.label) === normalizeQuestionText(next.label));
+    const twin = choices.some(
+      (o, j) => j !== i && normalizeQuestionText(o.label) === normalizeQuestionText(next.label),
+    );
     if (twin) return;
-    const aliases = next.label === c.label ? c.aliases : [...new Set([...(c.aliases ?? []), c.label])];
+    const aliases =
+      next.label === c.label ? c.aliases : [...new Set([...(c.aliases ?? []), c.label])];
     const { description: _d, aliases: _a, ...rest } = c;
     choices[i] = {
       ...rest,
@@ -1284,8 +1408,8 @@ export const parseQuestionBlock = (
       ...(aliases?.length ? { aliases } : {}),
     };
   };
-  if (!recommendationLine && kind !== 'text') {
-    if (markedAt.length === 1 || (kind === 'multi' && markedAt.length > 0)) {
+  if (!recommendationLine && kind !== "text") {
+    if (markedAt.length === 1 || (kind === "multi" && markedAt.length > 0)) {
       for (const i of markedAt) {
         withoutMarker(i);
         choices[i].recommended = true;
@@ -1297,12 +1421,29 @@ export const parseQuestionBlock = (
   if (recommendation) {
     const wrapped = recommendationWrapped ?? recommendation;
     let hits: number[] = [];
-    if (kind !== 'text') {
+    if (kind !== "text") {
       // A label written with a marker is named by its label without it too.
-      const names = choices.map((_, i) => [...(choiceNames[i] ?? []), ...(marked[i] ? [marked[i]!.label] : [])]);
-      hits = matchRecommendation(recommendation, raws, choices, kind === 'multi', names, choicesArePlainBullets);
+      const names = choices.map((_, i) => [
+        ...(choiceNames[i] ?? []),
+        ...(marked[i] ? [marked[i]!.label] : []),
+      ]);
+      hits = matchRecommendation(
+        recommendation,
+        raws,
+        choices,
+        kind === "multi",
+        names,
+        choicesArePlainBullets,
+      );
       if (hits.length === 0 && wrapped !== recommendation) {
-        hits = matchRecommendation(wrapped, raws, choices, kind === 'multi', names, choicesArePlainBullets);
+        hits = matchRecommendation(
+          wrapped,
+          raws,
+          choices,
+          kind === "multi",
+          names,
+          choicesArePlainBullets,
+        );
       }
     }
     if (hits.length > 0) for (const hit of hits) choices[hit].recommended = true;
@@ -1318,12 +1459,12 @@ export const parseQuestionBlock = (
   // Context keeps each line's indentation (a nested list, a wrapped list item,
   // a code fence), less the indentation every line shares, so it renders as
   // the markdown it was written as.
-  const shared = Math.min(...contextLines.filter((l) => l.trim() !== '').map(indentWidth));
+  const shared = Math.min(...contextLines.filter((l) => l.trim() !== "").map(indentWidth));
   const context = contextLines
     .map((l) => (Number.isFinite(shared) && shared > 0 ? dedent(l, shared) : l))
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/^\n+/, '')
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\n+/, "")
     .trimEnd();
 
   return {
@@ -1332,12 +1473,18 @@ export const parseQuestionBlock = (
     prompt,
     promptLine,
     context,
-    choices: kind === 'text' ? [] : choices,
+    choices: kind === "text" ? [] : choices,
     ...(recommendation ? { recommendation } : {}),
     ...(suggestedText ? { suggestedText } : {}),
     ...(markedAt.length > 0 ? { recommendedMarker: true as const } : {}),
     key: questionKey(kind, keyText ?? prompt),
-    ...(!readDecisionLines ? {} : decision ? { decision } : decisionFlag ? { decisionOnAnswer: true as const } : {}),
+    ...(!readDecisionLines
+      ? {}
+      : decision
+        ? { decision }
+        : decisionFlag
+          ? { decisionOnAnswer: true as const }
+          : {}),
     ...(replaces.length > 0 ? { replaces } : {}),
     ...(readContractLines && contract.stakes ? { stakes: contract.stakes } : {}),
     ...(readContractLines && contract.shows ? { shows: contract.shows } : {}),
@@ -1390,7 +1537,7 @@ export const indexQuestionBlocks = (
   const out: IndexedQuestion[] = [];
   const dedupe = questionKeyDeduper();
   for (const block of blocks) {
-    if (block.type !== 'directive' || !isQuestionDirectiveKind(block.directiveKind)) continue;
+    if (block.type !== "directive" || !isQuestionDirectiveKind(block.directiveKind)) continue;
     const parsed = parseQuestionBlock(block.directiveKind, block.content, options);
     if (!parsed) continue;
     const key = dedupe(parsed.key);
@@ -1513,14 +1660,18 @@ export const forEachTopLevelLine = (
 function walkTopLevelLines(
   markdown: string,
   options: { frontmatter?: boolean },
-  on: { directive?: (block: DirectiveBlockLocation) => void; line?: (line: string, lineNumber: number) => void },
+  on: {
+    directive?: (block: DirectiveBlockLocation) => void;
+    line?: (line: string, lineNumber: number) => void;
+  },
 ): void {
-  if (typeof markdown !== 'string') return;
-  const { content, contentStartLine } = options.frontmatter === false
-    ? { content: markdown, contentStartLine: 1 }
-    : splitFrontmatter(markdown);
-  const source = markdown.split('\n');
-  const lines = resolveReferenceLinks(content).split('\n');
+  if (typeof markdown !== "string") return;
+  const { content, contentStartLine } =
+    options.frontmatter === false
+      ? { content: markdown, contentStartLine: 1 }
+      : splitFrontmatter(markdown);
+  const source = markdown.split("\n");
+  const lines = resolveReferenceLinks(content).split("\n");
   const closeCache = new Map<string, TagCloseIndex>();
 
   // The block splitter's multi-line constructs, in its order. Every other
@@ -1529,11 +1680,15 @@ function walkTopLevelLines(
   // start with a different character, and the splitter tests them first.
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
-    if (trimmed.startsWith('```')) {
+    if (trimmed.startsWith("```")) {
       i = codeFenceCloseIndex(lines, i);
       continue;
     }
-    const mathDelimiter = trimmed.startsWith('$$') ? '$$' : trimmed.startsWith('\\[') ? '\\[' : null;
+    const mathDelimiter = trimmed.startsWith("$$")
+      ? "$$"
+      : trimmed.startsWith("\\[")
+        ? "\\["
+        : null;
     const math = mathDelimiter ? scanDisplayMath(lines, i, mathDelimiter) : null;
     if (math) {
       i = math.closeLine;
@@ -1553,8 +1708,8 @@ function walkTopLevelLines(
         directiveKind: directiveOpen[1].toLowerCase(),
         startLine,
         endLine,
-        inner: lines.slice(i + 1, close).join('\n'),
-        text: source.slice(startLine - 1, endLine).join('\n'),
+        inner: lines.slice(i + 1, close).join("\n"),
+        text: source.slice(startLine - 1, endLine).join("\n"),
       });
       i = close;
       continue;
@@ -1595,7 +1750,8 @@ export interface QuestionAnswer {
   sourceLine?: number;
 }
 
-const cap = (value: string, max: number): string => (value.length > max ? value.slice(0, max) : value);
+const cap = (value: string, max: number): string =>
+  value.length > max ? value.slice(0, max) : value;
 
 /**
  * An answer's copy of its question's prompt, cut at `MAX_QUESTION_PROMPT_CHARS`
@@ -1613,27 +1769,34 @@ export function capQuestionPrompt(prompt: string): string {
  * so a row from an older or foreign writer can never throw in a renderer.
  */
 export const parseQuestionAnswer = (value: unknown): QuestionAnswer | null => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const v = value as Record<string, unknown>;
   if (v.v !== 1) return null;
-  if (typeof v.key !== 'string' || !QUESTION_KEY_RE.test(v.key)) return null;
-  if (v.kind !== 'single' && v.kind !== 'multi' && v.kind !== 'text') return null;
-  if (typeof v.prompt !== 'string') return null;
-  if (!Array.isArray(v.selected) || !v.selected.every((s) => typeof s === 'string')) return null;
-  for (const field of ['other', 'text', 'note'] as const) {
-    if (v[field] !== undefined && typeof v[field] !== 'string') return null;
+  if (typeof v.key !== "string" || !QUESTION_KEY_RE.test(v.key)) return null;
+  if (v.kind !== "single" && v.kind !== "multi" && v.kind !== "text") return null;
+  if (typeof v.prompt !== "string") return null;
+  if (!Array.isArray(v.selected) || !v.selected.every((s) => typeof s === "string")) return null;
+  for (const field of ["other", "text", "note"] as const) {
+    if (v[field] !== undefined && typeof v[field] !== "string") return null;
   }
-  if (v.skipped !== undefined && typeof v.skipped !== 'boolean') return null;
-  if (v.by_reply !== undefined && typeof v.by_reply !== 'boolean') return null;
-  if (v.sourceLine !== undefined && !(Number.isInteger(v.sourceLine) && (v.sourceLine as number) > 0)) return null;
+  if (v.skipped !== undefined && typeof v.skipped !== "boolean") return null;
+  if (v.by_reply !== undefined && typeof v.by_reply !== "boolean") return null;
+  if (
+    v.sourceLine !== undefined &&
+    !(Number.isInteger(v.sourceLine) && (v.sourceLine as number) > 0)
+  )
+    return null;
 
-  const selected = [...new Set((v.selected as string[])
-    .map((s) => cap(s.trim(), MAX_QUESTION_SELECTED_CHARS))
-    .filter(Boolean))]
-    .slice(0, MAX_QUESTION_CHOICES);
-  const other = typeof v.other === 'string' ? cap(v.other, MAX_QUESTION_OTHER_CHARS) : '';
-  const text = typeof v.text === 'string' ? cap(v.text, MAX_QUESTION_TEXT_CHARS) : '';
-  const note = typeof v.note === 'string' ? cap(v.note, MAX_QUESTION_NOTE_CHARS) : '';
+  const selected = [
+    ...new Set(
+      (v.selected as string[])
+        .map((s) => cap(s.trim(), MAX_QUESTION_SELECTED_CHARS))
+        .filter(Boolean),
+    ),
+  ].slice(0, MAX_QUESTION_CHOICES);
+  const other = typeof v.other === "string" ? cap(v.other, MAX_QUESTION_OTHER_CHARS) : "";
+  const text = typeof v.text === "string" ? cap(v.text, MAX_QUESTION_TEXT_CHARS) : "";
+  const note = typeof v.note === "string" ? cap(v.note, MAX_QUESTION_NOTE_CHARS) : "";
   return {
     v: 1,
     key: v.key,
@@ -1645,7 +1808,7 @@ export const parseQuestionAnswer = (value: unknown): QuestionAnswer | null => {
     ...(note.trim() ? { note } : {}),
     ...(v.skipped === true ? { skipped: true } : {}),
     ...(v.skipped === true && v.by_reply === true ? { by_reply: true } : {}),
-    ...(typeof v.sourceLine === 'number' ? { sourceLine: v.sourceLine } : {}),
+    ...(typeof v.sourceLine === "number" ? { sourceLine: v.sourceLine } : {}),
   };
 };
 
@@ -1659,7 +1822,7 @@ export const parseQuestionAnswer = (value: unknown): QuestionAnswer | null => {
  * when nothing maps.
  */
 export const canonicalQuestionAnswer = <A extends QuestionAnswer>(
-  question: Pick<ParsedQuestion, 'choices'>,
+  question: Pick<ParsedQuestion, "choices">,
   answer: A,
 ): A => {
   if (answer.selected.length === 0) return answer;
@@ -1682,14 +1845,21 @@ export const canonicalQuestionAnswer = <A extends QuestionAnswer>(
     (c.aliases ?? []).flatMap((alias) => {
       const cut = legacyCutName(alias);
       return cut === null ? [alias] : [alias, cut];
-    }));
+    }),
+  );
   const exactHit = (stored: string): number =>
     only(question.choices.flatMap((_, i) => (names[i].includes(stored) ? [i] : [])));
   const normalizedHit = (stored: string): number => {
     const target = normalizeQuestionText(stored);
     if (!target) return -1;
-    return only(question.choices.flatMap((c, i) =>
-      normalizeQuestionText(c.label) === target || names[i].some((n) => normalizeQuestionText(n) === target) ? [i] : []));
+    return only(
+      question.choices.flatMap((c, i) =>
+        normalizeQuestionText(c.label) === target ||
+        names[i].some((n) => normalizeQuestionText(n) === target)
+          ? [i]
+          : [],
+      ),
+    );
   };
   let changed = false;
   const selected = answer.selected.map((stored) => {
@@ -1709,14 +1879,17 @@ export const canonicalQuestionAnswer = <A extends QuestionAnswer>(
  *  null (such a name was stored whole). */
 const legacyCutName = (name: string): string | null => {
   const trimmed = name.trim();
-  return trimmed.length > MAX_QUESTION_CHOICE_LABEL_CHARS ? cap(trimmed, MAX_QUESTION_CHOICE_LABEL_CHARS) : null;
+  return trimmed.length > MAX_QUESTION_CHOICE_LABEL_CHARS
+    ? cap(trimmed, MAX_QUESTION_CHOICE_LABEL_CHARS)
+    : null;
 };
 
 /** Whether the export needs a question's choices to print an answer's
  *  current label: a choice has older names, or a label long enough that an
  *  older build stored it cut. */
-export const questionChoicesNeedCanonicalLabels = (choices: ReadonlyArray<Pick<QuestionChoice, 'label' | 'aliases'>>): boolean =>
-  choices.some((c) => (c.aliases?.length ?? 0) > 0 || legacyCutName(c.label) !== null);
+export const questionChoicesNeedCanonicalLabels = (
+  choices: ReadonlyArray<Pick<QuestionChoice, "label" | "aliases">>,
+): boolean => choices.some((c) => (c.aliases?.length ?? 0) > 0 || legacyCutName(c.label) !== null);
 
 /** A choice was picked, "Other…" was filled, or free text was written. */
 export const isQuestionAnswered = (answer: QuestionAnswer): boolean =>
@@ -1732,20 +1905,22 @@ export const isQuestionAnswerEmpty = (answer: QuestionAnswer): boolean =>
  *  reviewer has not picked, filled Other or skipped; a note alone keeps it
  *  settled), or `open`. The card, the panel and the progress chip all use
  *  this one rule. */
-export type QuestionStatus = 'open' | 'answered' | 'skipped' | 'settled';
+export type QuestionStatus = "open" | "answered" | "skipped" | "settled";
 
 export const questionStatus = (
-  question: Pick<ParsedQuestion, 'choices'>,
+  question: Pick<ParsedQuestion, "choices">,
   answer?: QuestionAnswer | null,
 ): QuestionStatus => {
-  if (answer && isQuestionAnswered(answer)) return 'answered';
-  if (answer?.skipped) return 'skipped';
-  if (question.choices.some((c) => c.settled)) return 'settled';
-  return 'open';
+  if (answer && isQuestionAnswered(answer)) return "answered";
+  if (answer?.skipped) return "skipped";
+  if (question.choices.some((c) => c.settled)) return "settled";
+  return "open";
 };
 
 /** An empty answer for a question, ready to edit. */
-export const emptyQuestionAnswer = (indexed: Pick<IndexedQuestion, 'line' | 'question'>): QuestionAnswer => ({
+export const emptyQuestionAnswer = (
+  indexed: Pick<IndexedQuestion, "line" | "question">,
+): QuestionAnswer => ({
   v: 1,
   key: indexed.question.key,
   kind: indexed.question.kind,
@@ -1758,7 +1933,7 @@ export const emptyQuestionAnswer = (indexed: Pick<IndexedQuestion, 'line' | 'que
  *  choices, or the suggested text (as the free-text answer on a text
  *  question, as "Other…" on a choice question). Null without one. */
 export const recommendedQuestionAnswer = (
-  indexed: Pick<IndexedQuestion, 'line' | 'question'>,
+  indexed: Pick<IndexedQuestion, "line" | "question">,
   base?: QuestionAnswer,
 ): QuestionAnswer | null => {
   const { question } = indexed;
@@ -1767,7 +1942,7 @@ export const recommendedQuestionAnswer = (
   const { skipped: _skipped, other: _other, text: _text, ...rest } = start;
   if (labels.length > 0) return { ...rest, selected: labels };
   if (!question.suggestedText) return null;
-  return question.kind === 'text'
+  return question.kind === "text"
     ? { ...rest, selected: [], text: question.suggestedText }
     : { ...rest, selected: [], other: question.suggestedText };
 };
@@ -1797,7 +1972,7 @@ export const isRecommendedQuestionAnswer = (
   suggestedText?: string,
   context: RecommendedAnswerContext = {},
 ): boolean => {
-  if (answer.kind === 'text') {
+  if (answer.kind === "text") {
     return !!suggestedText && !!answer.text && answer.text.trim() === suggestedText.trim();
   }
   const sameSet = (labels: readonly string[]): boolean => {
@@ -1807,19 +1982,25 @@ export const isRecommendedQuestionAnswer = (
     return want.size === got.size && [...want].every((l) => got.has(l));
   };
   const otherIs = (text: string | undefined): boolean =>
-    !!text && answer.selected.length === 0 && !!answer.other?.trim()
-    && normalizeQuestionText(answer.other) === normalizeQuestionText(text);
-  if (recommendedLabels.length > 0) return sameSet(recommendedLabels) || otherIs(context.recommendation);
+    !!text &&
+    answer.selected.length === 0 &&
+    !!answer.other?.trim() &&
+    normalizeQuestionText(answer.other) === normalizeQuestionText(text);
+  if (recommendedLabels.length > 0)
+    return sameSet(recommendedLabels) || otherIs(context.recommendation);
   if (otherIs(suggestedText)) return true;
   if (suggestedText && context.choiceLabels) {
-    const names = context.choiceLabels.map((label, i) => [label, ...(context.choiceAliases?.[i] ?? [])]);
+    const names = context.choiceLabels.map((label, i) => [
+      label,
+      ...(context.choiceAliases?.[i] ?? []),
+    ]);
     const head = recommendationHeadChoice(suggestedText, names);
     if (head !== -1) return sameSet([context.choiceLabels[head]]);
   }
   return false;
 };
 
-const oneLine = (value: string): string => value.replace(/\s+/g, ' ').trim();
+const oneLine = (value: string): string => value.replace(/\s+/g, " ").trim();
 
 /**
  * The answer as one line, for `Annotation.text`, so a consumer that does not
@@ -1828,12 +2009,13 @@ const oneLine = (value: string): string => value.replace(/\s+/g, ' ').trim();
  */
 export const formatQuestionAnswerText = (answer: QuestionAnswer): string => {
   const parts: string[] = [];
-  if (answer.selected.length) parts.push(answer.selected.map(oneLine).join('; '));
+  if (answer.selected.length) parts.push(answer.selected.map(oneLine).join("; "));
   if (answer.other?.trim()) parts.push(`Other: ${oneLine(answer.other)}`);
   if (answer.text?.trim()) parts.push(oneLine(answer.text));
-  let out = parts.length ? `Answer: ${parts.join('; ')}` : answer.skipped ? 'Skipped' : '';
-  if (answer.note?.trim()) out = out ? `${out} — note: ${oneLine(answer.note)}` : `Note: ${oneLine(answer.note)}`;
-  return out || 'No answer';
+  let out = parts.length ? `Answer: ${parts.join("; ")}` : answer.skipped ? "Skipped" : "";
+  if (answer.note?.trim())
+    out = out ? `${out} — note: ${oneLine(answer.note)}` : `Note: ${oneLine(answer.note)}`;
+  return out || "No answer";
 };
 
 /**
@@ -1845,35 +2027,34 @@ export const formatQuestionAnswerLines = (
   answer: QuestionAnswer,
   opts: { recommended?: boolean; settledLabels?: readonly string[] } = {},
 ): string => {
-  const rec = opts.recommended ? ' (your recommendation)' : '';
-  let out = '';
+  const rec = opts.recommended ? " (your recommendation)" : "";
+  let out = "";
   // A settled question the reviewer only added a note to: the settled
   // choice stands as the answer, printed with the note.
   const settled = opts.settledLabels ?? [];
   if (settled.length > 0 && !isQuestionAnswered(answer) && !answer.skipped) {
     const labels = settled.map(oneLine);
-    out += labels.length > 1
-      ? `Answer (already settled in the document):\n${labels.map((l) => `- ${l}\n`).join('')}`
-      : `Answer: ${labels[0]} (already settled in the document)\n`;
+    out +=
+      labels.length > 1
+        ? `Answer (already settled in the document):\n${labels.map((l) => `- ${l}\n`).join("")}`
+        : `Answer: ${labels[0]} (already settled in the document)\n`;
   }
   const picks = [...answer.selected.map(oneLine)];
   if (answer.other?.trim()) picks.push(`Other: ${oneLine(answer.other)}`);
   if (answer.text?.trim()) {
-    out += `Answer${rec}:\n> ${answer.text.trim().replace(/\r?\n/g, '\n> ')}\n`;
+    out += `Answer${rec}:\n> ${answer.text.trim().replace(/\r?\n/g, "\n> ")}\n`;
   } else if (picks.length > 1) {
-    out += `Answer${rec}:\n${picks.map((p) => `- ${p}\n`).join('')}`;
+    out += `Answer${rec}:\n${picks.map((p) => `- ${p}\n`).join("")}`;
   } else if (picks.length === 1) {
     out += `Answer: ${picks[0]}${rec}\n`;
   } else if (answer.skipped) {
-    out += answer.by_reply ? 'Skipped by the person\n' : 'Skipped\n';
+    out += answer.by_reply ? "Skipped by the person\n" : "Skipped\n";
   }
   const note = answer.note?.trim();
   if (note) {
     // A multi-line note keeps its line breaks, as a blockquote like free
     // text; a one-line note stays on the `Note:` line.
-    out += /\r?\n/.test(note)
-      ? `Note:\n> ${note.replace(/\r?\n/g, '\n> ')}\n`
-      : `Note: ${note}\n`;
+    out += /\r?\n/.test(note) ? `Note:\n> ${note.replace(/\r?\n/g, "\n> ")}\n` : `Note: ${note}\n`;
   }
   return out;
 };
@@ -1898,10 +2079,12 @@ export interface QuestionExportItem {
   /** The question's choices, so an answer that quotes an older label is
    *  printed with the current one (`canonicalQuestionAnswer`). Absent: the
    *  answer's labels are printed as stored. */
-  choices?: Pick<QuestionChoice, 'label' | 'aliases'>[];
+  choices?: Pick<QuestionChoice, "label" | "aliases">[];
 }
 
-export const questionExportItems = (indexed: ReadonlyArray<IndexedQuestion>): QuestionExportItem[] =>
+export const questionExportItems = (
+  indexed: ReadonlyArray<IndexedQuestion>,
+): QuestionExportItem[] =>
   indexed.map(({ number, line, question }) => ({
     key: question.key,
     number,
@@ -1914,10 +2097,17 @@ export const questionExportItems = (indexed: ReadonlyArray<IndexedQuestion>): Qu
     choiceAliases: question.choices.map((c) => c.aliases),
     settled: question.choices.some((c) => c.settled),
     settledLabels: question.choices.filter((c) => c.settled).map((c) => c.label),
-    ...(questionChoicesNeedCanonicalLabels(question.choices) ? { choices: question.choices.map(({ label, aliases }) => ({ label, ...(aliases ? { aliases } : {}) })) } : {}),
+    ...(questionChoicesNeedCanonicalLabels(question.choices)
+      ? {
+          choices: question.choices.map(({ label, aliases }) => ({
+            label,
+            ...(aliases ? { aliases } : {}),
+          })),
+        }
+      : {}),
   }));
 
-export const QUESTION_ANSWERS_HEADING = 'Answers to your questions';
+export const QUESTION_ANSWERS_HEADING = "Answers to your questions";
 
 /**
  * The "Answers to your questions" export section. Empty string when there is
@@ -1942,8 +2132,8 @@ export const formatQuestionAnswersSection = (
       const choices = choicesByKey.get(a.key);
       return choices ? canonicalQuestionAnswer({ choices: choices as QuestionChoice[] }, a) : a;
     });
-  if (reported.length === 0) return '';
-  const h = '#'.repeat(opts.headingLevel ?? 2);
+  if (reported.length === 0) return "";
+  const h = "#".repeat(opts.headingLevel ?? 2);
   const sub = `${h}#`;
   const byKey = new Map<string, QuestionAnswer>();
   for (const a of reported) if (!byKey.has(a.key)) byKey.set(a.key, a);
@@ -1960,11 +2150,11 @@ export const formatQuestionAnswersSection = (
   }).length;
 
   let out = `${h} ${QUESTION_ANSWERS_HEADING}\n\n`;
-  out += `${answered} of ${open.length} question${open.length === 1 ? '' : 's'} answered.`;
+  out += `${answered} of ${open.length} question${open.length === 1 ? "" : "s"} answered.`;
   if (settledUntouched > 0) {
-    out += ` ${settledUntouched} already settled in the document ${settledUntouched === 1 ? 'was' : 'were'} left as is.`;
+    out += ` ${settledUntouched} already settled in the document ${settledUntouched === 1 ? "was" : "were"} left as is.`;
   }
-  out += '\n\n';
+  out += "\n\n";
 
   const unanswered: QuestionExportItem[] = [];
   const matched = new Set<string>();
@@ -1975,37 +2165,41 @@ export const formatQuestionAnswersSection = (
       continue;
     }
     matched.add(q.key);
-    const where = q.line ? ` (line ${q.line})` : '';
+    const where = q.line ? ` (line ${q.line})` : "";
     out += `${sub} Q${q.number}. ${oneLine(q.prompt)}${where}\n`;
     out += formatQuestionAnswerLines(a, {
-      recommended: isQuestionAnswered(a) && isRecommendedQuestionAnswer(a, q.recommendedLabels, q.suggestedText, {
-        recommendation: q.recommendation,
-        choiceLabels: q.choiceLabels,
-        choiceAliases: q.choiceAliases,
-      }),
+      recommended:
+        isQuestionAnswered(a) &&
+        isRecommendedQuestionAnswer(a, q.recommendedLabels, q.suggestedText, {
+          recommendation: q.recommendation,
+          choiceLabels: q.choiceLabels,
+          choiceAliases: q.choiceAliases,
+        }),
       ...(settledStands(q, a) ? { settledLabels: q.settledLabels ?? [] } : {}),
     });
-    out += '\n';
+    out += "\n";
   }
   for (const a of byKey.values()) {
     if (matched.has(a.key)) continue;
     out += `${sub} ${oneLine(a.prompt)} (this question is no longer in the document)\n`;
     out += formatQuestionAnswerLines(a);
-    out += '\n';
+    out += "\n";
   }
   if (unanswered.length > 0) {
     out += `${sub} Unanswered\n`;
-    for (const q of unanswered) out += `- Q${q.number}. ${oneLine(q.prompt)}${q.line ? ` (line ${q.line})` : ''}\n`;
-    out += '\n';
+    for (const q of unanswered)
+      out += `- Q${q.number}. ${oneLine(q.prompt)}${q.line ? ` (line ${q.line})` : ""}\n`;
+    out += "\n";
   }
   return out;
 };
 
 // ───────────────────────── Annotation record ─────────────────────────
 
-export const QUESTION_ANSWER_ANNOTATION_PREFIX = 'ann-question-';
+export const QUESTION_ANSWER_ANNOTATION_PREFIX = "ann-question-";
 
-export const questionAnswerAnnotationId = (key: string): string => `${QUESTION_ANSWER_ANNOTATION_PREFIX}${key}`;
+export const questionAnswerAnnotationId = (key: string): string =>
+  `${QUESTION_ANSWER_ANNOTATION_PREFIX}${key}`;
 
 /** The annotation that carries an answer, structurally (`type` is the
  *  literal `'COMMENT'`, which a host maps onto its own annotation type). */
@@ -2014,7 +2208,7 @@ export interface QuestionAnswerAnnotationRecord {
   blockId: string;
   startOffset: 0;
   endOffset: 0;
-  type: 'COMMENT';
+  type: "COMMENT";
   text: string;
   originalText: string;
   createdA: number;
@@ -2033,7 +2227,7 @@ export const buildQuestionAnswerAnnotation = (
   blockId,
   startOffset: 0,
   endOffset: 0,
-  type: 'COMMENT',
+  type: "COMMENT",
   text: formatQuestionAnswerText(answer),
   originalText: answer.prompt,
   createdA,

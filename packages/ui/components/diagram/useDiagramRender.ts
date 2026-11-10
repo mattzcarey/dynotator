@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   renderDiagram,
   type DiagramKind,
   type DiagramRenderError,
   type DiagramRenderResult,
   type DiagramTheme,
-} from '../../utils/diagram-render';
+} from "../../utils/diagram-render";
 
 function isRenderError(result: DiagramRenderResult): result is DiagramRenderError {
   return result.ok === false;
@@ -58,18 +58,24 @@ export function useDiagramRender(
   useEffect(() => {
     let cancelled = false;
     renderCounter += 1;
-    const renderId = `diagram-${documentId.replace(/[^\w-]/gu, '')}-${renderCounter}`;
+    const renderId = `diagram-${documentId.replace(/[^\w-]/gu, "")}-${renderCounter}`;
     // A new attempt after a failed engine load (a Retry) shows the pending
     // state again rather than the stale error; a parse error stays on
     // screen until the new result lands, so a typing burst does not blink.
     setState((current) => {
       const error = current.error?.runtimeUnavailable ? null : current.error;
-      return current.pending && error === current.error ? current : { ...current, error, pending: true };
+      return current.pending && error === current.error
+        ? current
+        : { ...current, error, pending: true };
     });
     void renderDiagram(kind, renderId, source, theme).then((result: DiagramRenderResult) => {
       if (cancelled) return;
       if (isRenderError(result)) {
-        const error = { message: result.message, line: result.line, runtimeUnavailable: result.runtimeUnavailable };
+        const error = {
+          message: result.message,
+          line: result.line,
+          runtimeUnavailable: result.runtimeUnavailable,
+        };
         setState((current) => ({ ...current, error, pending: false }));
         return;
       }

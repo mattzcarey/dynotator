@@ -1,1 +1,1 @@
-export * from '@dynotator/core/feedback-templates';
+export * from "@dynotator/core/feedback-templates";

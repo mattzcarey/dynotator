@@ -1,9 +1,9 @@
-import { Code } from 'lucide-react';
-import { useState } from 'react';
-import { cn } from '../../lib/utils';
-import { PopoutDialog } from '../PopoutDialog';
-import { Button } from '../ui/button';
-import { DiagramViewer, type DiagramViewerProps } from './DiagramViewer';
+import { Code } from "lucide-react";
+import { useState } from "react";
+import { cn } from "../../lib/utils";
+import { PopoutDialog } from "../PopoutDialog";
+import { Button } from "../ui/button";
+import { DiagramViewer, type DiagramViewerProps } from "./DiagramViewer";
 
 /**
  * The diagram at full size over the document: the SAME `DiagramViewer` the
@@ -22,7 +22,10 @@ export function DiagramPopout({
   container,
   dataAttributes,
   ...viewer
-}: Omit<DiagramViewerProps, 'onDismiss' | 'autoFocus' | 'sourceOpen' | 'className' | 'canvasClassName'> & {
+}: Omit<
+  DiagramViewerProps,
+  "onDismiss" | "autoFocus" | "sourceOpen" | "className" | "canvasClassName"
+> & {
   open: boolean;
   onClose: () => void;
   /** The dialog's accessible name and the header label. */
@@ -45,11 +48,15 @@ export function DiagramPopout({
       // `--pn-viewport-height` (useViewportEnvironment: plan and code review)
       // also leaves out the keyboard; elsewhere `dvh` follows the toolbars.
       className="h-[calc(var(--pn-viewport-height,100dvh)-2rem)] w-[calc(100vw-2rem)] max-w-none"
-      dataAttributes={{ 'data-diagram-popout': '', ...dataAttributes }}
+      dataAttributes={{ "data-diagram-popout": "", ...dataAttributes }}
     >
       {/* The popout's own chrome: a press here addresses no diagram part
           (see diagram/diagramControls). */}
-      <div data-diagram-control="" data-diagram-popout-chrome="" className="flex h-9 shrink-0 items-center gap-2 border-b border-border pl-4 pr-12">
+      <div
+        data-diagram-control=""
+        data-diagram-popout-chrome=""
+        className="flex h-9 shrink-0 items-center gap-2 border-b border-border pl-4 pr-12"
+      >
         <span className="truncate text-xs font-medium text-foreground">{title}</span>
         <span className="flex-1" />
         {hasPane && (
@@ -59,8 +66,10 @@ export function DiagramPopout({
             size="xs"
             data-diagram-source-toggle=""
             aria-pressed={sourceOpen}
-            className={cn('shrink-0', sourceOpen && 'bg-primary/15 text-primary')}
-            title={sourceOpen ? 'Close the source pane' : 'Open the diagram source beside the canvas'}
+            className={cn("shrink-0", sourceOpen && "bg-primary/15 text-primary")}
+            title={
+              sourceOpen ? "Close the source pane" : "Open the diagram source beside the canvas"
+            }
             onClick={() => setSourceOpen((value) => !value)}
           >
             <Code className="size-3.5" aria-hidden="true" />
@@ -70,7 +79,13 @@ export function DiagramPopout({
       </div>
       <div className="min-h-0 flex-1">
         {/* The popout owns the screen: every touch drag is a pan. */}
-        <DiagramViewer {...viewer} sourceOpen={sourceOpen} onDismiss={onClose} autoFocus canvasClassName="touch-none" />
+        <DiagramViewer
+          {...viewer}
+          sourceOpen={sourceOpen}
+          onDismiss={onClose}
+          autoFocus
+          canvasClassName="touch-none"
+        />
       </div>
     </PopoutDialog>
   );

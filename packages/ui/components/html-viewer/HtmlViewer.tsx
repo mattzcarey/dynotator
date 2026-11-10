@@ -12,10 +12,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useVimDocumentFocus } from "../../hooks/useVimDocumentFocus";
-import {
-  isVimSelectionActionId,
-  type VimSelectionHudContext,
-} from "../../shortcuts";
+import { isVimSelectionActionId, type VimSelectionHudContext } from "../../shortcuts";
 import type { Annotation, EditorMode, HostDraft, ImageAttachment, InputMethod } from "../../types";
 import { AnnotationType } from "../../types";
 import { copyTextPreservingFocus } from "../../utils/clipboard";
@@ -24,11 +21,7 @@ import { elementIdentityForAskAI } from "../../utils/parser";
 import { getIdentity } from "../../utils/identity";
 import { THUMBS_UP_LABEL } from "../../utils/quickLabels";
 import { hashDraftScope } from "../../utils/draftScopeHash";
-import {
-  createVimHudCommand,
-  getVimHudPhase,
-  type VimHudCommand,
-} from "../../utils/vimHud";
+import { createVimHudCommand, getVimHudPhase, type VimHudCommand } from "../../utils/vimHud";
 import { AnnotationToolbar } from "../AnnotationToolbar";
 import type { SelectionAction, SelectionActionContext } from "../../utils/selectionActions";
 import type { MentionSource } from "../../utils/mentions";
@@ -40,11 +33,7 @@ import {
 } from "../CommentPopover";
 import { VimKeyHud } from "../VimKeyHud";
 import type { ViewerHandle } from "../Viewer";
-import {
-  computeComposerYield,
-  distanceToRect,
-  type ComposerYieldState,
-} from "./composerYield";
+import { computeComposerYield, distanceToRect, type ComposerYieldState } from "./composerYield";
 import { buildSyncNumbering } from "./annotationNumbering";
 import { mergeUnanchoredIds } from "./unanchored";
 import {
@@ -87,26 +76,26 @@ function isLightTheme(): boolean {
 }
 
 function isBridgeReadyMessage(value: unknown): boolean {
-  return typeof value === "object"
-    && value !== null
-    && "type" in value
-    && value.type === `${PREFIX}ready`;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    value.type === `${PREFIX}ready`
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function parseVimSelectionHudContext(
-  value: unknown,
-): VimSelectionHudContext | null {
-  return value === "inactive"
-    || value === "block"
-    || value === "inline"
-    || value === "text"
-    || value === "visual"
-    || value === "visual-block"
-    || value === "action"
+function parseVimSelectionHudContext(value: unknown): VimSelectionHudContext | null {
+  return value === "inactive" ||
+    value === "block" ||
+    value === "inline" ||
+    value === "text" ||
+    value === "visual" ||
+    value === "visual-block" ||
+    value === "action"
     ? value
     : null;
 }
@@ -119,17 +108,15 @@ interface VimBridgeCommand {
 
 function parseVimBridgeCommand(value: unknown): VimBridgeCommand | null {
   if (
-    !isRecord(value)
-    || value.type !== `${PREFIX}vim-command`
-    || !isVimSelectionActionId(value.actionId)
-    || typeof value.key !== "string"
+    !isRecord(value) ||
+    value.type !== `${PREFIX}vim-command` ||
+    !isVimSelectionActionId(value.actionId) ||
+    typeof value.key !== "string"
   ) {
     return null;
   }
   const context = parseVimSelectionHudContext(value.context);
-  return context
-    ? { actionId: value.actionId, key: value.key, context }
-    : null;
+  return context ? { actionId: value.actionId, key: value.key, context } : null;
 }
 
 function parseVimBridgeState(value: unknown): VimSelectionHudContext | null {
@@ -139,9 +126,7 @@ function parseVimBridgeState(value: unknown): VimSelectionHudContext | null {
 }
 
 function parseVimBridgeHelp(value: unknown): boolean | null {
-  return isRecord(value)
-    && value.type === `${PREFIX}vim-help`
-    && typeof value.open === "boolean"
+  return isRecord(value) && value.type === `${PREFIX}vim-help` && typeof value.open === "boolean"
     ? value.open
     : null;
 }
@@ -198,16 +183,17 @@ export function formatBridgeUnavailableMessage(info: BridgeUnavailableInfo): str
   if (info.kind === "timeout") {
     return `Annotation tools did not load: the bridge script at ${info.url} sent no ready signal within ${info.timeoutMs} ms. The page is shown without annotation. Check that the URL is reachable and that your Content Security Policy allows script-src for that origin.`;
   }
-  const reported = info.reportedVersion === undefined ? "no version" : `version ${info.reportedVersion}`;
+  const reported =
+    info.reportedVersion === undefined ? "no version" : `version ${info.reportedVersion}`;
   return `Annotation tools may not work: this viewer expects bridge protocol version ${info.expectedVersion}, but the script at ${info.url} reported ${reported}. Serve the bridge-script asset from the same @dynotator/ui version as the viewer.`;
 }
 
 function parseVimBridgeCopy(value: unknown): string | null {
-  return isRecord(value)
-    && value.type === `${PREFIX}vim-copy`
-    && typeof value.text === "string"
-    && value.text.length > 0
-    && value.text.length <= MAX_VIM_COPY_TEXT_LENGTH
+  return isRecord(value) &&
+    value.type === `${PREFIX}vim-copy` &&
+    typeof value.text === "string" &&
+    value.text.length > 0 &&
+    value.text.length <= MAX_VIM_COPY_TEXT_LENGTH
     ? value.text
     : null;
 }
@@ -352,7 +338,7 @@ export interface HtmlViewerProps {
   /** scrollIntoView behavior when a selected annotation is scrolled into
    *  view inside the page. Default 'smooth'; pass 'auto' to carry the
    *  parent's reduced-motion preference across the iframe boundary. */
-  scrollBehavior?: 'smooth' | 'auto';
+  scrollBehavior?: "smooth" | "auto";
   /** Opt-in: where the host's own panel floats over the frame's right side
    *  (frame pixels: its left edge, top and bottom), read as an annotation is
    *  selected. A mark under the panel scrolls clear of it, below it, where
@@ -582,8 +568,7 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     const [iframeReadyVersion, setIframeReadyVersion] = useState(0);
     const [printReady, setPrintReady] = useState(false);
     const [iframeFocused, setIframeFocused] = useState(false);
-    const [vimBridgePhase, setVimBridgePhase] =
-      useState<VimSelectionHudContext>("inactive");
+    const [vimBridgePhase, setVimBridgePhase] = useState<VimSelectionHudContext>("inactive");
     const [vimHudCommand, setVimHudCommand] = useState<VimHudCommand | null>(null);
     const [vimHelpOpen, setVimHelpOpen] = useState(false);
     const vimHudSequenceRef = useRef(0);
@@ -645,9 +630,10 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     // Resolved against THIS document's base before it is written into the
     // srcdoc, so a framed page's own <base href> can never re-anchor it.
     const bridgeUrl = useMemo(
-      () => (!liveMode && bridgeScriptUrl
-        ? resolveBridgeScriptUrl(bridgeScriptUrl, document.baseURI)
-        : undefined),
+      () =>
+        !liveMode && bridgeScriptUrl
+          ? resolveBridgeScriptUrl(bridgeScriptUrl, document.baseURI)
+          : undefined,
       [liveMode, bridgeScriptUrl],
     );
     const bridgeUrlRef = useRef(bridgeUrl);
@@ -662,7 +648,10 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
         diffActive: !!diffActive,
         bridgeScriptUrl: bridgeUrl,
       });
-      const page = injectIntoHead(injectPrintDefaults(rawHtml, { sectionBreaks: hostTheme }), injection);
+      const page = injectIntoHead(
+        injectPrintDefaults(rawHtml, { sectionBreaks: hostTheme }),
+        injection,
+      );
       // Inline path: history and storage are safe before the page's own head
       // scripts run. The URL path gets the same shim from the bridge.
       return bridgeUrl ? page : injectSandboxShim(page);
@@ -744,10 +733,13 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
       if (bridgeError) onBridgeUnavailableRef.current?.(bridgeError);
     }, [bridgeError]);
 
-    const handleResize = useCallback((height: number) => {
-      if (liveMode) return; // live surfaces are full-viewport; height is ignored
-      setIframeHeight(height);
-    }, [liveMode]);
+    const handleResize = useCallback(
+      (height: number) => {
+        if (liveMode) return; // live surfaces are full-viewport; height is ignored
+        setIframeHeight(height);
+      },
+      [liveMode],
+    );
 
     // Composer yield while shift-selecting (multi-target drafts): fade the
     // composer as the pointer approaches, click-through when over it. Pointer
@@ -821,7 +813,10 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     const awaitingReadyRef = useRef(false);
     const documentIdentityRef = useRef<{ rawHtml: string; src: string | undefined } | null>(null);
     const previousIdentity = documentIdentityRef.current;
-    if (previousIdentity && (previousIdentity.rawHtml !== rawHtml || previousIdentity.src !== src)) {
+    if (
+      previousIdentity &&
+      (previousIdentity.rawHtml !== rawHtml || previousIdentity.src !== src)
+    ) {
       awaitingReadyRef.current = true;
       bridgeReportedRef.current = false;
       lastDeliveredUnanchoredRef.current = "[]";
@@ -834,19 +829,22 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
       lastDeliveredUnanchoredRef.current = key;
       onUnanchoredChangeRef.current?.(ids);
     }, []);
-    const handleBridgeUnanchored = useCallback((ids: string[]) => {
-      if (awaitingReadyRef.current) return;
-      bridgeUnanchoredRef.current = ids;
-      bridgeReportedRef.current = true;
-      deliverUnanchored(
-        mergeUnanchoredIds({
-          bridgeIds: ids,
-          annotations: annotationsRef.current,
-          createdIds: createdIdsRef.current,
-        }),
-        false,
-      );
-    }, [deliverUnanchored]);
+    const handleBridgeUnanchored = useCallback(
+      (ids: string[]) => {
+        if (awaitingReadyRef.current) return;
+        bridgeUnanchoredRef.current = ids;
+        bridgeReportedRef.current = true;
+        deliverUnanchored(
+          mergeUnanchoredIds({
+            bridgeIds: ids,
+            annotations: annotationsRef.current,
+            createdIds: createdIdsRef.current,
+          }),
+          false,
+        );
+      },
+      [deliverUnanchored],
+    );
 
     const hook = useHtmlAnnotation({
       iframeRef,
@@ -946,15 +944,16 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     // WebKit runner, the Inbox surface's proof).
     useLayoutEffect(() => {
       function handler(e: MessageEvent<unknown>) {
-        if (!e.source || e.source !== bridgeWindowOf(iframeRef.current, liveSessionRef.current)) return;
+        if (!e.source || e.source !== bridgeWindowOf(iframeRef.current, liveSessionRef.current))
+          return;
         // Live sessions verify origin + token before reading anything.
         const live = liveSessionRef.current;
         if (live && rejectsLiveMessage(live, e.origin, e.data)) return;
         if (
-          servesFrameRef.current
-          && typeof e.data === "object"
-          && e.data !== null
-          && (e.data as { type?: unknown }).type === HTML_VIEWER_FRAME_GONE
+          servesFrameRef.current &&
+          typeof e.data === "object" &&
+          e.data !== null &&
+          (e.data as { type?: unknown }).type === HTML_VIEWER_FRAME_GONE
         ) {
           if (goneAsksRef.current < 2) {
             goneAsksRef.current += 1;
@@ -1002,9 +1001,9 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
           if (live && isRecord(e.data)) {
             const pageUrl = e.data.pageUrl;
             if (
-              typeof pageUrl === "string"
-              && pageUrl.length > 0
-              && pageUrl.length <= MAX_PAGE_URL_LENGTH
+              typeof pageUrl === "string" &&
+              pageUrl.length > 0 &&
+              pageUrl.length <= MAX_PAGE_URL_LENGTH
             ) {
               onPageChangeRef.current?.(pageUrl);
             }
@@ -1053,12 +1052,7 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
         const vimCopy = parseVimBridgeCopy(e.data);
         if (vimCopy !== null) {
           const iframe = iframeRef.current;
-          if (
-            !readOnly
-            && vimModeEnabled
-            && iframe
-            && document.activeElement === iframe
-          ) {
+          if (!readOnly && vimModeEnabled && iframe && document.activeElement === iframe) {
             copyTextPreservingFocus(vimCopy, iframe);
           }
           return;
@@ -1077,12 +1071,14 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
         const vimCommand = parseVimBridgeCommand(e.data);
         if (vimCommand) {
           vimHudSequenceRef.current += 1;
-          setVimHudCommand(createVimHudCommand(
-            vimHudSequenceRef.current,
-            vimCommand.actionId,
-            vimCommand.key,
-            vimCommand.context,
-          ));
+          setVimHudCommand(
+            createVimHudCommand(
+              vimHudSequenceRef.current,
+              vimCommand.actionId,
+              vimCommand.key,
+              vimCommand.context,
+            ),
+          );
         }
       }
       window.addEventListener("message", handler);
@@ -1098,9 +1094,7 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
 
     const handleVimHelpOpenChange = useCallback((open: boolean) => {
       setVimHelpOpen(open);
-      postToBridge(
-        { type: `${PREFIX}set-vim-help`, open },
-      );
+      postToBridge({ type: `${PREFIX}set-vim-help`, open });
     }, []);
 
     const handleVimHudFocusLeave = useCallback(() => {
@@ -1114,9 +1108,7 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
       if (document.activeElement === iframe) return false;
       iframe.focus({ preventScroll: true });
       if (document.activeElement !== iframe) return false;
-      postToBridge(
-        { type: `${PREFIX}focus-vim` },
-      );
+      postToBridge({ type: `${PREFIX}focus-vim` });
       return true;
     }, [readOnly, vimModeEnabled]);
 
@@ -1137,8 +1129,7 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     // Numbering (sync-annotations) still ships the FULL list: numbers are
     // parent-authoritative and global across pages, matching export.
     const forCurrentPage = useCallback(
-      (anns: Annotation[]) =>
-        anns.filter((a) => !a.pageUrl || a.pageUrl === currentPageUrl),
+      (anns: Annotation[]) => anns.filter((a) => !a.pageUrl || a.pageUrl === currentPageUrl),
       [currentPageUrl],
     );
 
@@ -1234,18 +1225,17 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     // order is only a pre-sync fallback.
     useEffect(() => {
       if (iframeReadyVersion === 0) return;
-      postToBridge(
-        { type: `${PREFIX}sync-annotations`, annotations: buildSyncNumbering(annotations) },
-      );
+      postToBridge({
+        type: `${PREFIX}sync-annotations`,
+        annotations: buildSyncNumbering(annotations),
+      });
     }, [iframeReadyVersion, annotations]);
 
     // Tell the bridge the current input method (drag vs pinpoint). Re-posts on
     // ready (fresh iframe) and whenever the user switches it in the toolstrip.
     useEffect(() => {
       if (iframeReadyVersion === 0) return;
-      postToBridge(
-        { type: `${PREFIX}set-input-method`, method: inputMethod },
-      );
+      postToBridge({ type: `${PREFIX}set-input-method`, method: inputMethod });
     }, [iframeReadyVersion, inputMethod]);
 
     // Tell the bridge whether Annotate is armed. Same re-post pattern as
@@ -1253,9 +1243,7 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     // and bridge re-injection without ever reloading the iframe.
     useEffect(() => {
       if (iframeReadyVersion === 0) return;
-      postToBridge(
-        { type: `${PREFIX}set-annotate-mode`, active: annotateModeActive },
-      );
+      postToBridge({ type: `${PREFIX}set-annotate-mode`, active: annotateModeActive });
     }, [iframeReadyVersion, annotateModeActive]);
 
     // A native host decides link navigations itself (`hostNavigates`).
@@ -1305,15 +1293,19 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     useEffect(() => {
       if (readOnly || !composerHidden) return;
       const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
+        if (e.key !== "Escape" || e.defaultPrevented || e.isComposing) return;
         const target = e.target as HTMLElement | null;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        if (
+          target &&
+          (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+        )
+          return;
         if (document.querySelector('[data-plannotator-confirm-dialog="true"]')) return;
         e.preventDefault();
         handleCommentCloseRef.current();
       };
-      window.addEventListener('keydown', onKeyDown, true);
-      return () => window.removeEventListener('keydown', onKeyDown, true);
+      window.addEventListener("keydown", onKeyDown, true);
+      return () => window.removeEventListener("keydown", onKeyDown, true);
     }, [readOnly, composerHidden]);
 
     // Parent-side Esc rung: with focus outside the iframe the bridge never
@@ -1323,19 +1315,26 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     useEffect(() => {
       if (readOnly || !annotateModeActive || !onAnnotateModeExit) return;
       const overlayOpen =
-        !!hook.toolbarState || !!hook.commentPopover || !!hook.quickLabelPicker || !!globalCommentPopover;
+        !!hook.toolbarState ||
+        !!hook.commentPopover ||
+        !!hook.quickLabelPicker ||
+        !!globalCommentPopover;
       const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key !== 'Escape' || e.defaultPrevented) return;
+        if (e.key !== "Escape" || e.defaultPrevented) return;
         // A hidden composer is closed by its own rung above.
         if (overlayOpen) return;
         // A text field or dialog owns its own Escape.
         const target = e.target as HTMLElement | null;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        if (
+          target &&
+          (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+        )
+          return;
         if (document.querySelector('[data-plannotator-confirm-dialog="true"]')) return;
         onAnnotateModeExit();
       };
-      window.addEventListener('keydown', onKeyDown);
-      return () => window.removeEventListener('keydown', onKeyDown);
+      window.addEventListener("keydown", onKeyDown);
+      return () => window.removeEventListener("keydown", onKeyDown);
     }, [
       readOnly,
       annotateModeActive,
@@ -1349,21 +1348,17 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
     useEffect(() => {
       if (iframeReadyVersion === 0) return;
       const iframe = iframeRef.current;
-      postToBridge(
-        {
-          type: `${PREFIX}set-vim-mode`,
-          enabled: !readOnly && vimModeEnabled,
-          hudEnabled: vimHudEnabled,
-          mode,
-        },
-      );
+      postToBridge({
+        type: `${PREFIX}set-vim-mode`,
+        enabled: !readOnly && vimModeEnabled,
+        hudEnabled: vimHudEnabled,
+        mode,
+      });
       if (!readOnly && vimModeEnabled && iframe && iframe === document.activeElement) {
         // The initial parent focus can land before the sandbox bridge is ready.
         // Reassert it after configuration so raw HTML enters BLOCK immediately,
         // matching the Markdown surface instead of waiting for the first key.
-        postToBridge(
-          { type: `${PREFIX}focus-vim` },
-        );
+        postToBridge({ type: `${PREFIX}focus-vim` });
       }
     }, [iframeReadyVersion, mode, readOnly, vimHudEnabled, vimModeEnabled]);
 
@@ -1373,30 +1368,26 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
       const wasOpen = vimOverlayWasOpenRef.current;
       vimOverlayWasOpenRef.current = overlayOpen;
       if (
-        !readOnly
-        && vimModeEnabled
-        && wasOpen
-        && !overlayOpen
-        && (document.activeElement === document.body || document.activeElement === null)
+        !readOnly &&
+        vimModeEnabled &&
+        wasOpen &&
+        !overlayOpen &&
+        (document.activeElement === document.body || document.activeElement === null)
       ) {
         iframeRef.current?.focus({ preventScroll: true });
-        postToBridge(
-          { type: `${PREFIX}focus-vim` },
-        );
+        postToBridge({ type: `${PREFIX}focus-vim` });
       }
     }, [composerShown, hook.quickLabelPicker, hook.toolbarState, readOnly, vimModeEnabled]);
 
     useEffect(() => {
       if (iframeReadyVersion === 0) return;
       function sendTheme() {
-        postToBridge(
-          {
-            type: `${PREFIX}theme`,
-            tokens: buildThemeTokenPayload(readThemeTokens(), hostTheme),
-            isLight: isLightTheme(),
-            hostTheme,
-          },
-        );
+        postToBridge({
+          type: `${PREFIX}theme`,
+          tokens: buildThemeTokenPayload(readThemeTokens(), hostTheme),
+          isLight: isLightTheme(),
+          hostTheme,
+        });
       }
       sendTheme();
       const observer = new MutationObserver(sendTheme);
@@ -1412,15 +1403,16 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
       clearAllHighlights: hook.clearAllHighlights,
       print: !liveMode && printReady ? () => postToBridge({ type: `${PREFIX}print` }) : undefined,
       // Shared/draft restores respect the live page filter too.
-      applySharedAnnotations: (anns: Annotation[]) =>
-        hook.applyAnnotations(forCurrentPage(anns)),
+      applySharedAnnotations: (anns: Annotation[]) => hook.applyAnnotations(forCurrentPage(anns)),
       stepPin: (direction: "parent" | "child") =>
         postToBridge({ type: `${PREFIX}step-pin`, direction }),
       revealPin: (options?: { clearBottom?: number }) =>
         postToBridge({
           type: `${PREFIX}reveal-pin`,
           // Measured in the parent; the bridge reads the page's own pixels.
-          ...(options?.clearBottom ? { clearBottom: options.clearBottom / frameScaleRef.current } : {}),
+          ...(options?.clearBottom
+            ? { clearBottom: options.clearBottom / frameScaleRef.current }
+            : {}),
         }),
       // A comment being written when its file closed, put back by the host:
       // the bridge pins its element again (or selects its words again) and
@@ -1472,10 +1464,22 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
           <button
             onClick={onToggleDiff}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${diffActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted"}`}
-            title={diffActive ? "Hide changes vs previous version" : "Show changes vs previous version"}
+            title={
+              diffActive ? "Hide changes vs previous version" : "Show changes vs previous version"
+            }
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-9L21 3m0 0l-4.5 4.5M21 3H7.5" />
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-9L21 3m0 0l-4.5 4.5M21 3H7.5"
+              />
             </svg>
             <span>{diffActive ? "Hide changes" : "Show changes"}</span>
           </button>
@@ -1503,8 +1507,18 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors cursor-pointer"
             title="Add global comment"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
+              />
             </svg>
             <span>Comment</span>
           </button>
@@ -1528,7 +1542,11 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
 
           <article
             data-print-region="article"
-            className={fullViewport ? "relative overflow-hidden w-full flex-1" : "relative bg-card rounded-xl shadow-xl overflow-hidden w-full"}
+            className={
+              fullViewport
+                ? "relative overflow-hidden w-full flex-1"
+                : "relative bg-card rounded-xl shadow-xl overflow-hidden w-full"
+            }
           >
             {/* Armed affordance: a subtle accent ring floats over the iframe
                 while Annotate is armed (hosts that wire the toggle only).
@@ -1541,7 +1559,9 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
                 data-print-hide
                 data-annotate-armed-ring
                 className="pointer-events-none absolute inset-0 z-10"
-                style={{ boxShadow: "inset 0 0 0 2px color-mix(in srgb, var(--primary) 45%, transparent)" }}
+                style={{
+                  boxShadow: "inset 0 0 0 2px color-mix(in srgb, var(--primary) 45%, transparent)",
+                }}
               />
             )}
             {/* Full-viewport mode has no card chrome, so float the same controls
@@ -1580,7 +1600,16 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
                     type="button"
                     data-bridge-error-dismiss
                     aria-label="Dismiss"
-                    style={{ flexShrink: 0, borderRadius: 4, padding: "2px 6px", fontWeight: 500, cursor: "pointer", background: "transparent", border: "1px solid currentColor", color: "inherit" }}
+                    style={{
+                      flexShrink: 0,
+                      borderRadius: 4,
+                      padding: "2px 6px",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      background: "transparent",
+                      border: "1px solid currentColor",
+                      color: "inherit",
+                    }}
                     onClick={() => setBridgeErrorDismissed(true)}
                   >
                     Dismiss
@@ -1613,8 +1642,8 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
               onFocus={() => setIframeFocused(true)}
               onBlur={(event) => {
                 if (
-                  event.relatedTarget instanceof Element
-                  && event.relatedTarget.closest('[data-vim-key-hud]')
+                  event.relatedTarget instanceof Element &&
+                  event.relatedTarget.closest("[data-vim-key-hud]")
                 ) {
                   return;
                 }
@@ -1624,13 +1653,10 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
           </article>
         </div>
 
-        {vimHudActive
-          && (vimHelpOpen || (
-            vimHudKeyPanelEnabled
-            && vimBridgePhase !== "inactive"
-          ))
-          && (iframeFocused || vimBridgePhase === "action" || vimHelpOpen)
-          && createPortal(
+        {vimHudActive &&
+          (vimHelpOpen || (vimHudKeyPanelEnabled && vimBridgePhase !== "inactive")) &&
+          (iframeFocused || vimBridgePhase === "action" || vimHelpOpen) &&
+          createPortal(
             <VimKeyHud
               command={vimHudCommand}
               phase={getVimHudPhase(vimBridgePhase, vimHudCommand?.actionId)}
@@ -1640,9 +1666,9 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
               onHide={
                 onVimHudKeyPanelChange
                   ? () => {
-                    handleVimHelpOpenChange(false);
-                    onVimHudKeyPanelChange(false);
-                  }
+                      handleVimHelpOpenChange(false);
+                      onVimHudKeyPanelChange(false);
+                    }
                   : undefined
               }
               onFocusLeave={handleVimHudFocusLeave}
@@ -1651,7 +1677,8 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
           )}
 
         {/* Toolbar portal */}
-        {!readOnly && hook.toolbarState &&
+        {!readOnly &&
+          hook.toolbarState &&
           createPortal(
             <AnnotationToolbar
               positionMode="center-above"
@@ -1682,7 +1709,9 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
         {/* Hidden with its target (a slide the page hid): CommentPopover's draft
             store keeps the text and images, and shown again it does not take
             focus from where the person is. */}
-        {!readOnly && hook.pinVisible && hook.commentPopover &&
+        {!readOnly &&
+          hook.pinVisible &&
+          hook.commentPopover &&
           createPortal(
             <CommentPopover
               anchorEl={hook.commentPopover.anchorEl}
@@ -1719,7 +1748,8 @@ export const HtmlViewer = forwardRef<ViewerHandle, HtmlViewerProps>(
           )}
 
         {/* Global comment popover portal */}
-        {!readOnly && globalCommentPopover &&
+        {!readOnly &&
+          globalCommentPopover &&
           createPortal(
             <CommentPopover
               anchorEl={globalCommentPopover.anchorEl}

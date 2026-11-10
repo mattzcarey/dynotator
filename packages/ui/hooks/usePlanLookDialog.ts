@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import { configStore } from '../config';
+import { useCallback, useEffect, useState } from "react";
+import { configStore } from "../config";
 import {
   markLookAndFeelChoiceResolved,
   planLookAnsweredElsewhere,
   planLookPrompt,
   type PlanLookPrompt,
-} from '../utils/lookAndFeelAnnouncement';
+} from "../utils/lookAndFeelAnnouncement";
 
 export interface PlanLookDialog {
   /** Which dialog this page load shows: the first-run chooser, the one-time "moved to Clean" notice, or none. Read once per page load. */
@@ -31,22 +31,22 @@ export function usePlanLookDialog(gridEnabled: boolean): PlanLookDialog {
   const [open, setOpen] = useState(prompt !== null);
 
   const adopt = useCallback((grid: boolean) => {
-    configStore.seed('gridEnabled', grid);
+    configStore.seed("gridEnabled", grid);
     setOpen(false);
   }, []);
 
   useEffect(() => {
     if (!open) return;
     const check = () => {
-      if (document.visibilityState !== 'visible') return;
+      if (document.visibilityState !== "visible") return;
       const grid = planLookAnsweredElsewhere();
       if (grid !== null) adopt(grid);
     };
-    document.addEventListener('visibilitychange', check);
-    window.addEventListener('focus', check);
+    document.addEventListener("visibilitychange", check);
+    window.addEventListener("focus", check);
     return () => {
-      document.removeEventListener('visibilitychange', check);
-      window.removeEventListener('focus', check);
+      document.removeEventListener("visibilitychange", check);
+      window.removeEventListener("focus", check);
     };
   }, [open, adopt]);
 
@@ -58,7 +58,7 @@ export function usePlanLookDialog(gridEnabled: boolean): PlanLookDialog {
     }
     // Persist even when the user accepts the displayed default without first
     // clicking its already-selected card, then record the explicit decision.
-    configStore.set('gridEnabled', gridEnabled);
+    configStore.set("gridEnabled", gridEnabled);
     markLookAndFeelChoiceResolved();
     setOpen(false);
   }, [gridEnabled, adopt]);

@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import type { SelectionAction } from '../utils/selectionActions';
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import type { SelectionAction } from "../utils/selectionActions";
 
 /**
  * The host-actions dropdown: the same context-menu shape `QuickLabelDropdown`
@@ -49,7 +49,7 @@ export const SelectionActionsDropdown: React.FC<{
         onClick={() => onSelect(action)}
         onMouseEnter={() => onHover(index)}
         className={`group w-full flex items-center gap-2 px-2 py-[5px] text-left transition-colors ${
-          activeIndex === index ? 'bg-muted' : 'hover:bg-muted/60 active:bg-muted'
+          activeIndex === index ? "bg-muted" : "hover:bg-muted/60 active:bg-muted"
         }`}
       >
         {action.icon ? (
@@ -80,41 +80,45 @@ export const FloatingSelectionActionsPicker: React.FC<{
   onSelect: (action: SelectionAction) => void;
   onDismiss: () => void;
 }> = ({ anchorEl, actions, onSelect, onDismiss }) => {
-  const [position, setPosition] = useState<{ top: number; left: number; flipAbove: boolean } | null>(null);
+  const [position, setPosition] = useState<{
+    top: number;
+    left: number;
+    flipAbove: boolean;
+  } | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const update = () => setPosition(computePosition(anchorEl));
     update();
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
     };
   }, [anchorEl]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.isComposing) return;
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.preventDefault();
         onDismiss();
         return;
       }
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
         setActiveIndex((prev) => {
           if (actions.length === 0) return null;
-          if (prev === null) return e.key === 'ArrowDown' ? 0 : actions.length - 1;
-          return e.key === 'ArrowDown'
+          if (prev === null) return e.key === "ArrowDown" ? 0 : actions.length - 1;
+          return e.key === "ArrowDown"
             ? (prev + 1) % actions.length
             : (prev - 1 + actions.length) % actions.length;
         });
         return;
       }
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         // Nothing preselected: Enter before the first arrow is not aimed here.
         if (activeIndex === null) return;
         e.preventDefault();
@@ -122,8 +126,8 @@ export const FloatingSelectionActionsPicker: React.FC<{
         if (action) onSelect(action);
       }
     };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [actions, activeIndex, onDismiss, onSelect]);
 
   // Click outside dismisses. Deferred capture-phase registration, so the click
@@ -133,11 +137,11 @@ export const FloatingSelectionActionsPicker: React.FC<{
       if (ref.current && !ref.current.contains(e.target as Node)) onDismiss();
     };
     const timer = setTimeout(() => {
-      document.addEventListener('pointerdown', handlePointerDown, true);
+      document.addEventListener("pointerdown", handlePointerDown, true);
     }, 0);
     return () => {
       clearTimeout(timer);
-      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
     };
   }, [onDismiss]);
 
@@ -155,7 +159,7 @@ export const FloatingSelectionActionsPicker: React.FC<{
         top: position.top,
         left: position.left,
         width: PICKER_WIDTH,
-        ...(position.flipAbove ? { transform: 'translateY(-100%)' } : {}),
+        ...(position.flipAbove ? { transform: "translateY(-100%)" } : {}),
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >

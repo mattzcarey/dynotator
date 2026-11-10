@@ -10,7 +10,7 @@
  * inferred purely from the open connection.
  */
 
-import { ANNOTATE_CLIENT_LEASE_STREAM_PATH } from '@dynotator/shared/annotate-client-lease';
+import { ANNOTATE_CLIENT_LEASE_STREAM_PATH } from "@dynotator/shared/annotate-client-lease";
 
 export { ANNOTATE_CLIENT_LEASE_STREAM_PATH };
 

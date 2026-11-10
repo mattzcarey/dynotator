@@ -4,10 +4,10 @@
  * so it needs no frame. Code shows the source in its place.
  */
 
-import { Code } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import type { Block } from '../../types';
-import { CodeBlock } from '../blocks/CodeBlock';
+import { Code } from "lucide-react";
+import { useMemo, useState } from "react";
+import type { Block } from "../../types";
+import { CodeBlock } from "../blocks/CodeBlock";
 
 /** Larger than this, the drawing stays code. */
 const SVG_MAX_CHARS = 512 * 1024;
@@ -15,7 +15,10 @@ const SVG_MAX_CHARS = 512 * 1024;
 export function SvgFenceBlock({ block }: { block: Block }) {
   const [showCode, setShowCode] = useState(false);
   const [broken, setBroken] = useState(false);
-  const src = useMemo(() => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(block.content)}`, [block.content]);
+  const src = useMemo(
+    () => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(block.content)}`,
+    [block.content],
+  );
   const drawable = block.content.length <= SVG_MAX_CHARS && /<svg[\s>]/i.test(block.content);
   if (!drawable) return <CodeBlock block={block} isHovered={false} />;
   return (
@@ -34,7 +37,7 @@ export function SvgFenceBlock({ block }: { block: Block }) {
             type="button"
             data-svg-fence-code=""
             aria-pressed={showCode}
-            className={`rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground ${showCode ? 'bg-muted text-foreground' : ''}`}
+            className={`rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground ${showCode ? "bg-muted text-foreground" : ""}`}
             onClick={() => setShowCode((value) => !value)}
           >
             Code

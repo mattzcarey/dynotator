@@ -6,13 +6,13 @@
  * random port, and localStorage is scoped by origin including port.
  */
 
-import { storage } from './storage';
-import { AGENT_CONFIG, getAgentAIProviderTypes, type Origin } from '@dynotator/core/agents';
-import { resolveModelChoice, type CatalogModel } from '@dynotator/core/model-catalog';
+import { storage } from "./storage";
+import { AGENT_CONFIG, getAgentAIProviderTypes, type Origin } from "@dynotator/core/agents";
+import { resolveModelChoice, type CatalogModel } from "@dynotator/core/model-catalog";
 
-const PROVIDER_KEY = 'plannotator-ai-provider';
-const MODELS_KEY = 'plannotator-ai-models';
-const PROVIDER_BY_ORIGIN_KEY = 'plannotator-ai-provider-by-origin';
+const PROVIDER_KEY = "plannotator-ai-provider";
+const MODELS_KEY = "plannotator-ai-models";
+const PROVIDER_BY_ORIGIN_KEY = "plannotator-ai-provider-by-origin";
 
 /** A provider-reported model — the shared catalog shape. */
 export type AIProviderModel = CatalogModel;
@@ -22,7 +22,7 @@ export interface AIProviderOption {
   name: string;
   models?: AIProviderModel[];
   /** Where `models` came from, when the server says (`/api/ai/capabilities`). */
-  modelsSource?: 'fallback' | 'discovered';
+  modelsSource?: "fallback" | "discovered";
   /** The installed CLI's version, when the server reports it. */
   toolVersion?: string;
   /** Display label overriding the name lookup (e.g. "Ask this session · Pi"). */
@@ -32,31 +32,35 @@ export interface AIProviderOption {
 }
 
 /** "Ask this session": Ask AI answered by the agent session that opened Plannotator. */
-export const SESSION_BRIDGE_PROVIDER_NAME = 'session-bridge';
+export const SESSION_BRIDGE_PROVIDER_NAME = "session-bridge";
 
 export interface SessionBridgeInfo {
   host: string;
-  status: 'ready' | 'busy' | 'blocked' | 'gone';
+  status: "ready" | "busy" | "blocked" | "gone";
   modes: { turn: boolean; transient: boolean };
   /** `false` when the host never interrupts the session (Stop only stops listening). Absent = it can. */
   interruptible?: boolean;
 }
 
 /** Whether any listed "Ask this session" provider says it cannot interrupt its session. */
-export function hasNonInterruptibleSession(providers: readonly { sessionBridge?: SessionBridgeInfo }[]): boolean {
+export function hasNonInterruptibleSession(
+  providers: readonly { sessionBridge?: SessionBridgeInfo }[],
+): boolean {
   return providers.some((provider) => provider.sessionBridge?.interruptible === false);
 }
 
 /** Error codes "Ask this session" answers with that the panel turns into actions. */
 export const SESSION_ASK_ERROR_CODES = {
-  agentBusy: 'agent_busy',
-  blocked: 'session_blocked',
-  gone: 'session_gone',
+  agentBusy: "agent_busy",
+  blocked: "session_blocked",
+  gone: "session_gone",
   /** The person typed into the session while it answered: a note under the partial answer, not an error. */
-  takenOver: 'session_taken_over',
+  takenOver: "session_taken_over",
 } as const;
 
-export function isSessionBridgeProvider(provider: Pick<AIProviderOption, 'name' | 'sessionBridge'> | null | undefined): boolean {
+export function isSessionBridgeProvider(
+  provider: Pick<AIProviderOption, "name" | "sessionBridge"> | null | undefined,
+): boolean {
   return !!provider && (provider.name === SESSION_BRIDGE_PROVIDER_NAME || !!provider.sessionBridge);
 }
 
@@ -104,9 +108,9 @@ export function getAIProviderSettings(): AIProviderSettings {
     const raw = storage.getItem(PROVIDER_BY_ORIGIN_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === "object") {
         for (const [origin, value] of Object.entries(parsed)) {
-          if (origin in AGENT_CONFIG && typeof value === 'string') {
+          if (origin in AGENT_CONFIG && typeof value === "string") {
             providerByOrigin[origin as Origin] = value;
           }
         }
@@ -163,7 +167,7 @@ export function findOriginAIProvider(
 ): AIProviderOption | null {
   const providerTypes = getAgentAIProviderTypes(origin);
   for (const providerType of providerTypes) {
-    const provider = providers.find(p => p.id === providerType || p.name === providerType);
+    const provider = providers.find((p) => p.id === providerType || p.name === providerType);
     if (provider) return provider;
   }
   return null;
@@ -175,7 +179,7 @@ export function resolveAIModelForProvider(
 ): string | null {
   if (!provider) return null;
   const models = provider.models ?? [];
-  const preferredModel = preferredModels[provider.id] ?? '';
+  const preferredModel = preferredModels[provider.id] ?? "";
   // Providers that report no models take the saved pick verbatim; otherwise
   // the shared resolver (same one the server and the launchers use).
   if (models.length === 0) return preferredModel || null;
@@ -193,7 +197,7 @@ export function resolveAIProviderSelection(options: {
   if (providers.length === 0) return { providerId: null, model: null };
 
   const byId = (id: string | null | undefined) =>
-    id ? providers.find(provider => provider.id === id) ?? null : null;
+    id ? (providers.find((provider) => provider.id === id) ?? null) : null;
 
   // "Ask this session" is the only choice when the server offers it, even when
   // the session is busy, blocked or gone: a saved pick never routes a question

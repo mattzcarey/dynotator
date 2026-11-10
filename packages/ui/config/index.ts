@@ -1,6 +1,6 @@
-export { configStore } from './configStore';
-export type { ServerSyncFn, SettingValue } from './configStore';
-export { useConfigValue } from './useConfig';
+export { configStore } from "./configStore";
+export type { ServerSyncFn, SettingValue } from "./configStore";
+export { useConfigValue } from "./useConfig";
 export {
   setReviewPanelView,
   setReviewDefaultDiffType,
@@ -12,4 +12,4 @@ export {
   markAutoViewedNoticeSeen,
   type ReviewDefaultDiffType,
   type VcsReviewSettingsDescriptor,
-} from './reviewView';
+} from "./reviewView";

@@ -65,12 +65,10 @@
  */
 
 /** Built-in plain-text extension pattern (no leading anchor, no trailing `$`). */
-const BUILTIN_TEXT_PATTERN =
-	String.raw`(?:\.(?:mdx?|txt|adoc|asciidoc|mmd|mermaid|dot|gv|ya?ml|jsonc?|json5|toml|ini|cfg|conf|properties|csv|tsv|log|xml)|\.env\.example)`;
+const BUILTIN_TEXT_PATTERN = String.raw`(?:\.(?:mdx?|txt|adoc|asciidoc|mmd|mermaid|dot|gv|ya?ml|jsonc?|json5|toml|ini|cfg|conf|properties|csv|tsv|log|xml)|\.env\.example)`;
 
 /** Built-in plain-text + raw-HTML extension pattern. */
-const BUILTIN_DOC_PATTERN =
-	String.raw`(?:\.(?:mdx?|txt|adoc|asciidoc|mmd|mermaid|dot|gv|html?|ya?ml|jsonc?|json5|toml|ini|cfg|conf|properties|csv|tsv|log|xml)|\.env\.example)`;
+const BUILTIN_DOC_PATTERN = String.raw`(?:\.(?:mdx?|txt|adoc|asciidoc|mmd|mermaid|dot|gv|html?|ya?ml|jsonc?|json5|toml|ini|cfg|conf|properties|csv|tsv|log|xml)|\.env\.example)`;
 
 /** Which diagram engine a diagram-source extension belongs to. */
 export type DiagramRenderKind = "mermaid" | "graphviz";
@@ -85,15 +83,15 @@ const GRAPHVIZ_FILE_RE = /\.(?:dot|gv)$/i;
  * /api/plan and /api/doc, and behind the editor's single-diagram document.
  */
 export function diagramRenderKindForPath(input: string): DiagramRenderKind | null {
-	const trimmed = input.trim();
-	if (MERMAID_FILE_RE.test(trimmed)) return "mermaid";
-	if (GRAPHVIZ_FILE_RE.test(trimmed)) return "graphviz";
-	return null;
+  const trimmed = input.trim();
+  if (MERMAID_FILE_RE.test(trimmed)) return "mermaid";
+  if (GRAPHVIZ_FILE_RE.test(trimmed)) return "graphviz";
+  return null;
 }
 
 /** True when `value` is one of the two diagram render kinds. */
 export function isDiagramRenderKind(value: unknown): value is DiagramRenderKind {
-	return value === "mermaid" || value === "graphviz";
+  return value === "mermaid" || value === "graphviz";
 }
 
 /**
@@ -107,13 +105,13 @@ export function isDiagramRenderKind(value: unknown): value is DiagramRenderKind 
  * messages, live apps) keep their existing rendering.
  */
 export function annotateDiagramRenderKind(options: {
-	filePath: string;
-	mode?: string;
-	renderHtml?: boolean;
-	sourceConverted?: boolean;
+  filePath: string;
+  mode?: string;
+  renderHtml?: boolean;
+  sourceConverted?: boolean;
 }): DiagramRenderKind | null {
-	const kind = annotateDocumentRenderKind(options);
-	return isDiagramRenderKind(kind) ? kind : null;
+  const kind = annotateDocumentRenderKind(options);
+  return isDiagramRenderKind(kind) ? kind : null;
 }
 
 /** A text source that does not render through the markdown parser. */
@@ -122,7 +120,8 @@ export type DocumentRenderKind = DiagramRenderKind | "asciidoc" | "code";
 const ASCIIDOC_FILE_RE = /\.(?:adoc|asciidoc)$/i;
 
 /** Config and data files shown as their own text: one code block, never markdown. */
-const CODE_DOCUMENT_RE = /(?:\.(?:ya?ml|jsonc?|json5|toml|ini|cfg|conf|properties|csv|tsv|log|xml)|\.env\.example)$/i;
+const CODE_DOCUMENT_RE =
+  /(?:\.(?:ya?ml|jsonc?|json5|toml|ini|cfg|conf|properties|csv|tsv|log|xml)|\.env\.example)$/i;
 
 /**
  * Shiki grammar per code-document extension. `.cfg` and `.conf` have none:
@@ -130,17 +129,17 @@ const CODE_DOCUMENT_RE = /(?:\.(?:ya?ml|jsonc?|json5|toml|ini|cfg|conf|propertie
  * and a fence is never highlighted by guessing (#1212).
  */
 const CODE_DOCUMENT_LANGUAGES: ReadonlyArray<readonly [RegExp, string]> = [
-	[/\.ya?ml$/i, "yaml"],
-	[/\.json$/i, "json"],
-	[/\.jsonc$/i, "jsonc"],
-	[/\.json5$/i, "json5"],
-	[/\.toml$/i, "toml"],
-	[/\.(?:ini|properties)$/i, "ini"],
-	[/\.xml$/i, "xml"],
-	[/\.csv$/i, "csv"],
-	[/\.tsv$/i, "tsv"],
-	[/\.log$/i, "log"],
-	[/\.env\.example$/i, "dotenv"],
+  [/\.ya?ml$/i, "yaml"],
+  [/\.json$/i, "json"],
+  [/\.jsonc$/i, "jsonc"],
+  [/\.json5$/i, "json5"],
+  [/\.toml$/i, "toml"],
+  [/\.(?:ini|properties)$/i, "ini"],
+  [/\.xml$/i, "xml"],
+  [/\.csv$/i, "csv"],
+  [/\.tsv$/i, "tsv"],
+  [/\.log$/i, "log"],
+  [/\.env\.example$/i, "dotenv"],
 ];
 
 /**
@@ -148,9 +147,9 @@ const CODE_DOCUMENT_LANGUAGES: ReadonlyArray<readonly [RegExp, string]> = [
  * for a file shown as plain monospace text.
  */
 export function codeDocumentLanguage(path: string | null | undefined): string | undefined {
-	if (!path) return undefined;
-	const trimmed = path.trim();
-	return CODE_DOCUMENT_LANGUAGES.find(([re]) => re.test(trimmed))?.[1];
+  if (!path) return undefined;
+  const trimmed = path.trim();
+  return CODE_DOCUMENT_LANGUAGES.find(([re]) => re.test(trimmed))?.[1];
 }
 
 /**
@@ -160,16 +159,16 @@ export function codeDocumentLanguage(path: string | null | undefined): string | 
  * a text source.
  */
 export function documentRenderKindForPath(input: string): DocumentRenderKind | null {
-	const diagram = diagramRenderKindForPath(input);
-	if (diagram !== null) return diagram;
-	const trimmed = input.trim();
-	if (ASCIIDOC_FILE_RE.test(trimmed)) return "asciidoc";
-	return CODE_DOCUMENT_RE.test(trimmed) ? "code" : null;
+  const diagram = diagramRenderKindForPath(input);
+  if (diagram !== null) return diagram;
+  const trimmed = input.trim();
+  if (ASCIIDOC_FILE_RE.test(trimmed)) return "asciidoc";
+  return CODE_DOCUMENT_RE.test(trimmed) ? "code" : null;
 }
 
 /** True when `value` is a diagram kind, `"asciidoc"` or `"code"`. */
 export function isDocumentRenderKind(value: unknown): value is DocumentRenderKind {
-	return isDiagramRenderKind(value) || value === "asciidoc" || value === "code";
+  return isDiagramRenderKind(value) || value === "asciidoc" || value === "code";
 }
 
 /**
@@ -177,16 +176,16 @@ export function isDocumentRenderKind(value: unknown): value is DocumentRenderKin
  * text kind: the render kind for an annotate session's root document, or null.
  */
 export function annotateDocumentRenderKind(options: {
-	filePath: string;
-	mode?: string;
-	renderHtml?: boolean;
-	sourceConverted?: boolean;
+  filePath: string;
+  mode?: string;
+  renderHtml?: boolean;
+  sourceConverted?: boolean;
 }): DocumentRenderKind | null {
-	if (options.renderHtml === true) return null;
-	if (options.sourceConverted === true) return null;
-	if ((options.mode ?? "annotate") !== "annotate") return null;
-	if (/^https?:\/\//i.test(options.filePath.trim())) return null;
-	return documentRenderKindForPath(options.filePath);
+  if (options.renderHtml === true) return null;
+  if (options.sourceConverted === true) return null;
+  if ((options.mode ?? "annotate") !== "annotate") return null;
+  if (/^https?:\/\//i.test(options.filePath.trim())) return null;
+  return documentRenderKindForPath(options.filePath);
 }
 
 /** Plain-text file extensions annotate accepts as markdown-rendered text (no HTML). */
@@ -210,7 +209,7 @@ export const DENIED_MARKDOWN_EXTENSIONS = [".env"] as const;
  * the built-in list, where it is a deliberate exception.)
  */
 function isDeniedMarkdownExtension(ext: string): boolean {
-	return ext.endsWith(".env") || ext.startsWith(".env.");
+  return ext.endsWith(".env") || ext.startsWith(".env.");
 }
 
 /** Shape a configured extension must have once trimmed and lowercased. */
@@ -223,7 +222,7 @@ const MAX_CONFIGURABLE_EXTENSION_LENGTH = 24;
 const MAX_CONFIGURABLE_EXTENSIONS = 32;
 
 function escapeRegExp(input: string): string {
-	return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -242,60 +241,58 @@ function escapeRegExp(input: string): string {
  *  - is not already covered by a built-in extension.
  */
 export function normalizeMarkdownExtensions(value: unknown): string[] {
-	if (!Array.isArray(value)) return [];
-	const result: string[] = [];
-	for (const entry of value) {
-		if (result.length >= MAX_CONFIGURABLE_EXTENSIONS) break;
-		if (typeof entry !== "string") continue;
-		const ext = entry.trim().toLowerCase();
-		if (ext.length > MAX_CONFIGURABLE_EXTENSION_LENGTH) continue;
-		if (!CONFIGURABLE_EXTENSION_RE.test(ext)) continue;
-		if (isDeniedMarkdownExtension(ext)) continue;
-		// Dedupe against the built-ins: `sample` is a stand-in filename so the
-		// anchored built-in patterns match the extension the way they would on
-		// a real path.
-		if (ANNOTATABLE_DOC_REGEX.test(`sample${ext}`)) continue;
-		if (result.includes(ext)) continue;
-		result.push(ext);
-	}
-	return result;
+  if (!Array.isArray(value)) return [];
+  const result: string[] = [];
+  for (const entry of value) {
+    if (result.length >= MAX_CONFIGURABLE_EXTENSIONS) break;
+    if (typeof entry !== "string") continue;
+    const ext = entry.trim().toLowerCase();
+    if (ext.length > MAX_CONFIGURABLE_EXTENSION_LENGTH) continue;
+    if (!CONFIGURABLE_EXTENSION_RE.test(ext)) continue;
+    if (isDeniedMarkdownExtension(ext)) continue;
+    // Dedupe against the built-ins: `sample` is a stand-in filename so the
+    // anchored built-in patterns match the extension the way they would on
+    // a real path.
+    if (ANNOTATABLE_DOC_REGEX.test(`sample${ext}`)) continue;
+    if (result.includes(ext)) continue;
+    result.push(ext);
+  }
+  return result;
 }
 
 const regexCache = new Map<string, RegExp>();
 
 function buildRegex(basePattern: string, extra: readonly string[]): RegExp {
-	if (extra.length === 0) {
-		return basePattern === BUILTIN_TEXT_PATTERN
-			? ANNOTATABLE_TEXT_REGEX
-			: ANNOTATABLE_DOC_REGEX;
-	}
-	const key = `${basePattern}::${extra.join(",")}`;
-	const cached = regexCache.get(key);
-	if (cached) return cached;
-	const alternation = [basePattern, ...extra.map(escapeRegExp)].join("|");
-	const regex = new RegExp(`(?:${alternation})$`, "i");
-	regexCache.set(key, regex);
-	return regex;
+  if (extra.length === 0) {
+    return basePattern === BUILTIN_TEXT_PATTERN ? ANNOTATABLE_TEXT_REGEX : ANNOTATABLE_DOC_REGEX;
+  }
+  const key = `${basePattern}::${extra.join(",")}`;
+  const cached = regexCache.get(key);
+  if (cached) return cached;
+  const alternation = [basePattern, ...extra.map(escapeRegExp)].join("|");
+  const regex = new RegExp(`(?:${alternation})$`, "i");
+  regexCache.set(key, regex);
+  return regex;
 }
 
 /** Plain-text (markdown-rendered) extension matcher including configured extras. */
 export function buildAnnotatableTextRegex(extra: readonly string[] = []): RegExp {
-	return buildRegex(BUILTIN_TEXT_PATTERN, extra);
+  return buildRegex(BUILTIN_TEXT_PATTERN, extra);
 }
 
 /** Plain-text + raw-HTML extension matcher including configured extras. */
 export function buildAnnotatableDocRegex(extra: readonly string[] = []): RegExp {
-	return buildRegex(BUILTIN_DOC_PATTERN, extra);
+  return buildRegex(BUILTIN_DOC_PATTERN, extra);
 }
 
 /** True when annotate can open `input` as a plain-text (markdown-rendered) document. */
 export function isAnnotatableTextPath(input: string, extra: readonly string[] = []): boolean {
-	return buildAnnotatableTextRegex(extra).test(input.trim());
+  return buildAnnotatableTextRegex(extra).test(input.trim());
 }
 
 /** True when annotate can open `input` at all (plain text or raw HTML). */
 export function isAnnotatableDocPath(input: string, extra: readonly string[] = []): boolean {
-	return buildAnnotatableDocRegex(extra).test(input.trim());
+  return buildAnnotatableDocRegex(extra).test(input.trim());
 }
 
 /**
@@ -305,15 +302,15 @@ export function isAnnotatableDocPath(input: string, extra: readonly string[] = [
  * attachment rule and the HTML asset route's hidden-path refusal.
  */
 export function isDotenvFileName(name: string): boolean {
-	if (/(^|\.)env$/i.test(name) || /^\.envrc$/i.test(name)) return true;
-	return /^\.env\./i.test(name) && !isAnnotatableDocPath(name);
+  if (/(^|\.)env$/i.test(name) || /^\.envrc$/i.test(name)) return true;
+  return /^\.env\./i.test(name) && !isAnnotatableDocPath(name);
 }
 
 /** True when `input` is annotatable only because of a configured extra extension. */
 export function isExtraMarkdownPath(input: string, extra: readonly string[] = []): boolean {
-	if (extra.length === 0) return false;
-	const trimmed = input.trim().toLowerCase();
-	return extra.some((ext) => trimmed.endsWith(ext));
+  if (extra.length === 0) return false;
+  const trimmed = input.trim().toLowerCase();
+  return extra.some((ext) => trimmed.endsWith(ext));
 }
 
 /**
@@ -321,13 +318,13 @@ export function isExtraMarkdownPath(input: string, extra: readonly string[] = []
  * keep in sync with the patterns above.
  */
 export const ANNOTATABLE_EXTENSIONS_HINT =
-	".md, .mdx, .txt, .adoc, .asciidoc, .html, .htm, .mmd, .mermaid, .dot, .gv, .yaml, .yml, .json, .jsonc, .json5, .toml, .ini, .cfg, .conf, .properties, .csv, .tsv, .log, .xml, .env.example";
+  ".md, .mdx, .txt, .adoc, .asciidoc, .html, .htm, .mmd, .mermaid, .dot, .gv, .yaml, .yml, .json, .jsonc, .json5, .toml, .ini, .cfg, .conf, .properties, .csv, .tsv, .log, .xml, .env.example";
 
 /** The accepted-set hint with any configured extra extensions appended. */
 export function buildAnnotatableExtensionsHint(extra: readonly string[] = []): string {
-	return extra.length === 0
-		? ANNOTATABLE_EXTENSIONS_HINT
-		: `${ANNOTATABLE_EXTENSIONS_HINT}, ${extra.join(", ")}`;
+  return extra.length === 0
+    ? ANNOTATABLE_EXTENSIONS_HINT
+    : `${ANNOTATABLE_EXTENSIONS_HINT}, ${extra.join(", ")}`;
 }
 
 /**
@@ -358,13 +355,13 @@ export const MAX_ANNOTATABLE_FILE_BYTES = 2 * 1024 * 1024;
  * content, so they are checked explicitly before the markdown branch.
  */
 export function shouldStripFrontmatter(
-	path: string | null | undefined,
-	extra: readonly string[] = [],
+  path: string | null | undefined,
+  extra: readonly string[] = [],
 ): boolean {
-	if (!path) return true;
-	const trimmed = path.trim();
-	if (diagramRenderKindForPath(trimmed) !== null) return false;
-	if (/\.mdx?$/i.test(trimmed)) return true;
-	if (isExtraMarkdownPath(trimmed, extra)) return true;
-	return !isAnnotatableTextPath(trimmed, extra);
+  if (!path) return true;
+  const trimmed = path.trim();
+  if (diagramRenderKindForPath(trimmed) !== null) return false;
+  if (/\.mdx?$/i.test(trimmed)) return true;
+  if (isExtraMarkdownPath(trimmed, extra)) return true;
+  return !isAnnotatableTextPath(trimmed, extra);
 }

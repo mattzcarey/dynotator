@@ -41,7 +41,7 @@ export function isImeCompositionKey(event: CommentSubmitKeyEvent): boolean {
 
 /** Whether this keydown saves the comment being written. */
 export function isCommentSubmitKey(event: CommentSubmitKeyEvent, enterSaves: boolean): boolean {
-  if (event.key !== 'Enter') return false;
+  if (event.key !== "Enter") return false;
   if (isImeCompositionKey(event)) return false;
   if (event.metaKey || event.ctrlKey) return true;
   return enterSaves && !event.shiftKey && !event.altKey;

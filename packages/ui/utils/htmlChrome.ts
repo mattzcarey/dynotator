@@ -1,5 +1,5 @@
-import { storage } from './storage';
-import { isStalePreference } from './preferenceTtl';
+import { storage } from "./storage";
+import { isStalePreference } from "./preferenceTtl";
 
 /**
  * Cross-session sidebar/panel state for raw-HTML annotate sessions.
@@ -28,7 +28,7 @@ import { isStalePreference } from './preferenceTtl';
  * sidebar it actually owns (see {@link mergeHtmlChromeState}).
  */
 
-const STORAGE_KEY = 'plannotator-html-chrome';
+const STORAGE_KEY = "plannotator-html-chrome";
 
 export interface HtmlChromeState {
   /** Whether the left sidebar was open when the user last left. */
@@ -57,21 +57,24 @@ export function resolveHtmlChromeState(
   if (!raw) return DEFAULT_HTML_CHROME_STATE;
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null) {
+    if (typeof parsed !== "object" || parsed === null) {
       return DEFAULT_HTML_CHROME_STATE;
     }
     const record = parsed as Record<string, unknown>;
     if (isStalePreference(record.savedAt, now)) return DEFAULT_HTML_CHROME_STATE;
     return {
-      sidebarOpen: typeof record.sidebarOpen === 'boolean'
-        ? record.sidebarOpen
-        : DEFAULT_HTML_CHROME_STATE.sidebarOpen,
-      panelOpen: typeof record.panelOpen === 'boolean'
-        ? record.panelOpen
-        : DEFAULT_HTML_CHROME_STATE.panelOpen,
-      toolsHidden: typeof record.toolsHidden === 'boolean'
-        ? record.toolsHidden
-        : DEFAULT_HTML_CHROME_STATE.toolsHidden,
+      sidebarOpen:
+        typeof record.sidebarOpen === "boolean"
+          ? record.sidebarOpen
+          : DEFAULT_HTML_CHROME_STATE.sidebarOpen,
+      panelOpen:
+        typeof record.panelOpen === "boolean"
+          ? record.panelOpen
+          : DEFAULT_HTML_CHROME_STATE.panelOpen,
+      toolsHidden:
+        typeof record.toolsHidden === "boolean"
+          ? record.toolsHidden
+          : DEFAULT_HTML_CHROME_STATE.toolsHidden,
     };
   } catch {
     return DEFAULT_HTML_CHROME_STATE;

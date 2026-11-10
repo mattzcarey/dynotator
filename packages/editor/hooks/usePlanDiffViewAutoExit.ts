@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 /**
  * Exit the plan-diff view when the active document loses its diff baseline —

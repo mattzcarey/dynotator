@@ -1,23 +1,35 @@
-import { pathIsInsideDir } from '@dynotator/shared/browser-paths';
+import { pathIsInsideDir } from "@dynotator/shared/browser-paths";
 import {
   canApplyEditableDocumentDiskSnapshot,
   getEditableDocumentKnownDiskHash,
   type DiskSnapshotReconcileResult,
   type EditableDocumentRecord,
   type EnabledSourceSaveCapability,
-} from './editableDocuments';
-import type { SourceDocumentSnapshotResult } from './sourceDocumentClient';
+} from "./editableDocuments";
+import type { SourceDocumentSnapshotResult } from "./sourceDocumentClient";
 
-export type OpenSourceDocumentRecord = EditableDocumentRecord & { sourceSave: EnabledSourceSaveCapability };
+export type OpenSourceDocumentRecord = EditableDocumentRecord & {
+  sourceSave: EnabledSourceSaveCapability;
+};
 
 export type SourceDocumentReconcileEvent =
   | {
-      type: 'file-missing';
-      result: { record: EditableDocumentRecord; clearedSavedChange: boolean; alreadyMissing: boolean };
+      type: "file-missing";
+      result: {
+        record: EditableDocumentRecord;
+        clearedSavedChange: boolean;
+        alreadyMissing: boolean;
+      };
     }
-  | { type: 'clean-updated'; result: Extract<DiskSnapshotReconcileResult, { type: 'clean-updated' }> }
-  | { type: 'status-updated'; result: Extract<DiskSnapshotReconcileResult, { type: 'status-updated' }> }
-  | { type: 'conflict'; result: Extract<DiskSnapshotReconcileResult, { type: 'conflict' }> };
+  | {
+      type: "clean-updated";
+      result: Extract<DiskSnapshotReconcileResult, { type: "clean-updated" }>;
+    }
+  | {
+      type: "status-updated";
+      result: Extract<DiskSnapshotReconcileResult, { type: "status-updated" }>;
+    }
+  | { type: "conflict"; result: Extract<DiskSnapshotReconcileResult, { type: "conflict" }> };
 
 interface ReconcileSourceDocumentsOptions {
   changedDir?: string;
@@ -25,7 +37,13 @@ interface ReconcileSourceDocumentsOptions {
   sequenceByKey: Map<string, number>;
   getDocument: (key: string) => EditableDocumentRecord | null;
   fetchSnapshot: (path: string) => Promise<SourceDocumentSnapshotResult>;
-  markFileMissing: (key: string) => { record: EditableDocumentRecord; clearedSavedChange: boolean; alreadyMissing: boolean } | null;
+  markFileMissing: (
+    key: string,
+  ) => {
+    record: EditableDocumentRecord;
+    clearedSavedChange: boolean;
+    alreadyMissing: boolean;
+  } | null;
   reconcileDiskSnapshot: (input: {
     key: string;
     text: string;
@@ -44,12 +62,14 @@ export async function reconcileSourceDocuments({
   reconcileDiskSnapshot,
   onEvent,
 }: ReconcileSourceDocumentsOptions): Promise<boolean> {
-  const docs = documents.filter((doc) => !changedDir || pathIsInsideDir(doc.sourceSave.path, changedDir));
+  const docs = documents.filter(
+    (doc) => !changedDir || pathIsInsideDir(doc.sourceSave.path, changedDir),
+  );
   let changed = false;
 
   for (const doc of docs) {
     const startRecord = getDocument(doc.key);
-    if (startRecord?.saveStatus === 'saving') continue;
+    if (startRecord?.saveStatus === "saving") continue;
     const expectedDiskHash = getEditableDocumentKnownDiskHash(startRecord);
     const seq = (sequenceByKey.get(doc.key) ?? 0) + 1;
     sequenceByKey.set(doc.key, seq);
@@ -58,15 +78,15 @@ export async function reconcileSourceDocuments({
     const currentRecord = getDocument(doc.key);
     if (!canApplyEditableDocumentDiskSnapshot(currentRecord, expectedDiskHash)) continue;
 
-    if (snapshotResult.status === 'missing') {
+    if (snapshotResult.status === "missing") {
       const result = markFileMissing(doc.key);
       if (!result) continue;
       if (!result.alreadyMissing || result.clearedSavedChange) changed = true;
-      onEvent({ type: 'file-missing', result });
+      onEvent({ type: "file-missing", result });
       continue;
     }
 
-    if (snapshotResult.status === 'unavailable') continue;
+    if (snapshotResult.status === "unavailable") continue;
 
     const { snapshot } = snapshotResult;
     const result = reconcileDiskSnapshot({
@@ -75,15 +95,15 @@ export async function reconcileSourceDocuments({
       sourceSave: snapshot.sourceSave,
     });
 
-    if (result.type === 'clean-updated') {
+    if (result.type === "clean-updated") {
       changed = true;
-      onEvent({ type: 'clean-updated', result });
-    } else if (result.type === 'status-updated') {
+      onEvent({ type: "clean-updated", result });
+    } else if (result.type === "status-updated") {
       changed = true;
-      onEvent({ type: 'status-updated', result });
-    } else if (result.type === 'conflict') {
+      onEvent({ type: "status-updated", result });
+    } else if (result.type === "conflict") {
       changed = true;
-      onEvent({ type: 'conflict', result });
+      onEvent({ type: "conflict", result });
     }
   }
 

@@ -1,5 +1,5 @@
 export function decodeAnchorHash(hash: string): string | null {
-  const raw = hash.replace(/^#/, '').split('?')[0]?.trim();
+  const raw = hash.replace(/^#/, "").split("?")[0]?.trim();
   if (!raw) return null;
 
   try {

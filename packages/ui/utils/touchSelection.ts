@@ -7,7 +7,7 @@
  */
 
 /** A screen whose main pointer is a finger. */
-export const TOUCH_PRIMARY_QUERY = '(pointer: coarse)';
+export const TOUCH_PRIMARY_QUERY = "(pointer: coarse)";
 
 /** How long a selection rests before it is taken. */
 export const TOUCH_SELECTION_SETTLE_MS = 400;

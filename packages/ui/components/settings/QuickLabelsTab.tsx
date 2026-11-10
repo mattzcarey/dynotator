@@ -1,5 +1,5 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
-import { isMac, isWindows, altKey } from '../../utils/platform';
+import React, { useLayoutEffect, useRef, useState } from "react";
+import { isMac, isWindows, altKey } from "../../utils/platform";
 import {
   type QuickLabel,
   DEFAULT_QUICK_LABELS,
@@ -11,7 +11,7 @@ import {
   quickLabelShortcutDigit,
   resetQuickLabels,
   saveQuickLabels,
-} from '../../utils/quickLabels';
+} from "../../utils/quickLabels";
 
 /** Most labels the tab lets a person keep (only the first ten get a key). */
 const MAX_QUICK_LABELS = 12;
@@ -34,19 +34,30 @@ const nextRowKey = () => `quick-label-row-${++rowKeySeq}`;
 const toRows = (labels: readonly QuickLabel[]): QuickLabelRow[] =>
   labels.map((label) => ({ key: nextRowKey(), label }));
 
-const shortcutHint = (digit: string) => `${altKey}${isMac ? '' : '+'}${digit}`;
-const shortcutWords = (digit: string) => `${isMac ? 'Option' : 'Alt'}+${digit}`;
-const labelName = (label: QuickLabel) => label.text.trim() || 'label';
+const shortcutHint = (digit: string) => `${altKey}${isMac ? "" : "+"}${digit}`;
+const shortcutWords = (digit: string) => `${isMac ? "Option" : "Alt"}+${digit}`;
+const labelName = (label: QuickLabel) => label.text.trim() || "label";
 
 const EMOJI_HINT = isMac
-  ? 'Enter one emoji. Control-Command-Space opens the emoji picker.'
+  ? "Enter one emoji. Control-Command-Space opens the emoji picker."
   : isWindows
-    ? 'Enter one emoji. Windows+period opens the emoji picker.'
-    : 'Enter one emoji.';
+    ? "Enter one emoji. Windows+period opens the emoji picker."
+    : "Enter one emoji.";
 
 const ChevronIcon: React.FC<{ up: boolean }> = ({ up }) => (
-  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d={up ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+  <svg
+    className="w-3 h-3"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    aria-hidden="true"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d={up ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}
+    />
   </svg>
 );
 
@@ -54,12 +65,12 @@ const ChevronIcon: React.FC<{ up: boolean }> = ({ up }) => (
 export const QuickLabelsTab: React.FC = () => {
   const [rows, setRows] = useState<QuickLabelRow[]>(() => toRows(getQuickLabels()));
   const [editingTipKey, setEditingTipKey] = useState<string | null>(null);
-  const [editingTipValue, setEditingTipValue] = useState('');
+  const [editingTipValue, setEditingTipValue] = useState("");
   /** Emoji fields whose current text is not (yet) one emoji, by row key. */
   const [emojiDrafts, setEmojiDrafts] = useState<Record<string, string>>({});
-  const [announcement, setAnnouncement] = useState('');
+  const [announcement, setAnnouncement] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
-  const pendingFocus = useRef<{ key: string; target: 'up' | 'down' | 'text' } | null>(null);
+  const pendingFocus = useRef<{ key: string; target: "up" | "down" | "text" } | null>(null);
 
   const commit = (next: QuickLabelRow[]) => {
     setRows(next);
@@ -67,7 +78,9 @@ export const QuickLabelsTab: React.FC = () => {
   };
 
   const updateLabel = (key: string, patch: Partial<QuickLabel>) => {
-    commit(rows.map((row) => (row.key === key ? { ...row, label: { ...row.label, ...patch } } : row)));
+    commit(
+      rows.map((row) => (row.key === key ? { ...row, label: { ...row.label, ...patch } } : row)),
+    );
   };
 
   const setEmojiDraft = (key: string, value: string | null) => {
@@ -86,10 +99,10 @@ export const QuickLabelsTab: React.FC = () => {
     if (to < 0 || to >= rows.length) return;
     const row = rows[index];
     commit(moveQuickLabel(rows, index, to));
-    pendingFocus.current = { key: row.key, target: delta < 0 ? 'up' : 'down' };
+    pendingFocus.current = { key: row.key, target: delta < 0 ? "up" : "down" };
     const digit = quickLabelShortcutDigit(to);
     setAnnouncement(
-      `Moved ${labelName(row.label)} to position ${to + 1} of ${rows.length}, ${digit ? shortcutWords(digit) : 'no shortcut key'}.`,
+      `Moved ${labelName(row.label)} to position ${to + 1} of ${rows.length}, ${digit ? shortcutWords(digit) : "no shortcut key"}.`,
     );
   };
 
@@ -101,16 +114,20 @@ export const QuickLabelsTab: React.FC = () => {
     const pending = pendingFocus.current;
     if (!pending) return;
     pendingFocus.current = null;
-    const row = listRef.current?.querySelector<HTMLElement>(`[data-quick-label-row="${pending.key}"]`);
+    const row = listRef.current?.querySelector<HTMLElement>(
+      `[data-quick-label-row="${pending.key}"]`,
+    );
     if (!row) return;
-    if (pending.target === 'text') {
-      const input = row.querySelector<HTMLInputElement>('[data-quick-label-text]');
+    if (pending.target === "text") {
+      const input = row.querySelector<HTMLInputElement>("[data-quick-label-text]");
       input?.focus();
       input?.select();
       return;
     }
-    const other = pending.target === 'up' ? 'down' : 'up';
-    const wanted = row.querySelector<HTMLButtonElement>(`[data-quick-label-move="${pending.target}"]`);
+    const other = pending.target === "up" ? "down" : "up";
+    const wanted = row.querySelector<HTMLButtonElement>(
+      `[data-quick-label-move="${pending.target}"]`,
+    );
     const fallback = row.querySelector<HTMLButtonElement>(`[data-quick-label-move="${other}"]`);
     (wanted && !wanted.disabled ? wanted : fallback)?.focus();
   }, [rows]);
@@ -192,14 +209,14 @@ export const QuickLabelsTab: React.FC = () => {
                   }}
                   onBlur={() => setEmojiDraft(key, null)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Escape' && emojiInvalid) {
+                    if (e.key === "Escape" && emojiInvalid) {
                       e.preventDefault();
                       e.stopPropagation();
                       setEmojiDraft(key, null);
                     }
                   }}
                   className="w-8 py-1 bg-background/80 rounded text-sm text-center leading-none focus:outline-none focus:ring-1 focus:ring-primary/50 flex-shrink-0"
-                  style={emojiInvalid ? { boxShadow: '0 0 0 1px var(--destructive)' } : undefined}
+                  style={emojiInvalid ? { boxShadow: "0 0 0 1px var(--destructive)" } : undefined}
                 />
                 <input
                   type="text"
@@ -209,13 +226,16 @@ export const QuickLabelsTab: React.FC = () => {
                   onChange={(e) => {
                     updateLabel(key, {
                       text: e.target.value,
-                      id: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                      id: e.target.value
+                        .toLowerCase()
+                        .replace(/\s+/g, "-")
+                        .replace(/[^a-z0-9-]/g, ""),
                     });
                   }}
                   className="flex-1 min-w-0 px-2 py-1 bg-background/80 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
                   // The basis is what makes the controls wrap: a row that
                   // cannot give the text this much room moves them below.
-                  style={{ flexBasis: '8rem' }}
+                  style={{ flexBasis: "8rem" }}
                 />
                 <div className="flex items-center gap-2 ml-auto">
                   {/* Tip indicator button */}
@@ -226,18 +246,28 @@ export const QuickLabelsTab: React.FC = () => {
                         setEditingTipKey(null);
                       } else {
                         setEditingTipKey(key);
-                        setEditingTipValue(label.tip || '');
+                        setEditingTipValue(label.tip || "");
                       }
                     }}
                     className={`relative p-1 rounded transition-all flex-shrink-0 ${
                       hasTip
-                        ? 'bg-foreground/10 text-foreground/70 hover:text-foreground border border-foreground/15'
-                        : 'text-muted-foreground/30 hover:text-muted-foreground/60 border border-dashed border-muted-foreground/20 hover:border-muted-foreground/40'
+                        ? "bg-foreground/10 text-foreground/70 hover:text-foreground border border-foreground/15"
+                        : "text-muted-foreground/30 hover:text-muted-foreground/60 border border-dashed border-muted-foreground/20 hover:border-muted-foreground/40"
                     }`}
-                    title={hasTip ? `Tip: ${label.tip}` : 'Add AI instruction tip'}
+                    title={hasTip ? `Tip: ${label.tip}` : "Add AI instruction tip"}
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                      />
                     </svg>
                     {hasTip && (
                       <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground/50" />
@@ -249,8 +279,10 @@ export const QuickLabelsTab: React.FC = () => {
                     onChange={(e) => updateLabel(key, { color: e.target.value })}
                     className="px-1.5 py-1 bg-background/80 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-primary/50"
                   >
-                    {Object.keys(LABEL_COLOR_MAP).map(c => (
-                      <option key={c} value={c}>{c}</option>
+                    {Object.keys(LABEL_COLOR_MAP).map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
                   </select>
                   <span
@@ -258,7 +290,7 @@ export const QuickLabelsTab: React.FC = () => {
                     // Hidden below sm: touch devices that narrow rarely have an Alt key.
                     className="hidden sm:block text-[10px] text-muted-foreground/50 font-mono w-8 text-center flex-shrink-0"
                   >
-                    {digit ? shortcutHint(digit) : ''}
+                    {digit ? shortcutHint(digit) : ""}
                   </span>
                   {/* Reorder: position decides which Alt/⌥ digit applies the label. */}
                   <button
@@ -293,7 +325,13 @@ export const QuickLabelsTab: React.FC = () => {
                     className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
                     title="Remove label"
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -308,10 +346,20 @@ export const QuickLabelsTab: React.FC = () => {
               {isEditingTip && (
                 <div
                   className="flex items-center gap-1.5 px-2 pb-2 pt-0"
-                  style={{ animation: 'tip-slide-open 0.15s ease-out' }}
+                  style={{ animation: "tip-slide-open 0.15s ease-out" }}
                 >
-                  <svg className="w-3 h-3 text-muted-foreground/40 flex-shrink-0 ml-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  <svg
+                    className="w-3 h-3 text-muted-foreground/40 flex-shrink-0 ml-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
                   </svg>
                   <input
                     type="text"
@@ -320,8 +368,8 @@ export const QuickLabelsTab: React.FC = () => {
                     aria-label={`AI instruction tip for ${name}`}
                     onChange={(e) => setEditingTipValue(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveTip(key);
-                      if (e.key === 'Escape') {
+                      if (e.key === "Enter") saveTip(key);
+                      if (e.key === "Escape") {
                         e.preventDefault();
                         e.stopPropagation();
                         setEditingTipKey(null);
@@ -330,14 +378,23 @@ export const QuickLabelsTab: React.FC = () => {
                     placeholder="AI instruction tip..."
                     className="flex-1 px-2 py-1 bg-background/60 rounded text-[10px] text-muted-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
                     autoFocus
-                    onFocus={(e) => { e.target.setSelectionRange(0, 0); e.target.scrollLeft = 0; }}
+                    onFocus={(e) => {
+                      e.target.setSelectionRange(0, 0);
+                      e.target.scrollLeft = 0;
+                    }}
                   />
                   <button
                     onClick={() => saveTip(key)}
                     className="p-1 rounded text-muted-foreground/50 hover:text-green-500 hover:bg-green-500/10 transition-colors flex-shrink-0"
                     title="Save tip"
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </button>
@@ -347,7 +404,9 @@ export const QuickLabelsTab: React.FC = () => {
           );
         })}
       </div>
-      <div role="status" aria-live="polite" className="sr-only">{announcement}</div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
 
       {rows.length < MAX_QUICK_LABELS && (
         <button
@@ -356,13 +415,13 @@ export const QuickLabelsTab: React.FC = () => {
               key: nextRowKey(),
               label: {
                 id: `custom-${Date.now()}`,
-                emoji: '📌',
-                text: 'New label',
-                color: 'blue',
+                emoji: "📌",
+                text: "New label",
+                color: "blue",
               },
             };
             commit([...rows, row]);
-            pendingFocus.current = { key: row.key, target: 'text' };
+            pendingFocus.current = { key: row.key, target: "text" };
           }}
           className="w-full py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-lg hover:border-foreground/30 transition-colors"
         >
@@ -371,7 +430,9 @@ export const QuickLabelsTab: React.FC = () => {
       )}
 
       <div className="text-[10px] text-muted-foreground/70">
-        Use {shortcutHint('1')} through {shortcutHint('0')} when the annotation toolbar is visible to apply a label instantly. The order of the list decides the key; use the arrows to move a label, and click its emoji to change it.
+        Use {shortcutHint("1")} through {shortcutHint("0")} when the annotation toolbar is visible
+        to apply a label instantly. The order of the list decides the key; use the arrows to move a
+        label, and click its emoji to change it.
       </div>
     </>
   );

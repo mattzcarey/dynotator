@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * Obsidian icons.
@@ -13,7 +13,7 @@ interface IconProps {
   className?: string;
 }
 
-export const ObsidianIcon: React.FC<IconProps> = ({ className = 'w-8 h-8' }) => (
+export const ObsidianIcon: React.FC<IconProps> = ({ className = "w-8 h-8" }) => (
   <svg
     className={className}
     width="512"
@@ -181,13 +181,8 @@ export const ObsidianIcon: React.FC<IconProps> = ({ className = 'w-8 h-8' }) => 
   </svg>
 );
 
-export const ObsidianIconRaw: React.FC<IconProps> = ({ className = 'w-[14px] h-[16px]' }) => (
-  <svg
-    className={className}
-    viewBox="0 0 22 25"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
+export const ObsidianIconRaw: React.FC<IconProps> = ({ className = "w-[14px] h-[16px]" }) => (
+  <svg className={className} viewBox="0 0 22 25" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
       fill="#A88BFA"
       d="m6.91927 14.5955c.64053-.1907 1.67255-.4839 2.85923-.5565-.71191-1.7968-.88376-3.3691-.74554-4.76905.15962-1.61678.72977-2.9662 1.28554-4.11442.1186-.24501.2326-.47313.3419-.69198.1549-.30984.3004-.60109.4365-.8953.2266-.48978.3948-.92231.4798-1.32416.0836-.39515.0841-.74806-.0148-1.08657-.099-.338982-.3093-.703864-.7093-1.1038132-.5222-.1353116-1.1017-.0165173-1.53613.3742922l-5.15591 4.638241c-.28758.25871-.47636.60929-.53406.99179l-.44455 2.94723c.69903.6179 2.42435 2.41414 3.47374 4.90644.09364.2224.1819.4505.26358.6838z"

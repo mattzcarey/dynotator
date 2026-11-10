@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { EditorAnnotation } from '../types';
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { EditorAnnotation } from "../types";
 
 const POLL_INTERVAL = 500;
-const IS_VSCODE = typeof window !== 'undefined' && (window as any).__PLANNOTATOR_VSCODE === true;
+const IS_VSCODE = typeof window !== "undefined" && (window as any).__PLANNOTATOR_VSCODE === true;
 
 interface UseEditorAnnotationsReturn {
   editorAnnotations: EditorAnnotation[];
@@ -22,12 +22,13 @@ export function useEditorAnnotations(): UseEditorAnnotationsReturn {
 
   const fetchAnnotations = useCallback(async () => {
     try {
-      const res = await fetch('/api/editor-annotations');
+      const res = await fetch("/api/editor-annotations");
       if (!res.ok) return;
       const data = await res.json();
       const incoming: EditorAnnotation[] = data.annotations ?? [];
       setAnnotations((prev) => {
-        if (prev.length === incoming.length && prev.every((a, i) => a.id === incoming[i].id)) return prev;
+        if (prev.length === incoming.length && prev.every((a, i) => a.id === incoming[i].id))
+          return prev;
         return incoming;
       });
     } catch {
@@ -53,7 +54,7 @@ export function useEditorAnnotations(): UseEditorAnnotationsReturn {
   const deleteEditorAnnotation = useCallback(async (id: string) => {
     if (!IS_VSCODE) return;
     try {
-      await fetch(`/api/editor-annotation?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await fetch(`/api/editor-annotation?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       setAnnotations((prev) => prev.filter((a) => a.id !== id));
     } catch {
       // Silently fail — next poll will reconcile

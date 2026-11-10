@@ -20,8 +20,15 @@ const ACTIONS_GAP = 8;
  * so the name truncates and the open-in button stays on screen. Null leaves
  * it unbounded while the card has no measured width (hidden, not laid out).
  */
-export function legacyBadgesMaxWidth(badges: BoxEdges, actions: BoxEdges | null, card: BoxEdges): number | null {
-  const inCard = card.right > card.left ? Math.max(0, card.right - badges.left - (badges.left - card.left)) : null;
+export function legacyBadgesMaxWidth(
+  badges: BoxEdges,
+  actions: BoxEdges | null,
+  card: BoxEdges,
+): number | null {
+  const inCard =
+    card.right > card.left
+      ? Math.max(0, card.right - badges.left - (badges.left - card.left))
+      : null;
   if (!actions || actions.right <= actions.left) return inCard;
   const sharesRow = actions.top < badges.bottom && actions.bottom > badges.top;
   if (!sharesRow) return inCard;

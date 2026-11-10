@@ -1,16 +1,38 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { buildDiagramAnchorValue, type DiagramAnchor, type DiagramKind, type DiagramTarget } from '@dynotator/core/diagram-anchor';
-import { cn } from '../../lib/utils';
-import { diagramFamilyOf } from '../../utils/diagram-anchor';
-import { diagramFinder, type DiagramTheme } from '../../utils/diagram-render';
-import { DiagramCanvas, type DiagramCanvasHandle, type DiagramEscapeOutcome } from './DiagramCanvas';
-import { DiagramComposer } from './DiagramComposer';
-import { DiagramOverlay } from './DiagramOverlay';
-import { useDiagramComments, type DiagramComment, type DiagramCreateComment } from './useDiagramComments';
-import { useDiagramRender, type DiagramRenderState } from './useDiagramRender';
-import { useDiagramSourceDraft, type SaveResult } from './useDiagramSourceDraft';
-import { LazyBlockBoundary } from '../LazyBlockBoundary';
-import type { DiagramReopenRequest } from './reopen';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  buildDiagramAnchorValue,
+  type DiagramAnchor,
+  type DiagramKind,
+  type DiagramTarget,
+} from "@dynotator/core/diagram-anchor";
+import { cn } from "../../lib/utils";
+import { diagramFamilyOf } from "../../utils/diagram-anchor";
+import { diagramFinder, type DiagramTheme } from "../../utils/diagram-render";
+import {
+  DiagramCanvas,
+  type DiagramCanvasHandle,
+  type DiagramEscapeOutcome,
+} from "./DiagramCanvas";
+import { DiagramComposer } from "./DiagramComposer";
+import { DiagramOverlay } from "./DiagramOverlay";
+import {
+  useDiagramComments,
+  type DiagramComment,
+  type DiagramCreateComment,
+} from "./useDiagramComments";
+import { useDiagramRender, type DiagramRenderState } from "./useDiagramRender";
+import { useDiagramSourceDraft, type SaveResult } from "./useDiagramSourceDraft";
+import { LazyBlockBoundary } from "../LazyBlockBoundary";
+import type { DiagramReopenRequest } from "./reopen";
 
 /**
  * The one diagram viewer: the canvas with its overlay, the Source pane on
@@ -28,12 +50,15 @@ import type { DiagramReopenRequest } from './reopen';
  * carry it. It loads on the first open of the pane and never before, so the
  * editor stays out of the document-read closure of a chunked host.
  */
-const DiagramSourcePane = lazy(async () => ({ default: (await import('./DiagramSourcePane')).DiagramSourcePane }));
+const DiagramSourcePane = lazy(async () => ({
+  default: (await import("./DiagramSourcePane")).DiagramSourcePane,
+}));
 
 /** The pane's box while its chunk loads: same class list, so the split it
  * opens into is already the right size and nothing jumps when it lands.
  * Never `null` here — that would collapse the row back onto the canvas. */
-const PANE_CLASS = 'order-last min-h-0 shrink-0 basis-2/5 border-t border-border md:order-first md:w-80 md:basis-auto md:border-r md:border-t-0';
+const PANE_CLASS =
+  "order-last min-h-0 shrink-0 basis-2/5 border-t border-border md:order-first md:w-80 md:basis-auto md:border-r md:border-t-0";
 
 /** A question typed in the composer, asked about the part instead of saved
  * as a comment. The anchor is the one a comment there would carry (its
@@ -122,7 +147,8 @@ export interface DiagramViewerProps {
 }
 
 /** A part's identity, as the composer's key names it. */
-const diagramPartKey = (target: DiagramTarget): string => `${target.kind}:${target.id ?? ''}:${target.from ?? ''}:${target.to ?? ''}`;
+const diagramPartKey = (target: DiagramTarget): string =>
+  `${target.kind}:${target.id ?? ""}:${target.from ?? ""}:${target.to ?? ""}`;
 
 export function DiagramViewer({
   kind,
@@ -141,7 +167,7 @@ export function DiagramViewer({
   onUnanchoredChange,
   onResolutionChange,
   onDismiss,
-  renderId = 'diagram',
+  renderId = "diagram",
   sourceLineOffset = 0,
   maxAdditionalTargets = 0,
   commentingDisabledReason,
@@ -154,7 +180,10 @@ export function DiagramViewer({
   reopenComment,
 }: DiagramViewerProps) {
   const finder = diagramFinder(kind);
-  const familyOf = useCallback((svg: Element) => (kind === 'graphviz' ? ('graphviz' as const) : diagramFamilyOf(svg)), [kind]);
+  const familyOf = useCallback(
+    (svg: Element) => (kind === "graphviz" ? ("graphviz" as const) : diagramFamilyOf(svg)),
+    [kind],
+  );
   const hasPane = onSave !== undefined;
   const editable = hasPane && !readOnlySource;
 
@@ -171,7 +200,10 @@ export function DiagramViewer({
   const [svgRoot, setSvgRoot] = useState<SVGSVGElement | null>(null);
   const onSvgRoot = useCallback((root: SVGSVGElement | null) => setSvgRoot(root), []);
 
-  const canCreate = onCreateComment !== undefined || commentingDisabledReason !== undefined || onHostDraft !== undefined;
+  const canCreate =
+    onCreateComment !== undefined ||
+    commentingDisabledReason !== undefined ||
+    onHostDraft !== undefined;
   const commentsState = useDiagramComments({
     finder,
     svgRoot,
@@ -200,7 +232,8 @@ export function DiagramViewer({
     if (reopenComment === undefined || reopenDoneRef.current === reopenComment) return;
     if (svgRoot === null || render.renderId === null) return;
     reopenDoneRef.current = reopenComment;
-    if (openAt(reopenComment.anchor)) setReopenedText({ part: diagramPartKey(reopenComment.anchor), text: reopenComment.text });
+    if (openAt(reopenComment.anchor))
+      setReopenedText({ part: diagramPartKey(reopenComment.anchor), text: reopenComment.text });
     else reopenComment.onMissing?.();
   }, [openAt, reopenComment, render.renderId, svgRoot]);
   // The words go with the composer they were put back in; a composer opened afterwards starts empty.
@@ -223,14 +256,14 @@ export function DiagramViewer({
   const onEscape = useCallback((): DiagramEscapeOutcome => {
     if (commentsState.composer !== null) {
       commentsState.cancel();
-      return 'consumed';
+      return "consumed";
     }
     if (selectedCommentId !== null && onSelectComment !== undefined) {
       onSelectComment(null);
-      return 'consumed';
+      return "consumed";
     }
     onDismiss?.();
-    return 'pass';
+    return "pass";
   }, [commentsState, onDismiss, onSelectComment, selectedCommentId]);
 
   // Closing the pane only closes an open composer so the layout shift does
@@ -257,7 +290,11 @@ export function DiagramViewer({
   const onComposerAnchorRef = useRef(onComposerAnchor);
   onComposerAnchorRef.current = onComposerAnchor;
   useEffect(() => {
-    onComposerAnchorRef.current?.(openComposer === null ? null : buildDiagramAnchorValue(openComposer.primary.target, openComposer.sourceLine));
+    onComposerAnchorRef.current?.(
+      openComposer === null
+        ? null
+        : buildDiagramAnchorValue(openComposer.primary.target, openComposer.sourceLine),
+    );
   }, [openComposer]);
   useEffect(() => {
     const report = onHostDraftRef.current;
@@ -279,10 +316,18 @@ export function DiagramViewer({
   // exactly as the markdown composer closes.
   const composerDraft = commentsState.composer;
   const askFromComposer = useMemo(() => {
-    if (onAskAI === undefined || composerDraft === null || onCreateComment === undefined) return undefined;
+    if (onAskAI === undefined || composerDraft === null || onCreateComment === undefined)
+      return undefined;
     return async (question: string): Promise<boolean> => {
-      const anchor = buildDiagramAnchorValue(composerDraft.primary.target, composerDraft.sourceLine);
-      const accepted = await onAskAI(question, anchor, composerDraft.additional.map((extra) => extra.target));
+      const anchor = buildDiagramAnchorValue(
+        composerDraft.primary.target,
+        composerDraft.sourceLine,
+      );
+      const accepted = await onAskAI(
+        question,
+        anchor,
+        composerDraft.additional.map((extra) => extra.target),
+      );
       if (accepted === false) return false;
       cancelComposer();
       return true;
@@ -301,7 +346,7 @@ export function DiagramViewer({
         renderComposer={(anchorRect) =>
           commentsState.composer === null || hostComposes ? null : (
             <DiagramComposer
-              key={`${commentsState.composer.primary.target.id ?? ''}:${commentsState.composer.primary.target.from ?? ''}:${commentsState.composer.primary.target.to ?? ''}`}
+              key={`${commentsState.composer.primary.target.id ?? ""}:${commentsState.composer.primary.target.from ?? ""}:${commentsState.composer.primary.target.to ?? ""}`}
               draft={commentsState.composer}
               anchorRect={anchorRect}
               hostWidth={handle.hostRef.current?.getBoundingClientRect().width ?? 0}
@@ -313,13 +358,26 @@ export function DiagramViewer({
               onSubmit={(text) => void commentsState.submit(text)}
               onCancel={commentsState.cancel}
               onAskAI={askFromComposer}
-              initialText={reopenedText?.part === diagramPartKey(commentsState.composer.primary.target) ? reopenedText.text : undefined}
+              initialText={
+                reopenedText?.part === diagramPartKey(commentsState.composer.primary.target)
+                  ? reopenedText.text
+                  : undefined
+              }
             />
           )
         }
       />
     ),
-    [askFromComposer, commentingDisabledReason, commentsState, hostComposes, onSelectComment, reopenedText, selectedCommentId, sourceDirty],
+    [
+      askFromComposer,
+      commentingDisabledReason,
+      commentsState,
+      hostComposes,
+      onSelectComment,
+      reopenedText,
+      selectedCommentId,
+      sourceDirty,
+    ],
   );
 
   const showFallback = render.svgNode === null;
@@ -327,7 +385,13 @@ export function DiagramViewer({
   return (
     // `annotation-exclude`: the document's text highlighter never enters a
     // diagram, so a text restore can never wrap a <mark> inside the svg.
-    <div data-diagram-viewer="" className={cn('annotation-exclude flex h-full min-h-0 w-full flex-col md:flex-row', className)}>
+    <div
+      data-diagram-viewer=""
+      className={cn(
+        "annotation-exclude flex h-full min-h-0 w-full flex-col md:flex-row",
+        className,
+      )}
+    >
       {/* The pane comes FIRST in the row (owner ruling: the source sits on
           the left of the diagram while editing). On the phone the row is a
           column and the pane stays stacked UNDER the canvas, which
@@ -335,14 +399,25 @@ export function DiagramViewer({
       {hasPane && sourceOpen && (
         <LazyBlockBoundary
           fallback={(notice) => (
-            <div data-diagram-source-pane-failed="" className={cn(PANE_CLASS, 'overflow-auto p-3')}>
+            <div data-diagram-source-pane-failed="" className={cn(PANE_CLASS, "overflow-auto p-3")}>
               {notice}
-              <pre className="text-xs text-muted-foreground"><code className="font-mono">{draft.draft}</code></pre>
+              <pre className="text-xs text-muted-foreground">
+                <code className="font-mono">{draft.draft}</code>
+              </pre>
             </div>
           )}
         >
-          <Suspense fallback={<div data-diagram-source-pane-pending="" aria-hidden="true" className={PANE_CLASS} />}>
-            <DiagramSourcePane draft={draft} editable={editable} markedLines={markedLines} className={PANE_CLASS} />
+          <Suspense
+            fallback={
+              <div data-diagram-source-pane-pending="" aria-hidden="true" className={PANE_CLASS} />
+            }
+          >
+            <DiagramSourcePane
+              draft={draft}
+              editable={editable}
+              markedLines={markedLines}
+              className={PANE_CLASS}
+            />
           </Suspense>
         </LazyBlockBoundary>
       )}
@@ -352,12 +427,15 @@ export function DiagramViewer({
             {renderFallback !== undefined ? (
               renderFallback(render)
             ) : (
-              <div className="flex h-full items-center justify-center p-4 text-xs text-muted-foreground" aria-live="polite">
+              <div
+                className="flex h-full items-center justify-center p-4 text-xs text-muted-foreground"
+                aria-live="polite"
+              >
                 {render.error !== null
-                  ? `The diagram does not parse${render.error.line === null ? '' : ` (line ${render.error.line})`}: ${render.error.message}`
+                  ? `The diagram does not parse${render.error.line === null ? "" : ` (line ${render.error.line})`}: ${render.error.message}`
                   : render.pending
-                    ? 'Rendering diagram…'
-                    : 'Nothing to render yet.'}
+                    ? "Rendering diagram…"
+                    : "Nothing to render yet."}
               </div>
             )}
           </div>
@@ -382,11 +460,13 @@ export function DiagramViewer({
                 className="absolute inset-x-3 top-3 z-10 rounded-md border border-warning/40 bg-card/95 px-3 py-2 text-xs shadow-lg backdrop-blur"
               >
                 <div className="font-medium text-foreground">
-                  {render.error.line === null ? 'The diagram does not parse' : `The diagram does not parse (line ${render.error.line})`}
+                  {render.error.line === null
+                    ? "The diagram does not parse"
+                    : `The diagram does not parse (line ${render.error.line})`}
                 </div>
                 <div className="mt-0.5 text-muted-foreground">
                   {render.error.message}
-                  {' The last good render stays below.'}
+                  {" The last good render stays below."}
                 </div>
               </div>
             )}

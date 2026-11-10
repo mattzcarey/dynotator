@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import type { Point, Stroke, Tool } from './types';
-import { renderStroke } from './utils';
+import React, { useRef, useEffect, useCallback } from "react";
+import type { Point, Stroke, Tool } from "./types";
+import { renderStroke } from "./utils";
 
 interface CanvasProps {
   imageSrc: string;
@@ -31,13 +31,13 @@ export const Canvas: React.FC<CanvasProps> = ({
   // Render all strokes
   const render = useCallback(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
+    const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Render completed strokes
-    strokes.forEach(stroke => renderStroke(ctx, stroke));
+    strokes.forEach((stroke) => renderStroke(ctx, stroke));
 
     // Render current stroke
     if (currentStroke) {

@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
+import { useCallback } from "react";
+import { toast } from "sonner";
 import {
   useHtmlRefresh as usePublishedHtmlRefresh,
   type HtmlRefreshSnapshot,
-} from '@dynotator/ui/hooks/useHtmlRefresh';
-import { fetchHtmlDocumentSnapshot, type HtmlVersionDiffFields } from '../sourceDocumentClient';
+} from "@dynotator/ui/hooks/useHtmlRefresh";
+import { fetchHtmlDocumentSnapshot, type HtmlVersionDiffFields } from "../sourceDocumentClient";
 
 /** What a refresh hands the app: the bytes plus, for the root document, the
  * version-diff fields the server recomputed against them. */
@@ -42,44 +42,56 @@ export function useHtmlRefresh({
 }: UseHtmlRefreshOptions): UseHtmlRefreshResult {
   const canRefresh = enabled && !!activePath && !/^https?:\/\//i.test(activePath);
 
-  const fetchSnapshot = useCallback(async (path: string | null): Promise<HtmlRefreshSnapshot<HtmlVersionDiffFields>> => {
-    const result = await fetchHtmlDocumentSnapshot(path ?? '');
-    if (result.status !== 'ok') return { status: result.status };
-    const { rawHtml, diffHtml, previousPlan, versionInfo } = result.snapshot;
-    return { status: 'ok', rawHtml, diffHtml, previousPlan, versionInfo };
-  }, []);
+  const fetchSnapshot = useCallback(
+    async (path: string | null): Promise<HtmlRefreshSnapshot<HtmlVersionDiffFields>> => {
+      const result = await fetchHtmlDocumentSnapshot(path ?? "");
+      if (result.status !== "ok") return { status: result.status };
+      const { rawHtml, diffHtml, previousPlan, versionInfo } = result.snapshot;
+      return { status: "ok", rawHtml, diffHtml, previousPlan, versionInfo };
+    },
+    [],
+  );
 
-  const handleSnapshot = useCallback((rawHtml: string, snapshot: HtmlVersionDiffFields) => {
-    onSnapshot({
-      rawHtml,
-      diffHtml: snapshot.diffHtml,
-      previousPlan: snapshot.previousPlan,
-      versionInfo: snapshot.versionInfo,
-    });
-  }, [onSnapshot]);
-
-  const handleResult = useCallback((result: 'refreshed' | 'missing' | 'unavailable') => {
-    if (result === 'missing') {
-      toast.error('HTML file no longer exists', {
-        description: 'The current rendered version remains open.',
+  const handleSnapshot = useCallback(
+    (rawHtml: string, snapshot: HtmlVersionDiffFields) => {
+      onSnapshot({
+        rawHtml,
+        diffHtml: snapshot.diffHtml,
+        previousPlan: snapshot.previousPlan,
+        versionInfo: snapshot.versionInfo,
       });
-    } else if (result === 'unavailable') {
-      toast.error('Could not refresh HTML', {
-        description: 'The current rendered version remains open. Try again in a moment.',
+    },
+    [onSnapshot],
+  );
+
+  const handleResult = useCallback((result: "refreshed" | "missing" | "unavailable") => {
+    if (result === "missing") {
+      toast.error("HTML file no longer exists", {
+        description: "The current rendered version remains open.",
+      });
+    } else if (result === "unavailable") {
+      toast.error("Could not refresh HTML", {
+        description: "The current rendered version remains open. Try again in a moment.",
       });
     } else {
-      toast.success('Refreshed HTML from disk');
+      toast.success("Refreshed HTML from disk");
     }
   }, []);
 
-  const handleUnanchored = useCallback((missingIds: string[]) => {
-    onUnanchored?.(missingIds);
-    if (missingIds.length === 0) return;
-    toast(`${missingIds.length} annotation${missingIds.length === 1 ? ' no longer matches' : 's no longer match'} the HTML`, {
-      description: 'Their comments remain available in the annotations panel.',
-      duration: 5000,
-    });
-  }, [onUnanchored]);
+  const handleUnanchored = useCallback(
+    (missingIds: string[]) => {
+      onUnanchored?.(missingIds);
+      if (missingIds.length === 0) return;
+      toast(
+        `${missingIds.length} annotation${missingIds.length === 1 ? " no longer matches" : "s no longer match"} the HTML`,
+        {
+          description: "Their comments remain available in the annotations panel.",
+          duration: 5000,
+        },
+      );
+    },
+    [onUnanchored],
+  );
 
   return usePublishedHtmlRefresh<HtmlVersionDiffFields>({
     enabled: canRefresh,

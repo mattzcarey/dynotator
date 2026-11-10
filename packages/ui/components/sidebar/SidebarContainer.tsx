@@ -175,9 +175,11 @@ export const SidebarContainer: React.FC<SidebarContainerProps> = ({
       aria-modal={compact ? true : undefined}
       aria-label={compact ? "Plan navigator" : undefined}
       onKeyDown={compact ? handleCompactKeyDown : undefined}
-      className={compact
-        ? "pn-visible-viewport-stage z-[90] flex flex-col overflow-hidden bg-card text-foreground"
-        : "hidden lg:flex flex-col sticky top-12 h-[calc(100vh-3rem)] flex-shrink-0 bg-card border-r border-border"}
+      className={
+        compact
+          ? "pn-visible-viewport-stage z-[90] flex flex-col overflow-hidden bg-card text-foreground"
+          : "hidden lg:flex flex-col sticky top-12 h-[calc(100vh-3rem)] flex-shrink-0 bg-card border-r border-border"
+      }
       style={{ width: compact ? undefined : width }}
     >
       {compact && (
@@ -185,7 +187,7 @@ export const SidebarContainer: React.FC<SidebarContainerProps> = ({
           <div className="min-w-0">
             <p className="text-sm font-semibold tracking-tight">Navigate</p>
             <p className="truncate text-[11px] text-muted-foreground" aria-live="polite">
-              {pendingFileLabel ? `Opening ${pendingFileLabel}…` : 'Choose what to review'}
+              {pendingFileLabel ? `Opening ${pendingFileLabel}…` : "Choose what to review"}
             </p>
           </div>
           <button
@@ -198,7 +200,14 @@ export const SidebarContainer: React.FC<SidebarContainerProps> = ({
             aria-label="Close navigator"
             title="Close navigator"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -206,9 +215,12 @@ export const SidebarContainer: React.FC<SidebarContainerProps> = ({
       )}
 
       {/* Tab bar */}
-      <div className={compact
-        ? "flex min-h-11 items-center gap-1 overflow-x-auto border-b border-border/50 px-2 py-1"
-        : "flex h-10 items-center border-b border-border/50 px-2 gap-0.5 flex-shrink-0 overflow-hidden min-w-0"}
+      <div
+        className={
+          compact
+            ? "flex min-h-11 items-center gap-1 overflow-x-auto border-b border-border/50 px-2 py-1"
+            : "flex h-10 items-center border-b border-border/50 px-2 gap-0.5 flex-shrink-0 overflow-hidden min-w-0"
+        }
       >
         {!compact && showAgentTerminalButton && onToggleAgentTerminal && (
           <ActionButton
@@ -327,9 +339,12 @@ export const SidebarContainer: React.FC<SidebarContainerProps> = ({
       </div>
 
       {/* Content area */}
-      <OverlayScrollArea className={compact
-        ? "flex-1 min-h-0 overscroll-contain [-webkit-overflow-scrolling:touch]"
-        : "flex-1 min-h-0"}
+      <OverlayScrollArea
+        className={
+          compact
+            ? "flex-1 min-h-0 overscroll-contain [-webkit-overflow-scrolling:touch]"
+            : "flex-1 min-h-0"
+        }
       >
         {activeTab === "toc" && showContentsTab && (
           <TableOfContents
@@ -416,10 +431,8 @@ const TabButton: React.FC<{
   >
     {icon}
     {label}
-    {badge && (
-      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
-    )}
-</button>
+    {badge && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />}
+  </button>
 );
 
 const ActionButton: React.FC<{

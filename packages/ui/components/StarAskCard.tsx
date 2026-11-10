@@ -11,24 +11,24 @@
  * waits for Close. Nothing moves: no entrance and no tween, the same under reduced motion. A named region, never a
  * dialog; no keyboard shortcut. Words: utils/starAskWords.ts.
  */
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { STAR_ASK_DISPLAY_FONT, STAR_ASK_MONO_FONT } from '../utils/starAskFonts';
-import { STAR_ASK_CSS } from '../utils/starAskStyles';
-import { STAR_ASK_WORDS, type StarAskWords } from '../utils/starAskWords';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { STAR_ASK_DISPLAY_FONT, STAR_ASK_MONO_FONT } from "../utils/starAskFonts";
+import { STAR_ASK_CSS } from "../utils/starAskStyles";
+import { STAR_ASK_WORDS, type StarAskWords } from "../utils/starAskWords";
 
-export const STAR_ASK_REPO_URL = 'https://github.com/backnotprop/plannotator';
+export const STAR_ASK_REPO_URL = "https://github.com/backnotprop/plannotator";
 /** The corner leaves by itself this long after a thank-you. */
 export const STAR_ASK_THANKS_LEAVE_MS = 4_000;
 
-export type StarAskShape = 'corner' | 'card';
-export type StarAskState = 'ask' | 'starring' | 'starred' | 'opened' | 'failed';
+export type StarAskShape = "corner" | "card";
+export type StarAskState = "ask" | "starring" | "starred" | "opened" | "failed";
 
 /** The board the art is drawn on (scaled to the card's width), and the measure the big line fills. */
 const BOARD_W = 340;
 const BOARD_H = 104;
 const MEASURE = 316;
 /** The big line's size for the approved words, solved once in the harness (Archivo 900 at width 125). */
-const SOLVED_SIZE: Record<string, number> = { 'star it?': 68.95, 'starred.': 62.99 };
+const SOLVED_SIZE: Record<string, number> = { "star it?": 68.95, "starred.": 62.99 };
 
 /** A plain upright five-point star (centre, outer radius; inner radius 0.382 of it). */
 function starPoints(cx: number, cy: number, r: number): string {
@@ -37,7 +37,7 @@ function starPoints(cx: number, cy: number, r: number): string {
     const a = -Math.PI / 2 + (i * Math.PI) / 5;
     const rr = i % 2 ? ri : r;
     return `${(cx + rr * Math.cos(a)).toFixed(2)},${(cy + rr * Math.sin(a)).toFixed(2)}`;
-  }).join(' ');
+  }).join(" ");
 }
 /** Centred behind "star it?", its top point through the rule (the approved v3). */
 const STAR_POINTS = starPoints(198, 58, 70);
@@ -52,9 +52,14 @@ function BigLine({ text }: { text: string }) {
       const el = ref.current;
       if (!live || !el) return;
       const width = el.scrollWidth;
-      if (width > 0) setSize((current) => (Math.abs(width - MEASURE) > 0.5 ? Number(((current * MEASURE) / width).toFixed(2)) : current));
+      if (width > 0)
+        setSize((current) =>
+          Math.abs(width - MEASURE) > 0.5
+            ? Number(((current * MEASURE) / width).toFixed(2))
+            : current,
+        );
     };
-    const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
     if (fonts?.load) {
       fonts.load(`900 60px "${STAR_ASK_DISPLAY_FONT}"`).then(fit, fit);
     } else fit();
@@ -70,7 +75,13 @@ function BigLine({ text }: { text: string }) {
 }
 
 /** The art band: one 340 × 104 board, scaled to the card's width. Decorative (aria-hidden). */
-export function StarAskArt({ lit, words = STAR_ASK_WORDS }: { lit: boolean; words?: StarAskWords }) {
+export function StarAskArt({
+  lit,
+  words = STAR_ASK_WORDS,
+}: {
+  lit: boolean;
+  words?: StarAskWords;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   useLayoutEffect(() => {
@@ -81,7 +92,7 @@ export function StarAskArt({ lit, words = STAR_ASK_WORDS }: { lit: boolean; word
       if (width > 0) setScale(width / BOARD_W);
     };
     measure();
-    if (typeof ResizeObserver === 'undefined') return;
+    if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
@@ -91,7 +102,12 @@ export function StarAskArt({ lit, words = STAR_ASK_WORDS }: { lit: boolean; word
     void document.fonts?.load?.(`500 9px "${STAR_ASK_MONO_FONT}"`).catch(() => undefined);
   }, []);
   return (
-    <div ref={box} className={`psa-art${lit ? ' psa-lit' : ''}`} aria-hidden="true" data-star-ask-art={lit ? 'lit' : 'ask'}>
+    <div
+      ref={box}
+      className={`psa-art${lit ? " psa-lit" : ""}`}
+      aria-hidden="true"
+      data-star-ask-art={lit ? "lit" : "ask"}
+    >
       <div className="psa-board" style={{ transform: `scale(${scale})` }}>
         <svg className="psa-star" viewBox={`0 0 ${BOARD_W} ${BOARD_H}`} focusable="false">
           <polygon points={STAR_POINTS} />
@@ -105,7 +121,7 @@ export function StarAskArt({ lit, words = STAR_ASK_WORDS }: { lit: boolean; word
           <span className="psa-lab-r">{lit ? words.art.after : words.art.ask}</span>
         </div>
         <div className="psa-big">
-          <BigLine key={lit ? 'after' : 'ask'} text={lit ? words.art.bigAfter : words.art.big} />
+          <BigLine key={lit ? "after" : "ask"} text={lit ? words.art.bigAfter : words.art.big} />
         </div>
       </div>
     </div>
@@ -125,7 +141,7 @@ export interface StarAskCardProps {
   /** Star it with gh: resolves true when GitHub took the star. Only ever called from the person's click. */
   onStar: () => Promise<boolean>;
   /** Record how it ended: Not now, or the GitHub page opened from a link. Best effort. */
-  onAnswer: (answer: 'not-now' | 'opened') => void;
+  onAnswer: (answer: "not-now" | "opened") => void;
   /** Take the card away (Not now, Close, or the corner's own leave after a thank-you). */
   onLeave: () => void;
   /** The state it starts in (tests and pictures). */
@@ -135,7 +151,16 @@ export interface StarAskCardProps {
   words?: StarAskWords;
 }
 
-export function StarAskCard({ shape, canStar, onStar, onAnswer, onLeave, initialState = 'ask', leaveAfterMs = STAR_ASK_THANKS_LEAVE_MS, words = STAR_ASK_WORDS }: StarAskCardProps) {
+export function StarAskCard({
+  shape,
+  canStar,
+  onStar,
+  onAnswer,
+  onLeave,
+  initialState = "ask",
+  leaveAfterMs = STAR_ASK_THANKS_LEAVE_MS,
+  words = STAR_ASK_WORDS,
+}: StarAskCardProps) {
   const [state, setState] = useState<StarAskState>(initialState);
   const titleId = useId();
   const root = useRef<HTMLElement>(null);
@@ -143,12 +168,12 @@ export function StarAskCard({ shape, canStar, onStar, onAnswer, onLeave, initial
   const hadFocus = useRef(false);
   const leave = useRef(onLeave);
   leave.current = onLeave;
-  const lit = state === 'starred' || state === 'opened';
-  const answered = lit || state === 'failed';
+  const lit = state === "starred" || state === "opened";
+  const answered = lit || state === "failed";
 
   /** A state change that replaces the buttons: keep the keyboard where it was (on Close). */
   const move = useCallback((next: StarAskState) => {
-    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    const active = typeof document !== "undefined" ? document.activeElement : null;
     hadFocus.current = !!active && !!root.current?.contains(active);
     setState(next);
   }, []);
@@ -161,27 +186,33 @@ export function StarAskCard({ shape, canStar, onStar, onAnswer, onLeave, initial
 
   // The corner sees itself out after a thank-you; the card waits for Close.
   useEffect(() => {
-    if (shape !== 'corner' || !lit) return;
+    if (shape !== "corner" || !lit) return;
     const timer = setTimeout(() => leave.current(), leaveAfterMs);
     return () => clearTimeout(timer);
   }, [shape, lit, leaveAfterMs]);
 
   const star = () => {
-    if (state !== 'ask') return;
-    move('starring');
+    if (state !== "ask") return;
+    move("starring");
     onStar().then(
-      (starred) => move(starred ? 'starred' : 'failed'),
-      () => move('failed'),
+      (starred) => move(starred ? "starred" : "failed"),
+      () => move("failed"),
     );
   };
   const opened = () => {
-    onAnswer('opened');
-    move('opened');
+    onAnswer("opened");
+    move("opened");
   };
-  const big = shape === 'card';
+  const big = shape === "card";
 
   return (
-    <section ref={root} className={`psa psa-${shape}`} aria-labelledby={titleId} data-star-ask={shape} data-star-ask-state={state}>
+    <section
+      ref={root}
+      className={`psa psa-${shape}`}
+      aria-labelledby={titleId}
+      data-star-ask={shape}
+      data-star-ask-state={state}
+    >
       <style>{STAR_ASK_CSS}</style>
       <StarAskArt lit={lit} words={words} />
       <div className="psa-body">
@@ -193,17 +224,31 @@ export function StarAskCard({ shape, canStar, onStar, onAnswer, onLeave, initial
           <div className="psa-acts">
             <p className="psa-done" role="status">
               {lit && <i aria-hidden="true" />}
-              {state === 'starred' ? words.starred : state === 'opened' ? words.opened : (
+              {state === "starred" ? (
+                words.starred
+              ) : state === "opened" ? (
+                words.opened
+              ) : (
                 <>
                   <span>{words.failed}</span>
-                  <a href={STAR_ASK_REPO_URL} target="_blank" rel="noopener noreferrer" onClick={opened}>
+                  <a
+                    href={STAR_ASK_REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={opened}
+                  >
                     {words.openGitHub}
                   </a>
                 </>
               )}
             </p>
             <span className="psa-sp" />
-            <button ref={closeRef} type="button" className={`psa-btn psa-ghost${big ? ' psa-lg' : ''}`} onClick={() => onLeave()}>
+            <button
+              ref={closeRef}
+              type="button"
+              className={`psa-btn psa-ghost${big ? " psa-lg" : ""}`}
+              onClick={() => onLeave()}
+            >
               {words.close}
             </button>
           </div>
@@ -211,10 +256,10 @@ export function StarAskCard({ shape, canStar, onStar, onAnswer, onLeave, initial
           <div className="psa-acts">
             <button
               type="button"
-              className={`psa-btn psa-ghost${big ? ' psa-lg' : ''}`}
-              disabled={state === 'starring'}
+              className={`psa-btn psa-ghost${big ? " psa-lg" : ""}`}
+              disabled={state === "starring"}
               onClick={() => {
-                onAnswer('not-now');
+                onAnswer("not-now");
                 onLeave();
               }}
             >
@@ -224,16 +269,22 @@ export function StarAskCard({ shape, canStar, onStar, onAnswer, onLeave, initial
             {canStar ? (
               <button
                 type="button"
-                className={`psa-btn psa-pri${big ? ' psa-lg' : ''}`}
-                aria-busy={state === 'starring' || undefined}
+                className={`psa-btn psa-pri${big ? " psa-lg" : ""}`}
+                aria-busy={state === "starring" || undefined}
                 onClick={star}
               >
                 <StarIcon />
-                <span>{state === 'starring' ? words.starring : words.star}</span>
+                <span>{state === "starring" ? words.starring : words.star}</span>
               </button>
             ) : (
               // A real link: the browser opens it from the click itself, so no popup blocker applies.
-              <a href={STAR_ASK_REPO_URL} target="_blank" rel="noopener noreferrer" className={`psa-btn psa-pri${big ? ' psa-lg' : ''}`} onClick={opened}>
+              <a
+                href={STAR_ASK_REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`psa-btn psa-pri${big ? " psa-lg" : ""}`}
+                onClick={opened}
+              >
                 <StarIcon />
                 <span>{words.star}</span>
               </a>

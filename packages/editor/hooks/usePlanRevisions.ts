@@ -17,8 +17,8 @@
  * It loads as soon as that clears.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
-import type { VersionInfo } from '@dynotator/ui/hooks/usePlanDiff';
+import { useCallback, useEffect, useRef } from "react";
+import type { VersionInfo } from "@dynotator/ui/hooks/usePlanDiff";
 
 export interface PlanRevisionSnapshot {
   plan: string;
@@ -31,7 +31,7 @@ export interface PlanRevisionSnapshot {
   planFilePath?: string | null;
 }
 
-export type PlanRevisionBlocker = 'edits' | 'linked-document' | 'composer' | null;
+export type PlanRevisionBlocker = "edits" | "linked-document" | "composer" | null;
 
 /**
  * Comment composers and the selection toolbar live inside the viewer (and in
@@ -44,7 +44,7 @@ export const PLAN_REVISION_COMPOSER_SELECTOR =
   '[data-comment-popover="true"], .annotation-toolbar, [data-diagram-composer], [data-decision-note-input], [data-decision-note-composer]';
 
 export function isPlanRevisionComposerOpen(): boolean {
-  if (typeof document === 'undefined') return false;
+  if (typeof document === "undefined") return false;
   return document.querySelector(PLAN_REVISION_COMPOSER_SELECTOR) !== null;
 }
 
@@ -57,8 +57,8 @@ export function planRevisionBlocker(state: {
   hasDirectEdits: boolean;
   linkedDocActive: boolean;
 }): PlanRevisionBlocker {
-  if (state.isEditing || state.hasDirectEdits) return 'edits';
-  if (state.linkedDocActive) return 'linked-document';
+  if (state.isEditing || state.hasDirectEdits) return "edits";
+  if (state.linkedDocActive) return "linked-document";
   return null;
 }
 
@@ -103,13 +103,15 @@ export function usePlanRevisions(options: UsePlanRevisionsOptions): UsePlanRevis
   activeRef.current = active;
   const composerRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentBlocker = (): PlanRevisionBlocker =>
-    blockerRef.current ?? (isComposerOpenRef.current() ? 'composer' : null);
+    blockerRef.current ?? (isComposerOpenRef.current() ? "composer" : null);
 
   // The initial payload arrives after mount.
   useEffect(() => {
     if (initialRevision === null) return;
-    if (appliedRef.current === null || initialRevision > appliedRef.current) appliedRef.current = initialRevision;
-    if (latestRef.current === null || initialRevision > latestRef.current) latestRef.current = initialRevision;
+    if (appliedRef.current === null || initialRevision > appliedRef.current)
+      appliedRef.current = initialRevision;
+    if (latestRef.current === null || initialRevision > latestRef.current)
+      latestRef.current = initialRevision;
   }, [initialRevision]);
 
   const tryApply = useCallback(async () => {
@@ -124,7 +126,7 @@ export function usePlanRevisions(options: UsePlanRevisionsOptions): UsePlanRevis
       }
       // A composer closing changes no React state this hook sees: re-check
       // shortly so the revision loads soon after the comment is done.
-      if (blockedBy === 'composer' && composerRetryRef.current === null) {
+      if (blockedBy === "composer" && composerRetryRef.current === null) {
         composerRetryRef.current = setTimeout(() => {
           composerRetryRef.current = null;
           if (activeRef.current) void tryApplyRef.current();
@@ -134,10 +136,10 @@ export function usePlanRevisions(options: UsePlanRevisionsOptions): UsePlanRevis
     }
     loadingRef.current = true;
     try {
-      const res = await fetch('/api/plan');
+      const res = await fetch("/api/plan");
       if (!res.ok) return;
       const data = (await res.json()) as Partial<PlanRevisionSnapshot>;
-      if (typeof data.plan !== 'string' || typeof data.planRevision !== 'number') return;
+      if (typeof data.plan !== "string" || typeof data.planRevision !== "number") return;
       // Re-check: the reviewer may have started editing or commenting while
       // this loaded. The next check retries.
       if (currentBlocker()) {
@@ -152,14 +154,15 @@ export function usePlanRevisions(options: UsePlanRevisionsOptions): UsePlanRevis
       const current = appliedRef.current;
       if (current !== null && data.planRevision <= current) return;
       appliedRef.current = data.planRevision;
-      if (latestRef.current === null || data.planRevision > latestRef.current) latestRef.current = data.planRevision;
+      if (latestRef.current === null || data.planRevision > latestRef.current)
+        latestRef.current = data.planRevision;
       onApplyRef.current({
         plan: data.plan,
         previousPlan: data.previousPlan ?? null,
         versionInfo: data.versionInfo ?? null,
         planRevision: data.planRevision,
-        planPath: typeof data.planPath === 'string' ? data.planPath : null,
-        planFilePath: typeof data.planFilePath === 'string' ? data.planFilePath : null,
+        planPath: typeof data.planPath === "string" ? data.planPath : null,
+        planFilePath: typeof data.planFilePath === "string" ? data.planFilePath : null,
       });
     } catch {
       // The next poll retries.
@@ -170,17 +173,23 @@ export function usePlanRevisions(options: UsePlanRevisionsOptions): UsePlanRevis
 
   const tryApplyRef = useRef(tryApply);
   tryApplyRef.current = tryApply;
-  useEffect(() => () => {
-    if (composerRetryRef.current !== null) clearTimeout(composerRetryRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (composerRetryRef.current !== null) clearTimeout(composerRetryRef.current);
+    },
+    [],
+  );
 
   const check = useCallback(async () => {
     if (appliedRef.current === null) return;
     try {
-      const res = await fetch('/api/plan/revision');
+      const res = await fetch("/api/plan/revision");
       if (!res.ok) return;
       const data = (await res.json()) as { revision?: unknown };
-      if (typeof data.revision === 'number' && (latestRef.current === null || data.revision > latestRef.current)) {
+      if (
+        typeof data.revision === "number" &&
+        (latestRef.current === null || data.revision > latestRef.current)
+      ) {
         latestRef.current = data.revision;
       }
     } catch {

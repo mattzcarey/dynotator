@@ -8,8 +8,10 @@ export function buildAgentTerminalWsPath(token: string): string {
 }
 
 export function isAgentTerminalWsRoute(pathname: string): boolean {
-  return pathname === AGENT_TERMINAL_WS_BASE_PATH ||
-    pathname.startsWith(`${AGENT_TERMINAL_WS_BASE_PATH}/`);
+  return (
+    pathname === AGENT_TERMINAL_WS_BASE_PATH ||
+    pathname.startsWith(`${AGENT_TERMINAL_WS_BASE_PATH}/`)
+  );
 }
 
 export type AgentTerminalDisabledReason =
@@ -47,9 +49,7 @@ export type AnnotateAgentTerminalMode =
   | string
   | undefined;
 
-export function supportsAnnotateAgentTerminalMode(
-  mode: AnnotateAgentTerminalMode,
-): boolean {
+export function supportsAnnotateAgentTerminalMode(mode: AnnotateAgentTerminalMode): boolean {
   return mode === "annotate" || mode === "annotate-folder" || mode === "annotate-bundle";
 }
 
@@ -77,9 +77,7 @@ export const ANNOTATE_AGENT_TERMINAL_SIDES = [
   "hidden",
 ] as const satisfies readonly AnnotateAgentTerminalSide[];
 
-export function isAnnotateAgentTerminalSide(
-  value: unknown,
-): value is AnnotateAgentTerminalSide {
+export function isAnnotateAgentTerminalSide(value: unknown): value is AnnotateAgentTerminalSide {
   return value === "left" || value === "right" || value === "hidden";
 }
 
@@ -88,9 +86,7 @@ export function isAnnotateAgentTerminalSide(
  * (including an older release's value, or a hand-edited config.json) falls
  * back to `left`, which is where the panel docked before it was configurable.
  */
-export function resolveAnnotateAgentTerminalSide(
-  value: unknown,
-): AnnotateAgentTerminalSide {
+export function resolveAnnotateAgentTerminalSide(value: unknown): AnnotateAgentTerminalSide {
   return isAnnotateAgentTerminalSide(value) ? value : "left";
 }
 

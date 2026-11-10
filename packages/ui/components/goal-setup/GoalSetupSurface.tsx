@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -9,7 +9,7 @@ import {
   TestTube2,
   Trash2,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 import type {
   GoalSetupBundle,
   GoalSetupFactResult,
@@ -17,12 +17,12 @@ import type {
   GoalSetupInterviewBundle,
   GoalSetupQuestion,
   GoalSetupQuestionAnswer,
-} from '@dynotator/core/goal-setup';
-import { ConfirmDialog } from '../ConfirmDialog';
-import { CommentPopover } from '../CommentPopover';
-import { Button } from '../core/button';
-import { Textarea } from '../core/textarea';
-import { copyTextToClipboard } from '../../utils/clipboard';
+} from "@dynotator/core/goal-setup";
+import { ConfirmDialog } from "../ConfirmDialog";
+import { CommentPopover } from "../CommentPopover";
+import { Button } from "../core/button";
+import { Textarea } from "../core/textarea";
+import { copyTextToClipboard } from "../../utils/clipboard";
 
 interface GoalSetupSurfaceProps {
   bundle: GoalSetupBundle;
@@ -31,7 +31,7 @@ interface GoalSetupSurfaceProps {
   onActionStateChange?: (state: GoalSetupActionState) => void;
 }
 
-type SubmitState = 'idle' | 'submitting' | 'submitted' | 'error';
+type SubmitState = "idle" | "submitting" | "submitted" | "error";
 
 export interface GoalSetupSurfaceHandle {
   submit: () => void;
@@ -45,21 +45,21 @@ export interface GoalSetupActionState {
 }
 
 function cx(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 }
 
 async function submitGoalSetup(payload: unknown): Promise<void> {
-  const response = await fetch('/api/goal-setup/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/goal-setup/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    let message = 'Submission failed';
+    let message = "Submission failed";
     try {
       const body = await response.json();
-      if (typeof body.error === 'string') message = body.error;
+      if (typeof body.error === "string") message = body.error;
     } catch {
       // Keep the generic message.
     }
@@ -83,7 +83,7 @@ async function copyGoalSetupText(text: string): Promise<void> {
   // All strategies failed. When the API existed but rejected, surface its
   // real error; use the generic message only when the API was absent.
   if (writeError instanceof Error) throw writeError;
-  throw new Error('Clipboard is unavailable in this browser');
+  throw new Error("Clipboard is unavailable in this browser");
 }
 
 function useGoalSetupCopy(onError: (message: string) => void) {
@@ -99,52 +99,49 @@ function useGoalSetupCopy(onError: (message: string) => void) {
     async (id: string, text: string) => {
       try {
         await copyGoalSetupText(text);
-        onError('');
+        onError("");
         setCopied(id);
       } catch (err) {
-        onError(err instanceof Error ? err.message : 'Copy failed');
+        onError(err instanceof Error ? err.message : "Copy failed");
       }
     },
-    [onError]
+    [onError],
   );
 
   return { copied, copy };
 }
 
-export const GoalSetupSurface = React.forwardRef<GoalSetupSurfaceHandle, GoalSetupSurfaceProps>(({
-  bundle,
-  maxWidth = 880,
-  onSubmitted,
-  onActionStateChange,
-}, ref) => (
-  <div
-    className="w-full"
-    style={maxWidth == null ? undefined : { maxWidth }}
-  >
-    {bundle.stage === 'interview' ? (
-      <InterviewSurface
-        ref={ref}
-        bundle={bundle}
-        onSubmitted={onSubmitted}
-        onActionStateChange={onActionStateChange}
-      />
-    ) : (
-      <FactsSurface
-        ref={ref}
-        bundle={bundle}
-        onSubmitted={onSubmitted}
-        onActionStateChange={onActionStateChange}
-      />
-    )}
-  </div>
-));
-GoalSetupSurface.displayName = 'GoalSetupSurface';
+export const GoalSetupSurface = React.forwardRef<GoalSetupSurfaceHandle, GoalSetupSurfaceProps>(
+  ({ bundle, maxWidth = 880, onSubmitted, onActionStateChange }, ref) => (
+    <div className="w-full" style={maxWidth == null ? undefined : { maxWidth }}>
+      {bundle.stage === "interview" ? (
+        <InterviewSurface
+          ref={ref}
+          bundle={bundle}
+          onSubmitted={onSubmitted}
+          onActionStateChange={onActionStateChange}
+        />
+      ) : (
+        <FactsSurface
+          ref={ref}
+          bundle={bundle}
+          onSubmitted={onSubmitted}
+          onActionStateChange={onActionStateChange}
+        />
+      )}
+    </div>
+  ),
+);
+GoalSetupSurface.displayName = "GoalSetupSurface";
 
-const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
-  bundle: GoalSetupInterviewBundle;
-  onSubmitted?: () => void;
-  onActionStateChange?: (state: GoalSetupActionState) => void;
-}>(({ bundle, onSubmitted, onActionStateChange }, ref) => {
+const InterviewSurface = React.forwardRef<
+  GoalSetupSurfaceHandle,
+  {
+    bundle: GoalSetupInterviewBundle;
+    onSubmitted?: () => void;
+    onActionStateChange?: (state: GoalSetupActionState) => void;
+  }
+>(({ bundle, onSubmitted, onActionStateChange }, ref) => {
   const [answers, setAnswers] = useState<Record<string, GoalSetupQuestionAnswer>>(() =>
     Object.fromEntries(
       bundle.questions.map((question) => [
@@ -152,16 +149,16 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
         {
           questionId: question.id,
           selectedOptionIds: [],
-          customAnswer: '',
-          note: '',
-          answer: '',
+          customAnswer: "",
+          note: "",
+          answer: "",
           completed: false,
         },
-      ])
-    )
+      ]),
+    ),
   );
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(
-    () => bundle.questions[0]?.id ?? null
+    () => bundle.questions[0]?.id ?? null,
   );
   const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
   const [noteOpenForId, setNoteOpenForId] = useState<string | null>(null);
@@ -171,22 +168,19 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
   } | null>(null);
   const questionRefs = useRef(new Map<string, HTMLDivElement>());
   const didAutoFocus = useRef(false);
-  const [submitState, setSubmitState] = useState<SubmitState>('idle');
-  const [error, setError] = useState('');
+  const [submitState, setSubmitState] = useState<SubmitState>("idle");
+  const [error, setError] = useState("");
   const { copied, copy } = useGoalSetupCopy(setError);
 
-  const focusQuestionControl = useCallback(
-    (questionId: string, options?: { scroll?: boolean }) => {
-      requestAnimationFrame(() => {
-        const row = questionRefs.current.get(questionId);
-        if (!row) return;
-        if (options?.scroll) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        const focusTarget = row.querySelector<HTMLElement>('.goal-answer-focus');
-        if (focusTarget) requestAnimationFrame(() => focusTarget.focus());
-      });
-    },
-    []
-  );
+  const focusQuestionControl = useCallback((questionId: string, options?: { scroll?: boolean }) => {
+    requestAnimationFrame(() => {
+      const row = questionRefs.current.get(questionId);
+      if (!row) return;
+      if (options?.scroll) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      const focusTarget = row.querySelector<HTMLElement>(".goal-answer-focus");
+      if (focusTarget) requestAnimationFrame(() => focusTarget.focus());
+    });
+  }, []);
 
   useEffect(() => {
     if (didAutoFocus.current || !activeQuestionId) return;
@@ -206,38 +200,38 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
           skipped: skippedIds.has(question.id) && !completed,
         };
       }),
-    [answers, bundle.questions, skippedIds]
+    [answers, bundle.questions, skippedIds],
   );
 
   const completedCount = answerList.filter((answer) => answer.completed).length;
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
 
   const copyInterviewJson = useCallback(() => {
-    copy('interview-json', JSON.stringify(buildInterviewCopyPayload(bundle, answerList), null, 2));
+    copy("interview-json", JSON.stringify(buildInterviewCopyPayload(bundle, answerList), null, 2));
   }, [answerList, bundle, copy]);
 
   const copyInterviewMarkdown = useCallback(() => {
-    copy('interview-markdown', formatInterviewMarkdown(bundle, answerList));
+    copy("interview-markdown", formatInterviewMarkdown(bundle, answerList));
   }, [answerList, bundle, copy]);
 
   const incompleteQuestions = useMemo(
     () =>
       bundle.questions.filter(
-        (q) => q.required !== false && !hasAnswer(q, answers[q.id]) && !skippedIds.has(q.id)
+        (q) => q.required !== false && !hasAnswer(q, answers[q.id]) && !skippedIds.has(q.id),
       ),
-    [bundle.questions, answers, skippedIds]
+    [bundle.questions, answers, skippedIds],
   );
   const skippedQuestions = useMemo(
     () => bundle.questions.filter((q) => skippedIds.has(q.id) && !hasAnswer(q, answers[q.id])),
-    [bundle.questions, answers, skippedIds]
+    [bundle.questions, answers, skippedIds],
   );
 
   const updateAnswer = useCallback(
     (questionId: string, patch: Partial<GoalSetupQuestionAnswer>) => {
       const answerFieldsChanged =
-        Object.prototype.hasOwnProperty.call(patch, 'answer') ||
-        Object.prototype.hasOwnProperty.call(patch, 'customAnswer') ||
-        Object.prototype.hasOwnProperty.call(patch, 'selectedOptionIds');
+        Object.prototype.hasOwnProperty.call(patch, "answer") ||
+        Object.prototype.hasOwnProperty.call(patch, "customAnswer") ||
+        Object.prototype.hasOwnProperty.call(patch, "selectedOptionIds");
       setAnswers((current) => ({
         ...current,
         [questionId]: {
@@ -252,31 +246,31 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
         return next;
       });
     },
-    []
+    [],
   );
 
   const doSubmit = async () => {
-    if (submitState === 'submitting') return;
+    if (submitState === "submitting") return;
     setShowIncompleteWarning(false);
-    setSubmitState('submitting');
-    setError('');
+    setSubmitState("submitting");
+    setError("");
     try {
       await submitGoalSetup({
-        stage: 'interview',
+        stage: "interview",
         title: bundle.title,
         goalSlug: bundle.goalSlug,
         answers: answerList,
       });
-      setSubmitState('submitted');
+      setSubmitState("submitted");
       onSubmitted?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission failed');
-      setSubmitState('error');
+      setError(err instanceof Error ? err.message : "Submission failed");
+      setSubmitState("error");
     }
   };
 
   const handleSubmit = () => {
-    if (submitState === 'submitting') return;
+    if (submitState === "submitting") return;
     if (incompleteQuestions.length > 0 || skippedQuestions.length > 0) {
       setShowIncompleteWarning(true);
       return;
@@ -289,9 +283,9 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
   useEffect(() => {
     onActionStateChange?.({
       canSubmit: true,
-      isSubmitting: submitState === 'submitting',
-      submitted: submitState === 'submitted',
-      submitLabel: 'Submit Answers',
+      isSubmitting: submitState === "submitting",
+      submitted: submitState === "submitted",
+      submitLabel: "Submit Answers",
     });
   }, [onActionStateChange, submitState]);
 
@@ -302,13 +296,15 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       const currentIndex = activeQuestionId ? ids.indexOf(activeQuestionId) : -1;
       const nextIndex =
         currentIndex === -1
-          ? delta === 1 ? 0 : ids.length - 1
+          ? delta === 1
+            ? 0
+            : ids.length - 1
           : Math.max(0, Math.min(ids.length - 1, currentIndex + delta));
       const nextId = ids[nextIndex];
       setActiveQuestionId(nextId);
       focusQuestionControl(nextId, { scroll: true });
     },
-    [bundle.questions, activeQuestionId, focusQuestionControl]
+    [bundle.questions, activeQuestionId, focusQuestionControl],
   );
 
   const skipQuestion = useCallback(
@@ -320,31 +316,30 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       });
       advance(1);
     },
-    [advance]
+    [advance],
   );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-
       // Ctrl+letter shortcuts — work from anywhere, including inside text fields
       if (event.ctrlKey && !event.metaKey && !event.altKey && activeQuestionId) {
         const key = event.key.toLowerCase();
-        if (key === 'u') {
+        if (key === "u") {
           event.preventDefault();
           setRecommendationActionForId({ id: activeQuestionId, nonce: Date.now() });
           return;
         }
-        if (key === 'k') {
+        if (key === "k") {
           event.preventDefault();
           skipQuestion(activeQuestionId);
           return;
         }
-        if (key === 'j') {
+        if (key === "j") {
           event.preventDefault();
           setNoteOpenForId(activeQuestionId);
           requestAnimationFrame(() => {
             const row = questionRefs.current.get(activeQuestionId);
-            const noteInput = row?.querySelector<HTMLElement>('.goal-note-textarea');
+            const noteInput = row?.querySelector<HTMLElement>(".goal-note-textarea");
             if (noteInput) requestAnimationFrame(() => noteInput.focus());
           });
           return;
@@ -352,9 +347,9 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       }
 
       // Escape — blur current input so shortcuts work again
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         const el = event.target;
-        if (el instanceof HTMLElement && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+        if (el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
           event.preventDefault();
           el.blur();
         }
@@ -362,10 +357,10 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       }
 
       // Tab / Shift+Tab — advance between questions
-      if (event.key === 'Tab') {
+      if (event.key === "Tab") {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;
-        if (!target.closest('.goal-row')) return;
+        if (!target.closest(".goal-row")) return;
         event.preventDefault();
         advance(event.shiftKey ? -1 : 1);
         return;
@@ -374,18 +369,25 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       // Number keys — toggle options on the active question
       if (!activeQuestionId) return;
       const el = event.target;
-      if (el instanceof HTMLElement && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (
+        el instanceof HTMLElement &&
+        (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)
+      )
+        return;
 
       const activeQuestion = bundle.questions.find((q) => q.id === activeQuestionId);
       if (!activeQuestion?.options?.length) return;
-      const mode = activeQuestion.answerMode || 'text';
-      const isMulti = mode === 'multi' || mode === 'multi-custom';
+      const mode = activeQuestion.answerMode || "text";
+      const isMulti = mode === "multi" || mode === "multi-custom";
 
       // "/" — focus the custom input for the active question
-      if (event.key === '/' && (mode === 'custom' || mode === 'single-custom' || mode === 'multi-custom')) {
+      if (
+        event.key === "/" &&
+        (mode === "custom" || mode === "single-custom" || mode === "multi-custom")
+      ) {
         event.preventDefault();
         const row = questionRefs.current.get(activeQuestionId);
-        const customInput = row?.querySelector<HTMLElement>('.goal-custom-input');
+        const customInput = row?.querySelector<HTMLElement>(".goal-custom-input");
         customInput?.focus();
         return;
       }
@@ -405,13 +407,13 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       } else {
         updateAnswer(activeQuestionId, {
           selectedOptionIds: current.selectedOptionIds.includes(option.id) ? [] : [option.id],
-          customAnswer: '',
+          customAnswer: "",
         });
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [advance, activeQuestionId, bundle.questions, answers, updateAnswer, skipQuestion]);
 
   return (
@@ -425,10 +427,17 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
         message={
           <>
             {skippedQuestions.length > 0 && (
-              <span>{skippedQuestions.length} skipped question{skippedQuestions.length !== 1 ? 's' : ''} will be sent as skipped, including any notes. </span>
+              <span>
+                {skippedQuestions.length} skipped question{skippedQuestions.length !== 1 ? "s" : ""}{" "}
+                will be sent as skipped, including any notes.{" "}
+              </span>
             )}
             {incompleteQuestions.length > 0 && (
-              <span>{incompleteQuestions.length} required question{incompleteQuestions.length !== 1 ? 's' : ''} {incompleteQuestions.length !== 1 ? 'are' : 'is'} still unanswered. </span>
+              <span>
+                {incompleteQuestions.length} required question
+                {incompleteQuestions.length !== 1 ? "s" : ""}{" "}
+                {incompleteQuestions.length !== 1 ? "are" : "is"} still unanswered.{" "}
+              </span>
             )}
             <span>The agent will work with whatever you've provided.</span>
           </>
@@ -438,27 +447,27 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
         showCancel
       />
 
-      <div className="goal-shell" data-has-active={activeQuestionId !== null ? 'true' : 'false'}>
+      <div className="goal-shell" data-has-active={activeQuestionId !== null ? "true" : "false"}>
         <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
               Goal interview
             </div>
             <h1 className="mt-0.5 truncate text-lg font-medium leading-tight text-foreground">
-              {bundle.title || 'Answer the setup questions'}
+              {bundle.title || "Answer the setup questions"}
             </h1>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <div className="flex items-center gap-1">
               <GoalCopyButton
                 onClick={copyInterviewJson}
-                copied={copied === 'interview-json'}
+                copied={copied === "interview-json"}
                 format="JSON"
                 title="Copy all questions and answers as raw JSON"
               />
               <GoalCopyButton
                 onClick={copyInterviewMarkdown}
-                copied={copied === 'interview-markdown'}
+                copied={copied === "interview-markdown"}
                 format="Markdown"
                 title="Copy all questions and answers as markdown"
               />
@@ -481,10 +490,14 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
           const skipped = skippedIds.has(question.id) && !complete;
           const noteSummary = answer.note?.trim();
           const summary = skipped
-            ? noteSummary ? `Skipped · ${noteSummary}` : 'Skipped'
+            ? noteSummary
+              ? `Skipped · ${noteSummary}`
+              : "Skipped"
             : complete
-              ? buildAnswerText(question, answer).replace(/\s*\n+\s*/g, ' · ').trim()
-              : '';
+              ? buildAnswerText(question, answer)
+                  .replace(/\s*\n+\s*/g, " · ")
+                  .trim()
+              : "";
 
           return (
             <div
@@ -494,18 +507,16 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 else questionRefs.current.delete(question.id);
               }}
               className={cx(
-                'goal-row',
-                isActive && 'active',
-                complete && 'answered',
-                skipped && 'skipped'
+                "goal-row",
+                isActive && "active",
+                complete && "answered",
+                skipped && "skipped",
               )}
             >
               <button
                 type="button"
                 onClick={() => {
-                  setActiveQuestionId((current) =>
-                    current === question.id ? null : question.id
-                  );
+                  setActiveQuestionId((current) => (current === question.id ? null : question.id));
                 }}
                 tabIndex={-1}
                 aria-expanded={isActive}
@@ -517,10 +528,12 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                     {question.prompt}
                   </span>
                   {!isActive && summary && (
-                    <span className={cx(
-                      'mt-0.5 block truncate text-[12px] leading-snug',
-                      skipped ? 'text-warning' : 'text-muted-foreground'
-                    )}>
+                    <span
+                      className={cx(
+                        "mt-0.5 block truncate text-[12px] leading-snug",
+                        skipped ? "text-warning" : "text-muted-foreground",
+                      )}
+                    >
                       {summary}
                     </span>
                   )}
@@ -534,13 +547,13 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 {complete && !skipped && <Check className="h-3.5 w-3.5 shrink-0 text-success/85" />}
                 <ChevronDown
                   className={cx(
-                    'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150',
-                    isActive && 'rotate-180'
+                    "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150",
+                    isActive && "rotate-180",
                   )}
                 />
               </button>
 
-              <div className={cx('goal-question-body', isActive && 'expanded')}>
+              <div className={cx("goal-question-body", isActive && "expanded")}>
                 <div className="goal-question-body-inner">
                   <div className="goal-row-divider" />
                   <QuestionAnswerControls
@@ -548,9 +561,7 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                     answer={answer}
                     onChange={(patch) => updateAnswer(question.id, patch)}
                     noteOpen={noteOpenForId === question.id}
-                    onNoteOpenChange={(open) =>
-                      setNoteOpenForId(open ? question.id : null)
-                    }
+                    onNoteOpenChange={(open) => setNoteOpenForId(open ? question.id : null)}
                     onSkip={() => skipQuestion(question.id)}
                     recommendationCommand={
                       recommendationActionForId?.id === question.id
@@ -569,7 +580,7 @@ const InterviewSurface = React.forwardRef<GoalSetupSurfaceHandle, {
     </section>
   );
 });
-InterviewSurface.displayName = 'InterviewSurface';
+InterviewSurface.displayName = "InterviewSurface";
 
 const QuestionAnswerControls: React.FC<{
   question: GoalSetupQuestion;
@@ -579,25 +590,35 @@ const QuestionAnswerControls: React.FC<{
   onNoteOpenChange: (open: boolean) => void;
   onSkip: () => void;
   recommendationCommand: { nonce: number } | null;
-}> = ({ question, answer, onChange, noteOpen, onNoteOpenChange, onSkip, recommendationCommand }) => {
-  const mode = question.answerMode || 'text';
+}> = ({
+  question,
+  answer,
+  onChange,
+  noteOpen,
+  onNoteOpenChange,
+  onSkip,
+  recommendationCommand,
+}) => {
+  const mode = question.answerMode || "text";
   const options = question.options || [];
-  const supportsOptions = mode === 'single' || mode === 'multi' || mode === 'single-custom' || mode === 'multi-custom';
-  const supportsCustom = mode === 'custom' || mode === 'single-custom' || mode === 'multi-custom';
-  const supportsText = mode === 'text';
-  const isMulti = mode === 'multi' || mode === 'multi-custom';
+  const supportsOptions =
+    mode === "single" || mode === "multi" || mode === "single-custom" || mode === "multi-custom";
+  const supportsCustom = mode === "custom" || mode === "single-custom" || mode === "multi-custom";
+  const supportsText = mode === "text";
+  const isMulti = mode === "multi" || mode === "multi-custom";
   const textValue = supportsText ? answer.answer : answer.customAnswer;
-  const showTextArea = supportsText || mode === 'custom';
+  const showTextArea = supportsText || mode === "custom";
   const showCustomOption = supportsOptions && supportsCustom;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasAnyAnswer = hasAnswer(question, answer);
-  const canUseRecommendation = showTextArea || supportsCustom || Boolean(question.recommendedOptionIds?.length);
+  const canUseRecommendation =
+    showTextArea || supportsCustom || Boolean(question.recommendedOptionIds?.length);
 
   useEffect(() => {
     if (answer.note && !noteOpen) {
       onNoteOpenChange(true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answer.note]);
 
   const toggleOption = (optionId: string) => {
@@ -611,20 +632,18 @@ const QuestionAnswerControls: React.FC<{
     }
     onChange({
       selectedOptionIds: answer.selectedOptionIds.includes(optionId) ? [] : [optionId],
-      customAnswer: '',
+      customAnswer: "",
     });
   };
 
   const updateTextValue = (value: string) => {
-    supportsText
-      ? onChange({ answer: value })
-      : onChange({ customAnswer: value });
+    supportsText ? onChange({ answer: value }) : onChange({ customAnswer: value });
   };
 
   const updateCustomOption = (value: string) => {
     onChange({
       customAnswer: value,
-      ...(mode === 'single-custom' && value.trim() ? { selectedOptionIds: [] } : {}),
+      ...(mode === "single-custom" && value.trim() ? { selectedOptionIds: [] } : {}),
     });
   };
 
@@ -635,16 +654,16 @@ const QuestionAnswerControls: React.FC<{
       patch.selectedOptionIds = isMulti
         ? question.recommendedOptionIds
         : [question.recommendedOptionIds[0]];
-      if (!isMulti) patch.customAnswer = '';
+      if (!isMulti) patch.customAnswer = "";
     }
     if (question.recommendedAnswer) {
       if (supportsText) {
         patch.answer = question.recommendedAnswer;
-      } else if (mode === 'custom') {
+      } else if (mode === "custom") {
         patch.customAnswer = question.recommendedAnswer;
       } else if (supportsCustom && !hasRecommendedOptions) {
         patch.customAnswer = question.recommendedAnswer;
-        if (mode === 'single-custom') patch.selectedOptionIds = [];
+        if (mode === "single-custom") patch.selectedOptionIds = [];
       }
     }
     if (Object.keys(patch).length === 0) return;
@@ -655,7 +674,7 @@ const QuestionAnswerControls: React.FC<{
   useEffect(() => {
     if (!recommendationCommand) return;
     applyRecommendation();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recommendationCommand?.nonce]);
 
   return (
@@ -670,9 +689,12 @@ const QuestionAnswerControls: React.FC<{
           <div className="min-w-0 flex-1">
             <RecommendedBadge label="Recommended" />
             <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-              {question.recommendedAnswer || question.recommendedOptionIds!.map((id) =>
-                question.options?.find((o) => o.id === id)?.label ?? id
-              ).join(', ')}
+              {question.recommendedAnswer ||
+                question
+                  .recommendedOptionIds!.map(
+                    (id) => question.options?.find((o) => o.id === id)?.label ?? id,
+                  )
+                  .join(", ")}
             </p>
           </div>
           {canUseRecommendation && (
@@ -697,19 +719,19 @@ const QuestionAnswerControls: React.FC<{
                 type="button"
                 onClick={() => toggleOption(option.id)}
                 className={cx(
-                  'goal-answer-focus flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors',
+                  "goal-answer-focus flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors",
                   selected
-                    ? 'bg-primary/10 text-foreground'
-                    : 'text-foreground/85 hover:bg-muted/30'
+                    ? "bg-primary/10 text-foreground"
+                    : "text-foreground/85 hover:bg-muted/30",
                 )}
               >
                 <span
                   className={cx(
-                    'flex h-3.5 w-3.5 flex-none items-center justify-center transition-colors',
-                    isMulti ? 'rounded-sm' : 'rounded-full',
+                    "flex h-3.5 w-3.5 flex-none items-center justify-center transition-colors",
+                    isMulti ? "rounded-sm" : "rounded-full",
                     selected
-                      ? 'bg-primary text-primary-foreground'
-                      : 'border-[1.5px] border-muted-foreground/35'
+                      ? "bg-primary text-primary-foreground"
+                      : "border-[1.5px] border-muted-foreground/35",
                   )}
                 >
                   {selected && <Check className="h-2 w-2" strokeWidth={3} />}
@@ -720,29 +742,33 @@ const QuestionAnswerControls: React.FC<{
                     <span className="text-muted-foreground"> — {option.description}</span>
                   )}
                 </span>
-                <kbd className="goal-shortcut-pill ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border/40 bg-muted/40 font-mono text-[10px] text-muted-foreground">{optionIndex + 1}</kbd>
+                <kbd className="goal-shortcut-pill ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border/40 bg-muted/40 font-mono text-[10px] text-muted-foreground">
+                  {optionIndex + 1}
+                </kbd>
               </button>
             );
           })}
           {showCustomOption && (
             <label
               className={cx(
-                'flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors',
-                answer.customAnswer.trim()
-                  ? 'bg-primary/10'
-                  : 'hover:bg-muted/30'
+                "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors",
+                answer.customAnswer.trim() ? "bg-primary/10" : "hover:bg-muted/30",
               )}
             >
               <span
                 className={cx(
-                  'flex h-3.5 w-3.5 flex-none items-center justify-center transition-colors',
-                  isMulti ? 'rounded-sm' : 'rounded-full',
+                  "flex h-3.5 w-3.5 flex-none items-center justify-center transition-colors",
+                  isMulti ? "rounded-sm" : "rounded-full",
                   answer.customAnswer.trim()
-                    ? 'bg-primary text-primary-foreground'
-                    : 'border-[1.5px] border-muted-foreground/35'
+                    ? "bg-primary text-primary-foreground"
+                    : "border-[1.5px] border-muted-foreground/35",
                 )}
               >
-                {answer.customAnswer.trim() ? <Check className="h-2 w-2" strokeWidth={3} /> : <Plus className="h-2 w-2" strokeWidth={3} />}
+                {answer.customAnswer.trim() ? (
+                  <Check className="h-2 w-2" strokeWidth={3} />
+                ) : (
+                  <Plus className="h-2 w-2" strokeWidth={3} />
+                )}
               </span>
               <input
                 value={answer.customAnswer}
@@ -750,7 +776,9 @@ const QuestionAnswerControls: React.FC<{
                 placeholder="Other…"
                 className="goal-answer-focus goal-custom-input min-w-0 flex-1 bg-transparent text-[13px] leading-snug text-foreground outline-none placeholder:text-muted-foreground/50"
               />
-              <kbd className="goal-shortcut-pill ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border/40 bg-muted/40 font-mono text-[10px] text-muted-foreground">/</kbd>
+              <kbd className="goal-shortcut-pill ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border/40 bg-muted/40 font-mono text-[10px] text-muted-foreground">
+                /
+              </kbd>
             </label>
           )}
         </div>
@@ -761,7 +789,7 @@ const QuestionAnswerControls: React.FC<{
           ref={textareaRef}
           value={textValue}
           onChange={(event) => updateTextValue(event.target.value)}
-          placeholder={question.recommendedAnswer || 'Type your answer'}
+          placeholder={question.recommendedAnswer || "Type your answer"}
           className="goal-answer-focus"
         />
       )}
@@ -770,11 +798,13 @@ const QuestionAnswerControls: React.FC<{
         {noteOpen ? (
           <div className="rounded-md bg-muted/25 p-2">
             <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Note</span>
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Note
+              </span>
               <button
                 type="button"
                 onClick={() => {
-                  onChange({ note: '' });
+                  onChange({ note: "" });
                   onNoteOpenChange(false);
                 }}
                 className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -785,14 +815,14 @@ const QuestionAnswerControls: React.FC<{
               </button>
             </div>
             <Textarea
-              value={answer.note || ''}
+              value={answer.note || ""}
               onChange={(event) => onChange({ note: event.target.value })}
               placeholder="Add context, constraints, or questions for the agent"
               className="goal-note-textarea min-h-16 border-0 bg-transparent focus:ring-0"
             />
             <div className="mt-2 flex justify-end">
               <Button type="button" variant="ghost" size="sm" onClick={onSkip}>
-                {answer.note?.trim() ? 'Skip with note' : 'Skip'}
+                {answer.note?.trim() ? "Skip with note" : "Skip"}
                 <ChevronDown className="h-3 w-3 -rotate-90" />
               </Button>
             </div>
@@ -815,18 +845,48 @@ const QuestionAnswerControls: React.FC<{
 };
 
 const FACTS_HELP_ITEMS = [
-  { icon: Check, label: 'Accept', color: 'text-success', description: 'Mark a fact as accepted. Accepted facts become part of the final fact sheet.' },
-  { icon: Edit3, label: 'Edit', color: 'text-primary', description: 'Edit the fact text before accepting. Click again to finish editing.' },
-  { icon: MessageSquare, label: 'Comment', color: 'text-primary', description: 'Add a note or context to a fact. The agent sees your comments alongside the fact.' },
-  { icon: TestTube2, label: 'Auto-verify', color: 'text-primary', description: 'Flag this fact for automated verification. The agent will write concrete test checks for flagged facts in the plan.' },
-  { icon: Trash2, label: 'Remove', color: 'text-destructive', description: 'Remove a fact entirely. It won\'t appear in the final fact sheet or plan.' },
+  {
+    icon: Check,
+    label: "Accept",
+    color: "text-success",
+    description: "Mark a fact as accepted. Accepted facts become part of the final fact sheet.",
+  },
+  {
+    icon: Edit3,
+    label: "Edit",
+    color: "text-primary",
+    description: "Edit the fact text before accepting. Click again to finish editing.",
+  },
+  {
+    icon: MessageSquare,
+    label: "Comment",
+    color: "text-primary",
+    description:
+      "Add a note or context to a fact. The agent sees your comments alongside the fact.",
+  },
+  {
+    icon: TestTube2,
+    label: "Auto-verify",
+    color: "text-primary",
+    description:
+      "Flag this fact for automated verification. The agent will write concrete test checks for flagged facts in the plan.",
+  },
+  {
+    icon: Trash2,
+    label: "Remove",
+    color: "text-destructive",
+    description: "Remove a fact entirely. It won't appear in the final fact sheet or plan.",
+  },
 ];
 
-const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
-  bundle: GoalSetupFactsBundle;
-  onSubmitted?: () => void;
-  onActionStateChange?: (state: GoalSetupActionState) => void;
-}>(({ bundle, onSubmitted, onActionStateChange }, ref) => {
+const FactsSurface = React.forwardRef<
+  GoalSetupSurfaceHandle,
+  {
+    bundle: GoalSetupFactsBundle;
+    onSubmitted?: () => void;
+    onActionStateChange?: (state: GoalSetupActionState) => void;
+  }
+>(({ bundle, onSubmitted, onActionStateChange }, ref) => {
   // Product choice: facts stay visible after acceptance so later review passes keep context.
   // `showAccepted` is legacy model state and does not hide rows in this surface.
   const [facts, setFacts] = useState<GoalSetupFactResult[]>(() =>
@@ -838,66 +898,66 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
       comment: fact.comment,
       automatedVerification: fact.automatedVerification,
       recommendedAutomatedVerification: fact.recommendedAutomatedVerification,
-    }))
+    })),
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [commentingId, setCommentingId] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const [submitState, setSubmitState] = useState<SubmitState>('idle');
-  const [error, setError] = useState('');
+  const [submitState, setSubmitState] = useState<SubmitState>("idle");
+  const [error, setError] = useState("");
   const { copied, copy } = useGoalSetupCopy(setError);
   const commentButtons = useRef(new Map<string, HTMLButtonElement>());
   const commentDrafts = useRef(new Map<string, string>());
 
   const liveFacts = facts.filter((fact) => !fact.removed);
   const acceptedCount = liveFacts.filter((fact) => fact.accepted).length;
-  const commentingFact = commentingId
-    ? facts.find((fact) => fact.id === commentingId)
-    : undefined;
-  const commentingAnchor = commentingId
-    ? commentButtons.current.get(commentingId)
-    : undefined;
+  const commentingFact = commentingId ? facts.find((fact) => fact.id === commentingId) : undefined;
+  const commentingAnchor = commentingId ? commentButtons.current.get(commentingId) : undefined;
 
   const updateFact = useCallback((id: string, patch: Partial<GoalSetupFactResult>) => {
-    setFacts((current) =>
-      current.map((fact) => (fact.id === id ? { ...fact, ...patch } : fact))
-    );
+    setFacts((current) => current.map((fact) => (fact.id === id ? { ...fact, ...patch } : fact)));
   }, []);
 
-  const withOpenCommentDraft = useCallback((sourceFacts: GoalSetupFactResult[]) => {
-    if (!commentingId) return sourceFacts;
-    const draft = commentDrafts.current.get(commentingId);
-    if (draft === undefined) return sourceFacts;
-    return sourceFacts.map((fact) =>
-      fact.id === commentingId ? { ...fact, comment: draft.trim() ? draft : '' } : fact
-    );
-  }, [commentingId]);
+  const withOpenCommentDraft = useCallback(
+    (sourceFacts: GoalSetupFactResult[]) => {
+      if (!commentingId) return sourceFacts;
+      const draft = commentDrafts.current.get(commentingId);
+      if (draft === undefined) return sourceFacts;
+      return sourceFacts.map((fact) =>
+        fact.id === commentingId ? { ...fact, comment: draft.trim() ? draft : "" } : fact,
+      );
+    },
+    [commentingId],
+  );
 
-  const submitFacts = useCallback(async (nextFacts = facts) => {
-    if (submitState === 'submitting') return;
-    const factsToSubmit = withOpenCommentDraft(nextFacts);
-    const blankFact = factsToSubmit.find((fact) => !fact.removed && !fact.text.trim());
-    if (blankFact) {
-      setError('Fact text cannot be empty. Edit the blank fact or remove it before submitting.');
-      setEditingId(blankFact.id);
-      return;
-    }
-    setError('');
-    setSubmitState('submitting');
-    try {
-      await submitGoalSetup({
-        stage: 'facts',
-        title: bundle.title,
-        goalSlug: bundle.goalSlug,
-        facts: factsToSubmit,
-      });
-      setSubmitState('submitted');
-      onSubmitted?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submission failed');
-      setSubmitState('error');
-    }
-  }, [bundle.goalSlug, bundle.title, facts, onSubmitted, submitState, withOpenCommentDraft]);
+  const submitFacts = useCallback(
+    async (nextFacts = facts) => {
+      if (submitState === "submitting") return;
+      const factsToSubmit = withOpenCommentDraft(nextFacts);
+      const blankFact = factsToSubmit.find((fact) => !fact.removed && !fact.text.trim());
+      if (blankFact) {
+        setError("Fact text cannot be empty. Edit the blank fact or remove it before submitting.");
+        setEditingId(blankFact.id);
+        return;
+      }
+      setError("");
+      setSubmitState("submitting");
+      try {
+        await submitGoalSetup({
+          stage: "facts",
+          title: bundle.title,
+          goalSlug: bundle.goalSlug,
+          facts: factsToSubmit,
+        });
+        setSubmitState("submitted");
+        onSubmitted?.();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Submission failed");
+        setSubmitState("error");
+      }
+    },
+    [bundle.goalSlug, bundle.title, facts, onSubmitted, submitState, withOpenCommentDraft],
+  );
 
   const handleSubmit = useCallback(() => {
     submitFacts();
@@ -905,16 +965,19 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
 
   const acceptAllFacts = useCallback(() => {
     setFacts((current) =>
-      current.map((fact) => (fact.removed ? fact : { ...fact, accepted: true }))
+      current.map((fact) => (fact.removed ? fact : { ...fact, accepted: true })),
     );
   }, []);
 
   const copyFactsJson = useCallback(() => {
-    copy('facts-json', JSON.stringify(buildFactsCopyPayload(bundle, withOpenCommentDraft(facts)), null, 2));
+    copy(
+      "facts-json",
+      JSON.stringify(buildFactsCopyPayload(bundle, withOpenCommentDraft(facts)), null, 2),
+    );
   }, [bundle, copy, facts, withOpenCommentDraft]);
 
   const copyFactsMarkdown = useCallback(() => {
-    copy('facts-markdown', formatFactsMarkdown(bundle, withOpenCommentDraft(facts)));
+    copy("facts-markdown", formatFactsMarkdown(bundle, withOpenCommentDraft(facts)));
   }, [bundle, copy, facts, withOpenCommentDraft]);
 
   React.useImperativeHandle(ref, () => ({ submit: handleSubmit }), [handleSubmit]);
@@ -922,9 +985,9 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
   useEffect(() => {
     onActionStateChange?.({
       canSubmit: true,
-      isSubmitting: submitState === 'submitting',
-      submitted: submitState === 'submitted',
-      submitLabel: 'Submit Facts',
+      isSubmitting: submitState === "submitting",
+      submitted: submitState === "submitted",
+      submitLabel: "Submit Facts",
     });
   }, [onActionStateChange, submitState]);
 
@@ -938,7 +1001,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
             </div>
             <div className="mt-0.5 flex items-baseline gap-2">
               <h1 className="truncate text-lg font-medium leading-tight text-foreground">
-                {bundle.title || 'Review the facts'}
+                {bundle.title || "Review the facts"}
               </h1>
               <button
                 type="button"
@@ -953,19 +1016,19 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
             <div className="flex items-center gap-1">
               <GoalCopyButton
                 onClick={copyFactsJson}
-                copied={copied === 'facts-json'}
+                copied={copied === "facts-json"}
                 format="JSON"
                 title="Copy all facts as raw JSON"
               />
               <GoalCopyButton
                 onClick={copyFactsMarkdown}
-                copied={copied === 'facts-markdown'}
+                copied={copied === "facts-markdown"}
                 format="Markdown"
                 title="Copy all facts as markdown"
               />
               <GoalHeaderButton
                 onClick={acceptAllFacts}
-                disabled={liveFacts.length === 0 || submitState === 'submitting'}
+                disabled={liveFacts.length === 0 || submitState === "submitting"}
                 title="Accept every visible fact"
                 className="gap-1.5 text-success hover:bg-success/10 hover:text-success"
               >
@@ -990,7 +1053,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
             <div className="space-y-3">
               {FACTS_HELP_ITEMS.map((item) => (
                 <div key={item.label} className="flex items-start gap-2.5">
-                  <item.icon className={cx('mt-0.5 h-4 w-4 shrink-0', item.color)} />
+                  <item.icon className={cx("mt-0.5 h-4 w-4 shrink-0", item.color)} />
                   <div>
                     <div className="text-sm font-medium text-foreground">{item.label}</div>
                     <div className="text-xs text-muted-foreground">{item.description}</div>
@@ -1013,14 +1076,14 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
             <div
               key={fact.id}
               className={cx(
-                'goal-row flex items-center gap-2.5 px-3 py-2.5',
-                fact.accepted && 'answered'
+                "goal-row flex items-center gap-2.5 px-3 py-2.5",
+                fact.accepted && "answered",
               )}
             >
               <button
                 type="button"
                 onClick={() => updateFact(fact.id, { accepted: !fact.accepted })}
-                title={fact.accepted ? 'Unaccept' : 'Accept'}
+                title={fact.accepted ? "Unaccept" : "Accept"}
                 className="shrink-0"
               >
                 <StatusDot complete={fact.accepted} />
@@ -1047,10 +1110,12 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 <button
                   type="button"
                   onClick={() => updateFact(fact.id, { accepted: !fact.accepted })}
-                  title={fact.accepted ? 'Unaccept' : 'Accept'}
+                  title={fact.accepted ? "Unaccept" : "Accept"}
                   className={cx(
-                    'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
-                    fact.accepted ? 'bg-success/15 text-success' : 'text-muted-foreground hover:bg-success/10 hover:text-success'
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                    fact.accepted
+                      ? "bg-success/15 text-success"
+                      : "text-muted-foreground hover:bg-success/10 hover:text-success",
                   )}
                 >
                   <Check className="h-3.5 w-3.5" />
@@ -1058,10 +1123,10 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                 <button
                   type="button"
                   onClick={() => setEditingId(editing ? null : fact.id)}
-                  title={editing ? 'Done editing' : 'Edit'}
+                  title={editing ? "Done editing" : "Edit"}
                   className={cx(
-                    'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
-                    editing ? 'bg-primary/10 text-primary' : 'hover:bg-muted hover:text-foreground'
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors",
+                    editing ? "bg-primary/10 text-primary" : "hover:bg-muted hover:text-foreground",
                   )}
                 >
                   <Edit3 className="h-3.5 w-3.5" />
@@ -1075,19 +1140,25 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
                   onClick={() => setCommentingId(fact.id)}
                   title="Comment"
                   className={cx(
-                    'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
-                    fact.comment ? 'bg-primary/10 text-primary' : 'hover:bg-muted hover:text-foreground'
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors",
+                    fact.comment
+                      ? "bg-primary/10 text-primary"
+                      : "hover:bg-muted hover:text-foreground",
                   )}
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => updateFact(fact.id, { automatedVerification: !fact.automatedVerification })}
-                  title={fact.automatedVerification ? 'Disable auto-verify' : 'Enable auto-verify'}
+                  onClick={() =>
+                    updateFact(fact.id, { automatedVerification: !fact.automatedVerification })
+                  }
+                  title={fact.automatedVerification ? "Disable auto-verify" : "Enable auto-verify"}
                   className={cx(
-                    'inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors',
-                    fact.automatedVerification ? 'bg-primary/10 text-primary' : 'hover:bg-muted hover:text-foreground'
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors",
+                    fact.automatedVerification
+                      ? "bg-primary/10 text-primary"
+                      : "hover:bg-muted hover:text-foreground",
                   )}
                 >
                   <TestTube2 className="h-3.5 w-3.5" />
@@ -1118,7 +1189,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
           anchorEl={commentingAnchor}
           contextText={commentingFact.text}
           isGlobal={false}
-          initialText={commentingFact.comment || ''}
+          initialText={commentingFact.comment || ""}
           draftKey={goalFactCommentDraftKey(bundle, commentingFact.id)}
           allowImages={false}
           allowEmptySubmit
@@ -1127,7 +1198,7 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
           }}
           onSubmit={(text) => {
             commentDrafts.current.delete(commentingFact.id);
-            updateFact(commentingFact.id, { comment: text.trim() ? text : '' });
+            updateFact(commentingFact.id, { comment: text.trim() ? text : "" });
             setCommentingId(null);
           }}
           onClose={() => {
@@ -1139,38 +1210,34 @@ const FactsSurface = React.forwardRef<GoalSetupSurfaceHandle, {
     </section>
   );
 });
-FactsSurface.displayName = 'FactsSurface';
+FactsSurface.displayName = "FactsSurface";
 
 const GoalHeaderButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({
   className,
-  type = 'button',
+  type = "button",
   ...props
 }) => (
   <button
     type={type}
     className={cx(
-      'inline-flex h-6 items-center rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40',
-      className
+      "inline-flex h-6 items-center rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40",
+      className,
     )}
     {...props}
   />
 );
 
-const GoalCopyButton: React.FC<{
-  copied: boolean;
-  format: 'JSON' | 'Markdown';
-} & React.ButtonHTMLAttributes<HTMLButtonElement>> = ({
-  copied,
-  format,
-  className,
-  title,
-  ...props
-}) => (
+const GoalCopyButton: React.FC<
+  {
+    copied: boolean;
+    format: "JSON" | "Markdown";
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>
+> = ({ copied, format, className, title, ...props }) => (
   <GoalHeaderButton
     className={cx(
-      'gap-1.5 bg-muted/50 px-2.5',
-      copied && 'bg-success/10 text-success hover:bg-success/10 hover:text-success',
-      className
+      "gap-1.5 bg-muted/50 px-2.5",
+      copied && "bg-success/10 text-success hover:bg-success/10 hover:text-success",
+      className,
     )}
     title={copied ? `Copied ${format}` : title}
     aria-label={`Copy ${format}`}
@@ -1194,20 +1261,31 @@ const GoalShortcutPill: React.FC = () => (
     <kbd>tab</kbd>
     <span>next</span>
     <span className="text-muted-foreground/40">·</span>
-    <span className="flex"><kbd>ctrl</kbd><kbd>u</kbd></span>
+    <span className="flex">
+      <kbd>ctrl</kbd>
+      <kbd>u</kbd>
+    </span>
     <span>use rec</span>
     <span className="text-muted-foreground/40">·</span>
-    <span className="flex"><kbd>ctrl</kbd><kbd>k</kbd></span>
+    <span className="flex">
+      <kbd>ctrl</kbd>
+      <kbd>k</kbd>
+    </span>
     <span>skip</span>
     <span className="text-muted-foreground/40">·</span>
-    <span className="flex"><kbd>ctrl</kbd><kbd>j</kbd></span>
+    <span className="flex">
+      <kbd>ctrl</kbd>
+      <kbd>j</kbd>
+    </span>
     <span>note</span>
     <span className="text-muted-foreground/40">·</span>
-    <span className="flex"><kbd>cmd</kbd><kbd>enter</kbd></span>
+    <span className="flex">
+      <kbd>cmd</kbd>
+      <kbd>enter</kbd>
+    </span>
     <span>submit</span>
   </div>
 );
-
 
 const RecommendedBadge: React.FC<{ label: string }> = ({ label }) => (
   <span className="inline-flex self-start items-center rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
@@ -1219,18 +1297,17 @@ const StatusDot: React.FC<{ complete: boolean; skipped?: boolean }> = ({ complet
   <span
     aria-hidden="true"
     className={cx(
-      'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full transition-colors',
+      "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full transition-colors",
       complete
-        ? 'bg-success text-success-foreground'
+        ? "bg-success text-success-foreground"
         : skipped
-          ? 'bg-warning text-warning-foreground'
-          : 'border-[1.5px] border-muted-foreground/30 bg-transparent'
+          ? "bg-warning text-warning-foreground"
+          : "border-[1.5px] border-muted-foreground/30 bg-transparent",
     )}
   >
     {(complete || skipped) && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
   </span>
 );
-
 
 function hasAnswer(question: GoalSetupQuestion, answer: GoalSetupQuestionAnswer): boolean {
   const text = buildAnswerText(question, answer);
@@ -1243,18 +1320,16 @@ function buildAnswerText(question: GoalSetupQuestion, answer: GoalSetupQuestionA
       ?.filter((option) => answer.selectedOptionIds.includes(option.id))
       .map((option) => option.label) || [];
   const freeText =
-    (question.answerMode || 'text') === 'text'
-      ? answer.answer.trim()
-      : answer.customAnswer.trim();
-  return [...selectedLabels, freeText].filter(Boolean).join('\n');
+    (question.answerMode || "text") === "text" ? answer.answer.trim() : answer.customAnswer.trim();
+  return [...selectedLabels, freeText].filter(Boolean).join("\n");
 }
 
 function buildInterviewCopyPayload(
   bundle: GoalSetupInterviewBundle,
-  answers: GoalSetupQuestionAnswer[]
+  answers: GoalSetupQuestionAnswer[],
 ) {
   return {
-    stage: 'interview',
+    stage: "interview",
     title: bundle.title,
     goalSlug: bundle.goalSlug,
     questions: bundle.questions,
@@ -1262,12 +1337,9 @@ function buildInterviewCopyPayload(
   };
 }
 
-function buildFactsCopyPayload(
-  bundle: GoalSetupFactsBundle,
-  facts: GoalSetupFactResult[]
-) {
+function buildFactsCopyPayload(bundle: GoalSetupFactsBundle, facts: GoalSetupFactResult[]) {
   return {
-    stage: 'facts',
+    stage: "facts",
     title: bundle.title,
     goalSlug: bundle.goalSlug,
     facts,
@@ -1276,18 +1348,18 @@ function buildFactsCopyPayload(
 
 function formatInterviewMarkdown(
   bundle: GoalSetupInterviewBundle,
-  answers: GoalSetupQuestionAnswer[]
+  answers: GoalSetupQuestionAnswer[],
 ): string {
   const answerById = new Map(answers.map((answer) => [answer.questionId, answer]));
-  const lines = [`# ${bundle.title || 'Goal interview'}`, '', '## Questions'];
+  const lines = [`# ${bundle.title || "Goal interview"}`, "", "## Questions"];
 
   bundle.questions.forEach((question, index) => {
     const answer = answerById.get(question.id);
-    const answerText = answer?.answer?.trim() || '';
-    const note = answer?.note?.trim() || '';
-    const status = answer?.skipped ? 'skipped' : answer?.completed ? 'answered' : 'unanswered';
+    const answerText = answer?.answer?.trim() || "";
+    const note = answer?.note?.trim() || "";
+    const status = answer?.skipped ? "skipped" : answer?.completed ? "answered" : "unanswered";
 
-    lines.push('', `${index + 1}. ${question.prompt}`);
+    lines.push("", `${index + 1}. ${question.prompt}`);
     lines.push(`   - Status: ${status}`);
 
     if (question.description) {
@@ -1295,64 +1367,61 @@ function formatInterviewMarkdown(
     }
 
     if (question.recommendedAnswer) {
-      lines.push('   - Recommended answer:');
-      lines.push(...indentMarkdownBlock(question.recommendedAnswer, '     '));
+      lines.push("   - Recommended answer:");
+      lines.push(...indentMarkdownBlock(question.recommendedAnswer, "     "));
     }
 
     if (question.options?.length) {
-      lines.push('   - Options:');
+      lines.push("   - Options:");
       for (const option of question.options) {
         const selected = answer?.selectedOptionIds.includes(option.id) ?? false;
         const recommended = question.recommendedOptionIds?.includes(option.id) ?? false;
-        const description = option.description ? ` - ${option.description}` : '';
+        const description = option.description ? ` - ${option.description}` : "";
         lines.push(
-          `     - [${selected ? 'x' : ' '}] ${option.label}${recommended ? ' (recommended)' : ''}${description}`
+          `     - [${selected ? "x" : " "}] ${option.label}${recommended ? " (recommended)" : ""}${description}`,
         );
       }
     }
 
-    lines.push('   - Answer:');
-    lines.push(...indentMarkdownBlock(answerText || '_No answer yet_', '     '));
+    lines.push("   - Answer:");
+    lines.push(...indentMarkdownBlock(answerText || "_No answer yet_", "     "));
 
     if (note) {
-      lines.push('   - Note:');
-      lines.push(...indentMarkdownBlock(note, '     '));
+      lines.push("   - Note:");
+      lines.push(...indentMarkdownBlock(note, "     "));
     }
   });
 
-  return `${lines.join('\n').trimEnd()}\n`;
+  return `${lines.join("\n").trimEnd()}\n`;
 }
 
-function formatFactsMarkdown(
-  bundle: GoalSetupFactsBundle,
-  facts: GoalSetupFactResult[]
-): string {
-  const lines = [`# ${bundle.title || 'Facts'}`, '', '## Facts'];
+function formatFactsMarkdown(bundle: GoalSetupFactsBundle, facts: GoalSetupFactResult[]): string {
+  const lines = [`# ${bundle.title || "Facts"}`, "", "## Facts"];
 
   if (facts.length === 0) {
-    lines.push('', 'No facts.');
-    return `${lines.join('\n').trimEnd()}\n`;
+    lines.push("", "No facts.");
+    return `${lines.join("\n").trimEnd()}\n`;
   }
 
   for (const fact of facts) {
-    const status = fact.removed ? 'removed' : fact.accepted ? 'accepted' : 'pending';
-    const checkbox = fact.accepted && !fact.removed ? 'x' : ' ';
+    const status = fact.removed ? "removed" : fact.accepted ? "accepted" : "pending";
+    const checkbox = fact.accepted && !fact.removed ? "x" : " ";
     const factText = fact.removed ? `~~${fact.text}~~` : fact.text;
-    const verification = `${fact.automatedVerification ? 'yes' : 'no'}${
-      fact.recommendedAutomatedVerification ? ' (recommended)' : ''
+    const verification = `${fact.automatedVerification ? "yes" : "no"}${
+      fact.recommendedAutomatedVerification ? " (recommended)" : ""
     }`;
 
-    lines.push('', `- [${checkbox}] ${factText}`);
+    lines.push("", `- [${checkbox}] ${factText}`);
     lines.push(`  - Status: ${status}`);
     lines.push(`  - Automated verification: ${verification}`);
 
     if (fact.comment?.trim()) {
-      lines.push('  - Comment:');
-      lines.push(...indentMarkdownBlock(fact.comment, '    '));
+      lines.push("  - Comment:");
+      lines.push(...indentMarkdownBlock(fact.comment, "    "));
     }
   }
 
-  return `${lines.join('\n').trimEnd()}\n`;
+  return `${lines.join("\n").trimEnd()}\n`;
 }
 
 function indentMarkdownBlock(text: string, prefix: string): string[] {
@@ -1362,6 +1431,6 @@ function indentMarkdownBlock(text: string, prefix: string): string[] {
 }
 
 function goalFactCommentDraftKey(bundle: GoalSetupFactsBundle, factId: string): string {
-  const scope = bundle.goalSlug || bundle.title || 'untitled-goal';
+  const scope = bundle.goalSlug || bundle.title || "untitled-goal";
   return `goal-fact-${scope}-${factId}`;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 /**
  * "Is this document being rendered for paper right now?"
@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react';
  * `visibilitychange` back to a visible document also exits print mode.
  */
 export function subscribePrintMedia(setPrinting: (printing: boolean) => void): () => void {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === "undefined") return () => {};
 
   const onBeforePrint = () => setPrinting(true);
   const onAfterPrint = () => setPrinting(false);
@@ -26,20 +26,20 @@ export function subscribePrintMedia(setPrinting: (printing: boolean) => void): (
     if (!document.hidden) setPrinting(false);
   };
 
-  window.addEventListener('beforeprint', onBeforePrint);
-  window.addEventListener('afterprint', onAfterPrint);
-  document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener("beforeprint", onBeforePrint);
+  window.addEventListener("afterprint", onAfterPrint);
+  document.addEventListener("visibilitychange", onVisibilityChange);
 
-  const query = typeof window.matchMedia === 'function' ? window.matchMedia('print') : null;
+  const query = typeof window.matchMedia === "function" ? window.matchMedia("print") : null;
   const onMediaChange = (event: MediaQueryListEvent) => setPrinting(event.matches);
-  query?.addEventListener?.('change', onMediaChange);
+  query?.addEventListener?.("change", onMediaChange);
   if (query?.matches) setPrinting(true);
 
   return () => {
-    window.removeEventListener('beforeprint', onBeforePrint);
-    window.removeEventListener('afterprint', onAfterPrint);
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-    query?.removeEventListener?.('change', onMediaChange);
+    window.removeEventListener("beforeprint", onBeforePrint);
+    window.removeEventListener("afterprint", onAfterPrint);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+    query?.removeEventListener?.("change", onMediaChange);
   };
 }
 

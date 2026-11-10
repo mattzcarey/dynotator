@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { extractCandidateCodePaths } from "@dynotator/core/extract-code-paths";
 
 export type ValidationEntry =
-	| { status: "found"; resolved: string }
-	| { status: "ambiguous"; matches: string[] }
-	| { status: "missing" }
-	| { status: "unavailable" };
+  | { status: "found"; resolved: string }
+  | { status: "ambiguous"; matches: string[] }
+  | { status: "missing" }
+  | { status: "unavailable" };
 
 export type ValidatedMap = Map<string, ValidationEntry>;
 
@@ -27,68 +27,68 @@ export type ValidatedMap = Map<string, ValidationEntry>;
  * demoted to plain text.
  */
 export function useValidatedCodePaths(
-	markdown: string,
-	baseDir?: string,
-	disabled?: boolean,
+  markdown: string,
+  baseDir?: string,
+  disabled?: boolean,
 ): { validated: ValidatedMap; ready: boolean } {
-	const [validated, setValidated] = useState<ValidatedMap>(new Map());
-	const [ready, setReady] = useState<boolean>(false);
+  const [validated, setValidated] = useState<ValidatedMap>(new Map());
+  const [ready, setReady] = useState<boolean>(false);
 
-	useEffect(() => {
-		setValidated(new Map());
-		setReady(false);
+  useEffect(() => {
+    setValidated(new Map());
+    setReady(false);
 
-		// Host opt-out (e.g. a backend with no /api/doc/exists). Default undefined
-		// for Plannotator => unchanged. When disabled we never probe and leave
-		// ready=false, so gateCodePath's no-validation fallback renders code links
-		// optimistically (clickable) instead of demoting them to plain text.
-		if (disabled) {
-			return;
-		}
+    // Host opt-out (e.g. a backend with no /api/doc/exists). Default undefined
+    // for Plannotator => unchanged. When disabled we never probe and leave
+    // ready=false, so gateCodePath's no-validation fallback renders code links
+    // optimistically (clickable) instead of demoting them to plain text.
+    if (disabled) {
+      return;
+    }
 
-		const candidates = extractCandidateCodePaths(markdown);
-		if (candidates.length === 0) {
-			setReady(true);
-			return;
-		}
+    const candidates = extractCandidateCodePaths(markdown);
+    if (candidates.length === 0) {
+      setReady(true);
+      return;
+    }
 
-		let cancelled = false;
-		(async () => {
-			try {
-				const res = await fetch("/api/doc/exists", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify(
-						baseDir ? { paths: candidates, base: baseDir } : { paths: candidates },
-					),
-				});
-				if (cancelled) return;
-				if (!res.ok) {
-					setReady(true);
-					return;
-				}
-				const data = (await res.json()) as {
-					results: Record<string, ValidationEntry>;
-				};
-				if (cancelled) return;
-				const next: ValidatedMap = new Map();
-				for (const [k, v] of Object.entries(data.results ?? {})) {
-					next.set(k, v);
-				}
-				setValidated(next);
-				setReady(true);
-			} catch {
-				if (!cancelled) setReady(true);
-			}
-		})();
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/doc/exists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            baseDir ? { paths: candidates, base: baseDir } : { paths: candidates },
+          ),
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          setReady(true);
+          return;
+        }
+        const data = (await res.json()) as {
+          results: Record<string, ValidationEntry>;
+        };
+        if (cancelled) return;
+        const next: ValidatedMap = new Map();
+        for (const [k, v] of Object.entries(data.results ?? {})) {
+          next.set(k, v);
+        }
+        setValidated(next);
+        setReady(true);
+      } catch {
+        if (!cancelled) setReady(true);
+      }
+    })();
 
-		return () => {
-			cancelled = true;
-		};
-	}, [markdown, baseDir, disabled]);
+    return () => {
+      cancelled = true;
+    };
+  }, [markdown, baseDir, disabled]);
 
-	// Stable reference: only changes when validated/ready actually change.
-	// Without memoization, the parent provider's value is a fresh object every
-	// render, forcing all context consumers (every InlineMarkdown) to re-render.
-	return useMemo(() => ({ validated, ready }), [validated, ready]);
+  // Stable reference: only changes when validated/ready actually change.
+  // Without memoization, the parent provider's value is a fresh object every
+  // render, forcing all context consumers (every InlineMarkdown) to re-render.
+  return useMemo(() => ({ validated, ready }), [validated, ready]);
 }

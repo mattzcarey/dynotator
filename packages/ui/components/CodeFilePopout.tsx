@@ -1,18 +1,21 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { File, type LineAnnotation } from '@pierre/diffs/react';
-import type { SelectedLineRange as PierreSelectedLineRange, LineEventBaseProps } from '@pierre/diffs';
-import { normalizeBrowserPath } from '@dynotator/core/browser-paths';
-import { basenameFromPath } from '@dynotator/core/source-save';
-import { PopoutDialog } from './PopoutDialog';
-import { isCommentSubmitKey } from '../utils/commentSubmitKey';
-import { useConfigValue } from '../config/useConfig';
-import { extendThemeSwitch, useTheme } from './ThemeProvider';
-import { CommentPopover, type CommentExtraAction } from './CommentPopover';
-import { ImageThumbnail } from './ImageThumbnail';
-import type { CodeAnnotation, ImageAttachment } from '../types';
-import { copyTextToClipboard } from '../utils/clipboard';
-import { whenCodeLineRendered } from '../utils/codeLineScroll';
-import { hashDraftScope } from '../utils/draftScopeHash';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { File, type LineAnnotation } from "@pierre/diffs/react";
+import type {
+  SelectedLineRange as PierreSelectedLineRange,
+  LineEventBaseProps,
+} from "@pierre/diffs";
+import { normalizeBrowserPath } from "@dynotator/core/browser-paths";
+import { basenameFromPath } from "@dynotator/core/source-save";
+import { PopoutDialog } from "./PopoutDialog";
+import { isCommentSubmitKey } from "../utils/commentSubmitKey";
+import { useConfigValue } from "../config/useConfig";
+import { extendThemeSwitch, useTheme } from "./ThemeProvider";
+import { CommentPopover, type CommentExtraAction } from "./CommentPopover";
+import { ImageThumbnail } from "./ImageThumbnail";
+import type { CodeAnnotation, ImageAttachment } from "../types";
+import { copyTextToClipboard } from "../utils/clipboard";
+import { whenCodeLineRendered } from "../utils/codeLineScroll";
+import { hashDraftScope } from "../utils/draftScopeHash";
 
 export interface CodeFileAnnotationInput {
   filePath: string;
@@ -59,39 +62,39 @@ interface PendingComment {
 }
 
 const gutterButtonStyle: React.CSSProperties = {
-  appearance: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '1lh',
-  height: '1lh',
-  fontSize: 'var(--diffs-font-size, 13px)',
-  lineHeight: 'var(--diffs-line-height, 20px)',
-  border: 'none',
+  appearance: "none",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "1lh",
+  height: "1lh",
+  fontSize: "var(--diffs-font-size, 13px)",
+  lineHeight: "var(--diffs-line-height, 20px)",
+  border: "none",
   borderRadius: 4,
-  backgroundColor: 'var(--diffs-modified-base)',
-  color: 'var(--diffs-bg)',
-  cursor: 'pointer',
-  position: 'relative',
+  backgroundColor: "var(--diffs-modified-base)",
+  color: "var(--diffs-bg)",
+  cursor: "pointer",
+  position: "relative",
   zIndex: 4,
   padding: 0,
-  marginRight: 'calc(1ch - 1lh)',
+  marginRight: "calc(1ch - 1lh)",
 };
 
 function getThemeColors(): { bg: string; fg: string } {
   try {
     const styles = getComputedStyle(document.documentElement);
     return {
-      bg: styles.getPropertyValue('--background').trim(),
-      fg: styles.getPropertyValue('--foreground').trim(),
+      bg: styles.getPropertyValue("--background").trim(),
+      fg: styles.getPropertyValue("--foreground").trim(),
     };
   } catch {
-    return { bg: '', fg: '' };
+    return { bg: "", fg: "" };
   }
 }
 
-function buildPierreCSS(mode: 'dark' | 'light', bg: string, fg: string): string {
-  if (!bg || !fg) return '';
+function buildPierreCSS(mode: "dark" | "light", bg: string, fg: string): string {
+  if (!bg || !fg) return "";
   return `
     :host {
       color-scheme: ${mode};
@@ -115,9 +118,9 @@ function buildPierreCSS(mode: 'dark' | 'light', bg: string, fg: string): string 
 
 function getLineSlice(contents: string, start: number, end: number): string {
   return contents
-    .split('\n')
+    .split("\n")
     .slice(Math.max(0, start - 1), Math.max(0, end))
-    .join('\n');
+    .join("\n");
 }
 
 function lineLabel(start: number, end: number): string {
@@ -130,7 +133,7 @@ function getLineNumberFromSelectionNode(node: Node | null): number | null {
 
   while (current) {
     if (current instanceof HTMLElement) {
-      const line = current.closest('[data-line]')?.getAttribute('data-line');
+      const line = current.closest("[data-line]")?.getAttribute("data-line");
       if (line) {
         const parsed = Number(line);
         return Number.isFinite(parsed) ? parsed : null;
@@ -143,12 +146,11 @@ function getLineNumberFromSelectionNode(node: Node | null): number | null {
 }
 
 function getPierreSelection(root: HTMLElement | null): Selection | null {
-  const shadowRoot = root?.querySelector('diffs-container')?.shadowRoot;
-  const shadowSelection = (shadowRoot as (ShadowRoot & { getSelection?: () => Selection | null }) | null)
-    ?.getSelection?.();
-  return shadowSelection && !shadowSelection.isCollapsed
-    ? shadowSelection
-    : window.getSelection();
+  const shadowRoot = root?.querySelector("diffs-container")?.shadowRoot;
+  const shadowSelection = (
+    shadowRoot as (ShadowRoot & { getSelection?: () => Selection | null }) | null
+  )?.getSelection?.();
+  return shadowSelection && !shadowSelection.isCollapsed ? shadowSelection : window.getSelection();
 }
 
 const CodeInlineAnnotation: React.FC<{
@@ -161,19 +163,25 @@ const CodeInlineAnnotation: React.FC<{
   reopenEdit?: { id: string; text: string } | null;
 }> = ({ annotation, isSelected, onSelect, onEdit, onDelete, reopenEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(annotation.text ?? '');
+  const [editText, setEditText] = useState(annotation.text ?? "");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const enterSavesComment = useConfigValue('enterSavesComment');
+  const enterSavesComment = useConfigValue("enterSavesComment");
   const reopenedRef = useRef<{ id: string; text: string } | null>(null);
   const caretAtEndRef = useRef(false);
 
   useEffect(() => {
-    if (!isEditing) setEditText(annotation.text ?? '');
+    if (!isEditing) setEditText(annotation.text ?? "");
   }, [annotation.text, isEditing]);
 
   // Each put-back edit opens once, on its own card.
   useEffect(() => {
-    if (!reopenEdit || !onEdit || reopenEdit.id !== annotation.id || reopenedRef.current === reopenEdit) return;
+    if (
+      !reopenEdit ||
+      !onEdit ||
+      reopenEdit.id !== annotation.id ||
+      reopenedRef.current === reopenEdit
+    )
+      return;
     reopenedRef.current = reopenEdit;
     caretAtEndRef.current = true;
     setEditText(reopenEdit.text);
@@ -185,7 +193,8 @@ const CodeInlineAnnotation: React.FC<{
       const area = textareaRef.current;
       area?.focus();
       // Words put back: the caret after them (selecting them would let one key replace them all).
-      if (caretAtEndRef.current && area) area.setSelectionRange(area.value.length, area.value.length);
+      if (caretAtEndRef.current && area)
+        area.setSelectionRange(area.value.length, area.value.length);
       else area?.select();
       caretAtEndRef.current = false;
     }
@@ -201,11 +210,13 @@ const CodeInlineAnnotation: React.FC<{
       data-code-annotation-id={annotation.id}
       onClick={() => onSelect?.(annotation.id)}
       className={`group my-2 mx-3 rounded-lg border px-3 py-2 text-xs shadow-sm cursor-pointer transition-colors ${
-        isSelected ? 'border-primary/50' : 'border-border hover:border-border/80'
+        isSelected ? "border-primary/50" : "border-border hover:border-border/80"
       }`}
       style={{
-        backgroundColor: isSelected ? 'color-mix(in oklab, var(--primary) 12%, var(--popover))' : 'var(--popover)',
-        color: 'var(--foreground)',
+        backgroundColor: isSelected
+          ? "color-mix(in oklab, var(--primary) 12%, var(--popover))"
+          : "var(--popover)",
+        color: "var(--foreground)",
         opacity: 1,
       }}
     >
@@ -214,11 +225,18 @@ const CodeInlineAnnotation: React.FC<{
         <span className="rounded bg-muted px-1.5 py-0.5 font-mono normal-case text-foreground">
           {lineLabel(annotation.lineStart, annotation.lineEnd)}
         </span>
-        {annotation.author && <span className="truncate normal-case">by <bdi>{annotation.author}</bdi></span>}
+        {annotation.author && (
+          <span className="truncate normal-case">
+            by <bdi>{annotation.author}</bdi>
+          </span>
+        )}
         {annotation.outsideDiff && (
           <span
             className="rounded px-1.5 py-0.5 normal-case font-medium"
-            style={{ background: 'color-mix(in oklab, var(--warning) 18%, transparent)', color: 'var(--warning)' }}
+            style={{
+              background: "color-mix(in oklab, var(--warning) 18%, transparent)",
+              color: "var(--warning)",
+            }}
             data-code-annotation-outside-diff=""
             title="A comment on lines outside the diff"
           >
@@ -236,8 +254,18 @@ const CodeInlineAnnotation: React.FC<{
               className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               title="Edit comment"
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
               </svg>
             </button>
           )}
@@ -251,7 +279,13 @@ const CodeInlineAnnotation: React.FC<{
               className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               title="Delete comment"
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg
+                className="h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -267,16 +301,16 @@ const CodeInlineAnnotation: React.FC<{
             onChange={(e) => setEditText(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') {
+              if (e.key === "Escape") {
                 e.preventDefault();
                 setIsEditing(false);
-                setEditText(annotation.text ?? '');
+                setEditText(annotation.text ?? "");
               } else if (isCommentSubmitKey(e, enterSavesComment)) {
                 e.preventDefault();
                 save();
               }
             }}
-            rows={Math.min(editText.split('\n').length + 1, 8)}
+            rows={Math.min(editText.split("\n").length + 1, 8)}
             className="w-full resize-none rounded border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           <div className="flex items-center gap-2">
@@ -295,7 +329,7 @@ const CodeInlineAnnotation: React.FC<{
               onClick={(e) => {
                 e.stopPropagation();
                 setIsEditing(false);
-                setEditText(annotation.text ?? '');
+                setEditText(annotation.text ?? "");
               }}
               className="rounded bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/80"
             >
@@ -316,7 +350,10 @@ const CodeInlineAnnotation: React.FC<{
           {annotation.images.map((img) => (
             <div key={img.path} className="text-center">
               <ImageThumbnail path={img.path} size="sm" showRemove={false} />
-              <div className="max-w-[3rem] truncate text-[9px] text-muted-foreground" title={img.name}>
+              <div
+                className="max-w-[3rem] truncate text-[9px] text-muted-foreground"
+                title={img.name}
+              >
                 {img.name}
               </div>
             </div>
@@ -344,7 +381,12 @@ export interface CodeFileViewProps {
   commentSubmitLabel?: string;
   commentAskLabel?: string;
   /** The comment box's third action (Shape's Show me): these lines, and the words typed. */
-  commentExtraAction?: (lines: { filePath: string; lineStart: number; lineEnd: number; originalCode: string }) => CommentExtraAction | undefined;
+  commentExtraAction?: (lines: {
+    filePath: string;
+    lineStart: number;
+    lineEnd: number;
+    originalCode: string;
+  }) => CommentExtraAction | undefined;
   onEditAnnotation?: (id: string, updates: Partial<CodeAnnotation>) => void;
   onDeleteAnnotation?: (id: string) => void;
   onSelectAnnotation?: (id: string | null) => void;
@@ -355,7 +397,7 @@ export interface CodeFileViewProps {
   /** The highlighting language, instead of Pierre's inference from the name (`'text'`: no highlighting, for a very large file). */
   lang?: string;
   /** Long lines: `'scroll'` sideways (the default) or `'wrap'` onto the next row, for a minified file. */
-  overflow?: 'scroll' | 'wrap';
+  overflow?: "scroll" | "wrap";
   /** CSS added inside the file's shadow root after the theme (a host's line
    *  marks, e.g. code review's change bars on `[data-column-number="12"]`). */
   extraCss?: string;
@@ -365,7 +407,7 @@ export interface CodeFileViewProps {
   /** The token under the pointer (`enter` / `leave`) and the last one clicked
    *  (`click`): a host's "go to definition" looks there. Turning it on wraps
    *  the file's tokens (Pierre's token transformer). */
-  onTokenTarget?: (kind: 'enter' | 'leave' | 'click', target: CodeFileTokenTarget) => void;
+  onTokenTarget?: (kind: "enter" | "leave" | "click", target: CodeFileTokenTarget) => void;
   /** Cmd/Ctrl-click (or Alt-click) on a token: a host's references. */
   onTokenNavigate?: (target: CodeFileTokenTarget) => void;
   /**
@@ -386,7 +428,9 @@ export interface CodeFileViewProps {
    * composer opens, and null as it closes, so a host can keep its words
    * (read from the box) if the view is taken away. Absent: nothing changes.
    */
-  onComposerLines?: (lines: { lineStart: number; lineEnd: number; originalCode: string } | null) => void;
+  onComposerLines?: (
+    lines: { lineStart: number; lineEnd: number; originalCode: string } | null,
+  ) => void;
 }
 
 /** A token of a file drawn by `CodeFileView` (Pierre's token event, file mode). */
@@ -421,9 +465,9 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
   onDeleteAnnotation,
   onSelectAnnotation,
   allowImages = true,
-  className = 'flex-1 min-h-0',
+  className = "flex-1 min-h-0",
   lang,
-  overflow = 'scroll',
+  overflow = "scroll",
   extraCss,
   revealLine,
   onTokenTarget,
@@ -433,10 +477,10 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
   onComposerLines,
 }) => {
   const { resolvedMode } = useTheme();
-  const mode = resolvedMode ?? 'dark';
+  const mode = resolvedMode ?? "dark";
   const colors = getThemeColors();
   const [pierreTheme, setPierreTheme] = useState(() => ({
-    type: mode as 'dark' | 'light',
+    type: mode as "dark" | "light",
     css: buildPierreCSS(mode, colors.bg, colors.fg),
   }));
   const [pendingComment, setPendingComment] = useState<PendingComment | null>(null);
@@ -445,7 +489,11 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
   useEffect(() => {
     onComposerLinesRef.current?.(
       pendingComment
-        ? { lineStart: pendingComment.range.start, lineEnd: pendingComment.range.end, originalCode: pendingComment.originalCode }
+        ? {
+            lineStart: pendingComment.range.start,
+            lineEnd: pendingComment.range.end,
+            originalCode: pendingComment.originalCode,
+          }
         : null,
     );
   }, [pendingComment]);
@@ -470,7 +518,7 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
   }, [filepath]);
 
   const displayName = basenameFromPath(filepath);
-  const relativePath = normalizeBrowserPath(filepath).replace(/.*\/(?=.*\/)/, '');
+  const relativePath = normalizeBrowserPath(filepath).replace(/.*\/(?=.*\/)/, "");
   const selectedCodeAnnotation = useMemo(
     () => annotations.find((ann) => ann.id === selectedAnnotationId),
     [annotations, selectedAnnotationId],
@@ -479,7 +527,7 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
   // TODO: add token-level annotation support (charStart/charEnd) — for now only line-scope
   const lineAnnotations = useMemo((): LineAnnotation<CodeAnnotation>[] => {
     return annotations
-      .filter((ann) => (ann.scope ?? 'line') === 'line')
+      .filter((ann) => (ann.scope ?? "line") === "line")
       .map((ann) => ({
         lineNumber: ann.lineEnd,
         metadata: ann,
@@ -513,13 +561,17 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
     let frame = 0;
     let attempts = 0;
     const find = () => {
-      const root = fileAreaRef.current?.querySelector('diffs-container')?.shadowRoot;
+      const root = fileAreaRef.current?.querySelector("diffs-container")?.shadowRoot;
       const row = root?.querySelector(`[data-line="${revealLine.line}"]`);
       if (row) {
         // Vertically only: scrollIntoView would also scroll a long line sideways.
         let node: Element | null = fileAreaRef.current;
         while (node) {
-          if (node instanceof HTMLElement && node.scrollHeight > node.clientHeight && /(auto|scroll)/.test(getComputedStyle(node).overflowY)) {
+          if (
+            node instanceof HTMLElement &&
+            node.scrollHeight > node.clientHeight &&
+            /(auto|scroll)/.test(getComputedStyle(node).overflowY)
+          ) {
             const box = node.getBoundingClientRect();
             const rect = row.getBoundingClientRect();
             node.scrollTop += rect.top - (box.top + box.height / 2) + rect.height / 2;
@@ -527,7 +579,7 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
           }
           node = node.parentElement;
         }
-        row.scrollIntoView({ block: 'center', inline: 'nearest' });
+        row.scrollIntoView({ block: "center", inline: "nearest" });
         return;
       }
       attempts += 1;
@@ -546,7 +598,7 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
     const timer = setTimeout(() => {
       fileAreaRef.current
         ?.querySelector(`[data-code-annotation-id="${selectedAnnotationId}"]`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 100);
     return () => clearTimeout(timer);
   }, [selectedAnnotationId, filepath]);
@@ -555,51 +607,74 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
   // only when the file or the line changes; a selected comment scrolls itself.
   const selectedAnnotationIdRef = useRef(selectedAnnotationId);
   selectedAnnotationIdRef.current = selectedAnnotationId;
-  const lineCount = useMemo(() => contents.split('\n').length, [contents]);
+  const lineCount = useMemo(() => contents.split("\n").length, [contents]);
   useEffect(() => {
     const area = fileAreaRef.current;
     if (line == null || !area || selectedAnnotationIdRef.current) return;
-    return whenCodeLineRendered(area, line, (lineEl) => {
-      lineEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, { lineCount });
+    return whenCodeLineRendered(
+      area,
+      line,
+      (lineEl) => {
+        lineEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      },
+      { lineCount },
+    );
   }, [line, filepath, lineCount, revealKey]);
 
-  const openCommentForRange = useCallback((
-    range: { start: number; end: number },
-    anchorEl?: HTMLElement,
-    anchorRect?: DOMRect,
-    initialText?: string,
-  ) => {
-    const start = Math.min(range.start, range.end);
-    const end = Math.max(range.start, range.end);
-    setPendingComment({
-      range: { start, end },
-      ...(initialText !== undefined ? { initialText } : {}),
-      anchorEl,
-      anchorRect: anchorRect ?? anchorEl?.getBoundingClientRect() ?? lastPointerRectRef.current ?? undefined,
-      contextText: `${relativePath} ${lineLabel(start, end)}`,
-      originalCode: getLineSlice(contents, start, end),
-      // The path alone is not the file: the Inbox passes a basename, so two
-      // threads' `index.ts` would share a draft. The contents hash, taken only
-      // when the composer opens, keeps one draft per file and range.
-      draftKey: `code-file:${filepath}:${hashDraftScope(contents)}:${start}-${end}`,
-    });
-  }, [contents, filepath, relativePath]);
+  const openCommentForRange = useCallback(
+    (
+      range: { start: number; end: number },
+      anchorEl?: HTMLElement,
+      anchorRect?: DOMRect,
+      initialText?: string,
+    ) => {
+      const start = Math.min(range.start, range.end);
+      const end = Math.max(range.start, range.end);
+      setPendingComment({
+        range: { start, end },
+        ...(initialText !== undefined ? { initialText } : {}),
+        anchorEl,
+        anchorRect:
+          anchorRect ??
+          anchorEl?.getBoundingClientRect() ??
+          lastPointerRectRef.current ??
+          undefined,
+        contextText: `${relativePath} ${lineLabel(start, end)}`,
+        originalCode: getLineSlice(contents, start, end),
+        // The path alone is not the file: the Inbox passes a basename, so two
+        // threads' `index.ts` would share a draft. The contents hash, taken only
+        // when the composer opens, keeps one draft per file and range.
+        draftKey: `code-file:${filepath}:${hashDraftScope(contents)}:${start}-${end}`,
+      });
+    },
+    [contents, filepath, relativePath],
+  );
 
   // A comment put back by the host: the composer opens on its lines once the
   // first of them is drawn (each request once).
-  const reopenedCommentRef = useRef<CodeFileViewProps['reopenComment']>(null);
+  const reopenedCommentRef = useRef<CodeFileViewProps["reopenComment"]>(null);
   useEffect(() => {
     const area = fileAreaRef.current;
-    if (!reopenComment || !area || !onAddAnnotation || reopenedCommentRef.current === reopenComment) return;
+    if (!reopenComment || !area || !onAddAnnotation || reopenedCommentRef.current === reopenComment)
+      return;
     const start = Math.min(reopenComment.lineStart, reopenComment.lineEnd);
     const end = Math.max(reopenComment.lineStart, reopenComment.lineEnd);
     if (start < 1 || end > lineCount) return;
     const request = reopenComment;
-    return whenCodeLineRendered(area, start, (lineEl) => {
-      reopenedCommentRef.current = request;
-      openCommentForRange({ start, end }, undefined, lineEl.getBoundingClientRect(), request.text);
-    }, { lineCount });
+    return whenCodeLineRendered(
+      area,
+      start,
+      (lineEl) => {
+        reopenedCommentRef.current = request;
+        openCommentForRange(
+          { start, end },
+          undefined,
+          lineEl.getBoundingClientRect(),
+          request.text,
+        );
+      },
+      { lineCount },
+    );
   }, [reopenComment, onAddAnnotation, openCommentForRange, lineCount]);
 
   const openCommentForBrowserSelection = useCallback(() => {
@@ -616,90 +691,114 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
     openCommentForRange(
       { start: anchorLine, end: focusLine },
       undefined,
-      lastPointerRectRef.current
-        ?? (selection.rangeCount > 0 ? selection.getRangeAt(0).getBoundingClientRect() : undefined),
+      lastPointerRectRef.current ??
+        (selection.rangeCount > 0 ? selection.getRangeAt(0).getBoundingClientRect() : undefined),
     );
     selection.removeAllRanges();
   }, [onAddAnnotation, openCommentForRange]);
 
-  const renderAnnotation = useCallback((annotation: LineAnnotation<CodeAnnotation>) => {
-    if (!annotation.metadata) return null;
-    return (
-      <CodeInlineAnnotation
-        annotation={annotation.metadata}
-        isSelected={selectedAnnotationId === annotation.metadata.id}
-        onSelect={onSelectAnnotation}
-        onEdit={onEditAnnotation}
-        onDelete={onDeleteAnnotation}
-        reopenEdit={reopenEdit}
-      />
-    );
-  }, [onDeleteAnnotation, onEditAnnotation, onSelectAnnotation, reopenEdit, selectedAnnotationId]);
+  const renderAnnotation = useCallback(
+    (annotation: LineAnnotation<CodeAnnotation>) => {
+      if (!annotation.metadata) return null;
+      return (
+        <CodeInlineAnnotation
+          annotation={annotation.metadata}
+          isSelected={selectedAnnotationId === annotation.metadata.id}
+          onSelect={onSelectAnnotation}
+          onEdit={onEditAnnotation}
+          onDelete={onDeleteAnnotation}
+          reopenEdit={reopenEdit}
+        />
+      );
+    },
+    [onDeleteAnnotation, onEditAnnotation, onSelectAnnotation, reopenEdit, selectedAnnotationId],
+  );
 
-  const renderGutterUtility = useCallback((getHoveredLine: () => { lineNumber: number } | undefined) => {
-    return (
-      <button
-        type="button"
-        style={gutterButtonStyle}
-        title="Add code comment"
-        onMouseEnter={(e) => {
-          e.currentTarget.style.filter = 'brightness(1.2)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.filter = '';
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          const line = getHoveredLine();
-          if (!line) return;
-          openCommentForRange({ start: line.lineNumber, end: line.lineNumber }, e.currentTarget);
-        }}
-      >
-        +
-      </button>
-    );
-  }, [openCommentForRange]);
+  const renderGutterUtility = useCallback(
+    (getHoveredLine: () => { lineNumber: number } | undefined) => {
+      return (
+        <button
+          type="button"
+          style={gutterButtonStyle}
+          title="Add code comment"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter = "brightness(1.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter = "";
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            const line = getHoveredLine();
+            if (!line) return;
+            openCommentForRange({ start: line.lineNumber, end: line.lineNumber }, e.currentTarget);
+          }}
+        >
+          +
+        </button>
+      );
+    },
+    [openCommentForRange],
+  );
 
-  const handleLineSelectionEnd = useCallback((range: PierreSelectedLineRange | null) => {
-    if (!onAddAnnotation) return;
-    if (!range) return;
-    if (range.start !== range.end) {
-      suppressLineClickUntilRef.current = Date.now() + 300;
-    }
-    openCommentForRange({ start: range.start, end: range.end }, undefined, lastPointerRectRef.current ?? undefined);
-  }, [onAddAnnotation, openCommentForRange]);
+  const handleLineSelectionEnd = useCallback(
+    (range: PierreSelectedLineRange | null) => {
+      if (!onAddAnnotation) return;
+      if (!range) return;
+      if (range.start !== range.end) {
+        suppressLineClickUntilRef.current = Date.now() + 300;
+      }
+      openCommentForRange(
+        { start: range.start, end: range.end },
+        undefined,
+        lastPointerRectRef.current ?? undefined,
+      );
+    },
+    [onAddAnnotation, openCommentForRange],
+  );
 
-  const tokenTargetOf = (props: { tokenText: string; tokenElement: HTMLElement; lineNumber: number; lineCharStart: number }): CodeFileTokenTarget => ({
+  const tokenTargetOf = (props: {
+    tokenText: string;
+    tokenElement: HTMLElement;
+    lineNumber: number;
+    lineCharStart: number;
+  }): CodeFileTokenTarget => ({
     tokenText: props.tokenText,
     tokenElement: props.tokenElement,
     lineNumber: props.lineNumber,
     lineCharStart: props.lineCharStart,
   });
-  const tokenOptions = onTokenTarget || onTokenNavigate
-    ? {
-        useTokenTransformer: true,
-        onTokenEnter: (props: CodeFileTokenTarget) => onTokenTarget?.('enter', tokenTargetOf(props)),
-        onTokenLeave: (props: CodeFileTokenTarget) => onTokenTarget?.('leave', tokenTargetOf(props)),
-        onTokenClick: (props: CodeFileTokenTarget, event: MouseEvent) => {
-          const target = tokenTargetOf(props);
-          onTokenTarget?.('click', target);
-          if (onTokenNavigate && (event.metaKey || event.ctrlKey || event.altKey)) {
-            suppressLineClickUntilRef.current = Date.now() + 300;
-            onTokenNavigate(target);
-          }
-        },
-      }
-    : {};
+  const tokenOptions =
+    onTokenTarget || onTokenNavigate
+      ? {
+          useTokenTransformer: true,
+          onTokenEnter: (props: CodeFileTokenTarget) =>
+            onTokenTarget?.("enter", tokenTargetOf(props)),
+          onTokenLeave: (props: CodeFileTokenTarget) =>
+            onTokenTarget?.("leave", tokenTargetOf(props)),
+          onTokenClick: (props: CodeFileTokenTarget, event: MouseEvent) => {
+            const target = tokenTargetOf(props);
+            onTokenTarget?.("click", target);
+            if (onTokenNavigate && (event.metaKey || event.ctrlKey || event.altKey)) {
+              suppressLineClickUntilRef.current = Date.now() + 300;
+              onTokenNavigate(target);
+            }
+          },
+        }
+      : {};
 
-  const handleLineClick = useCallback((props: LineEventBaseProps & { event: PointerEvent }) => {
-    if (!onAddAnnotation) return;
-    if (Date.now() < suppressLineClickUntilRef.current) return;
-    openCommentForRange(
-      { start: props.lineNumber, end: props.lineNumber },
-      undefined,
-      props.lineElement.getBoundingClientRect(),
-    );
-  }, [onAddAnnotation, openCommentForRange]);
+  const handleLineClick = useCallback(
+    (props: LineEventBaseProps & { event: PointerEvent }) => {
+      if (!onAddAnnotation) return;
+      if (Date.now() < suppressLineClickUntilRef.current) return;
+      openCommentForRange(
+        { start: props.lineNumber, end: props.lineNumber },
+        undefined,
+        props.lineElement.getBoundingClientRect(),
+      );
+    },
+    [onAddAnnotation, openCommentForRange],
+  );
 
   return (
     <>
@@ -722,12 +821,14 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
           selectedLines={selectedLines}
           renderAnnotation={renderAnnotation}
           renderGutterUtility={renderGutterUtility}
-          style={{
-            '--diffs-dark-bg': colors.bg,
-            '--diffs-light-bg': colors.bg,
-            '--diffs-dark': colors.fg,
-            '--diffs-light': colors.fg,
-          } as React.CSSProperties}
+          style={
+            {
+              "--diffs-dark-bg": colors.bg,
+              "--diffs-light-bg": colors.bg,
+              "--diffs-dark": colors.fg,
+              "--diffs-light": colors.fg,
+            } as React.CSSProperties
+          }
           options={{
             themeType: pierreTheme.type,
             unsafeCSS: extraCss ? `${pierreTheme.css}\n${extraCss}` : pierreTheme.css,
@@ -735,7 +836,7 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
             disableFileHeader: true,
             enableLineSelection: true,
             enableGutterUtility: !!onAddAnnotation,
-            lineHoverHighlight: onAddAnnotation ? 'line' : 'disabled',
+            lineHoverHighlight: onAddAnnotation ? "line" : "disabled",
             onLineClick: handleLineClick,
             onLineSelectionEnd: handleLineSelectionEnd,
             ...tokenOptions,
@@ -766,19 +867,36 @@ export const CodeFileView: React.FC<CodeFileViewProps> = ({
           }}
           submitLabel={commentSubmitLabel}
           askAILabel={commentAskLabel}
-          extraAction={commentExtraAction?.({ filePath: filepath, lineStart: pendingComment.range.start, lineEnd: pendingComment.range.end, originalCode: pendingComment.originalCode })}
-          onAskAI={onAskAnnotation ? (question) => {
-            onAskAnnotation({
-              filePath: filepath,
-              lineStart: pendingComment.range.start,
-              lineEnd: pendingComment.range.end,
-              text: question,
-              originalCode: pendingComment.originalCode,
-            });
-            setPendingComment(null);
-            return true;
-          } : undefined}
-          askAIContext={onAskAnnotation ? { kind: 'selection', label: pendingComment.contextText, text: pendingComment.originalCode } : undefined}
+          extraAction={commentExtraAction?.({
+            filePath: filepath,
+            lineStart: pendingComment.range.start,
+            lineEnd: pendingComment.range.end,
+            originalCode: pendingComment.originalCode,
+          })}
+          onAskAI={
+            onAskAnnotation
+              ? (question) => {
+                  onAskAnnotation({
+                    filePath: filepath,
+                    lineStart: pendingComment.range.start,
+                    lineEnd: pendingComment.range.end,
+                    text: question,
+                    originalCode: pendingComment.originalCode,
+                  });
+                  setPendingComment(null);
+                  return true;
+                }
+              : undefined
+          }
+          askAIContext={
+            onAskAnnotation
+              ? {
+                  kind: "selection",
+                  label: pendingComment.contextText,
+                  text: pendingComment.originalCode,
+                }
+              : undefined
+          }
           onClose={() => setPendingComment(null)}
         />
       )}
@@ -809,15 +927,15 @@ export const CodeFilePopout: React.FC<CodeFilePopoutProps> = ({
   const [copied, setCopied] = useState(false);
 
   const displayName = basenameFromPath(filepath);
-  const relativePath = normalizeBrowserPath(filepath).replace(/.*\/(?=.*\/)/, '');
-  const lineCount = useMemo(() => contents.split('\n').length, [contents]);
+  const relativePath = normalizeBrowserPath(filepath).replace(/.*\/(?=.*\/)/, "");
+  const lineCount = useMemo(() => contents.split("\n").length, [contents]);
 
   const handleCopy = async () => {
     if (await copyTextToClipboard(contents)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } else {
-      console.error('Failed to copy');
+      console.error("Failed to copy");
     }
   };
 
@@ -843,8 +961,8 @@ export const CodeFilePopout: React.FC<CodeFilePopoutProps> = ({
           </code>
           {isNotFound && (
             <p className="text-xs text-muted-foreground mt-1">
-              The path was referenced in the document but no matching file was found
-              in this project. It may describe a planned/future file.
+              The path was referenced in the document but no matching file was found in this
+              project. It may describe a planned/future file.
             </p>
           )}
         </div>
@@ -862,8 +980,18 @@ export const CodeFilePopout: React.FC<CodeFilePopoutProps> = ({
     >
       <div className="flex items-center gap-3 px-5 pt-4 pb-3 pr-12">
         <div className="flex items-center gap-2 min-w-0">
-          <svg className="w-4 h-4 flex-shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          <svg
+            className="w-4 h-4 flex-shrink-0 text-muted-foreground"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+            />
           </svg>
           <span className="text-sm font-medium text-foreground truncate" title={filepath}>
             {relativePath}
@@ -871,23 +999,37 @@ export const CodeFilePopout: React.FC<CodeFilePopoutProps> = ({
         </div>
         <div className="ml-auto flex items-center gap-2">
           {headerAction}
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {lineCount} lines
-          </span>
+          <span className="text-xs text-muted-foreground tabular-nums">{lineCount} lines</span>
           <button
             onClick={handleCopy}
-            title={copied ? 'Copied!' : 'Copy file contents'}
+            title={copied ? "Copied!" : "Copy file contents"}
             className={`p-1.5 rounded-md transition-colors ${
-              copied ? 'text-success' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              copied ? "text-success" : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             {copied ? (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
               </svg>
             )}
           </button>

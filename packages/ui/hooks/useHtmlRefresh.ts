@@ -1,20 +1,23 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 /**
  * A successful snapshot. `Extra` lets a host carry document metadata read
  * alongside the bytes (Plannotator: the root document's version diff) through
  * to `onSnapshot`; the hook never reads anything but `rawHtml`.
  */
-export type HtmlRefreshOkSnapshot<Extra extends object = object> = { status: 'ok'; rawHtml: string } & Extra;
+export type HtmlRefreshOkSnapshot<Extra extends object = object> = {
+  status: "ok";
+  rawHtml: string;
+} & Extra;
 
 /** What a host's `fetchSnapshot` resolves to. */
 export type HtmlRefreshSnapshot<Extra extends object = object> =
   | HtmlRefreshOkSnapshot<Extra>
-  | { status: 'missing' }
-  | { status: 'unavailable' };
+  | { status: "missing" }
+  | { status: "unavailable" };
 
 /** The outcome of one `refresh()` call, for host notifications (toasts). */
-export type HtmlRefreshResult = 'refreshed' | 'missing' | 'unavailable';
+export type HtmlRefreshResult = "refreshed" | "missing" | "unavailable";
 
 export interface UseHtmlRefreshOptions<Extra extends object = object> {
   /** Whether refresh is offered at all. Default true. */
@@ -111,11 +114,11 @@ export function useHtmlRefresh<Extra extends object = object>({
       try {
         result = await fetchSnapshot(requestKey);
       } catch {
-        result = { status: 'unavailable' };
+        result = { status: "unavailable" };
       }
       if (requestId !== requestRef.current || activeKeyRef.current !== requestKey) return;
 
-      if (result.status === 'missing' || result.status === 'unavailable') {
+      if (result.status === "missing" || result.status === "unavailable") {
         onResultRef.current?.(result.status);
         return;
       }
@@ -130,7 +133,7 @@ export function useHtmlRefresh<Extra extends object = object>({
       // and a document change clears it.
       restorePendingRef.current = { key: requestKey, generation: nextGeneration };
       setReloadGeneration(nextGeneration);
-      onResultRef.current?.('refreshed');
+      onResultRef.current?.("refreshed");
     } finally {
       if (requestId === requestRef.current) setIsRefreshing(false);
     }
@@ -142,7 +145,8 @@ export function useHtmlRefresh<Extra extends object = object>({
       !pending ||
       pending.key !== activeKeyRef.current ||
       pending.generation !== reloadGenerationRef.current
-    ) return;
+    )
+      return;
 
     restorePendingRef.current = null;
     onUnanchoredRef.current?.(missingIds);

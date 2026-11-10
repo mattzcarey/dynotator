@@ -1,21 +1,18 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { useDismissablePopover } from '../hooks/useDismissablePopover';
+import React, { useCallback, useRef, useState } from "react";
+import { useDismissablePopover } from "../hooks/useDismissablePopover";
 
 interface ActionMenuProps {
   className?: string;
   panelClassName?: string;
-  panelWidth?: 'default' | 'wide';
-  renderTrigger: (props: {
-    isOpen: boolean;
-    toggleMenu: () => void;
-  }) => React.ReactNode;
+  panelWidth?: "default" | "wide";
+  renderTrigger: (props: { isOpen: boolean; toggleMenu: () => void }) => React.ReactNode;
   children: (props: { closeMenu: () => void }) => React.ReactNode;
 }
 
 export const ActionMenu: React.FC<ActionMenuProps> = ({
   className,
   panelClassName,
-  panelWidth = 'default',
+  panelWidth = "default",
   renderTrigger,
   children,
 }) => {
@@ -33,16 +30,19 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   });
 
   return (
-    <div ref={menuRef} className={className ? `relative ${className}` : 'relative'}>
+    <div ref={menuRef} className={className ? `relative ${className}` : "relative"}>
       {renderTrigger({
         isOpen,
-        toggleMenu: () => setIsOpen(open => !open),
+        toggleMenu: () => setIsOpen((open) => !open),
       })}
 
       {isOpen && (
         <div
           data-pn-dismissable-popover="true"
-          className={panelClassName ?? `absolute top-full right-0 mt-1 ${panelWidth === 'wide' ? 'w-64' : 'w-56'} rounded-lg border border-border bg-popover py-1 shadow-xl z-[70]`}
+          className={
+            panelClassName ??
+            `absolute top-full right-0 mt-1 ${panelWidth === "wide" ? "w-64" : "w-56"} rounded-lg border border-border bg-popover py-1 shadow-xl z-[70]`
+          }
         >
           {children({ closeMenu: () => setIsOpen(false) })}
         </div>
@@ -60,7 +60,7 @@ interface ActionMenuItemProps {
   disabled?: boolean;
   /** ARIA menu semantics for hosts that render a real `role="menu"` popover
    *  (DecisionControl). Default undefined so existing consumers are unchanged. */
-  role?: 'menuitem';
+  role?: "menuitem";
   /** Appended to the row's classes (e.g. a tone token). Default undefined so
    *  existing consumers are byte-identical. */
   className?: string;
@@ -82,7 +82,7 @@ export const ActionMenuItem: React.FC<ActionMenuItemProps> = ({
     onClick={onClick}
     disabled={disabled}
     role={role}
-    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent${className ? ` ${className}` : ''}`}
+    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent${className ? ` ${className}` : ""}`}
   >
     <span className="text-muted-foreground">{icon}</span>
     {subtitle ? (
@@ -97,9 +97,7 @@ export const ActionMenuItem: React.FC<ActionMenuItemProps> = ({
   </button>
 );
 
-export const ActionMenuDivider: React.FC = () => (
-  <div className="my-1 border-t border-border" />
-);
+export const ActionMenuDivider: React.FC = () => <div className="my-1 border-t border-border" />;
 
 export const ActionMenuSectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

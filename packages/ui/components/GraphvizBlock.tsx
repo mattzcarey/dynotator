@@ -1,6 +1,6 @@
-import React from 'react';
-import { __setGraphvizRuntimeLoaderForTests } from '../utils/graphviz';
-import { DiagramBlock, type DiagramBlockProps } from './DiagramBlock';
+import React from "react";
+import { __setGraphvizRuntimeLoaderForTests } from "../utils/graphviz";
+import { DiagramBlock, type DiagramBlockProps } from "./DiagramBlock";
 
 /** Test hook: stand in for the engine import and shorten the retry delay
  * (the slot's, re-exported under the name the lazy-retry test uses). */

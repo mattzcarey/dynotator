@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { buildCsv } from './TableBlock';
-import { copyTextToClipboard } from '../../utils/clipboard';
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { buildCsv } from "./TableBlock";
+import { copyTextToClipboard } from "../../utils/clipboard";
 
 interface TableToolbarProps {
   element: HTMLElement;
@@ -39,11 +39,11 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
       });
     };
     updatePosition();
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
     return () => {
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
     };
   }, [element]);
 
@@ -57,7 +57,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
       setCopiedMd(true);
       setTimeout(() => setCopiedMd(false), 1500);
     } else {
-      console.error('Failed to copy');
+      console.error("Failed to copy");
     }
   };
 
@@ -66,7 +66,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
       setCopiedCsv(true);
       setTimeout(() => setCopiedCsv(false), 1500);
     } else {
-      console.error('Failed to copy');
+      console.error("Failed to copy");
     }
   };
 
@@ -76,8 +76,8 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
     top: position.top,
     right: position.right,
     animation: isExiting
-      ? 'table-toolbar-out 0.15s ease-in forwards'
-      : 'table-toolbar-in 0.15s ease-out',
+      ? "table-toolbar-out 0.15s ease-in forwards"
+      : "table-toolbar-in 0.15s ease-out",
   };
 
   return createPortal(
@@ -103,21 +103,21 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
       <div className="flex items-center p-0.5 gap-0.5">
         <button
           onClick={handleCopyMarkdown}
-          title={copiedMd ? 'Copied!' : 'Copy as markdown'}
+          title={copiedMd ? "Copied!" : "Copy as markdown"}
           className={`p-1 rounded transition-colors ${
-            copiedMd ? 'text-success' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            copiedMd ? "text-success" : "text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
           {copiedMd ? <CheckIcon /> : <CopyIcon />}
         </button>
         <button
           onClick={handleCopyCsv}
-          title={copiedCsv ? 'Copied as CSV!' : 'Copy as CSV'}
+          title={copiedCsv ? "Copied as CSV!" : "Copy as CSV"}
           className={`px-1.5 py-1 rounded text-[10px] font-bold tracking-tight uppercase leading-none transition-colors ${
-            copiedCsv ? 'text-success' : 'text-primary hover:bg-primary/10'
+            copiedCsv ? "text-success" : "text-primary hover:bg-primary/10"
           }`}
         >
-          {copiedCsv ? '✓' : 'CSV'}
+          {copiedCsv ? "✓" : "CSV"}
         </button>
         {onExpand && (
           <button
@@ -136,7 +136,11 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
 const CopyIcon = () => (
   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+    />
   </svg>
 );
 

@@ -6,9 +6,24 @@
  * hover in Viewer) — no text selection, no web-highlighter.
  */
 
-import React, { useEffect, useRef, useState, useCallback, createContext, useContext, useMemo } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  useMemo,
+} from "react";
 import { parseMarkdownToBlocks, computeListIndices } from "../../utils/parser";
-import { applyHighlight, codeBlockClassName, codeBlockKeepsLayout, ensureHighlight, highlightToRuns, type HighlightRun } from "../../utils/codeHighlight";
+import {
+  applyHighlight,
+  codeBlockClassName,
+  codeBlockKeepsLayout,
+  ensureHighlight,
+  highlightToRuns,
+  type HighlightRun,
+} from "../../utils/codeHighlight";
 import { chunkSegments, codeSegmentsToHtml, wordDiffSegments } from "../../utils/codeDiffSegments";
 import { useFenceTheme } from "../../hooks/useFenceTheme";
 import { ListItemBody } from "../ListItemBody";
@@ -132,7 +147,7 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
     element: HTMLElement;
     block: PlanDiffBlock;
     index: number;
-    diffContext: Annotation['diffContext'];
+    diffContext: Annotation["diffContext"];
   } | null>(null);
   const [isExiting, setIsExiting] = useState(false);
 
@@ -142,18 +157,22 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
     initialText?: string;
     block: PlanDiffBlock;
     index: number;
-    diffContext: Annotation['diffContext'];
+    diffContext: Annotation["diffContext"];
   } | null>(null);
 
   const [quickLabelPicker, setQuickLabelPicker] = useState<{
     anchorEl: HTMLElement;
     block: PlanDiffBlock;
     index: number;
-    diffContext: Annotation['diffContext'];
+    diffContext: Annotation["diffContext"];
   } | null>(null);
 
-  useEffect(() => { modeRef.current = mode; }, [mode]);
-  useEffect(() => { onAddAnnotationRef.current = onAddAnnotation; }, [onAddAnnotation]);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+  useEffect(() => {
+    onAddAnnotationRef.current = onAddAnnotation;
+  }, [onAddAnnotation]);
 
   // Clean up timers on unmount
   useEffect(() => {
@@ -171,18 +190,18 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
   useEffect(() => {
     if (!selectedAnnotationId) return;
 
-    const ann = annotationsRef.current.find(a => a.id === selectedAnnotationId);
-    if (!ann?.blockId?.startsWith('diff-block-')) return;
+    const ann = annotationsRef.current.find((a) => a.id === selectedAnnotationId);
+    if (!ann?.blockId?.startsWith("diff-block-")) return;
 
-    const idx = ann.blockId.replace('diff-block-', '');
+    const idx = ann.blockId.replace("diff-block-", "");
     const el = document.querySelector(`[data-diff-block-index="${idx}"]`);
     if (!el) return;
 
-    el.classList.add('annotation-highlight', 'focused');
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add("annotation-highlight", "focused");
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
 
     const timer = setTimeout(() => {
-      el.classList.remove('annotation-highlight', 'focused');
+      el.classList.remove("annotation-highlight", "focused");
     }, 2000);
     return () => clearTimeout(timer);
   }, [selectedAnnotationId]);
@@ -190,7 +209,7 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
   // Build set of annotated block IDs for highlight rings
   const annotatedBlockIds = React.useMemo(() => {
     const set = new Set<string>();
-    annotations.forEach(ann => {
+    annotations.forEach((ann) => {
       if (ann.diffContext && ann.blockId) {
         set.add(ann.blockId);
       }
@@ -205,63 +224,73 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
    * so comments about a struck-through deleted word preserve that word in
    * the exported feedback, instead of sending only the new content.
    */
-  const getBlockContent = useCallback((block: PlanDiffBlock, diffContext: Annotation['diffContext']) => {
-    if (block.type === 'modified') {
-      if (diffContext === 'removed') return block.oldContent || block.content;
-      if (
-        diffContext === 'modified' &&
-        block.oldContent &&
-        block.oldContent !== block.content
-      ) {
-        return `- ${block.oldContent.trimEnd()}\n+ ${block.content.trimEnd()}`;
+  const getBlockContent = useCallback(
+    (block: PlanDiffBlock, diffContext: Annotation["diffContext"]) => {
+      if (block.type === "modified") {
+        if (diffContext === "removed") return block.oldContent || block.content;
+        if (diffContext === "modified" && block.oldContent && block.oldContent !== block.content) {
+          return `- ${block.oldContent.trimEnd()}\n+ ${block.content.trimEnd()}`;
+        }
       }
-    }
-    return block.content;
-  }, []);
+      return block.content;
+    },
+    [],
+  );
 
-  const createDiffAnnotation = useCallback((
-    block: PlanDiffBlock,
-    index: number,
-    diffContext: Annotation['diffContext'],
-    type: AnnotationType,
-    text?: string,
-    images?: ImageAttachment[],
-    isQuickLabel?: boolean,
-    quickLabelTip?: string,
-  ) => {
-    const content = getBlockContent(block, diffContext);
-    const now = Date.now();
+  const createDiffAnnotation = useCallback(
+    (
+      block: PlanDiffBlock,
+      index: number,
+      diffContext: Annotation["diffContext"],
+      type: AnnotationType,
+      text?: string,
+      images?: ImageAttachment[],
+      isQuickLabel?: boolean,
+      quickLabelTip?: string,
+    ) => {
+      const content = getBlockContent(block, diffContext);
+      const now = Date.now();
 
-    const newAnnotation: Annotation = {
-      id: `diff-${now}-${index}`,
-      blockId: `diff-block-${index}`,
-      startOffset: 0,
-      endOffset: content.length,
-      type,
-      text,
-      originalText: content,
-      createdA: now,
-      author: getIdentity(),
-      images,
-      diffContext,
-      ...(isQuickLabel ? { isQuickLabel: true } : {}),
-      ...(quickLabelTip ? { quickLabelTip } : {}),
-    };
+      const newAnnotation: Annotation = {
+        id: `diff-${now}-${index}`,
+        blockId: `diff-block-${index}`,
+        startOffset: 0,
+        endOffset: content.length,
+        type,
+        text,
+        originalText: content,
+        createdA: now,
+        author: getIdentity(),
+        images,
+        diffContext,
+        ...(isQuickLabel ? { isQuickLabel: true } : {}),
+        ...(quickLabelTip ? { quickLabelTip } : {}),
+      };
 
-    onAddAnnotationRef.current?.(newAnnotation);
-  }, [getBlockContent]);
+      onAddAnnotationRef.current?.(newAnnotation);
+    },
+    [getBlockContent],
+  );
 
   // Hover handlers
-  const handleHover = useCallback((element: HTMLElement, block: PlanDiffBlock, index: number, diffContext: Annotation['diffContext']) => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    setIsExiting(false);
-    if (!commentPopover && !quickLabelPicker) {
-      setHoveredBlock({ element, block, index, diffContext });
-    }
-  }, [commentPopover, quickLabelPicker]);
+  const handleHover = useCallback(
+    (
+      element: HTMLElement,
+      block: PlanDiffBlock,
+      index: number,
+      diffContext: Annotation["diffContext"],
+    ) => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+      setIsExiting(false);
+      if (!commentPopover && !quickLabelPicker) {
+        setHoveredBlock({ element, block, index, diffContext });
+      }
+    },
+    [commentPopover, quickLabelPicker],
+  );
 
   const handleLeave = useCallback(() => {
     hoverTimeoutRef.current = setTimeout(() => {
@@ -285,8 +314,14 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
   const handleQuickLabel = (label: QuickLabel) => {
     if (!hoveredBlock) return;
     createDiffAnnotation(
-      hoveredBlock.block, hoveredBlock.index, hoveredBlock.diffContext,
-      AnnotationType.COMMENT, `${label.emoji} ${label.text}`, undefined, true, label.tip
+      hoveredBlock.block,
+      hoveredBlock.index,
+      hoveredBlock.diffContext,
+      AnnotationType.COMMENT,
+      `${label.emoji} ${label.text}`,
+      undefined,
+      true,
+      label.tip,
     );
     setHoveredBlock(null);
     setIsExiting(false);
@@ -314,8 +349,12 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
   const handleCommentSubmit = (text: string, images?: ImageAttachment[]) => {
     if (!commentPopover) return;
     createDiffAnnotation(
-      commentPopover.block, commentPopover.index, commentPopover.diffContext,
-      AnnotationType.COMMENT, text, images
+      commentPopover.block,
+      commentPopover.index,
+      commentPopover.diffContext,
+      AnnotationType.COMMENT,
+      text,
+      images,
     );
     setCommentPopover(null);
   };
@@ -324,37 +363,54 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
     setCommentPopover(null);
   }, []);
 
-  const handleFloatingQuickLabel = useCallback((label: QuickLabel) => {
-    if (!quickLabelPicker) return;
-    createDiffAnnotation(
-      quickLabelPicker.block, quickLabelPicker.index, quickLabelPicker.diffContext,
-      AnnotationType.COMMENT, `${label.emoji} ${label.text}`, undefined, true, label.tip
-    );
-    setQuickLabelPicker(null);
-  }, [quickLabelPicker, createDiffAnnotation]);
+  const handleFloatingQuickLabel = useCallback(
+    (label: QuickLabel) => {
+      if (!quickLabelPicker) return;
+      createDiffAnnotation(
+        quickLabelPicker.block,
+        quickLabelPicker.index,
+        quickLabelPicker.diffContext,
+        AnnotationType.COMMENT,
+        `${label.emoji} ${label.text}`,
+        undefined,
+        true,
+        label.tip,
+      );
+      setQuickLabelPicker(null);
+    },
+    [quickLabelPicker, createDiffAnnotation],
+  );
 
   const handleQuickLabelPickerDismiss = useCallback(() => {
     setQuickLabelPicker(null);
   }, []);
 
   // Mode-aware click on hovered block
-  const handleBlockClick = useCallback((block: PlanDiffBlock, index: number, element: HTMLElement, diffContext: Annotation['diffContext']) => {
-    if (modeRef.current === 'redline') {
-      createDiffAnnotation(block, index, diffContext, AnnotationType.DELETION);
-    } else if (modeRef.current === 'quickLabel') {
-      setQuickLabelPicker({ anchorEl: element, block, index, diffContext });
-    } else {
-      // selection or comment → open the comment popover directly on click
-      const content = getBlockContent(block, diffContext);
-      setCommentPopover({
-        anchorEl: element,
-        contextText: content.slice(0, 80),
-        block,
-        index,
-        diffContext,
-      });
-    }
-  }, [createDiffAnnotation, getBlockContent]);
+  const handleBlockClick = useCallback(
+    (
+      block: PlanDiffBlock,
+      index: number,
+      element: HTMLElement,
+      diffContext: Annotation["diffContext"],
+    ) => {
+      if (modeRef.current === "redline") {
+        createDiffAnnotation(block, index, diffContext, AnnotationType.DELETION);
+      } else if (modeRef.current === "quickLabel") {
+        setQuickLabelPicker({ anchorEl: element, block, index, diffContext });
+      } else {
+        // selection or comment → open the comment popover directly on click
+        const content = getBlockContent(block, diffContext);
+        setCommentPopover({
+          anchorEl: element,
+          contextText: content.slice(0, 80),
+          block,
+          index,
+          diffContext,
+        });
+      }
+    },
+    [createDiffAnnotation, getBlockContent],
+  );
 
   // Check if a block index has been annotated (for highlight ring)
   const isBlockAnnotated = (index: number) => annotatedBlockIds.has(`diff-block-${index}`);
@@ -385,9 +441,17 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
         isBlockAnnotated={isBlockAnnotated}
         wordLevel={wordLevel}
         unchangedClassName={unchangedClassName}
-        onHover={onAddAnnotation ? (el, diffContext) => handleHover(el, block, index, diffContext) : undefined}
+        onHover={
+          onAddAnnotation
+            ? (el, diffContext) => handleHover(el, block, index, diffContext)
+            : undefined
+        }
         onLeave={onAddAnnotation ? handleLeave : undefined}
-        onClick={onAddAnnotation ? (el, diffContext) => handleBlockClick(block, index, el, diffContext) : undefined}
+        onClick={
+          onAddAnnotation
+            ? (el, diffContext) => handleBlockClick(block, index, el, diffContext)
+            : undefined
+        }
       />
     );
     if (!lineGutter) return rendered;
@@ -421,7 +485,9 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
         className="annotation-exclude flex w-full min-w-0 items-center gap-2 rounded-md bg-muted/40 px-3 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
       >
         <FoldChevron expanded={false} />
-        <span className="flex-none">{fold.sectionCount} unchanged {noun}</span>
+        <span className="flex-none">
+          {fold.sectionCount} unchanged {noun}
+        </span>
         {fold.headings.length > 0 && (
           <span className="min-w-0 truncate text-muted-foreground/70">
             · {fold.headings.join(" · ")}
@@ -433,11 +499,14 @@ export const PlanCleanDiffView: React.FC<PlanCleanDiffViewProps> = ({
     return (
       <React.Fragment key={fold.key}>
         {lineGutter ? (
-          <GutterRow labels={expanded ? [] : [rangeLabel(fold.newStart, fold.newEnd) ?? ""]}>{row}</GutterRow>
+          <GutterRow labels={expanded ? [] : [rangeLabel(fold.newStart, fold.newEnd) ?? ""]}>
+            {row}
+          </GutterRow>
         ) : (
           row
         )}
-        {expanded && fold.pieces.map((piece, i) => renderDiffBlock(piece, index, `${fold.key}-${i}`))}
+        {expanded &&
+          fold.pieces.map((piece, i) => renderDiffBlock(piece, index, `${fold.key}-${i}`))}
       </React.Fragment>
     );
   };
@@ -532,7 +601,10 @@ function blockGutterLabels(block: PlanDiffBlock): string[] {
 /** A block beside its source-line gutter. The gutter is never selectable or part of a quote. */
 // Baseline alignment puts the label beside the first line of text, past a
 // heading's top margin.
-const GutterRow: React.FC<{ labels: string[]; children: React.ReactNode }> = ({ labels, children }) => (
+const GutterRow: React.FC<{ labels: string[]; children: React.ReactNode }> = ({
+  labels,
+  children,
+}) => (
   <div className="flex items-baseline gap-3">
     <div
       data-plan-diff-gutter=""
@@ -568,35 +640,49 @@ interface DiffBlockRendererProps {
   block: PlanDiffBlock;
   index: number;
   hoveredIndex: number | null;
-  hoveredDiffContext?: Annotation['diffContext'];
+  hoveredDiffContext?: Annotation["diffContext"];
   isBlockAnnotated: (index: number) => boolean;
   /** When false, force block-level fallback even if inlineTokens is populated. */
   wordLevel: boolean;
   /** Replaces the default unchanged-block dimming classes when set. */
   unchangedClassName?: string;
-  onHover?: (element: HTMLElement, diffContext: Annotation['diffContext']) => void;
+  onHover?: (element: HTMLElement, diffContext: Annotation["diffContext"]) => void;
   onLeave?: () => void;
-  onClick?: (element: HTMLElement, diffContext: Annotation['diffContext']) => void;
+  onClick?: (element: HTMLElement, diffContext: Annotation["diffContext"]) => void;
 }
 
 const DiffBlockRenderer: React.FC<DiffBlockRendererProps> = ({
-  block, index, hoveredIndex, hoveredDiffContext, isBlockAnnotated, wordLevel, unchangedClassName, onHover, onLeave, onClick,
+  block,
+  index,
+  hoveredIndex,
+  hoveredDiffContext,
+  isBlockAnnotated,
+  wordLevel,
+  unchangedClassName,
+  onHover,
+  onLeave,
+  onClick,
 }) => {
   const codeDocument = useContext(CodeDocumentContext);
-  const hoverProps = (diffContext: Annotation['diffContext']) => onHover ? {
-    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => onHover(e.currentTarget, diffContext),
-    onMouseLeave: () => onLeave?.(),
-    onClick: onClick ? (e: React.MouseEvent<HTMLElement>) => onClick(e.currentTarget, diffContext) : undefined,
-    style: { cursor: 'pointer' } as React.CSSProperties,
-  } : {};
+  const hoverProps = (diffContext: Annotation["diffContext"]) =>
+    onHover
+      ? {
+          onMouseEnter: (e: React.MouseEvent<HTMLElement>) => onHover(e.currentTarget, diffContext),
+          onMouseLeave: () => onLeave?.(),
+          onClick: onClick
+            ? (e: React.MouseEvent<HTMLElement>) => onClick(e.currentTarget, diffContext)
+            : undefined,
+          style: { cursor: "pointer" } as React.CSSProperties,
+        }
+      : {};
 
-  const isHovered = (diffContext: Annotation['diffContext']) =>
+  const isHovered = (diffContext: Annotation["diffContext"]) =>
     hoveredIndex === index && hoveredDiffContext === diffContext;
 
-  const ringClass = (diffContext: Annotation['diffContext']) => {
-    if (isHovered(diffContext)) return 'ring-1 ring-primary/30 rounded';
-    if (isBlockAnnotated(index)) return 'ring-2 ring-accent rounded outline-offset-2';
-    return '';
+  const ringClass = (diffContext: Annotation["diffContext"]) => {
+    if (isHovered(diffContext)) return "ring-1 ring-primary/30 rounded";
+    if (isBlockAnnotated(index)) return "ring-2 ring-accent rounded outline-offset-2";
+    return "";
   };
 
   switch (block.type) {
@@ -616,9 +702,9 @@ const DiffBlockRenderer: React.FC<DiffBlockRendererProps> = ({
     case "added":
       return (
         <div
-          className={`plan-diff-added transition-shadow ${ringClass('added')}`}
+          className={`plan-diff-added transition-shadow ${ringClass("added")}`}
           data-diff-block-index={index}
-          {...hoverProps('added')}
+          {...hoverProps("added")}
         >
           <MarkdownChunk content={block.content} />
         </div>
@@ -627,9 +713,9 @@ const DiffBlockRenderer: React.FC<DiffBlockRendererProps> = ({
     case "removed":
       return (
         <div
-          className={`plan-diff-removed ${codeDocument ? "" : `${STRIKE_CLASS} `}opacity-70 transition-shadow ${ringClass('removed')}`}
+          className={`plan-diff-removed ${codeDocument ? "" : `${STRIKE_CLASS} `}opacity-70 transition-shadow ${ringClass("removed")}`}
           data-diff-block-index={index}
-          {...hoverProps('removed')}
+          {...hoverProps("removed")}
         >
           <MarkdownChunk content={block.content} side="old" />
         </div>
@@ -638,13 +724,16 @@ const DiffBlockRenderer: React.FC<DiffBlockRendererProps> = ({
     case "modified": {
       // A config file word-diffs its raw text; the engine's tokens come from
       // the markdown parse, which drops a comment's `#` and reads `- ` as a list.
-      const codeTokens = codeDocument && wordLevel ? computeCodeInlineDiff(block.oldContent ?? "", block.content) : null;
+      const codeTokens =
+        codeDocument && wordLevel
+          ? computeCodeInlineDiff(block.oldContent ?? "", block.content)
+          : null;
       if (codeDocument && codeTokens) {
-        const { style: hoverStyle, ...hoverRest } = hoverProps('modified');
+        const { style: hoverStyle, ...hoverRest } = hoverProps("modified");
         return (
           <div
             data-diff-block-index={index}
-            className={`plan-diff-modified transition-shadow ${ringClass('modified')}`}
+            className={`plan-diff-modified transition-shadow ${ringClass("modified")}`}
             style={hoverStyle}
             {...hoverRest}
           >
@@ -667,22 +756,22 @@ const DiffBlockRenderer: React.FC<DiffBlockRendererProps> = ({
             tokens={block.inlineTokens}
             wrap={block.inlineWrap}
             index={index}
-            ringClass={ringClass('modified')}
-            hoverProps={hoverProps('modified')}
+            ringClass={ringClass("modified")}
+            hoverProps={hoverProps("modified")}
           />
         );
       }
       return (
         <div data-diff-block-index={index}>
           <div
-            className={`plan-diff-removed ${codeDocument ? "" : `${STRIKE_CLASS} `}opacity-60 transition-shadow ${ringClass('removed')}`}
-            {...hoverProps('removed')}
+            className={`plan-diff-removed ${codeDocument ? "" : `${STRIKE_CLASS} `}opacity-60 transition-shadow ${ringClass("removed")}`}
+            {...hoverProps("removed")}
           >
             <MarkdownChunk content={block.oldContent!} side="old" />
           </div>
           <div
-            className={`plan-diff-added transition-shadow ${ringClass('modified')}`}
-            {...hoverProps('modified')}
+            className={`plan-diff-added transition-shadow ${ringClass("modified")}`}
+            {...hoverProps("modified")}
           >
             <MarkdownChunk content={block.content} />
           </div>
@@ -759,7 +848,7 @@ const InlineModifiedBlock: React.FC<InlineModifiedBlockProps> = ({
 
   if (wrap.type === "heading") {
     const level = wrap.level || 1;
-    const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+    const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
     return (
       <Tag
         data-diff-block-index={index}
@@ -815,7 +904,8 @@ const InlineModifiedBlock: React.FC<InlineModifiedBlockProps> = ({
  * in the file's language. Chunks sit flush so the diff reads as one file; the
  * `pn-code` fence styling (padding, its own background) would box each one.
  */
-const CODE_CHUNK_CLASS = "font-mono text-[13px] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] px-2 py-0.5 m-0 bg-transparent";
+const CODE_CHUNK_CLASS =
+  "font-mono text-[13px] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] px-2 py-0.5 m-0 bg-transparent";
 
 /** A chunk ends with its last line's newline, which is not another line. */
 const chunkText = (content: string) => content.replace(/\n$/, "");
@@ -846,10 +936,17 @@ function useHighlightRuns(text: string, language: string | undefined): Highlight
   return runs;
 }
 
-const CodeChunk: React.FC<{ content: string; language?: string; side: PlanDiffSide }> = ({ content, language, side }) => {
+const CodeChunk: React.FC<{ content: string; language?: string; side: PlanDiffSide }> = ({
+  content,
+  language,
+  side,
+}) => {
   const text = chunkText(content);
   const runs = useHighlightRuns(text, language);
-  const html = useMemo(() => codeSegmentsToHtml(chunkSegments(text, runs, side === "old")), [text, runs, side]);
+  const html = useMemo(
+    () => codeSegmentsToHtml(chunkSegments(text, runs, side === "old")),
+    [text, runs, side],
+  );
   return (
     <pre className={CODE_CHUNK_CLASS} data-plan-diff-code="">
       <code
@@ -885,32 +982,35 @@ const CodeWordDiff: React.FC<{
   );
 };
 
-const MarkdownChunk: React.FC<{ content: string; side?: PlanDiffSide }> = ({ content, side = "new" }) => {
+const MarkdownChunk: React.FC<{ content: string; side?: PlanDiffSide }> = ({
+  content,
+  side = "new",
+}) => {
   const codeDocument = useContext(CodeDocumentContext);
-  if (codeDocument) return <CodeChunk content={content} language={codeDocument.language} side={side} />;
+  if (codeDocument)
+    return <CodeChunk content={content} language={codeDocument.language} side={side} />;
   return <ParsedMarkdownChunk content={content} side={side} />;
 };
 
-const ParsedMarkdownChunk: React.FC<{ content: string; side: PlanDiffSide }> = ({ content, side }) => {
+const ParsedMarkdownChunk: React.FC<{ content: string; side: PlanDiffSide }> = ({
+  content,
+  side,
+}) => {
   const renderBlock = useContext(RenderBlockContext);
-  const blocks = React.useMemo(
-    () => parseMarkdownToBlocks(content),
-    [content]
-  );
+  const blocks = React.useMemo(() => parseMarkdownToBlocks(content), [content]);
   // Compute ordered-list display indices across the entire chunk so every
   // list-item gets the right numeral even though we don't group here.
   // Non-list blocks pass through as `null` and act as streak-breaks — same
   // behavior as the main Viewer's per-group counter.
-  const orderedIndices = React.useMemo(
-    () => computeListIndices(blocks),
-    [blocks]
-  );
+  const orderedIndices = React.useMemo(() => computeListIndices(blocks), [blocks]);
 
   if (renderBlock) {
     return (
       <>
         {blocks.map((block, i) => (
-          <React.Fragment key={block.id}>{renderBlock(block, orderedIndices[i], side)}</React.Fragment>
+          <React.Fragment key={block.id}>
+            {renderBlock(block, orderedIndices[i], side)}
+          </React.Fragment>
         ))}
       </>
     );
@@ -919,17 +1019,16 @@ const ParsedMarkdownChunk: React.FC<{ content: string; side: PlanDiffSide }> = (
   return (
     <>
       {blocks.map((block, i) => (
-        <SimpleBlockRenderer
-          key={block.id}
-          block={block}
-          orderedIndex={orderedIndices[i]}
-        />
+        <SimpleBlockRenderer key={block.id} block={block} orderedIndex={orderedIndices[i]} />
       ))}
     </>
   );
 };
 
-const SimpleBlockRenderer: React.FC<{ block: Block; orderedIndex?: number | null }> = ({ block, orderedIndex }) => {
+const SimpleBlockRenderer: React.FC<{ block: Block; orderedIndex?: number | null }> = ({
+  block,
+  orderedIndex,
+}) => {
   switch (block.type) {
     case "heading": {
       const level = block.level || 1;
@@ -965,10 +1064,7 @@ const SimpleBlockRenderer: React.FC<{ block: Block; orderedIndex?: number | null
       const listLevel = block.level || 0;
       const isCheckbox = block.checked !== undefined;
       return (
-        <div
-          className={LIST_ITEM_ROW_CLASS}
-          style={{ marginLeft: listItemIndentRem(listLevel) }}
-        >
+        <div className={LIST_ITEM_ROW_CLASS} style={{ marginLeft: listItemIndentRem(listLevel) }}>
           <ListItemBody
             level={listLevel}
             ordered={block.ordered}
@@ -989,10 +1085,14 @@ const SimpleBlockRenderer: React.FC<{ block: Block; orderedIndex?: number | null
       return <hr className="border-border/30 my-8" />;
 
     case "table": {
-      const lines = block.content.split('\n').filter(line => line.trim());
+      const lines = block.content.split("\n").filter((line) => line.trim());
       if (lines.length === 0) return null;
       const parseRow = (line: string): string[] =>
-        line.replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map(cell => cell.trim().replace(/\\\|/g, '|'));
+        line
+          .replace(/^\|/, "")
+          .replace(/\|$/, "")
+          .split(/(?<!\\)\|/)
+          .map((cell) => cell.trim().replace(/\\\|/g, "|"));
       const headers = parseRow(lines[0]);
       const rows: string[][] = [];
       for (let i = 1; i < lines.length; i++) {
@@ -1006,7 +1106,10 @@ const SimpleBlockRenderer: React.FC<{ block: Block; orderedIndex?: number | null
             <thead>
               <tr className="border-b border-border">
                 {headers.map((header, i) => (
-                  <th key={i} className="px-3 py-2 text-left font-semibold text-foreground/90 bg-muted/30">
+                  <th
+                    key={i}
+                    className="px-3 py-2 text-left font-semibold text-foreground/90 bg-muted/30"
+                  >
                     <InlineMarkdown text={header} />
                   </th>
                 ))}
@@ -1099,19 +1202,18 @@ const InlineMarkdown: React.FC<{ text: string }> = ({ text }) => {
     let match = remaining.match(/^<(ins|del)>([\s\S]+?)<\/\1>/);
     if (match) {
       const tag = match[1] as "ins" | "del";
-      const className =
-        tag === "ins" ? "plan-diff-word-added" : "plan-diff-word-removed";
+      const className = tag === "ins" ? "plan-diff-word-added" : "plan-diff-word-removed";
       if (tag === "ins") {
         parts.push(
           <ins key={key++} className={className}>
             <InlineMarkdown text={match[2]} />
-          </ins>
+          </ins>,
         );
       } else {
         parts.push(
           <del key={key++} className={className}>
             <InlineMarkdown text={match[2]} />
-          </del>
+          </del>,
         );
       }
       remaining = remaining.slice(match[0].length);
@@ -1125,7 +1227,7 @@ const InlineMarkdown: React.FC<{ text: string }> = ({ text }) => {
       parts.push(
         <strong key={key++} className="font-semibold">
           <InlineMarkdown text={match[1]} />
-        </strong>
+        </strong>,
       );
       remaining = remaining.slice(match[0].length);
       previousChar = match[0][match[0].length - 1] || previousChar;
@@ -1135,7 +1237,11 @@ const InlineMarkdown: React.FC<{ text: string }> = ({ text }) => {
     // Italic: *text* or _text_ (avoid intraword underscores)
     match = remaining.match(/^\*([\s\S]+?)\*/);
     if (match) {
-      parts.push(<em key={key++}><InlineMarkdown text={match[1]} /></em>);
+      parts.push(
+        <em key={key++}>
+          <InlineMarkdown text={match[1]} />
+        </em>,
+      );
       remaining = remaining.slice(match[0].length);
       previousChar = match[0][match[0].length - 1] || previousChar;
       continue;
@@ -1145,7 +1251,11 @@ const InlineMarkdown: React.FC<{ text: string }> = ({ text }) => {
       ? remaining.match(/^_([^_\s](?:[\s\S]*?[^_\s])?)_(?!\w)/)
       : null;
     if (match) {
-      parts.push(<em key={key++}><InlineMarkdown text={match[1]} /></em>);
+      parts.push(
+        <em key={key++}>
+          <InlineMarkdown text={match[1]} />
+        </em>,
+      );
       remaining = remaining.slice(match[0].length);
       previousChar = match[0][match[0].length - 1] || previousChar;
       continue;
@@ -1154,12 +1264,9 @@ const InlineMarkdown: React.FC<{ text: string }> = ({ text }) => {
     match = remaining.match(/^`([^`]+)`/);
     if (match) {
       parts.push(
-        <code
-          key={key++}
-          className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono"
-        >
+        <code key={key++} className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">
           {match[1]}
-        </code>
+        </code>,
       );
       remaining = remaining.slice(match[0].length);
       previousChar = match[0][match[0].length - 1] || previousChar;
@@ -1178,7 +1285,7 @@ const InlineMarkdown: React.FC<{ text: string }> = ({ text }) => {
         parts.push(
           <span key={key++}>
             <InlineMarkdown text={match[1]} />
-          </span>
+          </span>,
         );
       } else {
         parts.push(
@@ -1190,7 +1297,7 @@ const InlineMarkdown: React.FC<{ text: string }> = ({ text }) => {
             className="text-primary underline underline-offset-2 hover:text-primary/80"
           >
             <InlineMarkdown text={match[1]} />
-          </a>
+          </a>,
         );
       }
       remaining = remaining.slice(match[0].length);

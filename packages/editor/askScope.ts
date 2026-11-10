@@ -1,5 +1,5 @@
-import type { CommentAskAIContext } from '@dynotator/ui/components/CommentPopover';
-import type { AIQuestion } from '@dynotator/ui/types';
+import type { CommentAskAIContext } from "@dynotator/ui/components/CommentPopover";
+import type { AIQuestion } from "@dynotator/ui/types";
 
 /**
  * The Ask AI question scope for a composer's context. One mapping for both
@@ -12,7 +12,7 @@ import type { AIQuestion } from '@dynotator/ui/types';
 export function askScopeFromContext(
   context: CommentAskAIContext | undefined,
   options: { documentPath: string; sourceConverted: boolean },
-): AIQuestion['scope'] {
+): AIQuestion["scope"] {
   if (!context) return undefined;
   return {
     kind: context.kind,

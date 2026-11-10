@@ -36,12 +36,9 @@ export interface AnnotateApprovalBodyInput {
  * (spec §5.3/§6.1), and the approval framing below reuses it so "Done with a
  * note…" can never read as a change request.
  */
-export const ANNOTATE_NO_FEEDBACK_SENTENCE =
-  "User reviewed the document and has no feedback.";
+export const ANNOTATE_NO_FEEDBACK_SENTENCE = "User reviewed the document and has no feedback.";
 
-export function buildAnnotateApprovalBody(
-  input: AnnotateApprovalBodyInput,
-): {
+export function buildAnnotateApprovalBody(input: AnnotateApprovalBodyInput): {
   draftGeneration: number;
   feedback?: string;
   annotations?: unknown[];
@@ -92,9 +89,7 @@ export interface CompleteAnnotateFeedbackInput {
   approvalFraming?: boolean;
 }
 
-export function buildCompleteAnnotateFeedback(
-  input: CompleteAnnotateFeedbackInput,
-): string {
+export function buildCompleteAnnotateFeedback(input: CompleteAnnotateFeedbackInput): string {
   let annotationsText: string;
 
   if (input.messageEntries) {
@@ -139,9 +134,12 @@ export function buildCompleteAnnotateFeedback(
           // exported line numbers.
           // Blocks the caller already derived (resolveFeedbackSections, which
           // is also diagram-aware) are kept as they are.
-          enriched.set(filepath, entry.markdown && !entry.blocks
-            ? { ...entry, blocks: blocksForDocument(filepath, entry.markdown) }
-            : entry);
+          enriched.set(
+            filepath,
+            entry.markdown && !entry.blocks
+              ? { ...entry, blocks: blocksForDocument(filepath, entry.markdown) }
+              : entry,
+          );
         }
         annotationsText += exportLinkedDocAnnotations(enriched, input.linkedDocumentsHeading);
       }

@@ -25,24 +25,24 @@ export interface RgbColor {
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 const NAMED_COLORS: Record<string, string> = {
-  white: '#ffffff',
-  black: '#000000',
-  red: '#ff0000',
-  green: '#008000',
-  blue: '#0000ff',
-  yellow: '#ffff00',
-  navy: '#000080',
-  grey: '#808080',
-  gray: '#808080',
-  lightgrey: '#d3d3d3',
-  lightgray: '#d3d3d3',
-  darkgrey: '#a9a9a9',
-  darkgray: '#a9a9a9',
-  silver: '#c0c0c0',
-  orange: '#ffa500',
-  purple: '#800080',
-  teal: '#008080',
-  transparent: '#00000000',
+  white: "#ffffff",
+  black: "#000000",
+  red: "#ff0000",
+  green: "#008000",
+  blue: "#0000ff",
+  yellow: "#ffff00",
+  navy: "#000080",
+  grey: "#808080",
+  gray: "#808080",
+  lightgrey: "#d3d3d3",
+  lightgray: "#d3d3d3",
+  darkgrey: "#a9a9a9",
+  darkgray: "#a9a9a9",
+  silver: "#c0c0c0",
+  orange: "#ffa500",
+  purple: "#800080",
+  teal: "#008080",
+  transparent: "#00000000",
 };
 
 /**
@@ -56,11 +56,11 @@ const NAMED_COLORS: Record<string, string> = {
  * named colours. Wide-gamut input is clipped to sRGB per channel.
  */
 export function parseCssColor(input: string | null | undefined): RgbColor | undefined {
-  if (typeof input !== 'string') return undefined;
+  if (typeof input !== "string") return undefined;
   const value = input.trim().toLowerCase();
   if (!value) return undefined;
 
-  if (value.startsWith('#')) return parseHex(value);
+  if (value.startsWith("#")) return parseHex(value);
   if (value in NAMED_COLORS) return parseHex(NAMED_COLORS[value]);
 
   const fn = value.match(/^([a-z-]+)\((.*)\)$/s);
@@ -69,21 +69,21 @@ export function parseCssColor(input: string | null | undefined): RgbColor | unde
   const body = fn[2].trim();
 
   switch (name) {
-    case 'rgb':
-    case 'rgba':
+    case "rgb":
+    case "rgba":
       return parseRgbFunction(body);
-    case 'hsl':
-    case 'hsla':
+    case "hsl":
+    case "hsla":
       return parseHslFunction(body);
-    case 'oklch':
+    case "oklch":
       return parseOklchFunction(body);
-    case 'oklab':
+    case "oklab":
       return parseOklabFunction(body);
-    case 'lab':
+    case "lab":
       return parseLabFunction(body);
-    case 'lch':
+    case "lch":
       return parseLchFunction(body);
-    case 'color':
+    case "color":
       return parseColorFunction(body);
     default:
       return undefined;
@@ -117,7 +117,7 @@ function parseHex(value: string): RgbColor | undefined {
 function splitChannels(body: string): { parts: string[]; alpha: string | undefined } | undefined {
   let main = body;
   let alpha: string | undefined;
-  const slash = body.indexOf('/');
+  const slash = body.indexOf("/");
   if (slash >= 0) {
     main = body.slice(0, slash);
     alpha = body.slice(slash + 1).trim();
@@ -135,19 +135,19 @@ function splitChannels(body: string): { parts: string[]; alpha: string | undefin
 }
 
 function parseNumber(token: string, scale = 1): number | undefined {
-  if (token === 'none') return 0;
+  if (token === "none") return 0;
   const m = token.match(/^(-?\d*\.?\d+(?:e[-+]?\d+)?)(%|deg|rad|grad|turn)?$/);
   if (!m) return undefined;
   const n = Number.parseFloat(m[1]);
   if (!Number.isFinite(n)) return undefined;
   switch (m[2]) {
-    case '%':
+    case "%":
       return (n / 100) * scale;
-    case 'rad':
+    case "rad":
       return (n * 180) / Math.PI;
-    case 'grad':
+    case "grad":
       return n * 0.9;
-    case 'turn':
+    case "turn":
       return n * 360;
     default:
       return n;
@@ -163,10 +163,17 @@ function parseAlpha(token: string | undefined): number | undefined {
 function parseRgbFunction(body: string): RgbColor | undefined {
   const split = splitChannels(body);
   if (!split) return undefined;
-  const ch = split.parts.map((p) => (p.endsWith('%') ? parseNumber(p, 1) : (parseNumber(p) ?? NaN) / 255));
+  const ch = split.parts.map((p) =>
+    p.endsWith("%") ? parseNumber(p, 1) : (parseNumber(p) ?? NaN) / 255,
+  );
   const a = parseAlpha(split.alpha);
   if (ch.some((v) => v === undefined || Number.isNaN(v)) || a === undefined) return undefined;
-  return { r: clamp01(ch[0] as number), g: clamp01(ch[1] as number), b: clamp01(ch[2] as number), a };
+  return {
+    r: clamp01(ch[0] as number),
+    g: clamp01(ch[1] as number),
+    b: clamp01(ch[2] as number),
+    a,
+  };
 }
 
 function parseHslFunction(body: string): RgbColor | undefined {
@@ -251,11 +258,16 @@ function parseColorFunction(body: string): RgbColor | undefined {
   if (ch.some((v) => v === undefined) || a === undefined) return undefined;
   const [x, y, z] = ch as [number, number, number];
   switch (space) {
-    case 'srgb':
+    case "srgb":
       return { r: clamp01(x), g: clamp01(y), b: clamp01(z), a };
-    case 'srgb-linear':
-      return { r: clamp01(linearToSrgb(x)), g: clamp01(linearToSrgb(y)), b: clamp01(linearToSrgb(z)), a };
-    case 'display-p3': {
+    case "srgb-linear":
+      return {
+        r: clamp01(linearToSrgb(x)),
+        g: clamp01(linearToSrgb(y)),
+        b: clamp01(linearToSrgb(z)),
+        a,
+      };
+    case "display-p3": {
       const lin = [srgbToLinear(x), srgbToLinear(y), srgbToLinear(z)];
       // display-p3 (linear) -> XYZ D65
       const X = 0.4865709 * lin[0] + 0.2656677 * lin[1] + 0.1982173 * lin[2];
@@ -290,7 +302,11 @@ function xyzToRgb({ X, Y, Z }: Xyz): { r: number; g: number; b: number } {
   const rl = 3.2404542 * X - 1.5371385 * Y - 0.4985314 * Z;
   const gl = -0.969266 * X + 1.8760108 * Y + 0.041556 * Z;
   const bl = 0.0556434 * X - 0.2040259 * Y + 1.0572252 * Z;
-  return { r: clamp01(linearToSrgb(rl)), g: clamp01(linearToSrgb(gl)), b: clamp01(linearToSrgb(bl)) };
+  return {
+    r: clamp01(linearToSrgb(rl)),
+    g: clamp01(linearToSrgb(gl)),
+    b: clamp01(linearToSrgb(bl)),
+  };
 }
 
 /** CIE Lab (D50 white as CSS specifies) -> XYZ D65 via Bradford. */
@@ -304,14 +320,14 @@ function labToXyz(L: number, a: number, b: number): Xyz {
   const yr = L > k * e ? Math.pow((L + 16) / 116, 3) : L / k;
   const zr = Math.pow(fz, 3) > e ? Math.pow(fz, 3) : (116 * fz - 16) / k;
   // D50 reference white
-  const X50 = xr * 0.3457 / 0.3585;
+  const X50 = (xr * 0.3457) / 0.3585;
   const Y50 = yr;
-  const Z50 = zr * (1 - 0.3457 - 0.3585) / 0.3585;
+  const Z50 = (zr * (1 - 0.3457 - 0.3585)) / 0.3585;
   // Bradford D50 -> D65
   return {
     X: 0.9554734 * X50 - 0.0230985 * Y50 + 0.0632593 * Z50,
     Y: -0.0283697 * X50 + 1.0099954 * Y50 + 0.0210413 * Z50,
-    Z: 0.0123141 * X50 - 0.0205050 * Y50 + 1.3299098 * Z50,
+    Z: 0.0123141 * X50 - 0.020505 * Y50 + 1.3299098 * Z50,
   };
 }
 
@@ -352,7 +368,11 @@ export function oklabToRgb({ L, a, b }: Oklab): { r: number; g: number; b: numbe
   const lr = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
   const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
   const lb = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
-  return { r: clamp01(linearToSrgb(lr)), g: clamp01(linearToSrgb(lg)), b: clamp01(linearToSrgb(lb)) };
+  return {
+    r: clamp01(linearToSrgb(lr)),
+    g: clamp01(linearToSrgb(lg)),
+    b: clamp01(linearToSrgb(lb)),
+  };
 }
 
 export function oklabToOklch({ L, a, b }: Oklab): Oklch {
@@ -396,7 +416,11 @@ export function mixOklab(from: RgbColor, to: RgbColor, t: number): RgbColor {
   const k = clamp01(t);
   const a = rgbToOklab(from);
   const b = rgbToOklab(to);
-  const rgb = oklabToRgb({ L: a.L + (b.L - a.L) * k, a: a.a + (b.a - a.a) * k, b: a.b + (b.b - a.b) * k });
+  const rgb = oklabToRgb({
+    L: a.L + (b.L - a.L) * k,
+    a: a.a + (b.a - a.a) * k,
+    b: a.b + (b.b - a.b) * k,
+  });
   return { ...rgb, a: 1 };
 }
 
@@ -406,7 +430,10 @@ export function relativeLuminance({ r, g, b }: { r: number; g: number; b: number
 }
 
 /** WCAG 2.x contrast ratio between two opaque colours (1..21). */
-export function contrastRatio(a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }): number {
+export function contrastRatio(
+  a: { r: number; g: number; b: number },
+  b: { r: number; g: number; b: number },
+): number {
   const la = relativeLuminance(a);
   const lb = relativeLuminance(b);
   const light = Math.max(la, lb);
@@ -426,12 +453,15 @@ export function toHex({ r, g, b }: { r: number; g: number; b: number }): string 
   const h = (v: number) =>
     Math.round(clamp01(v) * 255)
       .toString(16)
-      .padStart(2, '0');
+      .padStart(2, "0");
   return `#${h(r)}${h(g)}${h(b)}`;
 }
 
 /** Parse, then composite any alpha over `backdrop` so the result is opaque. */
-export function parseOpaqueColor(value: string | null | undefined, backdrop: RgbColor): RgbColor | undefined {
+export function parseOpaqueColor(
+  value: string | null | undefined,
+  backdrop: RgbColor,
+): RgbColor | undefined {
   const parsed = parseCssColor(value);
   if (!parsed) return undefined;
   return compositeOver(parsed, backdrop);

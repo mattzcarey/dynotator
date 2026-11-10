@@ -14,8 +14,8 @@
  * A host that provides `identityProvider` never calls the generator and should
  * NOT import this, so the word lists stay out of its bundle.
  */
-import { uniqueUsernameGenerator, adjectives, nouns } from 'unique-username-generator';
-import { setIdentityGenerator, type IdentityGenerator } from './generateIdentity';
+import { uniqueUsernameGenerator, adjectives, nouns } from "unique-username-generator";
+import { setIdentityGenerator, type IdentityGenerator } from "./generateIdentity";
 
 /** The dictionary generator Plannotator has always used. */
 export const generateTaterIdentity: IdentityGenerator = () => {
@@ -23,13 +23,13 @@ export const generateTaterIdentity: IdentityGenerator = () => {
   // with compound words that contain hyphens (e.g., "behind-the-scenes")
   const generated = uniqueUsernameGenerator({
     dictionaries: [adjectives, nouns],
-    separator: '|||',
-    style: 'lowerCase',
+    separator: "|||",
+    style: "lowerCase",
     randomDigits: 0,
     length: 50, // Prevent word truncation (default is too short)
   });
 
-  const [adjective, noun] = generated.split('|||');
+  const [adjective, noun] = generated.split("|||");
   return `${adjective}-${noun}-tater`;
 };
 

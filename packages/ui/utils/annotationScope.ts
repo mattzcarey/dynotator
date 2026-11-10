@@ -10,19 +10,19 @@
  * shared storage backend (cookies by default) like the other panel prefs.
  */
 
-import { normalizeBrowserPath, pathIsInsideDir } from '@dynotator/core/browser-paths';
-import type { Annotation } from '../types';
-import { getItem, setItem } from './storage';
+import { normalizeBrowserPath, pathIsInsideDir } from "@dynotator/core/browser-paths";
+import type { Annotation } from "../types";
+import { getItem, setItem } from "./storage";
 
 /** `current` = only the open document (the incumbent view). `all` = every document. */
-export type AnnotationScope = 'current' | 'all';
+export type AnnotationScope = "current" | "all";
 
-const ANNOTATION_SCOPE_KEY = 'plannotator-annotation-scope';
+const ANNOTATION_SCOPE_KEY = "plannotator-annotation-scope";
 
 /** The user's explicit last choice, or null when they have never chosen. */
 export function getAnnotationScopePreference(): AnnotationScope | null {
   const raw = getItem(ANNOTATION_SCOPE_KEY);
-  return raw === 'all' || raw === 'current' ? raw : null;
+  return raw === "all" || raw === "current" ? raw : null;
 }
 
 export function setAnnotationScopePreference(scope: AnnotationScope): void {
@@ -38,7 +38,7 @@ export function setAnnotationScopePreference(scope: AnnotationScope): void {
  * keep it from colliding with a real file path (illegal in Windows paths, and
  * absent from the absolute paths these groups carry).
  */
-export const ROOT_DOCUMENT_GROUP_KEY = '<plannotator-root-document>';
+export const ROOT_DOCUMENT_GROUP_KEY = "<plannotator-root-document>";
 
 export interface AnnotationDocumentInput {
   /** Absolute path of the document. */
@@ -64,7 +64,7 @@ export interface AnnotationDocumentGroup {
  */
 export function documentLabel(path: string, roots: readonly string[] = []): string {
   const normalized = normalizeBrowserPath(path);
-  let best = '';
+  let best = "";
   for (const root of roots) {
     if (!root) continue;
     const normalizedRoot = normalizeBrowserPath(root);
@@ -72,9 +72,9 @@ export function documentLabel(path: string, roots: readonly string[] = []): stri
     if (normalizedRoot.length > best.length) best = normalizedRoot;
   }
   if (best && normalized.length > best.length) {
-    return normalized.slice(best.endsWith('/') ? best.length : best.length + 1);
+    return normalized.slice(best.endsWith("/") ? best.length : best.length + 1);
   }
-  const lastSlash = normalized.lastIndexOf('/');
+  const lastSlash = normalized.lastIndexOf("/");
   return lastSlash >= 0 ? normalized.slice(lastSlash + 1) : normalized;
 }
 
@@ -168,7 +168,7 @@ export function resolveInitialAnnotationScope(input: {
   /** Annotations on every other document in the session. */
   otherCount: number;
 }): AnnotationScope {
-  if (input.saved === 'all') return 'all';
-  if (input.currentCount === 0 && input.otherCount > 0) return 'all';
-  return 'current';
+  if (input.saved === "all") return "all";
+  if (input.currentCount === 0 && input.otherCount > 0) return "all";
+  return "current";
 }

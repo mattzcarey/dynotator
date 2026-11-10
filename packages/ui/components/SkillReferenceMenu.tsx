@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { SkillCatalogEntry } from '../utils/skillReferences';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { SkillCatalogEntry } from "../utils/skillReferences";
 
 /** Which skill root a row came from, shown as the right-aligned source column. */
-const ROOT_LABELS: Record<SkillCatalogEntry['root'], string> = {
-  claude: 'Claude',
-  codex: 'Codex',
-  universal: 'Agents',
-  plannotator: 'Plannotator',
+const ROOT_LABELS: Record<SkillCatalogEntry["root"], string> = {
+  claude: "Claude",
+  codex: "Codex",
+  universal: "Agents",
+  plannotator: "Plannotator",
 };
 
 interface SkillReferenceMenuProps {
@@ -23,7 +23,7 @@ interface SkillReferenceMenuProps {
    */
   boundary?: () => { top: number; bottom: number } | null;
   /** Which side of the anchor the menu tries first. Default: above. */
-  prefer?: 'above' | 'below';
+  prefer?: "above" | "below";
   /** Upper bound on the list's height, in px. Default: 256. */
   maxListHeight?: number;
   /**
@@ -50,7 +50,7 @@ const MENU_VIEWPORT_MARGIN = 8;
 const MAX_LIST_HEIGHT = 256;
 
 interface MenuPlacement {
-  direction: 'above' | 'below';
+  direction: "above" | "below";
   maxListHeight: number;
 }
 
@@ -66,30 +66,37 @@ interface MenuPlacement {
  * list is clamped to it, so the menu never extends past a viewport edge.
  */
 export function computeMenuPlacement(
-  anchorRect: Pick<DOMRect, 'top' | 'bottom'>,
+  anchorRect: Pick<DOMRect, "top" | "bottom">,
   naturalListHeight: number,
   chromeHeight: number,
   viewportHeight: number,
-  options: { boundaryTop?: number; prefer?: 'above' | 'below'; maxListHeight?: number } = {},
+  options: { boundaryTop?: number; prefer?: "above" | "below"; maxListHeight?: number } = {},
 ): MenuPlacement {
   const boundaryTop = options.boundaryTop ?? 0;
   const cap = Number.isFinite(options.maxListHeight) ? options.maxListHeight! : MAX_LIST_HEIGHT;
   const spaceAbove = anchorRect.top - boundaryTop - MENU_GAP - MENU_VIEWPORT_MARGIN - chromeHeight;
-  const spaceBelow = viewportHeight - anchorRect.bottom - MENU_GAP - MENU_VIEWPORT_MARGIN - chromeHeight;
+  const spaceBelow =
+    viewportHeight - anchorRect.bottom - MENU_GAP - MENU_VIEWPORT_MARGIN - chromeHeight;
   const needed = Math.min(naturalListHeight, cap);
-  const [first, second] = options.prefer === 'below' ? (['below', 'above'] as const) : (['above', 'below'] as const);
-  const space = (side: MenuPlacement['direction']) => (side === 'above' ? spaceAbove : spaceBelow);
-  const direction: MenuPlacement['direction'] =
-    needed <= space(first) ? first
-    : needed <= space(second) ? second
-    : space(first) >= space(second) ? first
-    : second;
+  const [first, second] =
+    options.prefer === "below" ? (["below", "above"] as const) : (["above", "below"] as const);
+  const space = (side: MenuPlacement["direction"]) => (side === "above" ? spaceAbove : spaceBelow);
+  const direction: MenuPlacement["direction"] =
+    needed <= space(first)
+      ? first
+      : needed <= space(second)
+        ? second
+        : space(first) >= space(second)
+          ? first
+          : second;
   const available = space(direction);
   return {
     direction,
     // A NaN reading (a host's boundary or cap mid-rotation) keeps the cap: NaN never equals itself, so the
     // equality-guarded setPlacement below would re-render forever (React error 185, the page goes blank).
-    maxListHeight: Number.isFinite(available) ? Math.max(0, Math.min(cap, Math.round(available))) : cap,
+    maxListHeight: Number.isFinite(available)
+      ? Math.max(0, Math.min(cap, Math.round(available)))
+      : cap,
   };
 }
 
@@ -126,7 +133,7 @@ export const SkillReferenceMenu: React.FC<SkillReferenceMenuProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<MenuPlacement>({
-    direction: prefer ?? 'above',
+    direction: prefer ?? "above",
     maxListHeight: maxListHeight ?? MAX_LIST_HEIGHT,
   });
   // The optional seams, read through a ref so `measure` stays stable for its listeners.
@@ -148,15 +155,19 @@ export const SkillReferenceMenu: React.FC<SkillReferenceMenuProps> = ({
     // scrollHeight reports full content height even while clamped.
     const { boundary: readBoundary, prefer: side, maxListHeight: cap } = optionsRef.current;
     const box = readBoundary?.() ?? null;
-    const next = computeMenuPlacement(rect, listEl.scrollHeight, chrome, box ? box.bottom : window.innerHeight, {
-      boundaryTop: box ? box.top : 0,
-      prefer: side,
-      maxListHeight: cap,
-    });
+    const next = computeMenuPlacement(
+      rect,
+      listEl.scrollHeight,
+      chrome,
+      box ? box.bottom : window.innerHeight,
+      {
+        boundaryTop: box ? box.top : 0,
+        prefer: side,
+        maxListHeight: cap,
+      },
+    );
     setPlacement((prev) =>
-      prev.direction === next.direction && prev.maxListHeight === next.maxListHeight
-        ? prev
-        : next,
+      prev.direction === next.direction && prev.maxListHeight === next.maxListHeight ? prev : next,
     );
   }, []);
 
@@ -171,11 +182,11 @@ export const SkillReferenceMenu: React.FC<SkillReferenceMenuProps> = ({
   // Same listeners CommentPopover's own position tracking uses: capture-phase
   // scroll (the document scrolls under the anchored popover) plus resize.
   useEffect(() => {
-    window.addEventListener('scroll', measure, true);
-    window.addEventListener('resize', measure);
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
     return () => {
-      window.removeEventListener('scroll', measure, true);
-      window.removeEventListener('resize', measure);
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
     };
   }, [measure]);
 
@@ -184,7 +195,7 @@ export const SkillReferenceMenu: React.FC<SkillReferenceMenuProps> = ({
     const list = listRef.current;
     // By id, not by position: a group's hairline is a child of the list too.
     const row = list?.querySelector<HTMLElement>(`[id="${id}-option-${activeIndex}"]`);
-    row?.scrollIntoView({ block: 'nearest' });
+    row?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
 
   return (
@@ -196,7 +207,7 @@ export const SkillReferenceMenu: React.FC<SkillReferenceMenuProps> = ({
       data-skill-menu-placement={placement.direction}
       data-popover-layer="true"
       className={`absolute left-0 right-0 z-[110] bg-popover border border-border rounded-xl shadow-2xl overflow-hidden ${
-        placement.direction === 'above' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+        placement.direction === "above" ? "bottom-full mb-1.5" : "top-full mt-1.5"
       }`}
     >
       <div
@@ -206,46 +217,63 @@ export const SkillReferenceMenu: React.FC<SkillReferenceMenuProps> = ({
         style={{ maxHeight: placement.maxListHeight }}
       >
         {items.map((item, index) => {
-          const hostRow = groupHostRows && item.root === 'plannotator';
+          const hostRow = groupHostRows && item.root === "plannotator";
           // The one hairline: under the last host-served row, when a row of another kind follows it.
           const next = items[index + 1];
-          const dividerAfter = hostRow && next !== undefined && next.root !== 'plannotator';
+          const dividerAfter = hostRow && next !== undefined && next.root !== "plannotator";
           return (
-          <React.Fragment key={item.name}>
-          <button
-            type="button"
-            id={`${id}-option-${index}`}
-            role="option"
-            aria-selected={index === activeIndex}
-            tabIndex={-1}
-            data-skill-item={item.name}
-            data-skill-item-active={index === activeIndex ? 'true' : undefined}
-            data-skill-item-host={hostRow ? 'true' : undefined}
-            // Insert on pointerdown so the textarea never loses focus. A
-            // click is explicit selection; hover deliberately does NOT
-            // activate the row (see the component docblock), and its only
-            // styling is the color-only hover:bg — hover must never change
-            // a row's rendered size or the menu's geometry.
-            onPointerDown={(e) => {
-              e.preventDefault();
-              onSelect(index);
-            }}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-[13px] leading-snug transition-colors ${
-              index === activeIndex ? 'bg-muted' : 'hover:bg-muted/50'
-            }`}
-          >
-            {rowIcon?.(item) ?? <SkillIcon className={hostRow ? 'text-primary' : undefined} />}
-            {/* data-skill-item-part: a host's styling hook (the Inbox lays a row out in two lines on a phone). */}
-            <span data-skill-item-part="name" className="shrink-0 font-semibold text-foreground">{item.name}</span>
-            <span data-skill-item-part="description" className="min-w-0 flex-1 truncate text-muted-foreground">
-              {item.description ?? ''}
-            </span>
-            <span data-skill-item-part="root" className="shrink-0 pl-3 text-xs text-muted-foreground/80">
-              {ROOT_LABELS[item.root]}
-            </span>
-          </button>
-          {dividerAfter && <div aria-hidden="true" data-skill-menu-divider="true" className="mx-2.5 my-1 h-px shrink-0 bg-border" />}
-          </React.Fragment>
+            <React.Fragment key={item.name}>
+              <button
+                type="button"
+                id={`${id}-option-${index}`}
+                role="option"
+                aria-selected={index === activeIndex}
+                tabIndex={-1}
+                data-skill-item={item.name}
+                data-skill-item-active={index === activeIndex ? "true" : undefined}
+                data-skill-item-host={hostRow ? "true" : undefined}
+                // Insert on pointerdown so the textarea never loses focus. A
+                // click is explicit selection; hover deliberately does NOT
+                // activate the row (see the component docblock), and its only
+                // styling is the color-only hover:bg — hover must never change
+                // a row's rendered size or the menu's geometry.
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  onSelect(index);
+                }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-[13px] leading-snug transition-colors ${
+                  index === activeIndex ? "bg-muted" : "hover:bg-muted/50"
+                }`}
+              >
+                {rowIcon?.(item) ?? <SkillIcon className={hostRow ? "text-primary" : undefined} />}
+                {/* data-skill-item-part: a host's styling hook (the Inbox lays a row out in two lines on a phone). */}
+                <span
+                  data-skill-item-part="name"
+                  className="shrink-0 font-semibold text-foreground"
+                >
+                  {item.name}
+                </span>
+                <span
+                  data-skill-item-part="description"
+                  className="min-w-0 flex-1 truncate text-muted-foreground"
+                >
+                  {item.description ?? ""}
+                </span>
+                <span
+                  data-skill-item-part="root"
+                  className="shrink-0 pl-3 text-xs text-muted-foreground/80"
+                >
+                  {ROOT_LABELS[item.root]}
+                </span>
+              </button>
+              {dividerAfter && (
+                <div
+                  aria-hidden="true"
+                  data-skill-menu-divider="true"
+                  className="mx-2.5 my-1 h-px shrink-0 bg-border"
+                />
+              )}
+            </React.Fragment>
           );
         })}
       </div>
@@ -253,7 +281,7 @@ export const SkillReferenceMenu: React.FC<SkillReferenceMenuProps> = ({
   );
 };
 
-const SkillIcon: React.FC<{ className?: string }> = ({ className = 'text-muted-foreground' }) => (
+const SkillIcon: React.FC<{ className?: string }> = ({ className = "text-muted-foreground" }) => (
   <svg
     className={`w-4 h-4 shrink-0 ${className}`}
     viewBox="0 0 24 24"
@@ -283,7 +311,7 @@ interface HumanOnlySkillNoticeProps {
 // human-only line says the instructions go with, unless the composer says.
 // Plannotator's comments go with "your feedback"; the Inbox's comments on
 // attached files ride a reply.
-const DEFAULT_DESTINATION = 'your feedback';
+const DEFAULT_DESTINATION = "your feedback";
 let defaultDestination = DEFAULT_DESTINATION;
 
 export function setSkillInstructionsDestination(destination: string): void {
@@ -304,10 +332,13 @@ export function resetSkillInstructionsDestination(): void {
  * toggles), and assistive tech alike. It pairs with the dotted-underline
  * marker the composer overlay paints on human-only tokens.
  */
-export const HumanOnlySkillNotice: React.FC<HumanOnlySkillNoticeProps> = ({ skills, destination }) => {
+export const HumanOnlySkillNotice: React.FC<HumanOnlySkillNoticeProps> = ({
+  skills,
+  destination,
+}) => {
   if (skills.length === 0) return null;
   destination ??= defaultDestination;
-  const names = skills.map((s) => s.name).join(', ');
+  const names = skills.map((s) => s.name).join(", ");
   return (
     <details data-skill-human-only-notice="true" className="group mt-1 px-1">
       <summary className="list-none [&::-webkit-details-marker]:hidden inline-flex cursor-pointer select-none items-center gap-1 rounded text-[10px] text-muted-foreground/80 transition-colors hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
@@ -317,13 +348,13 @@ export const HumanOnlySkillNotice: React.FC<HumanOnlySkillNoticeProps> = ({ skil
       <p className="mt-0.5 pl-3.5 text-[11px] leading-snug text-muted-foreground">
         {skills.length === 1 ? (
           <>
-            <span className="font-mono">{names}</span> cannot be invoked by a model, so
-            its instructions will be included with {destination}.
+            <span className="font-mono">{names}</span> cannot be invoked by a model, so its
+            instructions will be included with {destination}.
           </>
         ) : (
           <>
-            <span className="font-mono">{names}</span> cannot be invoked by a model, so
-            their instructions will be included with {destination}.
+            <span className="font-mono">{names}</span> cannot be invoked by a model, so their
+            instructions will be included with {destination}.
           </>
         )}
       </p>

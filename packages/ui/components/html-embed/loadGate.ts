@@ -8,7 +8,7 @@
  *   a "Show page" button until the person asks or a live one goes away.
  */
 
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from "react";
 
 export const EMBED_NEAR_PX = 400;
 export const EMBED_CONCURRENT_LOADS = 2;
@@ -71,7 +71,7 @@ export function resetEmbedGateForTests(): void {
 function scrollParentOf(el: Element): Element | null {
   for (let node = el.parentElement; node; node = node.parentElement) {
     const overflow = getComputedStyle(node).overflowY;
-    if (overflow === 'auto' || overflow === 'scroll' || overflow === 'overlay') return node;
+    if (overflow === "auto" || overflow === "scroll" || overflow === "overlay") return node;
   }
   return null;
 }
@@ -87,7 +87,7 @@ export function useNearViewport(ref: RefObject<Element | null>): boolean {
     if (near) return;
     const el = ref.current;
     if (!el) return;
-    if (typeof IntersectionObserver === 'undefined') {
+    if (typeof IntersectionObserver === "undefined") {
       setNear(true);
       return;
     }

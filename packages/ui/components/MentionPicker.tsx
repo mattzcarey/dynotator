@@ -1,5 +1,5 @@
-import { createPortal } from 'react-dom';
-import type { MentionPerson } from '../utils/mentions';
+import { createPortal } from "react-dom";
+import type { MentionPerson } from "../utils/mentions";
 
 /**
  * The `@` menu over the comment composer's textarea.
@@ -35,10 +35,12 @@ export function mentionAnchorOf(element: HTMLElement | null): MentionAnchor | nu
 }
 
 /** Consecutive runs of people with the same `group`, with each run's first index in the flat list. */
-export function mentionGroups(people: readonly MentionPerson[]): { group: string; start: number; people: MentionPerson[] }[] {
+export function mentionGroups(
+  people: readonly MentionPerson[],
+): { group: string; start: number; people: MentionPerson[] }[] {
   const runs: { group: string; start: number; people: MentionPerson[] }[] = [];
   people.forEach((person, index) => {
-    const group = person.group ?? '';
+    const group = person.group ?? "";
     const last = runs[runs.length - 1];
     if (last && last.group === group) last.people.push(person);
     else runs.push({ group, start: index, people: [person] });
@@ -51,7 +53,7 @@ function MentionAvatar({
   avatar,
   label,
 }: {
-  readonly avatar: NonNullable<MentionPerson['avatar']>;
+  readonly avatar: NonNullable<MentionPerson["avatar"]>;
   readonly label: string;
 }) {
   if (avatar.url) {
@@ -72,7 +74,7 @@ function MentionAvatar({
       aria-hidden="true"
       style={avatar.tint ? { backgroundColor: avatar.tint } : undefined}
       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[8px] font-semibold leading-none ${
-        avatar.tint ? 'text-white' : 'bg-muted text-foreground/80'
+        avatar.tint ? "text-white" : "bg-muted text-foreground/80"
       }`}
     >
       {initials}
@@ -103,7 +105,7 @@ export function MentionPicker({
   readonly onPick: (person: MentionPerson) => void;
   readonly onHover: (index: number) => void;
 }) {
-  if (anchor === null || typeof document === 'undefined') return null;
+  if (anchor === null || typeof document === "undefined") return null;
   if (people.length === 0 && !emptyNotice) return null;
   const above = anchor.top >= MENU_MAX_PX + MENU_GAP_PX;
   const style = above
@@ -115,12 +117,15 @@ export function MentionPicker({
       role="listbox"
       aria-label="People"
       data-mention-picker
-      data-placement={above ? 'above' : 'below'}
-      style={{ position: 'fixed', left: anchor.left, width: anchor.width, ...style }}
+      data-placement={above ? "above" : "below"}
+      style={{ position: "fixed", left: anchor.left, width: anchor.width, ...style }}
       className="z-[120] max-h-48 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-xl"
     >
       {heading && (
-        <p data-mention-heading className="px-2 pb-1 pt-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <p
+          data-mention-heading
+          className="px-2 pb-1 pt-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+        >
           {heading}
         </p>
       )}
@@ -133,8 +138,17 @@ export function MentionPicker({
         mentionGroups(people).map((run) => {
           const headingId = id ? `${id}-group-${run.start}` : undefined;
           return (
-            <div key={`${run.group}-${run.start}`} role="group" aria-labelledby={headingId} data-mention-group={run.group}>
-              <p id={headingId} data-mention-group-heading className="px-2 pb-1 pt-1.5 text-[10px] font-medium text-muted-foreground">
+            <div
+              key={`${run.group}-${run.start}`}
+              role="group"
+              aria-labelledby={headingId}
+              data-mention-group={run.group}
+            >
+              <p
+                id={headingId}
+                data-mention-group-heading
+                className="px-2 pb-1 pt-1.5 text-[10px] font-medium text-muted-foreground"
+              >
                 {run.group}
               </p>
               {run.people.map((person, offset) => {
@@ -153,13 +167,17 @@ export function MentionPicker({
                     }}
                     onMouseEnter={() => onHover(index)}
                     className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1 text-left text-xs transition-colors ${
-                      active === index ? 'bg-muted text-foreground' : 'text-foreground/85 hover:bg-muted/60'
+                      active === index
+                        ? "bg-muted text-foreground"
+                        : "text-foreground/85 hover:bg-muted/60"
                     }`}
                   >
                     {person.avatar && <MentionAvatar avatar={person.avatar} label={person.label} />}
                     <span className="min-w-0 flex-1 truncate">{person.label}</span>
                     {person.detail && (
-                      <span className="min-w-0 max-w-[44%] shrink-0 truncate text-[10px] text-muted-foreground">{person.detail}</span>
+                      <span className="min-w-0 max-w-[44%] shrink-0 truncate text-[10px] text-muted-foreground">
+                        {person.detail}
+                      </span>
                     )}
                   </button>
                 );
@@ -184,7 +202,7 @@ export function MentionPicker({
             }}
             onMouseEnter={() => onHover(index)}
             className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1 text-left text-xs transition-colors ${
-              active === index ? 'bg-muted text-foreground' : 'text-foreground/85 hover:bg-muted/60'
+              active === index ? "bg-muted text-foreground" : "text-foreground/85 hover:bg-muted/60"
             }`}
           >
             {person.avatar && <MentionAvatar avatar={person.avatar} label={person.label} />}

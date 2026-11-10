@@ -57,6 +57,9 @@ export const INBOX_SERVER_SESSION_MISMATCH_ERROR =
  * The JSON body a server answers a mismatch with (status 409). `error`
  * defaults to the review wording; the Inbox passes its own.
  */
-export function serverSessionMismatchBody(error: string = SERVER_SESSION_MISMATCH_ERROR): { error: string; code: string } {
+export function serverSessionMismatchBody(error: string = SERVER_SESSION_MISMATCH_ERROR): {
+  error: string;
+  code: string;
+} {
   return { error, code: SERVER_SESSION_MISMATCH_CODE };
 }

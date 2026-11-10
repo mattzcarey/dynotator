@@ -6,7 +6,7 @@
  * the host's own tokens: colours, radius, focus ring, and font sizes (the Inbox's `--ib-fs-N`, Tailwind's `--text-*`
  * on plan and code review). Rendered once per card in a `<style>`, so no host has to import a stylesheet.
  */
-import { STAR_ASK_DISPLAY_FONT, STAR_ASK_FONT_FACES, STAR_ASK_MONO_FONT } from './starAskFonts';
+import { STAR_ASK_DISPLAY_FONT, STAR_ASK_FONT_FACES, STAR_ASK_MONO_FONT } from "./starAskFonts";
 
 export const STAR_ASK_CSS = `${STAR_ASK_FONT_FACES}
 .psa{--psa-fs-m:var(--text-sm,14px);--psa-fs-l:var(--text-sm,14px);--psa-fs-h:var(--text-base,16px);--psa-fs-xh:var(--text-xl,20px);color:var(--foreground);font-family:inherit;text-align:left}

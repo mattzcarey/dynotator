@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Pause, Play } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Pause, Play } from "lucide-react";
 
 /**
  * One-time announcement for Plannotator's two terminal clients, Plannotator TUI
@@ -22,14 +22,14 @@ import { Pause, Play } from 'lucide-react';
  * frame keeps its place and offers the X post instead.
  */
 
-const TUI_REPO = 'https://github.com/plannotator/plannotator-tui';
-const HERDR_REPO = 'https://github.com/plannotator/herdr-annotate';
+const TUI_REPO = "https://github.com/plannotator/plannotator-tui";
+const HERDR_REPO = "https://github.com/plannotator/herdr-annotate";
 
 /** Where the marketing deploy publishes `apps/marketing/public/assets/`. */
-const MEDIA_BASE_URL = 'https://plannotator.ai/assets';
+const MEDIA_BASE_URL = "https://plannotator.ai/assets";
 
 export interface TerminalToolsDemo {
-  readonly id: 'full' | 'lite';
+  readonly id: "full" | "lite";
   /** Segment label. Herdr Annotate's own naming for its two install targets. */
   readonly label: string;
   readonly mp4: string;
@@ -52,31 +52,31 @@ const DEMO_ASPECT = 1280 / 806;
  * vanish into the frame.
  */
 const HERDR_BRAND_VARS = {
-  '--announce-brand': '#312b52',
-  '--announce-brand-text': '#c9c6f1',
-  '--announce-brand-accent': '#B9C0FF',
+  "--announce-brand": "#312b52",
+  "--announce-brand-text": "#c9c6f1",
+  "--announce-brand-accent": "#B9C0FF",
 } as React.CSSProperties;
 
 export const TERMINAL_TOOLS_DEMOS: readonly TerminalToolsDemo[] = [
   {
-    id: 'full',
-    label: 'Full',
+    id: "full",
+    label: "Full",
     mp4: `${MEDIA_BASE_URL}/tui-herdr-full-demo.mp4`,
     webm: `${MEDIA_BASE_URL}/tui-herdr-full-demo.webm`,
     poster: `${MEDIA_BASE_URL}/tui-herdr-full-poster.jpg`,
-    watchUrl: 'https://x.com/plannotator/status/2093419561077154287',
+    watchUrl: "https://x.com/plannotator/status/2093419561077154287",
     description:
-      'Herdr Annotate reviewing a Markdown file with Plannotator TUI: a file tree, a selected block with its comment, and the feedback sent to the agent.',
+      "Herdr Annotate reviewing a Markdown file with Plannotator TUI: a file tree, a selected block with its comment, and the feedback sent to the agent.",
   },
   {
-    id: 'lite',
-    label: 'Lite',
+    id: "lite",
+    label: "Lite",
     mp4: `${MEDIA_BASE_URL}/tui-herdr-lite-demo.mp4`,
     webm: `${MEDIA_BASE_URL}/tui-herdr-lite-demo.webm`,
     poster: `${MEDIA_BASE_URL}/tui-herdr-lite-poster.jpg`,
-    watchUrl: 'https://x.com/plannotator/status/2092757422322627008',
+    watchUrl: "https://x.com/plannotator/status/2092757422322627008",
     description:
-      'Herdr Annotate Lite: terminal text selected in an agent session, a comment written in a popover, and the notes sent back to the agent.',
+      "Herdr Annotate Lite: terminal text selected in an agent session, a comment written in a popover, and the notes sent back to the agent.",
   },
 ];
 
@@ -92,8 +92,8 @@ interface TerminalToolsAnnouncementDialogProps {
 }
 
 export function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function GitHubMark({ className }: { readonly className?: string }) {
@@ -183,9 +183,9 @@ function DemoPlayer({ demo, reducedMotion }: DemoPlayerProps) {
       <span
         aria-hidden="true"
         data-terminal-tools-tag
-        data-shimmer={reducedMotion ? 'off' : 'on'}
+        data-shimmer={reducedMotion ? "off" : "on"}
         className={`terminal-tools-announcement-tag absolute left-0 top-0 z-10 inline-flex h-8 select-none items-center rounded-br-xl pl-3.5 pr-4 text-[11px] font-semibold uppercase leading-none tracking-[0.16em] sm:h-12 sm:pl-6 sm:pr-7 sm:text-[15px] sm:tracking-[0.18em]${
-          reducedMotion ? '' : ' terminal-tools-announcement-tag--sheen'
+          reducedMotion ? "" : " terminal-tools-announcement-tag--sheen"
         }`}
       >
         New · Watch:
@@ -227,12 +227,12 @@ function DemoPlayer({ demo, reducedMotion }: DemoPlayerProps) {
         <button
           type="button"
           onClick={toggle}
-          aria-label={playing ? 'Pause demo' : 'Play demo'}
-          data-terminal-tools-playback={playing ? 'pause' : 'play'}
+          aria-label={playing ? "Pause demo" : "Play demo"}
+          data-terminal-tools-playback={playing ? "pause" : "play"}
           className={
             playing
-              ? 'absolute bottom-3 left-3 grid size-9 place-items-center rounded-full border border-border/60 bg-background/70 text-foreground opacity-0 outline-none backdrop-blur-sm transition-opacity motion-reduce:transition-none group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:ring-2 focus-visible:ring-primary'
-              : 'absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-border/60 bg-background/80 text-foreground shadow-lg outline-none backdrop-blur-sm transition-transform motion-reduce:transition-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-primary'
+              ? "absolute bottom-3 left-3 grid size-9 place-items-center rounded-full border border-border/60 bg-background/70 text-foreground opacity-0 outline-none backdrop-blur-sm transition-opacity motion-reduce:transition-none group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:ring-2 focus-visible:ring-primary"
+              : "absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-border/60 bg-background/80 text-foreground shadow-lg outline-none backdrop-blur-sm transition-transform motion-reduce:transition-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-primary"
           }
         >
           {playing ? (
@@ -247,21 +247,22 @@ function DemoPlayer({ demo, reducedMotion }: DemoPlayerProps) {
 }
 
 interface DemoSwitchProps {
-  readonly active: TerminalToolsDemo['id'];
-  readonly onChange: (id: TerminalToolsDemo['id']) => void;
+  readonly active: TerminalToolsDemo["id"];
+  readonly onChange: (id: TerminalToolsDemo["id"]) => void;
 }
 
 function DemoSwitch({ active, onChange }: DemoSwitchProps) {
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
     const index = TERMINAL_TOOLS_DEMOS.findIndex((demo) => demo.id === active);
-    const step = event.key === 'ArrowRight' ? 1 : -1;
-    const next = TERMINAL_TOOLS_DEMOS[
-      (index + step + TERMINAL_TOOLS_DEMOS.length) % TERMINAL_TOOLS_DEMOS.length
-    ];
+    const step = event.key === "ArrowRight" ? 1 : -1;
+    const next =
+      TERMINAL_TOOLS_DEMOS[
+        (index + step + TERMINAL_TOOLS_DEMOS.length) % TERMINAL_TOOLS_DEMOS.length
+      ];
     onChange(next.id);
     tabRefs.current[next.id]?.focus();
   };
@@ -289,8 +290,8 @@ function DemoSwitch({ active, onChange }: DemoSwitchProps) {
             onKeyDown={handleKeyDown}
             className={`min-h-8 rounded-md px-3 text-xs font-medium outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-primary ${
               selected
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {demo.label}
@@ -309,7 +310,7 @@ export function TerminalToolsAnnouncementDialog({
   const dismissRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onDismissRef = useRef(onDismiss);
-  const [activeDemoId, setActiveDemoId] = useState<TerminalToolsDemo['id']>('full');
+  const [activeDemoId, setActiveDemoId] = useState<TerminalToolsDemo["id"]>("full");
   const [motionPreference] = useState(() => reducedMotion ?? prefersReducedMotion());
   const reduced = reducedMotion ?? motionPreference;
   const activeDemo =
@@ -322,13 +323,12 @@ export function TerminalToolsAnnouncementDialog({
   useEffect(() => {
     if (!isOpen) return;
 
-    previousFocusRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dismissRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
         onDismissRef.current();
@@ -338,18 +338,21 @@ export function TerminalToolsAnnouncementDialog({
       // handler. This listener is registered on the capture phase, so
       // swallowing the chord here is what stops a keystroke aimed at the
       // announcement from approving a plan or posting a review behind it.
-      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (event.key !== "Tab") return;
 
-      const dialog = document.querySelector<HTMLElement>('[data-terminal-tools-announcement-dialog]');
+      const dialog = document.querySelector<HTMLElement>(
+        "[data-terminal-tools-announcement-dialog]",
+      );
       const focusable = Array.from(
-        dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')
-          ?? [],
-      ).filter((element) => element.getAttribute('tabindex') !== '-1');
+        dialog?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => element.getAttribute("tabindex") !== "-1");
       if (focusable.length === 0) return;
 
       const first = focusable[0];
@@ -363,9 +366,9 @@ export function TerminalToolsAnnouncementDialog({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener("keydown", handleKeyDown, true);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener("keydown", handleKeyDown, true);
       previousFocusRef.current?.focus();
       previousFocusRef.current = null;
     };

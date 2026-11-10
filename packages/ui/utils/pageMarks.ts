@@ -45,7 +45,7 @@ export function holdPageMark(el: Element, name: string): () => void {
   if (!counts) holders.set(el, (counts = new Map()));
   const held = counts.get(name) ?? 0;
   counts.set(name, held + 1);
-  if (held === 0) el.setAttribute(name, '');
+  if (held === 0) el.setAttribute(name, "");
   let released = false;
   return () => {
     if (released) return;
@@ -65,7 +65,8 @@ export function holdPageMark(el: Element, name: string): () => void {
  */
 export function holdPageMarkAbove(node: Element, scope: string, name: string): () => void {
   const releases: (() => void)[] = [];
-  for (let el = node.parentElement; el; el = el.parentElement) if (el.matches(scope)) releases.push(holdPageMark(el, name));
+  for (let el = node.parentElement; el; el = el.parentElement)
+    if (el.matches(scope)) releases.push(holdPageMark(el, name));
   return () => {
     for (const release of releases) release();
   };

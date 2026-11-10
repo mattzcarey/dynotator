@@ -1,9 +1,9 @@
-import { createTwoFilesPatch, structuredPatch } from 'diff';
+import { createTwoFilesPatch, structuredPatch } from "diff";
 
 const EMPTY_FEEDBACK_SENTINELS = new Set([
-  '',
-  'User reviewed the document and has no feedback.',
-  'User reviewed the messages and has no feedback.',
+  "",
+  "User reviewed the document and has no feedback.",
+  "User reviewed the messages and has no feedback.",
 ]);
 
 export interface SavedFileChangeInput {
@@ -37,19 +37,24 @@ export function isEmptyFeedbackSentinel(feedback: string): boolean {
 }
 
 export function computeEditStats(base: string, edited: string): EditStats {
-  const patch = structuredPatch('plan.md', 'plan.md', base, edited, undefined, undefined, { context: 0 });
+  const patch = structuredPatch("plan.md", "plan.md", base, edited, undefined, undefined, {
+    context: 0,
+  });
   let added = 0;
   let removed = 0;
   for (const hunk of patch.hunks) {
     for (const line of hunk.lines) {
-      if (line.startsWith('+')) added++;
-      else if (line.startsWith('-')) removed++;
+      if (line.startsWith("+")) added++;
+      else if (line.startsWith("-")) removed++;
     }
   }
   return { added, removed };
 }
 
-export function normalizeEditedMarkdown(base: string | null, current: string | null | undefined): string | null {
+export function normalizeEditedMarkdown(
+  base: string | null,
+  current: string | null | undefined,
+): string | null {
   if (base === null || current == null || current === base) return null;
   return current;
 }
@@ -60,11 +65,11 @@ export function buildDirectEditsSection(
   sourceConverted: boolean,
 ): string {
   const edited = normalizeEditedMarkdown(base, current);
-  if (base === null || edited === null) return '';
+  if (base === null || edited === null) return "";
 
   const patch = createTwoFilesPatch(
-    'plan.md (original)',
-    'plan.md (edited)',
+    "plan.md (original)",
+    "plan.md (edited)",
     base,
     edited,
     undefined,
@@ -72,13 +77,16 @@ export function buildDirectEditsSection(
     { context: 3 },
   );
   const preamble = sourceConverted
-    ? 'The user edited a markdown conversion of the original source. This diff describes the desired content changes (it is not a literal patch to a file on disk):'
-    : 'The user edited the document directly. Apply these exact changes — a unified diff against the version you submitted:';
+    ? "The user edited a markdown conversion of the original source. This diff describes the desired content changes (it is not a literal patch to a file on disk):"
+    : "The user edited the document directly. Apply these exact changes — a unified diff against the version you submitted:";
 
-  return ['# Direct Edits', '', preamble, '', '```diff', patch.trimEnd(), '```'].join('\n');
+  return ["# Direct Edits", "", preamble, "", "```diff", patch.trimEnd(), "```"].join("\n");
 }
 
-export function composeFeedbackWithDirectEdits(annotationsText: string, editsSection: string): string {
+export function composeFeedbackWithDirectEdits(
+  annotationsText: string,
+  editsSection: string,
+): string {
   if (!editsSection) return annotationsText;
   return EMPTY_FEEDBACK_SENTINELS.has(annotationsText)
     ? editsSection
@@ -87,7 +95,7 @@ export function composeFeedbackWithDirectEdits(annotationsText: string, editsSec
 
 export function buildSavedFileChangesSection(changes: SavedFileChangeInput[]): string {
   const changed = changes.filter((change) => change.beforeText !== change.afterText);
-  if (changed.length === 0) return '';
+  if (changed.length === 0) return "";
 
   const sections = changed.map((change) => {
     const patch = createTwoFilesPatch(
@@ -99,28 +107,30 @@ export function buildSavedFileChangesSection(changes: SavedFileChangeInput[]): s
       undefined,
       { context: 3 },
     );
-    return [`## ${change.path}`, '', '```diff', patch.trimEnd(), '```'].join('\n');
+    return [`## ${change.path}`, "", "```diff", patch.trimEnd(), "```"].join("\n");
   });
 
   return [
-    '# Saved File Changes',
-    '',
-    'The user saved these direct edits to disk during review. These changes are already applied; do not apply these patches again. Use them as context for this review.',
-    '',
+    "# Saved File Changes",
+    "",
+    "The user saved these direct edits to disk during review. These changes are already applied; do not apply these patches again. Use them as context for this review.",
+    "",
     ...sections,
-  ].join('\n\n');
+  ].join("\n\n");
 }
 
-export function buildSavedFileChangePanelItems(changes: SavedFileChangePanelInput[]): DirectEditPanelItem[] {
+export function buildSavedFileChangePanelItems(
+  changes: SavedFileChangePanelInput[],
+): DirectEditPanelItem[] {
   return changes.map((change) => {
     const stats = computeEditStats(change.beforeText, change.afterText);
     return {
       id: `saved:${change.key}`,
-      title: 'Edits',
+      title: "Edits",
       label: change.path,
       added: stats.added,
       removed: stats.removed,
-      description: 'Saved to disk; sent with feedback as context.',
+      description: "Saved to disk; sent with feedback as context.",
       diffText: createTwoFilesPatch(
         `${change.basename} (opened)`,
         `${change.basename} (saved)`,
@@ -137,10 +147,18 @@ export function buildSavedFileChangePanelItems(changes: SavedFileChangePanelInpu
 export function buildPlanEditPanelItem(base: string, edited: string): DirectEditPanelItem {
   const stats = computeEditStats(base, edited);
   return {
-    id: 'plan',
+    id: "plan",
     added: stats.added,
     removed: stats.removed,
-    diffText: createTwoFilesPatch('plan.md (original)', 'plan.md (edited)', base, edited, undefined, undefined, { context: 3 }),
+    diffText: createTwoFilesPatch(
+      "plan.md (original)",
+      "plan.md (edited)",
+      base,
+      edited,
+      undefined,
+      undefined,
+      { context: 3 },
+    ),
   };
 }
 

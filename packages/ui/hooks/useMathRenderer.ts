@@ -1,10 +1,10 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from "react";
 import {
   getMathRenderer,
   loadMathRenderer,
   subscribeMathRenderer,
   type MathRenderer,
-} from '../utils/math';
+} from "../utils/math";
 
 /**
  * The registered math renderer, read synchronously during render.

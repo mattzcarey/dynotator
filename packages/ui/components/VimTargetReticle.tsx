@@ -1,23 +1,18 @@
-import {
-  useLayoutEffect,
-  useRef,
-  useState,
-  type RefObject,
-} from 'react';
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import {
   addScrollViewportListener,
   getScrollViewportRect,
   useScrollViewport,
-} from '../hooks/useScrollViewport';
-import type { SemanticTarget } from '../utils/blockTargeting';
+} from "../hooks/useScrollViewport";
+import type { SemanticTarget } from "../utils/blockTargeting";
 import {
   createRangeBetweenTextPositions,
   resolveTextPosition,
   type VimRestorableState,
   type VimSelectionState,
-} from '../utils/vimNavigation';
-import type { VimHudCommand } from '../utils/vimHud';
-import { getVimReticleLabel } from '../utils/vimReticle';
+} from "../utils/vimNavigation";
+import type { VimHudCommand } from "../utils/vimHud";
+import { getVimReticleLabel } from "../utils/vimReticle";
 
 const CORNER_SIZE = 28;
 const MIN_TARGET_WIDTH = 44;
@@ -42,13 +37,13 @@ export interface VimTargetReticleProps {
 }
 
 function effectiveState(state: VimSelectionState): VimRestorableState | null {
-  if (state.phase === 'inactive') return null;
-  return state.phase === 'action' ? state.returnTo : state;
+  if (state.phase === "inactive") return null;
+  return state.phase === "action" ? state.returnTo : state;
 }
 
 function getRangeRect(range: Range): DOMRect | null {
   let rects: DOMRect[] = [];
-  if (typeof range.getClientRects === 'function') {
+  if (typeof range.getClientRects === "function") {
     try {
       rects = Array.from(range.getClientRects());
     } catch {
@@ -57,7 +52,7 @@ function getRangeRect(range: Range): DOMRect | null {
   }
   const visibleRects = rects.filter((rect) => rect.width > 0 || rect.height > 0);
   if (visibleRects.length === 0) {
-    if (typeof range.getBoundingClientRect !== 'function') return null;
+    if (typeof range.getBoundingClientRect !== "function") return null;
     try {
       return range.getBoundingClientRect();
     } catch {
@@ -76,10 +71,7 @@ function getNativeSelectionRect(container: HTMLElement): DOMRect | null {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return null;
   const range = selection.getRangeAt(0);
-  if (
-    !container.contains(range.startContainer)
-    || !container.contains(range.endContainer)
-  ) {
+  if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
     return null;
   }
   return getRangeRect(range);
@@ -90,20 +82,16 @@ function getTargetRect(
   state: VimRestorableState,
   target: SemanticTarget | null,
 ): DOMRect | null {
-  if (state.phase === 'block' || state.phase === 'inline') {
+  if (state.phase === "block" || state.phase === "inline") {
     return target?.element.getBoundingClientRect() ?? null;
   }
 
-  if (state.phase === 'visual') {
-    const range = createRangeBetweenTextPositions(
-      container,
-      state.anchor,
-      state.cursor,
-    );
+  if (state.phase === "visual") {
+    const range = createRangeBetweenTextPositions(container, state.anchor, state.cursor);
     return range ? getRangeRect(range) : null;
   }
 
-  if (state.phase === 'visual-block') {
+  if (state.phase === "visual-block") {
     return getNativeSelectionRect(container);
   }
 
@@ -116,15 +104,8 @@ function getTargetRect(
   if (!rect) return null;
 
   const parent = point.node.parentElement;
-  const lineHeight = parent
-    ? Number.parseFloat(getComputedStyle(parent).lineHeight)
-    : Number.NaN;
-  return new DOMRect(
-    rect.left,
-    rect.top,
-    Math.max(rect.width, 1),
-    rect.height || lineHeight || 18,
-  );
+  const lineHeight = parent ? Number.parseFloat(getComputedStyle(parent).lineHeight) : Number.NaN;
+  return new DOMRect(rect.left, rect.top, Math.max(rect.width, 1), rect.height || lineHeight || 18);
 }
 
 function relativePosition(
@@ -150,12 +131,10 @@ function relativePosition(
     top,
     width,
     height,
-    labelTop: aboveLabelTop + containerRect.top >= minimumLabelViewportTop
-      ? aboveLabelTop
-      : Math.max(
-          top + height + 6,
-          minimumLabelViewportTop - containerRect.top,
-        ),
+    labelTop:
+      aboveLabelTop + containerRect.top >= minimumLabelViewportTop
+        ? aboveLabelTop
+        : Math.max(top + height + 6, minimumLabelViewportTop - containerRect.top),
   };
 }
 
@@ -165,12 +144,7 @@ function relativePosition(
  * Geometry always comes from the live semantic element, caret, or browser
  * selection. The overlay never owns focus and never participates in layout.
  */
-export function VimTargetReticle({
-  containerRef,
-  state,
-  target,
-  command,
-}: VimTargetReticleProps) {
+export function VimTargetReticle({ containerRef, state, target, command }: VimTargetReticleProps) {
   const [position, setPosition] = useState<ReticlePosition | null>(null);
   const rafRef = useRef(0);
   const scrollViewport = useScrollViewport();
@@ -194,15 +168,16 @@ export function VimTargetReticle({
         ? getScrollViewportRect(scrollViewport).top
         : containerRect.top;
       const stickyBottom = container
-        .querySelector<HTMLElement>('[data-viewer-document-header], [data-sticky-actions]')
-        ?.getBoundingClientRect()
-        .bottom;
-      setPosition(relativePosition(
-        targetRect,
-        containerRect,
-        restoredState.phase === 'text',
-        Math.max(viewportTop + 4, stickyBottom ? stickyBottom + 6 : 0),
-      ));
+        .querySelector<HTMLElement>("[data-viewer-document-header], [data-sticky-actions]")
+        ?.getBoundingClientRect().bottom;
+      setPosition(
+        relativePosition(
+          targetRect,
+          containerRect,
+          restoredState.phase === "text",
+          Math.max(viewportTop + 4, stickyBottom ? stickyBottom + 6 : 0),
+        ),
+      );
     };
     const scheduleUpdate = () => {
       cancelAnimationFrame(rafRef.current);
@@ -210,18 +185,17 @@ export function VimTargetReticle({
     };
 
     update();
-    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate, { passive: true });
     const removeScrollListener = scrollViewport
       ? addScrollViewportListener(scrollViewport, scheduleUpdate)
       : undefined;
-    const resizeObserver = typeof ResizeObserver === 'undefined'
-      ? null
-      : new ResizeObserver(scheduleUpdate);
+    const resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleUpdate);
     resizeObserver?.observe(container);
     if (target?.element) resizeObserver?.observe(target.element);
     return () => {
       cancelAnimationFrame(rafRef.current);
-      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
       removeScrollListener?.();
       resizeObserver?.disconnect();
     };

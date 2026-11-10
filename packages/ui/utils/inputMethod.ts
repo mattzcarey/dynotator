@@ -1,23 +1,23 @@
-import { storage } from './storage';
-import { isStalePreference } from './preferenceTtl';
-import type { InputMethod } from '../types';
+import { storage } from "./storage";
+import { isStalePreference } from "./preferenceTtl";
+import type { InputMethod } from "../types";
 
-const STORAGE_KEY = 'plannotator-input-method';
-const HTML_STORAGE_KEY = 'plannotator-input-method-html';
-const DEFAULT_METHOD: InputMethod = 'drag';
+const STORAGE_KEY = "plannotator-input-method";
+const HTML_STORAGE_KEY = "plannotator-input-method-html";
+const DEFAULT_METHOD: InputMethod = "drag";
 /**
  * Raw-HTML sessions default to Pinpoint: arbitrary pages are element-shaped,
  * not prose-shaped, so click-an-element is the natural first gesture.
  */
-const DEFAULT_HTML_METHOD: InputMethod = 'pinpoint';
+const DEFAULT_HTML_METHOD: InputMethod = "pinpoint";
 
 /** Which document surface the input method applies to. */
-export type InputMethodSurface = 'markdown' | 'html';
+export type InputMethodSurface = "markdown" | "html";
 
 function parseInputMethod(value: unknown): InputMethod | null {
   // `word` was a third method for a short while; its click is part of Select now.
-  if (value === 'word') return 'drag';
-  return value === 'drag' || value === 'pinpoint' ? value : null;
+  if (value === "word") return "drag";
+  return value === "drag" || value === "pinpoint" ? value : null;
 }
 
 /**
@@ -29,7 +29,7 @@ function parseHtmlRecord(raw: string | null, now: number): InputMethod | null {
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null) return null;
+    if (typeof parsed !== "object" || parsed === null) return null;
     const record = parsed as Record<string, unknown>;
     if (isStalePreference(record.savedAt, now)) return null;
     return parseInputMethod(record.m);
@@ -57,13 +57,13 @@ export function resolveInputMethod(
   savedHtml: string | null,
   now: number = Date.now(),
 ): InputMethod {
-  if (surface === 'html') {
+  if (surface === "html") {
     return parseHtmlRecord(savedHtml, now) ?? DEFAULT_HTML_METHOD;
   }
   return parseInputMethod(savedShared) ?? DEFAULT_METHOD;
 }
 
-export function getInputMethod(surface: InputMethodSurface = 'markdown'): InputMethod {
+export function getInputMethod(surface: InputMethodSurface = "markdown"): InputMethod {
   return resolveInputMethod(
     surface,
     storage.getItem(STORAGE_KEY),
@@ -73,9 +73,9 @@ export function getInputMethod(surface: InputMethodSurface = 'markdown'): InputM
 
 export function saveInputMethod(
   method: InputMethod,
-  surface: InputMethodSurface = 'markdown',
+  surface: InputMethodSurface = "markdown",
 ): void {
-  if (surface === 'html') {
+  if (surface === "html") {
     storage.setItem(HTML_STORAGE_KEY, JSON.stringify({ m: method, savedAt: Date.now() }));
     return;
   }
@@ -88,5 +88,5 @@ export function saveInputMethod(
  * never expires mid-habit; a no-op for the markdown surface.
  */
 export function refreshInputMethodStamp(method: InputMethod): void {
-  saveInputMethod(method, 'html');
+  saveInputMethod(method, "html");
 }

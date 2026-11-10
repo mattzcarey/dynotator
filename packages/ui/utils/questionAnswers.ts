@@ -18,8 +18,8 @@ import {
   type QuestionAnswer,
   type QuestionSourceBlock,
   type QuestionStatus,
-} from '@dynotator/core/question-block';
-import { AnnotationType, type Annotation } from '../types';
+} from "@dynotator/core/question-block";
+import { AnnotationType, type Annotation } from "../types";
 
 /** The answer annotation for a question block, typed for the UI. */
 export const questionAnswerToAnnotation = (
@@ -33,7 +33,9 @@ export const questionAnswerToAnnotation = (
 
 /** Valid answers in an annotation list, keyed by question key (first wins).
  *  Malformed `questionAnswer` values are skipped, never thrown on. */
-export const collectQuestionAnswers = (annotations: ReadonlyArray<Annotation>): Map<string, QuestionAnswer> => {
+export const collectQuestionAnswers = (
+  annotations: ReadonlyArray<Annotation>,
+): Map<string, QuestionAnswer> => {
   const out = new Map<string, QuestionAnswer>();
   for (const ann of annotations) {
     if (ann.questionAnswer == null) continue;
@@ -50,12 +52,14 @@ export const collectQuestionAnswers = (annotations: ReadonlyArray<Annotation>): 
  *  one is dropped. Without host answers this is `collectQuestionAnswers`. */
 export const resolveQuestionAnswers = (
   annotations: ReadonlyArray<Annotation>,
-  hostAnswers?: ReadonlyMap<string, QuestionAnswer> | Readonly<Record<string, QuestionAnswer>> | null,
+  hostAnswers?:
+    | ReadonlyMap<string, QuestionAnswer>
+    | Readonly<Record<string, QuestionAnswer>>
+    | null,
 ): Map<string, QuestionAnswer> => {
   if (!hostAnswers) return collectQuestionAnswers(annotations);
-  const entries: Array<[string, unknown]> = hostAnswers instanceof Map
-    ? [...hostAnswers.entries()]
-    : Object.entries(hostAnswers);
+  const entries: Array<[string, unknown]> =
+    hostAnswers instanceof Map ? [...hostAnswers.entries()] : Object.entries(hostAnswers);
   const out = new Map<string, QuestionAnswer>();
   for (const [key, value] of entries) {
     const answer = parseQuestionAnswer(value);
@@ -65,7 +69,7 @@ export const resolveQuestionAnswers = (
 };
 
 /** Whether an annotation is a question answer (validated). */
-export const isQuestionAnswerAnnotation = (ann: Pick<Annotation, 'questionAnswer'>): boolean =>
+export const isQuestionAnswerAnnotation = (ann: Pick<Annotation, "questionAnswer">): boolean =>
   ann.questionAnswer != null && parseQuestionAnswer(ann.questionAnswer) !== null;
 
 /**
@@ -120,13 +124,13 @@ export interface QuestionPanelRow {
   orphaned: boolean;
 }
 
-const oneLine = (value: string): string => value.replace(/\s+/g, ' ').trim();
+const oneLine = (value: string): string => value.replace(/\s+/g, " ").trim();
 
 const answerSummary = (answer: QuestionAnswer): string => {
   const parts = [...answer.selected.map(oneLine)];
   if (answer.other?.trim()) parts.push(`Other: ${oneLine(answer.other)}`);
   if (answer.text?.trim()) parts.push(oneLine(answer.text));
-  return parts.join('; ');
+  return parts.join("; ");
 };
 
 /**
@@ -149,13 +153,14 @@ export const buildQuestionPanelRows = (
     const answer = stored && canonicalQuestionAnswer(question, stored);
     const status = questionStatus(question, answer);
     const settledLabels = question.choices.filter((c) => c.settled).map((c) => oneLine(c.label));
-    const answerText = status === 'answered' && answer
-      ? answerSummary(answer)
-      : status === 'skipped'
-        ? 'Skipped'
-        : status === 'settled'
-          ? `${settledLabels.join('; ')} (settled)`
-          : undefined;
+    const answerText =
+      status === "answered" && answer
+        ? answerSummary(answer)
+        : status === "skipped"
+          ? "Skipped"
+          : status === "settled"
+            ? `${settledLabels.join("; ")} (settled)`
+            : undefined;
     rows.push({
       key: question.key,
       number,
@@ -171,8 +176,13 @@ export const buildQuestionPanelRows = (
   }
   for (const answer of answers.values()) {
     if (seen.has(answer.key)) continue;
-    const status: QuestionStatus = isQuestionAnswered(answer) ? 'answered' : answer.skipped ? 'skipped' : 'open';
-    const answerText = status === 'answered' ? answerSummary(answer) : status === 'skipped' ? 'Skipped' : undefined;
+    const status: QuestionStatus = isQuestionAnswered(answer)
+      ? "answered"
+      : answer.skipped
+        ? "skipped"
+        : "open";
+    const answerText =
+      status === "answered" ? answerSummary(answer) : status === "skipped" ? "Skipped" : undefined;
     rows.push({
       key: answer.key,
       prompt: answer.prompt,
@@ -188,10 +198,12 @@ export const buildQuestionPanelRows = (
 
 /** Progress over the document's questions (orphaned answers excluded):
  *  `done` counts answered and settled questions, `total` every question. */
-export const questionProgress = (rows: ReadonlyArray<QuestionPanelRow>): { done: number; total: number } => {
+export const questionProgress = (
+  rows: ReadonlyArray<QuestionPanelRow>,
+): { done: number; total: number } => {
   const live = rows.filter((r) => !r.orphaned);
   return {
-    done: live.filter((r) => r.status === 'answered' || r.status === 'settled').length,
+    done: live.filter((r) => r.status === "answered" || r.status === "settled").length,
     total: live.length,
   };
 };
@@ -210,7 +222,7 @@ export const nextOpenQuestionKey = (
   const start = afterKey ? live.findIndex((r) => r.key === afterKey) : -1;
   for (let step = 1; step <= live.length; step++) {
     const row = live[(start + step) % live.length];
-    if (row.status === 'open') return row.key;
+    if (row.status === "open") return row.key;
   }
   return null;
 };
@@ -220,10 +232,14 @@ export const nextOpenQuestionKey = (
  *  the DOM. The focus does not scroll; the card scrolls smoothly to the
  *  centre. */
 export const focusQuestionCard = (key: string, root: ParentNode = document): boolean => {
-  const card = root.querySelector<HTMLElement>(`fieldset[data-question-key="${key.replace(/"/g, '')}"]`);
+  const card = root.querySelector<HTMLElement>(
+    `fieldset[data-question-key="${key.replace(/"/g, "")}"]`,
+  );
   if (!card) return false;
-  card.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-  const control = card.querySelector<HTMLElement>('input:not([disabled]), textarea:not([disabled])');
+  card.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  const control = card.querySelector<HTMLElement>(
+    "input:not([disabled]), textarea:not([disabled])",
+  );
   control?.focus({ preventScroll: true });
   return true;
 };

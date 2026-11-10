@@ -63,8 +63,9 @@
   --warning-foreground: #000000;
 
   /* Modern's own, for both modes: the light block below sets no fonts. */
-  --font-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
-  --font-mono: 'Geist Mono Variable', 'Geist Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono:
+    "Geist Mono Variable", "Geist Mono", "JetBrains Mono", "Fira Code", ui-monospace, monospace;
   --radius: 0.625rem;
 
   --code-bg: #1a1a1a;

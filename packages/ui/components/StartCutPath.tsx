@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * A path on one line, cut from the start when it outgrows its box: its last
@@ -13,10 +13,10 @@ import React from 'react';
  * jumping to the other end. Their floor is 2ch: in some fonts the ellipsis is
  * wider than one character, and Chrome draws none in a box it does not fit.
  */
-export function StartCutPath({ path, className = '' }: { path: string; className?: string }) {
+export function StartCutPath({ path, className = "" }: { path: string; className?: string }) {
   // The last name keeps any trailing separator (a folder given as `docs/`).
-  const trimmed = path.replace(/[\\/]+$/, '');
-  const lastStart = Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('\\')) + 1;
+  const trimmed = path.replace(/[\\/]+$/, "");
+  const lastStart = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\")) + 1;
   const folders = path.slice(0, lastStart);
   const last = path.slice(lastStart);
   return (
@@ -28,7 +28,7 @@ export function StartCutPath({ path, className = '' }: { path: string; className
       )}
       <span
         data-start-cut-path-last=""
-        className={`truncate ${folders ? 'flex-shrink-0 max-w-[calc(100%_-_2ch)]' : 'min-w-0'}`}
+        className={`truncate ${folders ? "flex-shrink-0 max-w-[calc(100%_-_2ch)]" : "min-w-0"}`}
       >
         {last}
       </span>

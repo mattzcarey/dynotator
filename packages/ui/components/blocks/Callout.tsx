@@ -1,12 +1,12 @@
-import React from 'react';
-import { renderProseBody } from './proseBody';
+import React from "react";
+import { renderProseBody } from "./proseBody";
 
 interface CalloutProps {
   blockId: string;
   kind: string;
   body: string;
   containerClassName: string;
-  blockType: 'alert' | 'directive';
+  blockType: "alert" | "directive";
   kindAttribute: string;
   onOpenLinkedDoc?: (path: string) => void;
   onOpenCodeFile?: (path: string) => void;
@@ -33,7 +33,9 @@ export const Callout: React.FC<CalloutProps> = ({
   onNavigateAnchor,
 }) => {
   const kindAttr =
-    blockType === 'alert' ? { 'data-alert-kind': kindAttribute } : { 'data-directive-kind': kindAttribute };
+    blockType === "alert"
+      ? { "data-alert-kind": kindAttribute }
+      : { "data-directive-kind": kindAttribute };
   return (
     <div
       className={containerClassName}
@@ -48,8 +50,8 @@ export const Callout: React.FC<CalloutProps> = ({
         body,
         // Callout inherits text color from the container (directive tint per
         // kind). Only pass size/leading classes, not a text-foreground value.
-        paragraphClassName: 'text-[15px] leading-relaxed',
-        listClassName: 'text-[15px] leading-relaxed',
+        paragraphClassName: "text-[15px] leading-relaxed",
+        listClassName: "text-[15px] leading-relaxed",
         imageBaseDir,
         onImageClick,
         onOpenLinkedDoc,

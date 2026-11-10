@@ -5,14 +5,14 @@
  * Uses cookies (not localStorage) because each hook invocation runs on a random port.
  */
 
-import { storage } from './storage';
+import { storage } from "./storage";
 
-const STORAGE_KEY = 'plannotator-default-notes-app';
+const STORAGE_KEY = "plannotator-default-notes-app";
 
-export type DefaultNotesApp = 'obsidian' | 'bear' | 'octarine' | 'notion' | 'download' | 'ask';
+export type DefaultNotesApp = "obsidian" | "bear" | "octarine" | "notion" | "download" | "ask";
 
 export function getDefaultNotesApp(): DefaultNotesApp {
-  return (storage.getItem(STORAGE_KEY) as DefaultNotesApp) || 'ask';
+  return (storage.getItem(STORAGE_KEY) as DefaultNotesApp) || "ask";
 }
 
 export function saveDefaultNotesApp(app: DefaultNotesApp): void {

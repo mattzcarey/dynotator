@@ -14,12 +14,21 @@
  * this one only spares the round trip while a person moves between links.
  */
 
-import { forgeRefKey, parseForgeRefUrl, type ForgeRef, type ForgeRefCardResult } from '@dynotator/core/forge-ref-card';
+import {
+  forgeRefKey,
+  parseForgeRefUrl,
+  type ForgeRef,
+  type ForgeRefCardResult,
+} from "@dynotator/core/forge-ref-card";
 
-export type { ForgeRef, ForgeRefCardResult } from '@dynotator/core/forge-ref-card';
+export type { ForgeRef, ForgeRefCardResult } from "@dynotator/core/forge-ref-card";
 
 /** Fetch the card for a link. Resolve null when the host does not read that link. */
-export type RefCardTransport = (href: string, ref: ForgeRef, signal: AbortSignal) => Promise<ForgeRefCardResult | null>;
+export type RefCardTransport = (
+  href: string,
+  ref: ForgeRef,
+  signal: AbortSignal,
+) => Promise<ForgeRefCardResult | null>;
 
 let transport: RefCardTransport | null = null;
 
@@ -43,14 +52,19 @@ export function refCardRouteTransport(route: string): RefCardTransport {
   let off = false;
   return async (href, _ref, signal) => {
     if (off) return null;
-    const res = await fetch(`${route}?url=${encodeURIComponent(href)}`, { signal, headers: { accept: 'application/json' } });
+    const res = await fetch(`${route}?url=${encodeURIComponent(href)}`, {
+      signal,
+      headers: { accept: "application/json" },
+    });
     if (res.status === 404) {
       off = true;
       return null;
     }
     if (!res.ok) return null;
     const body = (await res.json()) as unknown;
-    return body && typeof body === 'object' && typeof (body as { ok?: unknown }).ok === 'boolean' ? (body as ForgeRefCardResult) : null;
+    return body && typeof body === "object" && typeof (body as { ok?: unknown }).ok === "boolean"
+      ? (body as ForgeRefCardResult)
+      : null;
   };
 }
 

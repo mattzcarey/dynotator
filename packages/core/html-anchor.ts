@@ -124,9 +124,32 @@ const MAX_CONTEXT_SOURCE_NAME_LENGTH = 80;
 
 /** Attribute names the context may carry (mirrors CONTEXT_ATTRS in the bridge). */
 export const CONTEXT_ATTR_ALLOWLIST = new Set([
-  "href", "src", "alt", "title", "type", "name", "role", "placeholder", "for", "target", "rel",
-  "aria-label", "aria-labelledby", "aria-describedby", "aria-current", "aria-expanded", "aria-hidden", "aria-controls",
-  "data-annotate", "data-testid", "data-test", "data-test-id", "data-cy", "data-qa", "data-component", "data-id",
+  "href",
+  "src",
+  "alt",
+  "title",
+  "type",
+  "name",
+  "role",
+  "placeholder",
+  "for",
+  "target",
+  "rel",
+  "aria-label",
+  "aria-labelledby",
+  "aria-describedby",
+  "aria-current",
+  "aria-expanded",
+  "aria-hidden",
+  "aria-controls",
+  "data-annotate",
+  "data-testid",
+  "data-test",
+  "data-test-id",
+  "data-cy",
+  "data-qa",
+  "data-component",
+  "data-id",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -163,12 +186,12 @@ export function parseHtmlElementAnchor(value: unknown): HtmlElementAnchor | null
   if (!isRecord(value)) return null;
   const { selector, tagName, text } = value;
   if (
-    typeof selector !== "string"
-    || selector.length === 0
-    || selector.length > MAX_HTML_ANCHOR_SELECTOR_LENGTH
-    || typeof tagName !== "string"
-    || tagName.length === 0
-    || tagName.length > MAX_HTML_ANCHOR_TAG_LENGTH
+    typeof selector !== "string" ||
+    selector.length === 0 ||
+    selector.length > MAX_HTML_ANCHOR_SELECTOR_LENGTH ||
+    typeof tagName !== "string" ||
+    tagName.length === 0 ||
+    tagName.length > MAX_HTML_ANCHOR_TAG_LENGTH
   ) {
     return null;
   }
@@ -181,7 +204,10 @@ export function parseHtmlElementAnchor(value: unknown): HtmlElementAnchor | null
 /** Collapse control characters and whitespace runs, then cap. */
 function collapseContextScalar(value: unknown, max: number): string | undefined {
   if (typeof value !== "string") return undefined;
-  const collapsed = value.replace(/[\x00-\x1f\x7f]+/g, " ").replace(/\s+/g, " ").trim();
+  const collapsed = value
+    .replace(/[\x00-\x1f\x7f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!collapsed) return undefined;
   return collapsed.length > max ? truncateSurrogateSafe(collapsed, max) : collapsed;
 }
@@ -204,7 +230,9 @@ function collapseContextOutline(value: unknown): string | undefined {
     .slice(0, MAX_CONTEXT_OUTLINE_LINES);
   const joined = lines.join("\n").trim();
   if (!joined) return undefined;
-  return joined.length > MAX_CONTEXT_OUTLINE_LENGTH ? truncateSurrogateSafe(joined, MAX_CONTEXT_OUTLINE_LENGTH) : joined;
+  return joined.length > MAX_CONTEXT_OUTLINE_LENGTH
+    ? truncateSurrogateSafe(joined, MAX_CONTEXT_OUTLINE_LENGTH)
+    : joined;
 }
 
 function contextBytes(value: unknown): number {
@@ -218,7 +246,15 @@ function contextBytes(value: unknown): number {
  * is still better than losing the whole context.
  */
 export const ELEMENT_CONTEXT_SHED_ORDER: ReadonlyArray<keyof HtmlElementContext> = [
-  "outline", "text", "attrs", "classes", "path", "heading", "landmark", "component", "sourceName",
+  "outline",
+  "text",
+  "attrs",
+  "classes",
+  "path",
+  "heading",
+  "landmark",
+  "component",
+  "sourceName",
 ];
 
 /**
@@ -259,7 +295,10 @@ export function parseHtmlElementContext(value: unknown): HtmlElementContext | un
       const attrName = collapseContextScalar(entry[0], MAX_CONTEXT_ATTR_NAME_LENGTH);
       if (!attrName || !CONTEXT_ATTR_ALLOWLIST.has(attrName.toLowerCase())) continue;
       if (typeof entry[1] !== "string") continue;
-      attrs.push([attrName.toLowerCase(), collapseContextScalar(entry[1], MAX_CONTEXT_ATTR_VALUE_LENGTH) ?? ""]);
+      attrs.push([
+        attrName.toLowerCase(),
+        collapseContextScalar(entry[1], MAX_CONTEXT_ATTR_VALUE_LENGTH) ?? "",
+      ]);
     }
     if (attrs.length) context.attrs = attrs;
   }
@@ -267,14 +306,20 @@ export function parseHtmlElementContext(value: unknown): HtmlElementContext | un
   if (text) context.text = text;
   const outline = collapseContextOutline(value.outline);
   if (outline) context.outline = outline;
-  if (typeof value.children === "number" && Number.isFinite(value.children) && value.children >= 0) {
+  if (
+    typeof value.children === "number" &&
+    Number.isFinite(value.children) &&
+    value.children >= 0
+  ) {
     context.children = Math.min(100000, Math.floor(value.children));
   }
   if (isRecord(value.rect)) {
     const rect = value.rect;
     const nums = ["x", "y", "w", "h", "vw", "vh"].map((key) => {
       const n = rect[key];
-      return typeof n === "number" && Number.isFinite(n) ? Math.round(Math.max(-1e6, Math.min(1e6, n))) : null;
+      return typeof n === "number" && Number.isFinite(n)
+        ? Math.round(Math.max(-1e6, Math.min(1e6, n)))
+        : null;
     });
     if (nums.every((n) => n !== null)) {
       const [x, y, w, h, vw, vh] = nums as number[];
@@ -447,10 +492,7 @@ export function buildPersistedHtmlAnchor(
       // Each removed UTF-16 unit frees at least one byte; remove in honest
       // chunks and re-measure (escaping and multi-byte make exact math
       // per-character; the loop converges in a handful of passes).
-      const cut = Math.min(
-        originalText.length - floor,
-        Math.max(1, Math.ceil(over / 4)),
-      );
+      const cut = Math.min(originalText.length - floor, Math.max(1, Math.ceil(over / 4)));
       originalText = truncateSurrogateSafe(originalText, originalText.length - cut);
       anchor = compose();
     }
@@ -522,7 +564,7 @@ export interface ProjectHostThreadsOptions {
    * (the panel renders it with an empty quote line), for hosts that treat
    * such rows as comments that lost their place.
    */
-  documentLevel?: 'global' | 'unanchored';
+  documentLevel?: "global" | "unanchored";
   /**
    * Read-side cap on additional targets per row. Default undefined: the
    * viewer's own 16 applies (rows from arbitrary API clients can carry
@@ -590,7 +632,10 @@ export function projectHostThreads(
   for (const thread of threads) {
     if (options.openOnly && thread.state !== undefined && thread.state !== "open") continue;
     const htmlAnchor = parseHtmlElementAnchor(thread.htmlAnchor);
-    const htmlAdditionalTargets = parseHtmlAdditionalTargets(thread.htmlAdditionalTargets, maxTargets);
+    const htmlAdditionalTargets = parseHtmlAdditionalTargets(
+      thread.htmlAdditionalTargets,
+      maxTargets,
+    );
     const elementContext = parseHtmlElementContext(thread.elementContext);
     const originalText = typeof thread.originalText === "string" ? thread.originalText : "";
     const anchorless = originalText === "" && htmlAnchor === null;
@@ -602,9 +647,14 @@ export function projectHostThreads(
       type: anchorless && documentLevel === "global" ? "GLOBAL_COMMENT" : "COMMENT",
       ...(thread.text !== undefined ? { text: thread.text } : {}),
       originalText,
-      createdA: typeof thread.createdA === "number" && Number.isFinite(thread.createdA) ? thread.createdA : 0,
+      createdA:
+        typeof thread.createdA === "number" && Number.isFinite(thread.createdA)
+          ? thread.createdA
+          : 0,
       ...(thread.author !== undefined ? { author: thread.author } : {}),
-      ...(thread.images && thread.images.length > 0 ? { images: thread.images.map((image) => ({ ...image })) } : {}),
+      ...(thread.images && thread.images.length > 0
+        ? { images: thread.images.map((image) => ({ ...image })) }
+        : {}),
       ...(htmlAnchor !== null ? { htmlAnchor } : {}),
       ...(htmlAdditionalTargets.length > 0 ? { htmlAdditionalTargets } : {}),
       ...(elementContext !== undefined ? { elementContext } : {}),

@@ -10,11 +10,11 @@
  * from "seeded default".
  */
 
-import { storage } from './storage';
+import { storage } from "./storage";
 
-const STORAGE_KEY = 'plannotator-announce-inbox-seen';
+const STORAGE_KEY = "plannotator-announce-inbox-seen";
 // Bump to re-announce after a meaningful revision.
-const CURRENT_VERSION = '1';
+const CURRENT_VERSION = "1";
 
 export function needsInboxAnnouncement(): boolean {
   return storage.getItem(STORAGE_KEY) !== CURRENT_VERSION;
@@ -31,8 +31,10 @@ export function markInboxAnnouncementSeen(): void {
  * set it.
  */
 export function isVSCodeWebview(): boolean {
-  return typeof window !== 'undefined'
-    && (window as { __PLANNOTATOR_VSCODE?: unknown }).__PLANNOTATOR_VSCODE === true;
+  return (
+    typeof window !== "undefined" &&
+    (window as { __PLANNOTATOR_VSCODE?: unknown }).__PLANNOTATOR_VSCODE === true
+  );
 }
 
 export interface InboxAnnouncementGateState {

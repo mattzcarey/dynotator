@@ -18,14 +18,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/90",
+        default:
+          "bg-primary text-primary-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/90",
         destructive:
           "bg-destructive text-white shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
-        success: "bg-success text-success-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-success/90",
+        success:
+          "bg-success text-success-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-success/90",
         outline:
           "border border-input bg-background shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-accent [@media(hover:hover)_and_(pointer:fine)]:hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-secondary/80",
-        ghost: "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-accent [@media(hover:hover)_and_(pointer:fine)]:hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-secondary/80",
+        ghost:
+          "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-accent [@media(hover:hover)_and_(pointer:fine)]:hover:text-accent-foreground",
         link: "text-primary underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:underline",
       },
       size: {

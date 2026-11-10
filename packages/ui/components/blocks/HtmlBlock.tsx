@@ -4,8 +4,19 @@ import type { Block } from "../../types";
 import { sanitizeBlockHtml } from "../../utils/sanitizeHtml";
 import { parseSrcset, serializeSrcset, type SrcsetCandidate } from "../../utils/srcset";
 import { getImageSrc } from "../ImageThumbnail";
-import { UNAVAILABLE_IMAGE_CLASS, PreserveResolvedVideosContext, ResolvedResponsiveImagesContext, useImageResolver, type ImageResolver } from "../ImageResolverContext";
-import { isLocalLinkTarget, isNewTabClick, useLocalLinkResolver, type LocalLinkResolver } from "../LocalLinkContext";
+import {
+  UNAVAILABLE_IMAGE_CLASS,
+  PreserveResolvedVideosContext,
+  ResolvedResponsiveImagesContext,
+  useImageResolver,
+  type ImageResolver,
+} from "../ImageResolverContext";
+import {
+  isLocalLinkTarget,
+  isNewTabClick,
+  useLocalLinkResolver,
+  type LocalLinkResolver,
+} from "../LocalLinkContext";
 
 interface HtmlBlockProps {
   block: Block;
@@ -16,10 +27,10 @@ interface HtmlBlockProps {
 }
 
 function unavailableMedia(doc: Document, label: string, title: string): HTMLSpanElement {
-  const placeholder = doc.createElement('span');
+  const placeholder = doc.createElement("span");
   placeholder.className = UNAVAILABLE_IMAGE_CLASS;
   placeholder.title = title;
-  placeholder.setAttribute('data-image-unavailable', '');
+  placeholder.setAttribute("data-image-unavailable", "");
   placeholder.textContent = label;
   return placeholder;
 }
@@ -45,49 +56,51 @@ function resolveHostMedia(
   preserveVideos: boolean,
   responsiveImages = false,
 ): void {
-  if (!preserveVideos) root.querySelectorAll('video').forEach((video) => {
-    video.replaceWith(unavailableMedia(doc, 'Video', 'Videos are not shown here'));
-  });
+  if (!preserveVideos)
+    root.querySelectorAll("video").forEach((video) => {
+      video.replaceWith(unavailableMedia(doc, "Video", "Videos are not shown here"));
+    });
   if (responsiveImages) {
-    root.querySelectorAll('img[srcset], picture source[srcset]').forEach((element) => {
-      const srcset = resolveSrcset(element.getAttribute('srcset') ?? '', resolveImage);
+    root.querySelectorAll("img[srcset], picture source[srcset]").forEach((element) => {
+      const srcset = resolveSrcset(element.getAttribute("srcset") ?? "", resolveImage);
       if (srcset !== null) {
-        element.setAttribute('srcset', srcset);
-      } else if (element.tagName === 'SOURCE') {
+        element.setAttribute("srcset", srcset);
+      } else if (element.tagName === "SOURCE") {
         element.remove();
       } else {
-        element.removeAttribute('srcset');
-        element.removeAttribute('sizes');
+        element.removeAttribute("srcset");
+        element.removeAttribute("sizes");
       }
     });
-    root.querySelectorAll('picture source:not([srcset])').forEach((source) => source.remove());
+    root.querySelectorAll("picture source:not([srcset])").forEach((source) => source.remove());
   } else {
-    root.querySelectorAll('picture source').forEach((source) => source.remove());
+    root.querySelectorAll("picture source").forEach((source) => source.remove());
   }
-  root.querySelectorAll('img').forEach((img) => {
+  root.querySelectorAll("img").forEach((img) => {
     if (!responsiveImages) {
-      img.removeAttribute('srcset');
-      img.removeAttribute('sizes');
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
     }
-    const src = img.getAttribute('src');
-    const alt = img.getAttribute('alt') || 'Image';
+    const src = img.getAttribute("src");
+    const alt = img.getAttribute("alt") || "Image";
     if (!src) {
-      img.replaceWith(unavailableMedia(doc, alt, 'Image has no source'));
+      img.replaceWith(unavailableMedia(doc, alt, "Image has no source"));
       return;
     }
     const resolved = resolveImage(src);
-    if (resolved?.kind === 'unavailable') {
+    if (resolved?.kind === "unavailable") {
       img.replaceWith(unavailableMedia(doc, alt, resolved.title));
       return;
     }
-    if (resolved?.kind === 'src') {
-      img.setAttribute('src', resolved.src);
+    if (resolved?.kind === "src") {
+      img.setAttribute("src", resolved.src);
       // A smaller copy of the picture: laid out at the original's width, unless the HTML sized it itself.
-      if (resolved.width && !img.hasAttribute('width') && !img.hasAttribute('height')) img.setAttribute('width', String(resolved.width));
+      if (resolved.width && !img.hasAttribute("width") && !img.hasAttribute("height"))
+        img.setAttribute("width", String(resolved.width));
     } else if (!/^(https?:|data:|blob:)/i.test(src)) {
-      img.setAttribute('src', getImageSrc(src));
+      img.setAttribute("src", getImageSrc(src));
     }
-    img.setAttribute('data-host-image', '');
+    img.setAttribute("data-host-image", "");
   });
 }
 
@@ -103,16 +116,19 @@ function resolveSrcset(srcset: string, resolveImage: ImageResolver): string | nu
   const candidates: SrcsetCandidate[] = [];
   for (const { url, descriptors } of parseSrcset(srcset)) {
     const resolved = resolveImage(url);
-    if (resolved?.kind === 'unavailable') return null;
-    const src = resolved?.kind === 'src'
-      ? resolved.src
-      : /^(https?:|data:|blob:)/i.test(url) ? url : getImageSrc(url);
+    if (resolved?.kind === "unavailable") return null;
+    const src =
+      resolved?.kind === "src"
+        ? resolved.src
+        : /^(https?:|data:|blob:)/i.test(url)
+          ? url
+          : getImageSrc(url);
     candidates.push({ url: src, descriptors });
   }
   return candidates.length > 0 ? serializeSrcset(candidates) : null;
 }
 
-const IMAGE_NOT_FOUND_TITLE = 'Image could not be loaded';
+const IMAGE_NOT_FOUND_TITLE = "Image could not be loaded";
 
 // Walks the sanitized DOM and rewrites relative <img src> / <a href> so they
 // behave the same as their markdown counterparts:
@@ -129,60 +145,64 @@ function rewriteRelativeRefs(
   onNavigateAnchor?: (hash: string) => void,
   resolveLocalLink?: LocalLinkResolver | null,
   resolveImage?: ImageResolver | null,
-): (() => void) {
+): () => void {
   const cleanups: (() => void)[] = [];
 
   if (resolveImage) {
     // Media was already decided by the host before insertion (see
     // resolveHostMedia); only the load-failure fallback is wired here.
-    root.querySelectorAll<HTMLImageElement>('img[data-host-image]').forEach((img) => {
+    root.querySelectorAll<HTMLImageElement>("img[data-host-image]").forEach((img) => {
       // The raw HTML is not React's: replacing the <img> here cannot trip React's insertBefore.
       // The placeholder's alt text is never quoted by a text comment (annotation-exclude).
       const onError = () => {
-        const placeholder = unavailableMedia(img.ownerDocument, img.getAttribute('alt') || 'Image', IMAGE_NOT_FOUND_TITLE);
-        placeholder.classList.add('annotation-exclude');
+        const placeholder = unavailableMedia(
+          img.ownerDocument,
+          img.getAttribute("alt") || "Image",
+          IMAGE_NOT_FOUND_TITLE,
+        );
+        placeholder.classList.add("annotation-exclude");
         img.replaceWith(placeholder);
       };
-      img.addEventListener('error', onError);
-      cleanups.push(() => img.removeEventListener('error', onError));
+      img.addEventListener("error", onError);
+      cleanups.push(() => img.removeEventListener("error", onError));
     });
   } else {
-    root.querySelectorAll('img').forEach((img) => {
-      const src = img.getAttribute('src');
+    root.querySelectorAll("img").forEach((img) => {
+      const src = img.getAttribute("src");
       if (!src) return;
       if (/^(https?:|data:|blob:)/i.test(src)) return;
-      img.setAttribute('src', getImageSrc(src, imageBaseDir));
+      img.setAttribute("src", getImageSrc(src, imageBaseDir));
     });
   }
 
-  root.querySelectorAll('a').forEach((a) => {
-    const href = a.getAttribute('href');
+  root.querySelectorAll("a").forEach((a) => {
+    const href = a.getAttribute("href");
     if (!href) return;
     // External http(s) links: open in a new tab and close the tab-nabbing
     // vector (opener reference back to the plannotator tab). Matches the
     // markdown renderer's behavior for [label](https://...).
     if (/^(https?:|\/\/)/i.test(href)) {
-      a.setAttribute('target', '_blank');
-      a.setAttribute('rel', 'noopener noreferrer');
+      a.setAttribute("target", "_blank");
+      a.setAttribute("rel", "noopener noreferrer");
       return;
     }
     if (/^(mailto:|tel:)/i.test(href)) return;
     // In-page anchor: native browser jump doesn't target the scroll viewport,
     // so route through onNavigateAnchor to match InlineMarkdown's behavior.
-    if (href.startsWith('#')) {
+    if (href.startsWith("#")) {
       if (!onNavigateAnchor) return;
       const handler = (e: Event) => {
         e.preventDefault();
         onNavigateAnchor(href);
       };
-      a.addEventListener('click', handler);
-      cleanups.push(() => a.removeEventListener('click', handler));
+      a.addEventListener("click", handler);
+      cleanups.push(() => a.removeEventListener("click", handler));
       return;
     }
     // A host's resolver (Viewer `resolveLocalLink`) decides local paths
     // first, as InlineMarkdown does; null keeps the rules below.
     const localLink = resolveLocalLink && isLocalLinkTarget(href) ? resolveLocalLink(href) : null;
-    if (localLink?.kind === 'open') {
+    if (localLink?.kind === "open") {
       const openLink = localLink.open;
       const hostHref = localLink.href;
       const handler = (e: Event) => {
@@ -193,47 +213,47 @@ function rewriteRelativeRefs(
         openLink();
       };
       if (hostHref) {
-        a.setAttribute('href', hostHref);
-        a.removeAttribute('target');
+        a.setAttribute("href", hostHref);
+        a.removeAttribute("target");
       }
-      if (localLink.title) a.setAttribute('title', localLink.title);
-      a.setAttribute('data-local-link', 'open');
+      if (localLink.title) a.setAttribute("title", localLink.title);
+      a.setAttribute("data-local-link", "open");
       // Without it, a middle click would open the path on the host's own origin.
       const aux = (e: Event) => {
         if (!hostHref) e.preventDefault();
       };
-      a.addEventListener('click', handler);
-      a.addEventListener('auxclick', aux);
+      a.addEventListener("click", handler);
+      a.addEventListener("auxclick", aux);
       cleanups.push(() => {
-        a.removeEventListener('click', handler);
-        a.removeEventListener('auxclick', aux);
+        a.removeEventListener("click", handler);
+        a.removeEventListener("auxclick", aux);
       });
       return;
     }
-    if (localLink?.kind === 'unavailable') {
+    if (localLink?.kind === "unavailable") {
       // Inert: without an href the browser neither follows nor fetches it.
-      a.removeAttribute('href');
-      a.removeAttribute('target');
-      a.setAttribute('title', localLink.title);
-      a.setAttribute('data-local-link', 'unavailable');
+      a.removeAttribute("href");
+      a.removeAttribute("target");
+      a.setAttribute("title", localLink.title);
+      a.setAttribute("data-local-link", "unavailable");
       return;
     }
     if (onOpenCodeFile && isCodeFilePath(href)) {
       const handler = (e: Event) => {
         e.preventDefault();
-        onOpenCodeFile(href.replace(/#.*$/, ''));
+        onOpenCodeFile(href.replace(/#.*$/, ""));
       };
-      a.addEventListener('click', handler);
-      cleanups.push(() => a.removeEventListener('click', handler));
+      a.addEventListener("click", handler);
+      cleanups.push(() => a.removeEventListener("click", handler));
       return;
     }
     if (onOpenLinkedDoc && /\.(mdx?|txt|html?)(#.*)?$/i.test(href)) {
       const handler = (e: Event) => {
         e.preventDefault();
-        onOpenLinkedDoc(href.replace(/#.*$/, ''));
+        onOpenLinkedDoc(href.replace(/#.*$/, ""));
       };
-      a.addEventListener('click', handler);
-      cleanups.push(() => a.removeEventListener('click', handler));
+      a.addEventListener("click", handler);
+      cleanups.push(() => a.removeEventListener("click", handler));
     }
   });
 
@@ -246,31 +266,58 @@ function rewriteRelativeRefs(
 // re-set on every parent re-render would collapse any open <details> the
 // user just opened. Paired with React.memo below so the component itself
 // stops re-rendering unless the block content actually changes.
-const HtmlBlockImpl: React.FC<HtmlBlockProps> = ({ block, imageBaseDir, onOpenLinkedDoc, onOpenCodeFile, onNavigateAnchor }) => {
+const HtmlBlockImpl: React.FC<HtmlBlockProps> = ({
+  block,
+  imageBaseDir,
+  onOpenLinkedDoc,
+  onOpenCodeFile,
+  onNavigateAnchor,
+}) => {
   const ref = useRef<HTMLDivElement>(null);
   const resolveLocalLink = useLocalLinkResolver();
   const resolveImage = useImageResolver();
   const preserveVideos = useContext(PreserveResolvedVideosContext);
   const responsiveImages = useContext(ResolvedResponsiveImagesContext);
-  const sanitized = React.useMemo(
-    () => sanitizeBlockHtml(block.content),
-    [block.content],
-  );
+  const sanitized = React.useMemo(() => sanitizeBlockHtml(block.content), [block.content]);
   useEffect(() => {
     if (!ref.current) return;
     if (resolveImage) {
       // Decide every media URL on an inert template first (nothing loads
       // there), then insert the result.
-      const template = ref.current.ownerDocument.createElement('template');
+      const template = ref.current.ownerDocument.createElement("template");
       template.innerHTML = sanitized;
-      resolveHostMedia(template.content, ref.current.ownerDocument, resolveImage, preserveVideos, responsiveImages);
+      resolveHostMedia(
+        template.content,
+        ref.current.ownerDocument,
+        resolveImage,
+        preserveVideos,
+        responsiveImages,
+      );
       ref.current.replaceChildren(template.content);
     } else if (ref.current.innerHTML !== sanitized) {
       ref.current.innerHTML = sanitized;
     }
-    const cleanup = rewriteRelativeRefs(ref.current, imageBaseDir, onOpenLinkedDoc, onOpenCodeFile, onNavigateAnchor, resolveLocalLink, resolveImage);
+    const cleanup = rewriteRelativeRefs(
+      ref.current,
+      imageBaseDir,
+      onOpenLinkedDoc,
+      onOpenCodeFile,
+      onNavigateAnchor,
+      resolveLocalLink,
+      resolveImage,
+    );
     return cleanup;
-  }, [sanitized, imageBaseDir, onOpenLinkedDoc, onOpenCodeFile, onNavigateAnchor, resolveLocalLink, resolveImage, preserveVideos, responsiveImages]);
+  }, [
+    sanitized,
+    imageBaseDir,
+    onOpenLinkedDoc,
+    onOpenCodeFile,
+    onNavigateAnchor,
+    resolveLocalLink,
+    resolveImage,
+    preserveVideos,
+    responsiveImages,
+  ]);
   return (
     <div
       ref={ref}

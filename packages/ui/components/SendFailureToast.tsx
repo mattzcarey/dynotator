@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { copyTextToClipboard } from '../utils/clipboard';
-import { canRetrySend, describeSendFailure, sendFailureOf } from '../utils/sendFailure';
+import { useState } from "react";
+import { toast } from "sonner";
+import { copyTextToClipboard } from "../utils/clipboard";
+import { canRetrySend, describeSendFailure, sendFailureOf } from "../utils/sendFailure";
 
 /**
  * The one message a review page shows when a decision did not reach the
@@ -55,7 +55,7 @@ export function dismissSendFailureToast(): void {
  * secondary fill disappears on a dark card.
  */
 function CopyFeedbackButton({ getText }: { getText: () => string | undefined }) {
-  const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <button
       type="button"
@@ -66,20 +66,20 @@ function CopyFeedbackButton({ getText }: { getText: () => string | undefined }) 
       onClick={() => {
         const text = getText();
         if (!text) {
-          setState('failed');
+          setState("failed");
           return;
         }
-        void copyTextToClipboard(text).then((copied) => setState(copied ? 'copied' : 'failed'));
+        void copyTextToClipboard(text).then((copied) => setState(copied ? "copied" : "failed"));
       }}
     >
-      {state === 'copied' ? 'Copied' : state === 'failed' ? 'Copy failed' : 'Copy feedback'}
+      {state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : "Copy feedback"}
     </button>
   );
 }
 
 export function showSendFailureToast(options: {
   /** What did not go out: names the toast's title. */
-  what: 'feedback' | 'approval';
+  what: "feedback" | "approval";
   /** The error the send threw (`DecisionSendError` says why). */
   error: unknown;
   /** Sends the same decision again, from the page as it is now. */
@@ -96,20 +96,20 @@ export function showSendFailureToast(options: {
   const forget = () => {
     if (currentId === id) currentId = null;
   };
-  toast.error(what === 'approval' ? 'Approval not sent' : 'Feedback not sent', {
+  toast.error(what === "approval" ? "Approval not sent" : "Feedback not sent", {
     id,
     onDismiss: forget,
     description: describeSendFailure(failure),
     duration: Infinity,
     // It stays up, so it sits at the bottom, clear of the header's decision
     // control and the annotation panel the reviewer may want to read.
-    position: 'bottom-center',
+    position: "bottom-center",
     closeButton: true,
     cancel: copyText ? <CopyFeedbackButton getText={copyText} /> : undefined,
     // An already-decided review cannot take the decision again.
     action: canRetrySend(failure)
       ? {
-          label: 'Retry',
+          label: "Retry",
           onClick: () => {
             if (inFlight > 0) return;
             onRetry();
@@ -119,8 +119,8 @@ export function showSendFailureToast(options: {
     // 420px on a desktop (sonner's 356px wraps the reason onto three lines),
     // re-centred on sonner's column; phones keep sonner's full-width layout.
     classNames: {
-      toast: 'sm:!w-[420px] sm:![margin-left:calc((var(--width)_-_420px)_/_2)]',
-      description: '!text-foreground/70',
+      toast: "sm:!w-[420px] sm:![margin-left:calc((var(--width)_-_420px)_/_2)]",
+      description: "!text-foreground/70",
     },
   });
 }

@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Play } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, Play } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog";
 
 /**
  * One-time announcement for the Plannotator Inbox, on plan review, annotate
@@ -24,10 +24,10 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dial
  */
 
 /** The Inbox page on plannotator.ai. */
-export const INBOX_PAGE_URL = 'https://plannotator.ai/inbox';
+export const INBOX_PAGE_URL = "https://plannotator.ai/inbox";
 
 /** Where the marketing deploy publishes `apps/marketing/public/assets/`. */
-const MEDIA_BASE_URL = 'https://plannotator.ai/assets';
+const MEDIA_BASE_URL = "https://plannotator.ai/assets";
 
 export const INBOX_FILM = {
   mp4: `${MEDIA_BASE_URL}/inbox-film.mp4`,
@@ -42,8 +42,7 @@ const FILM_ASPECT = 16 / 9;
  * film shrinks until film and footer fit instead of scrolling the film away.
  * 2rem is the overlay's padding, 10rem the footer on a wide panel.
  */
-const PANEL_WIDTH =
-  `min(1200px, 100%, calc((var(--pn-viewport-height, 100dvh) - 2rem - 10rem) * ${FILM_ASPECT}))`;
+const PANEL_WIDTH = `min(1200px, 100%, calc((var(--pn-viewport-height, 100dvh) - 2rem - 10rem) * ${FILM_ASPECT}))`;
 
 interface InboxAnnouncementDialogProps {
   readonly isOpen: boolean;
@@ -67,7 +66,10 @@ function Film() {
   };
 
   return (
-    <div className="relative w-full shrink-0 overflow-hidden border-b border-border bg-muted" style={{ aspectRatio: String(FILM_ASPECT) }}>
+    <div
+      className="relative w-full shrink-0 overflow-hidden border-b border-border bg-muted"
+      style={{ aspectRatio: String(FILM_ASPECT) }}
+    >
       <video
         ref={videoRef}
         data-inbox-film
@@ -121,7 +123,7 @@ export function InboxAnnouncementDialog({ isOpen, onDismiss }: InboxAnnouncement
     const handleKeyDown = (event: KeyboardEvent) => {
       // Escape is handled here rather than by the dialog so that no window
       // handler of the App behind it (close a panel, leave a mode) sees it.
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
         onDismissRef.current();
@@ -129,13 +131,13 @@ export function InboxAnnouncementDialog({ isOpen, onDismiss }: InboxAnnouncement
       }
       // Both apps submit their decision on Mod+Enter from a window-level
       // handler; swallow it on the capture phase.
-      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         event.stopPropagation();
       }
     };
-    document.addEventListener('keydown', handleKeyDown, true);
-    return () => document.removeEventListener('keydown', handleKeyDown, true);
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [isOpen]);
 
   if (!isOpen) return null;

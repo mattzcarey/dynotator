@@ -1,6 +1,6 @@
-import { useLayoutEffect } from 'react';
-import { useConfigValue } from '../config';
-import { applyDocumentTextSize, DEFAULT_DOCUMENT_TEXT_SIZE } from '../utils/documentTextSize';
+import { useLayoutEffect } from "react";
+import { useConfigValue } from "../config";
+import { applyDocumentTextSize, DEFAULT_DOCUMENT_TEXT_SIZE } from "../utils/documentTextSize";
 
 /**
  * Apply the `documentTextSize` setting (Settings → Display → Text size) to the
@@ -9,7 +9,7 @@ import { applyDocumentTextSize, DEFAULT_DOCUMENT_TEXT_SIZE } from '../utils/docu
  * unmount the default is put back.
  */
 export function useDocumentTextSize(): void {
-  const size = useConfigValue('documentTextSize');
+  const size = useConfigValue("documentTextSize");
   useLayoutEffect(() => {
     applyDocumentTextSize(document.documentElement, size);
   }, [size]);

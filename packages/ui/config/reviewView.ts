@@ -1,6 +1,6 @@
-import { configStore } from './configStore';
-import { SETTINGS } from './settings';
-import { storage } from '../utils/storage';
+import { configStore } from "./configStore";
+import { SETTINGS } from "./settings";
+import { storage } from "../utils/storage";
 
 export interface ReviewSettingsDiffOption {
   id: string;
@@ -44,21 +44,21 @@ export interface VcsReviewSettingsDescriptor {
 type PanelViewConfigStore = typeof configStore;
 
 export function setReviewPanelView(
-  view: 'sections' | 'tree',
+  view: "sections" | "tree",
   options?: { recordLastUsed?: boolean },
   store: PanelViewConfigStore = configStore,
 ): void {
-  store.set('reviewPanelView', view);
+  store.set("reviewPanelView", view);
   // An explicit persisted choice also becomes the last-used view — otherwise
   // a stale last-used cookie would immediately shadow what the user just
   // picked in Settings. recordLastUsed: false is for
   // NON-choices: the App self-heal repairs a conflicted persisted pair
   // without any user action, so it must not overwrite the user's memo.
   if (options?.recordLastUsed !== false) {
-    store.set('reviewPanelViewLastUsed', view);
+    store.set("reviewPanelViewLastUsed", view);
   }
-  if (view === 'sections' && store.get('defaultDiffType') !== 'since-base') {
-    store.set('defaultDiffType', 'since-base');
+  if (view === "sections" && store.get("defaultDiffType") !== "since-base") {
+    store.set("defaultDiffType", "since-base");
   }
 }
 
@@ -69,29 +69,29 @@ export function setReviewPanelView(
  * itself no longer needs the distinction (nothing seeds this setting any
  * more); it stays exported for hosts that must not write over a real choice.
  */
-export function getPersistedReviewPanelView(): 'sections' | 'tree' | undefined {
+export function getPersistedReviewPanelView(): "sections" | "tree" | undefined {
   return SETTINGS.reviewPanelView.fromCookie();
 }
 
 export type ReviewDefaultDiffType =
-  | 'since-base'
-  | 'local-vs-remote'
-  | 'uncommitted'
-  | 'unstaged'
-  | 'staged'
-  | 'merge-base'
-  | 'all';
+  | "since-base"
+  | "local-vs-remote"
+  | "uncommitted"
+  | "unstaged"
+  | "staged"
+  | "merge-base"
+  | "all";
 
 export function setReviewDefaultDiffType(
   value: ReviewDefaultDiffType,
   store: PanelViewConfigStore = configStore,
 ): void {
-  store.set('defaultDiffType', value);
-  if (value !== 'since-base' && store.get('reviewPanelView') !== 'tree') {
-    store.set('reviewPanelView', 'tree');
+  store.set("defaultDiffType", value);
+  if (value !== "since-base" && store.get("reviewPanelView") !== "tree") {
+    store.set("reviewPanelView", "tree");
     // The snap is an explicit-choice consequence (the user picked a classic
     // diff default), so it syncs the memo like any explicit view write.
-    store.set('reviewPanelViewLastUsed', 'tree');
+    store.set("reviewPanelViewLastUsed", "tree");
   }
 }
 
@@ -105,7 +105,7 @@ export function getProviderReviewDefaultDiffType(
   descriptor: VcsReviewSettingsDescriptor,
   store: PanelViewConfigStore = configStore,
 ): string {
-  const configured = store.get('reviewDefaults')[descriptor.id]?.defaultDiffType;
+  const configured = store.get("reviewDefaults")[descriptor.id]?.defaultDiffType;
   return configured && descriptor.diffOptions.some((option) => option.id === configured)
     ? configured
     : descriptor.defaultDiffType;
@@ -116,8 +116,8 @@ export function setProviderReviewDefaultDiffType(
   value: string,
   store: PanelViewConfigStore = configStore,
 ): void {
-  store.set('reviewDefaults', {
-    ...store.get('reviewDefaults'),
+  store.set("reviewDefaults", {
+    ...store.get("reviewDefaults"),
     [providerId]: { defaultDiffType: value },
   });
 }
@@ -134,8 +134,8 @@ export function setProviderReviewDefaultDiffType(
  * review app) must consume the gate: someone who found the switch has
  * demonstrably discovered the feature and must never be told about it.
  */
-const AUTO_VIEWED_NOTICE_SEEN_KEY = 'plannotator-auto-viewed-notice-seen';
-const AUTO_VIEWED_NOTICE_VERSION = '1';
+const AUTO_VIEWED_NOTICE_SEEN_KEY = "plannotator-auto-viewed-notice-seen";
+const AUTO_VIEWED_NOTICE_VERSION = "1";
 
 export function needsAutoViewedNotice(): boolean {
   return storage.getItem(AUTO_VIEWED_NOTICE_SEEN_KEY) !== AUTO_VIEWED_NOTICE_VERSION;
@@ -154,5 +154,5 @@ export function setReviewAutoViewed(
   store: PanelViewConfigStore = configStore,
 ): void {
   markAutoViewedNoticeSeen();
-  store.set('reviewAutoViewed', value);
+  store.set("reviewAutoViewed", value);
 }

@@ -44,26 +44,20 @@ export const PlanDiffBadge: React.FC<PlanDiffBadgeProps> = ({
     <button
       onClick={onToggle}
       className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors cursor-pointer ${
-        isActive
-          ? "bg-primary/15"
-          : "bg-muted/50 hover:bg-muted"
+        isActive ? "bg-primary/15" : "bg-muted/50 hover:bg-muted"
       }`}
       title={
         isActive
           ? "Exit plan diff view"
-          : baselineTooltip ?? "Show what changed from previous version"
+          : (baselineTooltip ?? "Show what changed from previous version")
       }
     >
-      <span className={isActive ? "text-success" : "text-success/70"}>
-        +{stats.additions}
-      </span>
+      <span className={isActive ? "text-success" : "text-success/70"}>+{stats.additions}</span>
       <span className="text-muted-foreground/50 mx-0.5">/</span>
       <span className={isActive ? "text-destructive" : "text-destructive/70"}>
         -{stats.deletions}
       </span>
-      {baselineLabel && (
-        <span className="text-muted-foreground/60 ml-1">{baselineLabel}</span>
-      )}
+      {baselineLabel && <span className="text-muted-foreground/60 ml-1">{baselineLabel}</span>}
     </button>
   );
 };

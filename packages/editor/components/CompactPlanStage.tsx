@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 
 interface CompactPlanStageProps {
   id: string;
@@ -32,13 +32,13 @@ export const CompactPlanStage: React.FC<CompactPlanStageProps> = ({
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.defaultPrevented) return;
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
       onClose();
       return;
     }
-    if (event.key !== 'Tab') return;
+    if (event.key !== "Tab") return;
 
     const focusable = Array.from(
       event.currentTarget.querySelectorAll<HTMLElement>(
@@ -77,9 +77,9 @@ export const CompactPlanStage: React.FC<CompactPlanStageProps> = ({
         <div className="min-w-0 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <h1 className="truncate text-sm font-semibold tracking-tight">{title}</h1>
-            {typeof count === 'number' && count > 0 && (
+            {typeof count === "number" && count > 0 && (
               <span className="flex h-[18px] min-w-[18px] flex-shrink-0 items-center justify-center rounded-full bg-primary/10 px-1 font-mono text-[10px] font-medium tabular-nums text-primary">
-                {count > 99 ? '99+' : count}
+                {count > 99 ? "99+" : count}
               </span>
             )}
           </div>
@@ -95,7 +95,14 @@ export const CompactPlanStage: React.FC<CompactPlanStageProps> = ({
           aria-label={`Close ${title}`}
           title={`Close ${title}`}
         >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>

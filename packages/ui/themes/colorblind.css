@@ -37,8 +37,9 @@
   --warning: #d9a839;
   --warning-foreground: #16181d;
 
-  --font-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
-  --font-mono: 'Geist Mono Variable', 'Geist Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono:
+    "Geist Mono Variable", "Geist Mono", "JetBrains Mono", "Fira Code", ui-monospace, monospace;
   --radius: 0.625rem;
 
   --code-bg: #1d212a;
@@ -86,4 +87,3 @@
  * the code-review diff pane — for this palette that is @pierre/theme's
  * `pierre-{dark,light}-protanopia-deuteranopia`, which is exactly what the
  * removed highlight.js `.hljs-*` overrides were approximating by hand. */
-

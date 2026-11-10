@@ -1,5 +1,5 @@
-import React from 'react';
-import { InlineMarkdown } from '../InlineMarkdown';
+import React from "react";
+import { InlineMarkdown } from "../InlineMarkdown";
 
 // Shared block-level renderer for alert and directive bodies. Handles
 // paragraphs, unordered lists, and ordered lists — the shapes GitHub alerts
@@ -23,8 +23,8 @@ export function renderProseBody(args: {
 }): React.ReactNode {
   const {
     body,
-    paragraphClassName = 'text-[15px] leading-relaxed text-foreground/90',
-    listClassName = 'text-[15px] leading-relaxed text-foreground/90',
+    paragraphClassName = "text-[15px] leading-relaxed text-foreground/90",
+    listClassName = "text-[15px] leading-relaxed text-foreground/90",
     imageBaseDir,
     onImageClick,
     onOpenLinkedDoc,
@@ -47,7 +47,7 @@ export function renderProseBody(args: {
     />
   );
 
-  const lines = body.split('\n');
+  const lines = body.split("\n");
   const out: React.ReactNode[] = [];
   let paraLines: string[] = [];
   let list: { ordered: boolean; items: string[] } | null = null;
@@ -55,10 +55,10 @@ export function renderProseBody(args: {
 
   const flushPara = () => {
     if (paraLines.length === 0) return;
-    const text = paraLines.join('\n');
+    const text = paraLines.join("\n");
     if (text.trim()) {
       out.push(
-        <p key={`p-${key++}`} className={`${paragraphClassName} ${out.length > 0 ? 'mt-2' : ''}`}>
+        <p key={`p-${key++}`} className={`${paragraphClassName} ${out.length > 0 ? "mt-2" : ""}`}>
           {inline(text)}
         </p>,
       );
@@ -67,12 +67,14 @@ export function renderProseBody(args: {
   };
   const flushList = () => {
     if (!list) return;
-    const Tag = list.ordered ? 'ol' : 'ul';
-    const className = `${list.ordered ? 'list-decimal' : 'list-disc'} pl-5 ${listClassName} ${out.length > 0 ? 'mt-2' : ''}`;
+    const Tag = list.ordered ? "ol" : "ul";
+    const className = `${list.ordered ? "list-decimal" : "list-disc"} pl-5 ${listClassName} ${out.length > 0 ? "mt-2" : ""}`;
     out.push(
       <Tag key={`l-${key++}`} className={className}>
         {list.items.map((item, i) => (
-          <li key={i} className="my-0.5">{inline(item)}</li>
+          <li key={i} className="my-0.5">
+            {inline(item)}
+          </li>
         ))}
       </Tag>,
     );
@@ -80,7 +82,7 @@ export function renderProseBody(args: {
   };
 
   for (const line of lines) {
-    if (line.trim() === '') {
+    if (line.trim() === "") {
       flushPara();
       flushList();
       continue;

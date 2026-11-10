@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
-import type { Block } from '../../types';
-import { normalizeMathTex, renderMathToHtml } from '../../utils/math';
-import { useMathRenderer } from '../../hooks/useMathRenderer';
+import React, { useMemo } from "react";
+import type { Block } from "../../types";
+import { normalizeMathTex, renderMathToHtml } from "../../utils/math";
+import { useMathRenderer } from "../../hooks/useMathRenderer";
 
 // Kept as re-exports: InlineMarkdown and older consumers import them from here.
 export { normalizeMathTex, renderMathToHtml };

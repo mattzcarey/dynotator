@@ -1,10 +1,10 @@
 /** A link's or image's destination: one level of balanced parentheses, bounded at any other `(`. */
 export const INLINE_DESTINATION = String.raw`\((?:[^()]|\([^()]*\))*\)`;
-const IMAGE_RE = new RegExp(String.raw`!\[[^\][]*\]` + INLINE_DESTINATION, 'g');
+const IMAGE_RE = new RegExp(String.raw`!\[[^\][]*\]` + INLINE_DESTINATION, "g");
 // A link's label may hold one level of balanced brackets (`[a [nested] label](x.html)`), as the
 // inline renderer reads it. Each nested pair closes at the next `]`, so the label still stops at
 // any other `[`: a run of brackets is read in linear time.
-const LINK_RE = new RegExp(String.raw`\[((?:[^\][]|\[[^\][]*\])*)\]` + INLINE_DESTINATION, 'g');
+const LINK_RE = new RegExp(String.raw`\[((?:[^\][]|\[[^\][]*\])*)\]` + INLINE_DESTINATION, "g");
 
 /**
  * Inline markdown's markup taken out, its words kept: images out, link and
@@ -26,8 +26,11 @@ const LINK_RE = new RegExp(String.raw`\[((?:[^\][]|\[[^\][]*\])*)\]` + INLINE_DE
  */
 export function stripInlineMarkup(text: string, options: { keepTags?: boolean } = {}): string {
   const out = text
-    .replace(IMAGE_RE, '')
-    .replace(LINK_RE, '$1')
-    .replace(/\[\[([^\][|]*)(?:\|([^\][]*))?\]\]/g, (_m, target: string, label?: string) => label ?? target);
-  return options.keepTags ? out : out.replace(/<\/?[A-Za-z][^<>]*>/g, '');
+    .replace(IMAGE_RE, "")
+    .replace(LINK_RE, "$1")
+    .replace(
+      /\[\[([^\][|]*)(?:\|([^\][]*))?\]\]/g,
+      (_m, target: string, label?: string) => label ?? target,
+    );
+  return options.keepTags ? out : out.replace(/<\/?[A-Za-z][^<>]*>/g, "");
 }

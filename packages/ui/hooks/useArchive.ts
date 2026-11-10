@@ -69,7 +69,7 @@ export function useArchive(options: UseArchiveOptions): UseArchiveReturn {
 
   const currentInfo = useMemo(() => {
     if (!selectedFile) return null;
-    const plan = plans.find(p => p.filename === selectedFile);
+    const plan = plans.find((p) => p.filename === selectedFile);
     return plan ? { status: plan.status, timestamp: plan.timestamp, title: plan.title } : null;
   }, [selectedFile, plans]);
 
@@ -81,33 +81,46 @@ export function useArchive(options: UseArchiveOptions): UseArchiveReturn {
     }
   }, []);
 
-  const select = useCallback(async (filename: string) => {
-    try {
-      const params = new URLSearchParams({ filename });
-      if (customPath) params.set("customPath", customPath);
-      const res = await fetch(`/api/archive/plan?${params}`);
-      if (!res.ok) return;
-      const data = await res.json() as { markdown: string; filepath: string };
+  const select = useCallback(
+    async (filename: string) => {
+      try {
+        const params = new URLSearchParams({ filename });
+        if (customPath) params.set("customPath", customPath);
+        const res = await fetch(`/api/archive/plan?${params}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as { markdown: string; filepath: string };
 
-      if (archiveMode) {
-        // Standalone: direct swap
-        viewerRef.current?.clearAllHighlights();
-        setMarkdown(data.markdown);
-        setAnnotations([]);
-        setSelectedAnnotationId(null);
-        setSelectedFile(filename);
-      } else {
-        // In-session: use linked doc overlay
-        const buildUrl = (f: string) => {
-          const p = new URLSearchParams({ filename: f });
-          if (customPath) p.set("customPath", customPath);
-          return `/api/archive/plan?${p}`;
-        };
-        linkedDocHook.open(filename, buildUrl, "archive");
-        setSelectedFile(filename);
+        if (archiveMode) {
+          // Standalone: direct swap
+          viewerRef.current?.clearAllHighlights();
+          setMarkdown(data.markdown);
+          setAnnotations([]);
+          setSelectedAnnotationId(null);
+          setSelectedFile(filename);
+        } else {
+          // In-session: use linked doc overlay
+          const buildUrl = (f: string) => {
+            const p = new URLSearchParams({ filename: f });
+            if (customPath) p.set("customPath", customPath);
+            return `/api/archive/plan?${p}`;
+          };
+          linkedDocHook.open(filename, buildUrl, "archive");
+          setSelectedFile(filename);
+        }
+      } catch {
+        /* ignore */
       }
-    } catch { /* ignore */ }
-  }, [archiveMode, customPath, viewerRef, setMarkdown, setAnnotations, setSelectedAnnotationId, linkedDocHook]);
+    },
+    [
+      archiveMode,
+      customPath,
+      viewerRef,
+      setMarkdown,
+      setAnnotations,
+      setSelectedAnnotationId,
+      linkedDocHook,
+    ],
+  );
 
   const fetchPlans = useCallback(async () => {
     if (hasFetched.current || isLoading) return;
@@ -119,7 +132,7 @@ export function useArchive(options: UseArchiveOptions): UseArchiveReturn {
       const qs = params.toString();
       const res = await fetch(`/api/archive/plans${qs ? `?${qs}` : ""}`);
       if (!res.ok) return;
-      const data = await res.json() as { plans: ArchivedPlan[] };
+      const data = (await res.json()) as { plans: ArchivedPlan[] };
       setPlans(data.plans);
       // In standalone archive mode, auto-select and load the first plan
       // so the viewer reflects the customPath results, not stale server data
@@ -130,7 +143,7 @@ export function useArchive(options: UseArchiveOptions): UseArchiveReturn {
         if (customPath) fetchParams.set("customPath", customPath);
         const planRes = await fetch(`/api/archive/plan?${fetchParams}`);
         if (planRes.ok) {
-          const planData = await planRes.json() as { markdown: string };
+          const planData = (await planRes.json()) as { markdown: string };
           setMarkdown(planData.markdown);
         }
       }
@@ -145,7 +158,9 @@ export function useArchive(options: UseArchiveOptions): UseArchiveReturn {
     try {
       await fetch("/api/done", { method: "POST" });
       setSubmitted("approved");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [setSubmitted]);
 
   const copy = useCallback(() => {

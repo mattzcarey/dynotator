@@ -4,7 +4,7 @@ import {
   resolveAnnotateAgentTerminalPlacement,
   type AnnotateAgentTerminalPlacement,
   type AnnotateAgentTerminalSide,
-} from '@dynotator/ui/utils/annotateAgentTerminal';
+} from "@dynotator/ui/utils/annotateAgentTerminal";
 
 /**
  * The Agent TUI panel is `hidden lg:flex`, so below Tailwind's `lg` breakpoint
@@ -66,19 +66,19 @@ export function getAgentTerminalLayout({
   isRightPanelOpen,
 }: AgentTerminalLayoutOptions): AgentTerminalLayout {
   const placement = resolveAnnotateAgentTerminalPlacement(side);
-  const isHidden = side === 'hidden';
+  const isHidden = side === "hidden";
   // A running agent stays mounted even while collapsed, so hiding the panel
   // never kills the PTY the user is talking to.
   const shouldRender = showControls && (isOpen || isRunning);
   const isVisible = shouldRender && isOpen && !isWideMode && !isBelowBreakpoint;
-  const isLeft = placement === 'left';
+  const isLeft = placement === "left";
   const isLeftVisible = isVisible && isLeft;
   const isRightVisible = isVisible && !isLeft;
-  const hiddenPositionClass = isLeft ? 'left-0' : 'right-0';
+  const hiddenPositionClass = isLeft ? "left-0" : "right-0";
   const wrapperClassName = isVisible
-    ? 'flex h-full flex-shrink-0 group/agent-terminal'
+    ? "flex h-full flex-shrink-0 group/agent-terminal"
     : `absolute ${hiddenPositionClass} top-0 h-full w-0 overflow-hidden pointer-events-none group/agent-terminal`;
-  const directionClassName = isLeft ? 'flex-row' : 'flex-row-reverse';
+  const directionClassName = isLeft ? "flex-row" : "flex-row-reverse";
 
   return {
     shouldRender,

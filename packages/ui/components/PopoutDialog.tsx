@@ -1,9 +1,9 @@
-import React, { useCallback } from 'react';
-import { Dialog } from '@base-ui/react/dialog';
-import { getPageMarks, holdPageMark } from '../utils/pageMarks';
+import React, { useCallback } from "react";
+import { Dialog } from "@base-ui/react/dialog";
+import { getPageMarks, holdPageMark } from "../utils/pageMarks";
 
 export const ANNOTATION_SELECTORS = [
-  '.annotation-toolbar',
+  ".annotation-toolbar",
   '[data-comment-popover="true"]',
   '[data-floating-picker="true"]',
   // Transient hidden textarea created by the legacy clipboard fallback
@@ -17,7 +17,8 @@ export const ANNOTATION_SELECTORS = [
  * With `pageMarks` on (utils/pageMarks), the dialog marks `<body data-pn-popout>` while it is in the page: what
  * theme.css's `body:has([data-popout="true"])` matches, for a host that keys on the mark instead.
  */
-const markPopoutOpen = (el: HTMLElement | null) => (el ? holdPageMark(el.ownerDocument.body, 'data-pn-popout') : undefined);
+const markPopoutOpen = (el: HTMLElement | null) =>
+  el ? holdPageMark(el.ownerDocument.body, "data-pn-popout") : undefined;
 
 interface PopoutDialogProps {
   open: boolean;
@@ -55,7 +56,7 @@ export const PopoutDialog: React.FC<PopoutDialogProps> = ({
       // dialog) must not dismiss the popout — the Radix version guarded this
       // via onInteractOutside preventDefault; Base UI expresses it as
       // cancelling the outside-press/focus-out close reason.
-      if (eventDetails.reason === 'outside-press' || eventDetails.reason === 'focus-out') {
+      if (eventDetails.reason === "outside-press" || eventDetails.reason === "focus-out") {
         // For focus events the annotation UI may sit on either side of the
         // event (target = element losing focus, relatedTarget = gaining), so
         // guard both.
@@ -90,7 +91,7 @@ export const PopoutDialog: React.FC<PopoutDialogProps> = ({
           aria-hidden="true"
         />
         <Dialog.Popup
-          className={`fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden ${className ?? 'w-[calc(100vw-4rem)] max-w-[min(calc(100vw-4rem),1500px)] max-h-[calc(100vh-4rem)]'}`}
+          className={`fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden ${className ?? "w-[calc(100vw-4rem)] max-w-[min(calc(100vw-4rem),1500px)] max-h-[calc(100vh-4rem)]"}`}
           data-popout="true"
           ref={getPageMarks() ? markPopoutOpen : undefined}
           initialFocus={false}
@@ -105,7 +106,13 @@ export const PopoutDialog: React.FC<PopoutDialogProps> = ({
               />
             }
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </Dialog.Close>

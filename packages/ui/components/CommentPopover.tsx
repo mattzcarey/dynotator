@@ -1,31 +1,35 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback, useId } from 'react';
-import { createPortal } from 'react-dom';
-import type { ImageAttachment } from '../types';
-import { AttachmentsButton } from './AttachmentsButton';
-import { useDraggable } from '../hooks/useDraggable';
-import { SparklesIcon } from './SparklesIcon';
-import { Icon } from './inbox-thread/icons';
-import { commentCardAimX, getCommentCardEnabled, getCommentCardLayout } from '../utils/commentCardPolicy';
-import { hasUnsavedCommentContent } from '../utils/commentContent';
-import { isCommentSubmitKey } from '../utils/commentSubmitKey';
-import { useConfigValue } from '../config/useConfig';
-import { useSkillReferenceAutocomplete } from '../hooks/useSkillReferenceAutocomplete';
-import { HumanOnlySkillNotice, SkillReferenceMenu } from './SkillReferenceMenu';
-import { ComposerTokenTextarea, type ComposerMentionChips } from './ComposerTokenTextarea';
-import { useMentionAutocomplete } from '../hooks/useMentionAutocomplete';
-import { MentionAutocompleteMenu, mentionActiveOptionId } from './MentionAutocomplete';
-import type { MentionSource } from '../utils/mentions';
+import React, { useState, useEffect, useMemo, useRef, useCallback, useId } from "react";
+import { createPortal } from "react-dom";
+import type { ImageAttachment } from "../types";
+import { AttachmentsButton } from "./AttachmentsButton";
+import { useDraggable } from "../hooks/useDraggable";
+import { SparklesIcon } from "./SparklesIcon";
+import { Icon } from "./inbox-thread/icons";
+import {
+  commentCardAimX,
+  getCommentCardEnabled,
+  getCommentCardLayout,
+} from "../utils/commentCardPolicy";
+import { hasUnsavedCommentContent } from "../utils/commentContent";
+import { isCommentSubmitKey } from "../utils/commentSubmitKey";
+import { useConfigValue } from "../config/useConfig";
+import { useSkillReferenceAutocomplete } from "../hooks/useSkillReferenceAutocomplete";
+import { HumanOnlySkillNotice, SkillReferenceMenu } from "./SkillReferenceMenu";
+import { ComposerTokenTextarea, type ComposerMentionChips } from "./ComposerTokenTextarea";
+import { useMentionAutocomplete } from "../hooks/useMentionAutocomplete";
+import { MentionAutocompleteMenu, mentionActiveOptionId } from "./MentionAutocomplete";
+import type { MentionSource } from "../utils/mentions";
 import {
   hasPrimaryCoarsePointer,
   shouldUseExpandedComposer,
   useVisibleViewportBounds,
   type VisibleViewportBounds,
-} from '../hooks/useViewportEnvironment';
+} from "../hooks/useViewportEnvironment";
 
-export type { ComposerMentionChips } from './ComposerTokenTextarea';
+export type { ComposerMentionChips } from "./ComposerTokenTextarea";
 
 export interface CommentAskAIContext {
-  kind: 'general' | 'selection';
+  kind: "general" | "selection";
   label?: string;
   text?: string;
   sourcePath?: string;
@@ -53,7 +57,7 @@ export interface CommentTargetChip {
 }
 
 /** Composer-yield stage while the user is shift-selecting (see composerYield.ts). */
-export type CommentPopoverYieldState = 'none' | 'near' | 'over';
+export type CommentPopoverYieldState = "none" | "near" | "over";
 
 /** A third action on the box: words optional. */
 export interface CommentExtraAction {
@@ -116,7 +120,11 @@ interface CommentPopoverProps {
   askAILabel?: string;
   /** Opt-in: more actions, drawn after the main one in this order (the right end; Tab reaches them last), each taking
    *  whatever is typed (Shape's box: "Show me", "Add to reply"). Absent or empty → nothing drawn. */
-  extraActions?: readonly { label: string; onSelect: (text: string) => void; /** It takes the words for good: the `draftKey` draft is cleared, as a submit clears it. */ spends?: boolean }[];
+  extraActions?: readonly {
+    label: string;
+    onSelect: (text: string) => void;
+    /** It takes the words for good: the `draftKey` draft is cleared, as a submit clears it. */ spends?: boolean;
+  }[];
   /**
    * False: always the popover as before, even where the host turned the comment card on (`configurePlannotatorUI({
    * commentCard })`): a surface with its own footer order (Shape's board: Ask, Change it, Show me). Absent or true:
@@ -157,7 +165,7 @@ interface CommentPopoverProps {
   /** Opt-in: `side` opens the popover beside the anchor (right, else left),
    *  falling back to below/above when neither side has room (an image region
    *  in the image viewer). Absent → below/above, as always. */
-  placement?: 'below' | 'side';
+  placement?: "below" | "side";
   /** Opt-in: the stacking level, for a composer over a surface that is
    *  itself above the page (the image viewer is z-200). Absent → 100. */
   zIndex?: number;
@@ -179,7 +187,8 @@ const draftStore = new Map<string, { text: string; images: ImageAttachment[] }>(
  * shows them. A draft typed since is newer and is kept.
  */
 export function restoreCommentDraft(draftKey: string, text: string): void {
-  if (!draftStore.has(draftKey) && text.trim() !== '') draftStore.set(draftKey, { text, images: [] });
+  if (!draftStore.has(draftKey) && text.trim() !== "")
+    draftStore.set(draftKey, { text, images: [] });
 }
 
 /** Whether words (or images) wait as the `draftKey` draft: a closed composer that kept them. */
@@ -188,7 +197,11 @@ export function hasCommentDraft(draftKey: string): boolean {
 }
 
 /** Mirrors the latest text + images into `draftStore[draftKey]` so they outlive popover unmount. No-op without a key. */
-function useCommentDraftSync(draftKey: string | undefined, text: string, images: ImageAttachment[]) {
+function useCommentDraftSync(
+  draftKey: string | undefined,
+  text: string,
+  images: ImageAttachment[],
+) {
   useEffect(() => {
     if (!draftKey) return;
     if (hasUnsavedCommentContent(text, images)) {
@@ -209,11 +222,11 @@ interface CommentPopoverPosition {
 }
 
 export function computeCommentPopoverPosition(
-  anchorRect: Pick<DOMRect, 'top' | 'right' | 'bottom' | 'left' | 'width'>,
+  anchorRect: Pick<DOMRect, "top" | "right" | "bottom" | "left" | "width">,
   bounds: VisibleViewportBounds,
-  placement: 'below' | 'side' = 'below',
+  placement: "below" | "side" = "below",
 ): CommentPopoverPosition {
-  if (placement === 'side') {
+  if (placement === "side") {
     const width = Math.min(MAX_POPOVER_WIDTH, bounds.width);
     const right = anchorRect.right + GAP * 1.75;
     const left = anchorRect.left - GAP * 1.75 - width;
@@ -221,7 +234,8 @@ export function computeCommentPopoverPosition(
     if (sideLeft !== null) {
       const top = Math.max(bounds.top, Math.min(anchorRect.top, bounds.bottom - 280));
       const maxHeight = Math.max(0, bounds.bottom - top);
-      if (maxHeight >= 280) return { top, left: sideLeft, flipAbove: false, width, maxHeight, requiresExpanded: false };
+      if (maxHeight >= 280)
+        return { top, left: sideLeft, flipAbove: false, width, maxHeight, requiresExpanded: false };
     }
   }
   const spaceBelow = Math.max(0, bounds.bottom - anchorRect.bottom - GAP);
@@ -229,9 +243,7 @@ export function computeCommentPopoverPosition(
   const flipAbove = spaceBelow < 280 && spaceAbove > spaceBelow;
   const width = Math.min(MAX_POPOVER_WIDTH, bounds.width);
 
-  const top = flipAbove
-    ? anchorRect.top - GAP
-    : anchorRect.bottom + GAP;
+  const top = flipAbove ? anchorRect.top - GAP : anchorRect.bottom + GAP;
 
   let left = anchorRect.left + anchorRect.width / 2 - width / 2;
   left = Math.max(bounds.left, Math.min(left, bounds.right - width));
@@ -249,7 +261,11 @@ export function computeCommentPopoverPosition(
 
 /** Where the comment card goes (`configurePlannotatorUI({ commentCard })`): `docked` at the foot of the pane, or by the
  *  words, under them (`above` false) or over them. */
-export interface CommentCardGeometry { docked: boolean; above: boolean; style: React.CSSProperties }
+export interface CommentCardGeometry {
+  docked: boolean;
+  above: boolean;
+  style: React.CSSProperties;
+}
 
 /** The card's width by the words. */
 export const COMMENT_CARD_WIDTH = 352;
@@ -263,16 +279,16 @@ const CARD_NEED = 132;
  * pane's own foot (`footTop`), never over the whole page.
  */
 export function computeCommentCardGeometry(
-  anchor: Pick<DOMRect, 'top' | 'right' | 'bottom' | 'left' | 'width'> | null,
+  anchor: Pick<DOMRect, "top" | "right" | "bottom" | "left" | "width"> | null,
   bounds: VisibleViewportBounds,
   opts: {
     phone: boolean;
     expanded: boolean;
-    pane: Pick<DOMRect, 'left' | 'right' | 'bottom' | 'width'> | null;
+    pane: Pick<DOMRect, "left" | "right" | "bottom" | "width"> | null;
     viewportHeight: number;
     footTop?: number | null;
     aimX?: number | null;
-    placement?: 'below' | 'side';
+    placement?: "below" | "side";
   },
 ): CommentCardGeometry {
   // The pane's foot is never covered: the card ends above it. A short window keeps the room instead.
@@ -281,22 +297,49 @@ export function computeCommentCardGeometry(
   }
   const dock = (): CommentCardGeometry => {
     if (opts.phone) {
-      return { docked: true, above: false, style: { left: bounds.left + 8, width: bounds.width - 16, bottom: opts.viewportHeight - bounds.bottom + 8, maxHeight: Math.max(160, bounds.height * 0.6) } };
+      return {
+        docked: true,
+        above: false,
+        style: {
+          left: bounds.left + 8,
+          width: bounds.width - 16,
+          bottom: opts.viewportHeight - bounds.bottom + 8,
+          maxHeight: Math.max(160, bounds.height * 0.6),
+        },
+      };
     }
-    const pane = opts.pane ?? { left: bounds.left, right: bounds.right, bottom: bounds.bottom, width: bounds.width };
+    const pane = opts.pane ?? {
+      left: bounds.left,
+      right: bounds.right,
+      bottom: bounds.bottom,
+      width: bounds.width,
+    };
     const width = Math.min(pane.width - 24, opts.expanded ? 760 : 680);
     const bottomEdge = Math.min(pane.bottom, bounds.bottom);
-    return { docked: true, above: false, style: { left: pane.left + (pane.width - width) / 2, width, bottom: opts.viewportHeight - bottomEdge + 12, maxHeight: Math.max(160, bounds.height * (opts.expanded ? 0.7 : 0.5)) } };
+    return {
+      docked: true,
+      above: false,
+      style: {
+        left: pane.left + (pane.width - width) / 2,
+        width,
+        bottom: opts.viewportHeight - bottomEdge + 12,
+        maxHeight: Math.max(160, bounds.height * (opts.expanded ? 0.7 : 0.5)),
+      },
+    };
   };
   if (!anchor || opts.phone || opts.expanded) return dock();
   const width = Math.min(COMMENT_CARD_WIDTH, bounds.width);
-  if (opts.placement === 'side') {
+  if (opts.placement === "side") {
     const right = anchor.right + GAP * 1.75;
     const left = anchor.left - GAP * 1.75 - width;
     const sideLeft = right + width <= bounds.right ? right : left >= bounds.left ? left : null;
     const top = Math.max(bounds.top, Math.min(anchor.top, bounds.bottom - 200));
     if (sideLeft !== null && bounds.bottom - top >= CARD_NEED) {
-      return { docked: false, above: false, style: { left: sideLeft, width, top, maxHeight: bounds.bottom - top } };
+      return {
+        docked: false,
+        above: false,
+        style: { left: sideLeft, width, top, maxHeight: bounds.bottom - top },
+      };
     }
   }
   const below = Math.max(0, bounds.bottom - anchor.bottom - GAP);
@@ -318,20 +361,30 @@ export function computeCommentCardGeometry(
 
 /** The whole selection, not its first piece: a highlight is many marks with one id, and the card clears all of them
  *  (a long selection, one that wraps). A pinned part of an HTML page carries its size on its anchor. */
-function cardAnchorRect(anchorEl: HTMLElement | null | undefined, anchorRect: DOMRect | null | undefined): DOMRect | null {
+function cardAnchorRect(
+  anchorEl: HTMLElement | null | undefined,
+  anchorRect: DOMRect | null | undefined,
+): DOMRect | null {
   const own = anchorEl?.getBoundingClientRect() ?? anchorRect ?? null;
   const pinW = Number(anchorEl?.dataset.pinWidth);
   const pinH = Number(anchorEl?.dataset.pinHeight);
-  if (own && pinW > 0 && pinH > 0) return new DOMRect(own.left - pinW / 2, own.top, pinW, pinH + 20);
-  const id = anchorEl?.getAttribute('data-highlight-id') ?? anchorEl?.getAttribute('data-bind-id');
-  if (!anchorEl || !id || typeof document === 'undefined' || typeof CSS === 'undefined') return own;
+  if (own && pinW > 0 && pinH > 0)
+    return new DOMRect(own.left - pinW / 2, own.top, pinW, pinH + 20);
+  const id = anchorEl?.getAttribute("data-highlight-id") ?? anchorEl?.getAttribute("data-bind-id");
+  if (!anchorEl || !id || typeof document === "undefined" || typeof CSS === "undefined") return own;
   const root = anchorEl.getRootNode() as Document | ShadowRoot;
   const sel = `[data-highlight-id="${CSS.escape(id)}"], [data-bind-id="${CSS.escape(id)}"]`;
-  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  let l = Infinity,
+    t = Infinity,
+    r = -Infinity,
+    b = -Infinity;
   for (const el of root.querySelectorAll(sel)) {
     for (const c of el.getClientRects()) {
       if (!c.width) continue;
-      l = Math.min(l, c.left); t = Math.min(t, c.top); r = Math.max(r, c.right); b = Math.max(b, c.bottom);
+      l = Math.min(l, c.left);
+      t = Math.min(t, c.top);
+      r = Math.max(r, c.right);
+      b = Math.max(b, c.bottom);
     }
   }
   return l === Infinity ? own : new DOMRect(l, t, r - l, b - t);
@@ -342,7 +395,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   anchorRect,
   contextText,
   isGlobal,
-  initialText = '',
+  initialText = "",
   onSubmit,
   onQuickLookGood,
   onDraftChange,
@@ -368,7 +421,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   yieldState,
   headerText,
   errorText,
-  placement = 'below',
+  placement = "below",
   zIndex,
   autoFocus = true,
 }) => {
@@ -380,8 +433,8 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   });
   // The comment card (opt-in, `configurePlannotatorUI({ commentCard })`): read once, so a box never changes look open.
   const [card] = useState(() => allowCard && getCommentCardEnabled());
-  const [mode, setMode] = useState<'popover' | 'dialog'>(() =>
-    prefersExpandedComposer && !card ? 'dialog' : 'popover'
+  const [mode, setMode] = useState<"popover" | "dialog">(() =>
+    prefersExpandedComposer && !card ? "dialog" : "popover",
   );
   // Dialog mode has two very different origins. Either the viewport PREFERS an
   // expanded composer (phones, small windows), or the anchor simply has no room
@@ -393,28 +446,35 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   const forcedDialog = dialogIsForced && !prefersExpandedComposer;
   const initialDraft = draftKey ? draftStore.get(draftKey) : undefined;
   const [text, setText] = useState(initialDraft?.text ?? initialText);
-  const [images, setImages] = useState<ImageAttachment[]>(allowImages ? initialDraft?.images ?? [] : []);
+  const [images, setImages] = useState<ImageAttachment[]>(
+    allowImages ? (initialDraft?.images ?? []) : [],
+  );
   const [position, setPosition] = useState<CommentPopoverPosition | null>(null);
   // Direction of an open popover that has scrolled out of view, or null when on-screen.
-  const [offscreen, setOffscreen] = useState<'above' | 'below' | null>(null);
+  const [offscreen, setOffscreen] = useState<"above" | "below" | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const hasUnsavedContent = hasUnsavedCommentContent(text, allowImages ? images : []);
   const hasUnsavedContentRef = useRef(hasUnsavedContent);
   hasUnsavedContentRef.current = hasUnsavedContent;
   // The card (below) keeps the whole box inside the window; the popover keeps its own rule.
-  const { dragPosition, dragHandleProps, wasDragged, reset: resetDrag } = useDraggable(popoverRef, { keepInside: card });
+  const {
+    dragPosition,
+    dragHandleProps,
+    wasDragged,
+    reset: resetDrag,
+  } = useDraggable(popoverRef, { keepInside: card });
   const openingFocusRef = useRef<HTMLElement | null>(
-    typeof document !== 'undefined'
-      && document.activeElement instanceof HTMLElement
-      && document.activeElement !== document.body
-      && document.activeElement !== document.documentElement
+    typeof document !== "undefined" &&
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement !== document.body &&
+      document.activeElement !== document.documentElement
       ? document.activeElement
-      : anchorEl ?? null,
+      : (anchorEl ?? null),
   );
 
   useEffect(() => {
-    if (prefersExpandedComposer && mode === 'popover' && !card) setMode('dialog');
+    if (prefersExpandedComposer && mode === "popover" && !card) setMode("dialog");
   }, [card, mode, prefersExpandedComposer]);
 
   // The card: opened to full or not, and where it goes (computeCommentCardGeometry). A phone docks it at the foot.
@@ -431,23 +491,38 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       let paneEl: HTMLElement | null = null;
       if (paneSel) {
         paneEl = anchorEl?.closest<HTMLElement>(paneSel) ?? null;
-        if (!paneEl && rect) paneEl = (document.elementFromPoint(rect.left + 1, rect.top + 1) as HTMLElement | null)?.closest<HTMLElement>(paneSel) ?? null;
+        if (!paneEl && rect)
+          paneEl =
+            (
+              document.elementFromPoint(rect.left + 1, rect.top + 1) as HTMLElement | null
+            )?.closest<HTMLElement>(paneSel) ?? null;
       }
       const pane = paneEl?.getBoundingClientRect() ?? null;
-      const feet = footSel && paneEl
-        ? [...paneEl.querySelectorAll<HTMLElement>(footSel)].map((el) => el.getBoundingClientRect()).filter((r) => r.height > 0 && r.width > 0)
-        : [];
+      const feet =
+        footSel && paneEl
+          ? [...paneEl.querySelectorAll<HTMLElement>(footSel)]
+              .map((el) => el.getBoundingClientRect())
+              .filter((r) => r.height > 0 && r.width > 0)
+          : [];
       const footTop = feet.length ? Math.min(...feet.map((r) => r.top)) - 4 : null;
-      setCardGeo(computeCommentCardGeometry(rect, visibleBounds, {
-        phone: cardPhone, expanded: cardExpanded, pane, viewportHeight: window.innerHeight, footTop, aimX: cardAim.current, placement,
-      }));
+      setCardGeo(
+        computeCommentCardGeometry(rect, visibleBounds, {
+          phone: cardPhone,
+          expanded: cardExpanded,
+          pane,
+          viewportHeight: window.innerHeight,
+          footTop,
+          aimX: cardAim.current,
+          placement,
+        }),
+      );
     };
     update();
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
     };
   }, [card, anchorEl, anchorRect, visibleBounds, cardPhone, cardExpanded, placement]);
   // Docked at the foot: the words the comment is about are scrolled up above the card, never left under it.
@@ -461,22 +536,25 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       let scroller: HTMLElement | null = anchorEl ?? null;
       while (scroller) {
         const cs = getComputedStyle(scroller);
-        if (/(auto|scroll)/.test(cs.overflowY) && scroller.scrollHeight > scroller.clientHeight) break;
+        if (/(auto|scroll)/.test(cs.overflowY) && scroller.scrollHeight > scroller.clientHeight)
+          break;
         scroller = scroller.parentElement;
       }
       const by = rect.bottom - (box.top - 24);
-      const behavior: ScrollBehavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      const behavior: ScrollBehavior = window.matchMedia?.("(prefers-reduced-motion: reduce)")
+        .matches
+        ? "auto"
+        : "smooth";
       if (scroller) scroller.scrollBy({ top: by, behavior });
       else window.scrollBy({ top: by, behavior });
     });
     return () => cancelAnimationFrame(frame);
   }, [card, cardDocked, cardExpanded, anchorEl, anchorRect]);
 
-
   useEffect(() => {
     const nextDraft = draftKey ? draftStore.get(draftKey) : undefined;
     setText(nextDraft?.text ?? initialText);
-    setImages(allowImages ? nextDraft?.images ?? [] : []);
+    setImages(allowImages ? (nextDraft?.images ?? []) : []);
   }, [draftKey, initialText, allowImages]);
 
   useCommentDraftSync(draftKey, text, allowImages ? images : []);
@@ -486,15 +564,21 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   }, [allowImages, images, onDraftChange, text]);
 
   // Reset drag when anchor changes (new annotation) or mode switches
-  useEffect(() => { resetDrag(); }, [anchorEl, anchorRect, resetDrag]);
-  useEffect(() => { if (mode === 'popover') resetDrag(); }, [mode, resetDrag]);
+  useEffect(() => {
+    resetDrag();
+  }, [anchorEl, anchorRect, resetDrag]);
+  useEffect(() => {
+    if (mode === "popover") resetDrag();
+  }, [mode, resetDrag]);
   // The card opened to full docks at the foot again, wherever it was dragged.
-  useEffect(() => { if (cardExpanded) resetDrag(); }, [cardExpanded, resetDrag]);
+  useEffect(() => {
+    if (cardExpanded) resetDrag();
+  }, [cardExpanded, resetDrag]);
 
   // Track anchor position on scroll and observed viewport changes (popover
   // mode only, not after user drag).
   useEffect(() => {
-    if (mode !== 'popover' || wasDragged || card) return;
+    if (mode !== "popover" || wasDragged || card) return;
 
     const update = () => {
       const rect = anchorEl?.getBoundingClientRect() ?? anchorRect;
@@ -502,16 +586,16 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       const nextPosition = computeCommentPopoverPosition(rect, visibleBounds, placement);
       if (nextPosition.requiresExpanded) {
         setDialogIsForced(true);
-        setMode('dialog');
+        setMode("dialog");
         return;
       }
       setPosition(nextPosition);
     };
 
     update();
-    window.addEventListener('scroll', update, true);
+    window.addEventListener("scroll", update, true);
     return () => {
-      window.removeEventListener('scroll', update, true);
+      window.removeEventListener("scroll", update, true);
     };
   }, [anchorEl, anchorRect, mode, visibleBounds, wasDragged, placement, card]);
 
@@ -519,20 +603,23 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   // Re-measures whenever the popover repositions (position updates every scroll
   // step in tracked mode) so the indicator is accurate at rest, plus on resize.
   useEffect(() => {
-    if (mode !== 'popover') { setOffscreen(null); return; }
+    if (mode !== "popover") {
+      setOffscreen(null);
+      return;
+    }
     const measure = () => {
       const el = popoverRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      if (rect.bottom < visibleBounds.top) setOffscreen('above');
-      else if (rect.top > visibleBounds.bottom) setOffscreen('below');
+      if (rect.bottom < visibleBounds.top) setOffscreen("above");
+      else if (rect.top > visibleBounds.bottom) setOffscreen("below");
       else setOffscreen(null);
     };
     measure();
   }, [position, dragPosition, mode, visibleBounds, cardGeo]);
 
   const scrollToPopover = useCallback(() => {
-    anchorEl?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    anchorEl?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [anchorEl]);
 
   // Focus the textarea when it mounts (initial open and popover/dialog switches).
@@ -541,21 +628,24 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   // that commit, so an effect keyed on mode alone can run before the textarea
   // exists and never focus it (e.g. in WKWebView hosts like Glimpse).
   const shouldAutoFocus = autoFocus && (!coarsePointer || initialText.length > 0 || isGlobal);
-  const focusOnMountRef = useCallback((el: HTMLTextAreaElement | null) => {
-    textareaRef.current = el;
-    if (!el || !shouldAutoFocus) return;
-    setTimeout(() => {
-      if (!el.isConnected) return;
-      el.focus();
-      el.selectionStart = el.selectionEnd = el.value.length;
-    }, 0);
-  }, [shouldAutoFocus]);
+  const focusOnMountRef = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      textareaRef.current = el;
+      if (!el || !shouldAutoFocus) return;
+      setTimeout(() => {
+        if (!el.isConnected) return;
+        el.focus();
+        el.selectionStart = el.selectionEnd = el.value.length;
+      }, 0);
+    },
+    [shouldAutoFocus],
+  );
 
   // A touch-opened composer deliberately does not focus the textarea (and
   // summon the software keyboard), but hardware-keyboard users still need a
   // coherent focus target and Escape dismissal.
   useEffect(() => {
-    if ((mode !== 'dialog' && !card) || shouldAutoFocus || !autoFocus) return;
+    if ((mode !== "dialog" && !card) || shouldAutoFocus || !autoFocus) return;
     const timer = setTimeout(() => {
       if (!popoverRef.current?.isConnected) return;
       popoverRef.current.focus({ preventScroll: true });
@@ -572,7 +662,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   }, []);
 
   const handleClose = useCallback(
-    (focusDisposition: 'restore-opener' | 'preserve-pointer-target' = 'restore-opener') => {
+    (focusDisposition: "restore-opener" | "preserve-pointer-target" = "restore-opener") => {
       if (draftKey) {
         if (hasUnsavedCommentContent(text, allowImages ? images : [])) {
           draftStore.set(draftKey, { text, images: allowImages ? images : [] });
@@ -581,14 +671,14 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
         }
       }
       onClose();
-      if (focusDisposition === 'restore-opener') restoreOpeningFocus();
+      if (focusDisposition === "restore-opener") restoreOpeningFocus();
     },
     [allowImages, draftKey, images, onClose, restoreOpeningFocus, text],
   );
 
   // Click-outside for popover mode
   useEffect(() => {
-    if (mode !== 'popover') return;
+    if (mode !== "popover") return;
     const shiftSelectionActive = Boolean(targetChips?.length);
 
     const handlePointerDown = (e: PointerEvent) => {
@@ -597,17 +687,17 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       if (popoverRef.current?.contains(target)) return;
       // Don't close if clicking inside a child portal (AttachmentsButton, ImageAnnotator, etc.)
       const el = target as HTMLElement;
-      if (el.closest?.('[data-popover-layer]')) return;
+      if (el.closest?.("[data-popover-layer]")) return;
       if (hasUnsavedContentRef.current) return;
       // A same-document multi-select target receives pointerdown before click.
       // Preserve the existing draft so the following Shift-click can extend
       // it instead of silently replacing it with a new one.
       if (shiftSelectionActive && e.shiftKey) return;
-      handleClose('preserve-pointer-target');
+      handleClose("preserve-pointer-target");
     };
 
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
   }, [handleClose, mode, targetChips?.length]);
 
   // Focus choreography (multi-select): after a shift-click adds/removes a
@@ -636,9 +726,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       if (!e.key || e.key.length !== 1) return;
       const target = e.target;
       const strayed =
-        target === null
-        || target === document.body
-        || target === document.documentElement;
+        target === null || target === document.body || target === document.documentElement;
       if (!strayed) return;
       const el = textareaRef.current;
       if (!el || document.activeElement === el) return;
@@ -652,17 +740,19 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
         el.selectionStart = el.selectionEnd = start + 1;
       });
     };
-    window.addEventListener('keydown', handler, true);
-    return () => window.removeEventListener('keydown', handler, true);
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
   }, [captureStrayKeys]);
 
   // Composer yield (multi-select): fade near the pointer, click-through over
   // it. Class-driven so prefers-reduced-motion can kill the transition.
-  const yieldClass = yieldState === undefined
-    ? ''
-    : ` pn-composer-yieldable${yieldState === 'over' ? ' pn-composer-yield-over' : yieldState === 'near' ? ' pn-composer-yield-near' : ''}`;
-  const yieldStyleBlock = yieldState === undefined ? null : (
-    <style>{`
+  const yieldClass =
+    yieldState === undefined
+      ? ""
+      : ` pn-composer-yieldable${yieldState === "over" ? " pn-composer-yield-over" : yieldState === "near" ? " pn-composer-yield-near" : ""}`;
+  const yieldStyleBlock =
+    yieldState === undefined ? null : (
+      <style>{`
       .pn-composer-yieldable { transition: opacity 180ms ease; }
       @media (prefers-reduced-motion: reduce) {
         .pn-composer-yieldable { transition: none; }
@@ -670,46 +760,53 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       .pn-composer-yield-near { opacity: 0.4; }
       .pn-composer-yield-over { opacity: 0.05; pointer-events: none; }
     `}</style>
-  );
+    );
 
   // Selected-target chips (multi-select): horizontally scrollable, primary
   // first; each removable while composing.
-  const chipsRow = targetChips && targetChips.length > 0 ? (
-    <div
-      data-target-chips="true"
-      className="flex items-center gap-1.5 px-3 pt-2 overflow-x-auto whitespace-nowrap"
-    >
-      {targetChips.map((chip, i) => (
-        <span
-          key={chip.key}
-          data-target-chip={chip.key}
-          data-target-chip-primary={i === 0 ? 'true' : undefined}
-          onMouseEnter={() => onHoverTargetChip?.(chip.key)}
-          className={`inline-flex items-center gap-1 shrink-0 max-w-[180px] rounded-full border px-2 py-0.5 text-[10px] ${
-            i === 0
-              ? 'border-primary/50 bg-primary/10 text-foreground'
-              : 'border-border bg-muted/50 text-muted-foreground'
-          }`}
-        >
-          <span className="font-semibold text-primary">{chip.label || 'Element'}</span>
-          <span className="truncate">{chip.excerpt}</span>
-          {onRemoveTargetChip && (
-            <button
-              type="button"
-              data-target-chip-remove={chip.key}
-              onClick={() => onRemoveTargetChip(chip.key)}
-              title="Remove this target"
-              className="shrink-0 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </span>
-      ))}
-    </div>
-  ) : null;
+  const chipsRow =
+    targetChips && targetChips.length > 0 ? (
+      <div
+        data-target-chips="true"
+        className="flex items-center gap-1.5 px-3 pt-2 overflow-x-auto whitespace-nowrap"
+      >
+        {targetChips.map((chip, i) => (
+          <span
+            key={chip.key}
+            data-target-chip={chip.key}
+            data-target-chip-primary={i === 0 ? "true" : undefined}
+            onMouseEnter={() => onHoverTargetChip?.(chip.key)}
+            className={`inline-flex items-center gap-1 shrink-0 max-w-[180px] rounded-full border px-2 py-0.5 text-[10px] ${
+              i === 0
+                ? "border-primary/50 bg-primary/10 text-foreground"
+                : "border-border bg-muted/50 text-muted-foreground"
+            }`}
+          >
+            <span className="font-semibold text-primary">{chip.label || "Element"}</span>
+            <span className="truncate">{chip.excerpt}</span>
+            {onRemoveTargetChip && (
+              <button
+                type="button"
+                data-target-chip-remove={chip.key}
+                onClick={() => onRemoveTargetChip(chip.key)}
+                title="Remove this target"
+                className="shrink-0 rounded-full p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <svg
+                  className="w-2.5 h-2.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </span>
+        ))}
+      </div>
+    ) : null;
 
   const mentionAc = useMentionAutocomplete({
     text,
@@ -725,13 +822,11 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   const mentionTokenClassName = mentionSource?.tokenClassName;
   const mentionChips: ComposerMentionChips | null = useMemo(
     () =>
-      mentionSource
-        ? { people: mentionChipPeople, tokenClassName: mentionTokenClassName }
-        : null,
+      mentionSource ? { people: mentionChipPeople, tokenClassName: mentionTokenClassName } : null,
     [mentionSource, mentionChipPeople, mentionTokenClassName],
   );
 
-  const runExtraAction = (action: NonNullable<CommentPopoverProps['extraActions']>[number]) => {
+  const runExtraAction = (action: NonNullable<CommentPopoverProps["extraActions"]>[number]) => {
     if (action.spends && draftKey) draftStore.delete(draftKey);
     action.onSelect(text.trim());
   };
@@ -746,7 +841,19 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       else onSubmit(text, submitImages);
       restoreOpeningFocus();
     }
-  }, [text, images, onSubmit, draftKey, allowImages, allowEmptySubmit, initialText, hasUnsavedContent, restoreOpeningFocus, mentionSource, mentionAc.mentionIds]);
+  }, [
+    text,
+    images,
+    onSubmit,
+    draftKey,
+    allowImages,
+    allowEmptySubmit,
+    initialText,
+    hasUnsavedContent,
+    restoreOpeningFocus,
+    mentionSource,
+    mentionAc.mentionIds,
+  ]);
 
   const handleAskAI = useCallback(async () => {
     const question = text.trim();
@@ -756,12 +863,15 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
     }
     let accepted: boolean | void;
     try {
-      accepted = await onAskAI(question, askAIContext ?? {
-        kind: isGlobal ? 'general' : 'selection',
-        text: contextText,
-      });
+      accepted = await onAskAI(
+        question,
+        askAIContext ?? {
+          kind: isGlobal ? "general" : "selection",
+          text: contextText,
+        },
+      );
     } catch (error) {
-      console.error('Ask AI action failed:', error);
+      console.error("Ask AI action failed:", error);
       textareaRef.current?.focus();
       return;
     }
@@ -770,15 +880,25 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       return;
     }
     if (draftKey) draftStore.delete(draftKey);
-    onDraftChange?.('', allowImages ? [] : undefined);
+    onDraftChange?.("", allowImages ? [] : undefined);
     onClose();
-  }, [allowImages, askAIContext, contextText, draftKey, isGlobal, onAskAI, onClose, onDraftChange, text]);
+  }, [
+    allowImages,
+    askAIContext,
+    contextText,
+    draftKey,
+    isGlobal,
+    onAskAI,
+    onClose,
+    onDraftChange,
+    text,
+  ]);
 
   const handleExtra = useCallback(() => {
     if (!extraAction) return;
     extraAction.onAction(text.trim());
     if (draftKey) draftStore.delete(draftKey);
-    onDraftChange?.('', allowImages ? [] : undefined);
+    onDraftChange?.("", allowImages ? [] : undefined);
     onClose();
   }, [allowImages, draftKey, extraAction, onClose, onDraftChange, text]);
 
@@ -807,7 +927,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
     skillAc.onSelect();
     mentionAc.onSelect();
   }, [mentionAc, skillAc]);
-  const skillListboxId = `skill-reference-listbox-${useId().replace(/:/g, '')}`;
+  const skillListboxId = `skill-reference-listbox-${useId().replace(/:/g, "")}`;
   const mentionListboxId = `${skillListboxId}-mentions`;
   const activeSkillOptionId =
     skillAc.menu?.activeIndex === null || skillAc.menu?.activeIndex === undefined
@@ -822,11 +942,11 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   const composerListboxOpen = skillAc.menu !== null || mentionAc.menu !== null;
   const activeComposerOptionId = activeSkillOptionId ?? activeMentionOptionId;
 
-  const enterSavesComment = useConfigValue('enterSavesComment');
+  const enterSavesComment = useConfigValue("enterSavesComment");
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (skillAc.onKeyDown(e)) return;
     if (mentionAc.onKeyDown(e)) return;
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       e.stopPropagation();
       // The card: one layer per Escape. Opened to full goes back small first; then it closes and keeps the words.
       if (card) {
@@ -834,12 +954,12 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
         else handleClose();
         return;
       }
-      if (mode === 'dialog') {
+      if (mode === "dialog") {
         // Collapsing a forced dialog is geometrically impossible, so Escape
         // closes it (draft-preserving) instead of being swallowed by the
         // re-expand.
         if (prefersExpandedComposer || forcedDialog) handleClose();
-        else setMode('popover');
+        else setMode("popover");
       } else {
         handleClose();
       }
@@ -851,22 +971,27 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
     }
   };
 
-  const headerLabel = headerText ?? (isGlobal
-    ? 'Global Comment'
-    : contextText
-      ? `"${contextText.length > 50 ? contextText.slice(0, 50) + '...' : contextText}"`
-      : 'Comment');
+  const headerLabel =
+    headerText ??
+    (isGlobal
+      ? "Global Comment"
+      : contextText
+        ? `"${contextText.length > 50 ? contextText.slice(0, 50) + "..." : contextText}"`
+        : "Comment");
 
   // Inline colour: no new utility class reaches the guides.show viewer CSS this file is scanned into.
   const errorRow = errorText ? (
-    <p role="alert" data-comment-popover-error="true" className="px-3 pt-2 text-xs" style={{ color: 'var(--destructive)' }}>
+    <p
+      role="alert"
+      data-comment-popover-error="true"
+      className="px-3 pt-2 text-xs"
+      style={{ color: "var(--destructive)" }}
+    >
       {errorText}
     </p>
   ) : null;
 
-  const canSubmit =
-    hasUnsavedContent ||
-    (allowEmptySubmit && initialText.trim().length > 0);
+  const canSubmit = hasUnsavedContent || (allowEmptySubmit && initialText.trim().length > 0);
   const canAskAI = !!onAskAI && !askAIDisabled && text.trim().length > 0;
   const showsSkillMenu = skillAc.menu !== null;
 
@@ -889,11 +1014,11 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       onClick={handleQuickLookGood}
       disabled={hasUnsavedContent}
       aria-label="Looks good"
-      title={hasUnsavedContent ? 'Looks good (clear the comment to use it)' : 'Looks good'}
+      title={hasUnsavedContent ? "Looks good (clear the comment to use it)" : "Looks good"}
       data-quick-look-good="true"
       data-pn-touch-target="true"
       data-pn-touch-target-icon="true"
-      style={hasUnsavedContent ? { filter: 'grayscale(1)' } : undefined}
+      style={hasUnsavedContent ? { filter: "grayscale(1)" } : undefined}
       className="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm leading-none hover:bg-green-500/10 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
     >
       <span aria-hidden="true">👍</span>
@@ -905,20 +1030,27 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   // header line, no blurred page behind, nothing that fades between colours on hover (comment-card.css).
   if (card) {
     if (!cardGeo) return null;
-    const quote = headerText ?? (isGlobal ? null : contextText.replace(/\s+/g, ' ').trim());
-    const on = headerText ?? (quote ? `“${quote.length > 80 ? `${quote.slice(0, 80)}…` : quote}”` : null);
+    const quote = headerText ?? (isGlobal ? null : contextText.replace(/\s+/g, " ").trim());
+    const on =
+      headerText ?? (quote ? `“${quote.length > 80 ? `${quote.slice(0, 80)}…` : quote}”` : null);
     // Dragged by its words (not on a phone, not opened to full: those dock at the foot): it stays where it was put,
     // whole inside the window, until other words are picked.
     const cardDraggable = !cardPhone && !cardExpanded;
     const cardDragged = cardDraggable && dragPosition !== null;
-    const cardDragStyle: React.CSSProperties = cardDraggable && dragPosition
-      ? { left: dragPosition.left, top: dragPosition.top, width: cardGeo.style.width, maxHeight: Math.max(CARD_NEED, window.innerHeight - dragPosition.top) }
-      : {};
+    const cardDragStyle: React.CSSProperties =
+      cardDraggable && dragPosition
+        ? {
+            left: dragPosition.left,
+            top: dragPosition.top,
+            width: cardGeo.style.width,
+            maxHeight: Math.max(CARD_NEED, window.innerHeight - dragPosition.top),
+          }
+        : {};
     const discard = () => {
       if (draftKey) draftStore.delete(draftKey);
-      setText('');
+      setText("");
       setImages([]);
-      onDraftChange?.('', allowImages ? [] : undefined);
+      onDraftChange?.("", allowImages ? [] : undefined);
       onClose();
       restoreOpeningFocus();
     };
@@ -933,7 +1065,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
             onClick={scrollToPopover}
             title="Scroll back to your open comment"
           >
-            <Icon name={offscreen === 'above' ? 'chevU' : 'chevD'} size={14} />
+            <Icon name={offscreen === "above" ? "chevU" : "chevD"} size={14} />
             <span>Open comment</span>
           </button>
         )}
@@ -941,19 +1073,23 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           ref={popoverRef}
           data-comment-popover="true"
           data-comment-card=""
-          data-docked={cardGeo.docked ? '' : undefined}
-          data-above={cardGeo.above ? '' : undefined}
-          data-expanded={cardExpanded ? '' : undefined}
-          data-phone={cardPhone ? '' : undefined}
+          data-docked={cardGeo.docked ? "" : undefined}
+          data-above={cardGeo.above ? "" : undefined}
+          data-expanded={cardExpanded ? "" : undefined}
+          data-phone={cardPhone ? "" : undefined}
           role="dialog"
-          aria-label={isGlobal ? 'Global comment' : on ? `Comment on ${on}` : 'Comment'}
+          aria-label={isGlobal ? "Global comment" : on ? `Comment on ${on}` : "Comment"}
           tabIndex={-1}
           className={`pn-cbox${yieldClass}`}
-          data-dragged={cardDragged ? '' : undefined}
-          style={{ ...(cardDragged ? cardDragStyle : cardGeo.style), ...(zIndex !== undefined ? { zIndex } : {}), ...(showsSkillMenu ? { overflow: 'visible' } : {}) }}
+          data-dragged={cardDragged ? "" : undefined}
+          style={{
+            ...(cardDragged ? cardDragStyle : cardGeo.style),
+            ...(zIndex !== undefined ? { zIndex } : {}),
+            ...(showsSkillMenu ? { overflow: "visible" } : {}),
+          }}
           onPointerDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
-            if (e.key !== 'Escape' || e.defaultPrevented) return;
+            if (e.key !== "Escape" || e.defaultPrevented) return;
             e.preventDefault();
             e.stopPropagation();
             if (cardExpanded) setCardExpanded(false);
@@ -979,7 +1115,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
               activeIndex={skillAc.menu.activeIndex}
               onSelect={skillAc.select}
               // On the side away from the words the comment is about, so the list never covers them.
-              prefer={cardGeo.above || cardGeo.docked ? 'above' : 'below'}
+              prefer={cardGeo.above || cardGeo.docked ? "above" : "below"}
             />
           )}
           {/* The words are the handle the card is dragged by (as the popover's header is). The press keeps the caret
@@ -987,9 +1123,15 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           <div
             className="pn-cbox-quote"
             title={quote ?? undefined}
-            {...(cardDraggable ? { ...dragHandleProps, 'data-comment-card-handle': '', onMouseDown: (e: React.MouseEvent) => e.preventDefault() } : {})}
+            {...(cardDraggable
+              ? {
+                  ...dragHandleProps,
+                  "data-comment-card-handle": "",
+                  onMouseDown: (e: React.MouseEvent) => e.preventDefault(),
+                }
+              : {})}
           >
-            {isGlobal ? 'Global comment' : on ?? 'Comment'}
+            {isGlobal ? "Global comment" : (on ?? "Comment")}
           </div>
           {errorRow}
           {chipsRow}
@@ -997,11 +1139,14 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
             <ComposerTokenTextarea
               textareaRef={focusOnMountRef}
               value={text}
-              onChange={(e) => { setText(e.target.value); readComposerCaret(); }}
+              onChange={(e) => {
+                setText(e.target.value);
+                readComposerCaret();
+              }}
               onKeyDown={handleKeyDown}
               onSelectCaret={readComposerCaret}
-              placeholder={isGlobal ? 'Add a global comment…' : 'Comment…'}
-              sizeClassName={cardExpanded ? 'pn-cbox-ta pn-cbox-ta-full' : 'pn-cbox-ta'}
+              placeholder={isGlobal ? "Add a global comment…" : "Comment…"}
+              sizeClassName={cardExpanded ? "pn-cbox-ta pn-cbox-ta-full" : "pn-cbox-ta"}
               skillReferences={skillReferences}
               tokens={skillAc.referenceTokens}
               mentionChips={mentionChips}
@@ -1011,7 +1156,11 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
             />
             <HumanOnlySkillNotice skills={skillAc.humanOnlyReferences} />
             {mentionSource?.renderNotice?.(mentionChipPeople)}
-            <MentionAutocompleteMenu id={mentionListboxId} menu={mentionAc.menu} onSelect={mentionAc.select} />
+            <MentionAutocompleteMenu
+              id={mentionListboxId}
+              menu={mentionAc.menu}
+              onSelect={mentionAc.select}
+            />
           </div>
           {/* Screen order is Tab order: the tools, the bin, then Comment at the right end. */}
           <div className="pn-cbox-row">
@@ -1025,16 +1174,34 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
               />
             )}
             {onAskAI && (
-              <button type="button" className="pn-cbox-tool pn-cbox-word" onClick={handleAskAI} disabled={!canAskAI} title={canAskAI ? 'Ask AI this question' : 'Type a question to ask AI'}>
+              <button
+                type="button"
+                className="pn-cbox-tool pn-cbox-word"
+                onClick={handleAskAI}
+                disabled={!canAskAI}
+                title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
+              >
                 <SparklesIcon className="w-3.5 h-3.5" />
-                {askAILabel ?? 'Ask AI'}
+                {askAILabel ?? "Ask AI"}
               </button>
             )}
             {extraActions?.map((action) => (
-              <button key={action.label} type="button" className="pn-cbox-tool pn-cbox-word" onClick={() => runExtraAction(action)}>{action.label}</button>
+              <button
+                key={action.label}
+                type="button"
+                className="pn-cbox-tool pn-cbox-word"
+                onClick={() => runExtraAction(action)}
+              >
+                {action.label}
+              </button>
             ))}
             {extraAction && (
-              <button type="button" className="pn-cbox-tool pn-cbox-word" onClick={handleExtra} data-comment-extra-action="">
+              <button
+                type="button"
+                className="pn-cbox-tool pn-cbox-word"
+                onClick={handleExtra}
+                data-comment-extra-action=""
+              >
                 {extraAction.icon}
                 {extraAction.label}
               </button>
@@ -1044,21 +1211,34 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                 type="button"
                 className="pn-cbox-tool"
                 onClick={() => setCardExpanded((v) => !v)}
-                aria-label={cardExpanded ? 'Make it small again' : 'Open it to full'}
-                title={cardExpanded ? 'Make it small again' : 'Open it to full'}
+                aria-label={cardExpanded ? "Make it small again" : "Open it to full"}
+                title={cardExpanded ? "Make it small again" : "Open it to full"}
                 aria-pressed={cardExpanded}
               >
-                <Icon name={cardExpanded ? 'collapse' : 'expand'} size={15} />
+                <Icon name={cardExpanded ? "collapse" : "expand"} size={15} />
               </button>
             )}
             <span className="pn-cbox-mid" />
             {hasUnsavedContent && (
-              <button type="button" className="pn-cbox-tool pn-cbox-bin" onClick={discard} aria-label="Discard this comment" title="Discard this comment" data-comment-card-discard="">
+              <button
+                type="button"
+                className="pn-cbox-tool pn-cbox-bin"
+                onClick={discard}
+                aria-label="Discard this comment"
+                title="Discard this comment"
+                data-comment-card-discard=""
+              >
                 <Icon name="trash" size={15} />
               </button>
             )}
-            <button type="button" className="pn-cbox-save" onClick={handleSubmit} disabled={!canSubmit} data-comment-card-submit="">
-              {submitLabel ?? 'Comment'}
+            <button
+              type="button"
+              className="pn-cbox-save"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              data-comment-card-submit=""
+            >
+              {submitLabel ?? "Comment"}
             </button>
           </div>
         </div>
@@ -1067,8 +1247,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
     );
   }
 
-
-  if (mode === 'dialog') {
+  if (mode === "dialog") {
     return createPortal(
       <div
         data-comment-popover="true"
@@ -1092,17 +1271,17 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           ref={popoverRef}
           role="dialog"
           aria-modal="true"
-          aria-label={isGlobal ? 'Global comment' : 'Comment'}
+          aria-label={isGlobal ? "Global comment" : "Comment"}
           tabIndex={-1}
           className={`relative w-full max-w-xl max-h-full min-h-0 bg-popover border border-border rounded-xl shadow-2xl flex flex-col ${
-            showsSkillMenu ? 'overflow-visible' : 'overflow-hidden'
+            showsSkillMenu ? "overflow-visible" : "overflow-hidden"
           }`}
           style={{
-            animation: 'comment-dialog-in 0.15s ease-out',
+            animation: "comment-dialog-in 0.15s ease-out",
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
-            if (e.key !== 'Escape') return;
+            if (e.key !== "Escape") return;
             e.preventDefault();
             e.stopPropagation();
             handleClose();
@@ -1123,7 +1302,10 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
             <div className="flex items-center gap-1">
               {!prefersExpandedComposer && !forcedDialog && (
                 <button
-                  onClick={() => { setDialogIsForced(false); setMode('popover'); }}
+                  onClick={() => {
+                    setDialogIsForced(false);
+                    setMode("popover");
+                  }}
                   className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   title="Collapse"
                 >
@@ -1144,9 +1326,11 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           {chipsRow}
 
           {/* Textarea */}
-          <div className={`relative px-4 py-3 min-h-0 flex-1 ${
-            showsSkillMenu ? 'overflow-visible' : 'overflow-y-auto'
-          }`}>
+          <div
+            className={`relative px-4 py-3 min-h-0 flex-1 ${
+              showsSkillMenu ? "overflow-visible" : "overflow-y-auto"
+            }`}
+          >
             {skillAc.menu && (
               <SkillReferenceMenu
                 id={skillListboxId}
@@ -1158,10 +1342,13 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
             <ComposerTokenTextarea
               textareaRef={focusOnMountRef}
               value={text}
-              onChange={(e) => { setText(e.target.value); readComposerCaret(); }}
+              onChange={(e) => {
+                setText(e.target.value);
+                readComposerCaret();
+              }}
               onKeyDown={handleKeyDown}
               onSelectCaret={readComposerCaret}
-              placeholder={isGlobal ? 'Add a global comment...' : 'Add a comment...'}
+              placeholder={isGlobal ? "Add a global comment..." : "Add a comment..."}
               sizeClassName="min-h-32 max-h-full"
               skillReferences={skillReferences}
               tokens={skillAc.referenceTokens}
@@ -1187,7 +1374,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                 disabled={!canSubmit}
                 className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
-                {submitLabel ?? (isGlobal ? 'Add' : 'Save')}
+                {submitLabel ?? (isGlobal ? "Add" : "Save")}
               </button>
               {extraButton}
               {quickLookGoodButton}
@@ -1196,10 +1383,10 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                   onClick={handleAskAI}
                   disabled={!canAskAI}
                   className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title={canAskAI ? 'Ask AI this question' : 'Type a question to ask AI'}
+                  title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
                 >
                   <SparklesIcon className="w-3 h-3" />
-                  {askAILabel ?? 'Ask AI'}
+                  {askAILabel ?? "Ask AI"}
                 </button>
               )}
               {extraActions?.map((action, i) => (
@@ -1226,7 +1413,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           </div>
         </div>
       </div>,
-      document.body
+      document.body,
     );
   }
 
@@ -1241,41 +1428,42 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           data-popover-layer="true"
           onClick={scrollToPopover}
           title="Scroll back to your open comment"
-          className={`fixed left-1/2 -translate-x-1/2 z-[101] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-popover border border-border shadow-lg text-xs text-muted-foreground hover:text-foreground transition-colors ${offscreen === 'above' ? 'top-3' : 'bottom-3'}`}
+          className={`fixed left-1/2 -translate-x-1/2 z-[101] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-popover border border-border shadow-lg text-xs text-muted-foreground hover:text-foreground transition-colors ${offscreen === "above" ? "top-3" : "bottom-3"}`}
         >
-          {offscreen === 'above' ? <ChevronUpIcon /> : <ChevronDownIcon />}
+          {offscreen === "above" ? <ChevronUpIcon /> : <ChevronDownIcon />}
           <span>Open comment</span>
         </button>
       )}
       <div
         ref={popoverRef}
         data-comment-popover="true"
-      className={`fixed z-[100] bg-popover border border-border rounded-xl shadow-2xl flex flex-col${yieldClass}`}
-      style={dragPosition
-        ? {
-            ...(zIndex !== undefined ? { zIndex } : {}),
-            top: dragPosition.top,
-            left: dragPosition.left,
-            width: position.width,
-            maxHeight: visibleBounds.height,
-            overflowY: showsSkillMenu ? 'visible' : 'auto',
-          }
-        : {
-            ...(zIndex !== undefined ? { zIndex } : {}),
-            top: position.top,
-            left: position.left,
-            width: position.width,
-            maxHeight: position.maxHeight,
-            overflowY: showsSkillMenu ? 'visible' : 'auto',
-            ...(position.flipAbove ? { transform: 'translateY(-100%)' } : {}),
-            animation: position.flipAbove
-              ? 'comment-popover-in-above 0.15s ease-out'
-              : 'comment-popover-in 0.15s ease-out',
-          }
-      }
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      <style>{`
+        className={`fixed z-[100] bg-popover border border-border rounded-xl shadow-2xl flex flex-col${yieldClass}`}
+        style={
+          dragPosition
+            ? {
+                ...(zIndex !== undefined ? { zIndex } : {}),
+                top: dragPosition.top,
+                left: dragPosition.left,
+                width: position.width,
+                maxHeight: visibleBounds.height,
+                overflowY: showsSkillMenu ? "visible" : "auto",
+              }
+            : {
+                ...(zIndex !== undefined ? { zIndex } : {}),
+                top: position.top,
+                left: position.left,
+                width: position.width,
+                maxHeight: position.maxHeight,
+                overflowY: showsSkillMenu ? "visible" : "auto",
+                ...(position.flipAbove ? { transform: "translateY(-100%)" } : {}),
+                animation: position.flipAbove
+                  ? "comment-popover-in-above 0.15s ease-out"
+                  : "comment-popover-in 0.15s ease-out",
+              }
+        }
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <style>{`
         @keyframes comment-popover-in {
           from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
@@ -1285,149 +1473,201 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           to { opacity: 1; transform: translateY(-100%); }
         }
       `}</style>
-      {yieldStyleBlock}
+        {yieldStyleBlock}
 
-      {/* Header (draggable) */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50" {...dragHandleProps}>
-        <span className="text-xs text-muted-foreground truncate max-w-[260px]">
-          {headerLabel}
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => { setDialogIsForced(false); setMode('dialog'); }}
-            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            title="Expand"
-          >
-            <ExpandIcon />
-          </button>
-          <button
-            onClick={() => handleClose()}
-            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            title="Close"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-      </div>
-
-      {errorRow}
-      {chipsRow}
-
-      {/* Textarea */}
-      <div className="relative px-3 py-2">
-        {skillAc.menu && (
-          <SkillReferenceMenu
-            id={skillListboxId}
-            items={skillAc.menu.items}
-            activeIndex={skillAc.menu.activeIndex}
-            onSelect={skillAc.select}
-          />
-        )}
-        <ComposerTokenTextarea
-          textareaRef={focusOnMountRef}
-          value={text}
-          onChange={(e) => { setText(e.target.value); readComposerCaret(); }}
-          onKeyDown={handleKeyDown}
-          onSelectCaret={readComposerCaret}
-          placeholder={isGlobal ? 'Add a global comment...' : 'Add a comment...'}
-          sizeClassName="max-h-64 min-h-[4.5rem]"
-          skillReferences={skillReferences}
-          tokens={skillAc.referenceTokens}
-          mentionChips={mentionChips}
-          listboxId={composerListboxId}
-          listboxOpen={composerListboxOpen}
-          activeOptionId={activeComposerOptionId}
-        />
-        <HumanOnlySkillNotice skills={skillAc.humanOnlyReferences} />
-        {mentionSource?.renderNotice?.(mentionChipPeople)}
-        <MentionAutocompleteMenu
-          id={mentionListboxId}
-          menu={mentionAc.menu}
-          onSelect={mentionAc.select}
-        />
-      </div>
-
-      {/* Footer — same DOM-order/row-reverse pattern as the dialog footer above */}
-      <div className="flex flex-row-reverse items-center justify-between px-3 py-2 border-t border-border/50">
-        {/* Wraps only with the opt-in third action, which can take the row past a narrow box. */}
-        <div className={extraAction ? 'flex flex-row-reverse flex-wrap items-center gap-3' : 'flex flex-row-reverse items-center gap-3'}>
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-          >
-            {submitLabel ?? (isGlobal ? 'Add' : 'Save')}
-          </button>
-          {extraButton}
-          {quickLookGoodButton}
-          {onAskAI && (
+        {/* Header (draggable) */}
+        <div
+          className="flex items-center justify-between px-3 py-2 border-b border-border/50"
+          {...dragHandleProps}
+        >
+          <span className="text-xs text-muted-foreground truncate max-w-[260px]">
+            {headerLabel}
+          </span>
+          <div className="flex items-center gap-1">
             <button
-              onClick={handleAskAI}
-              disabled={!canAskAI}
-              className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title={canAskAI ? 'Ask AI this question' : 'Type a question to ask AI'}
+              onClick={() => {
+                setDialogIsForced(false);
+                setMode("dialog");
+              }}
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Expand"
             >
-              <SparklesIcon className="w-3 h-3" />
-              {askAILabel ?? 'Ask AI'}
+              <ExpandIcon />
             </button>
-          )}
-          {extraActions?.map((action, i) => (
             <button
-              key={action.label}
-              onClick={() => runExtraAction(action)}
-              style={{ order: -1 - i }}
-              className="px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+              onClick={() => handleClose()}
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Close"
             >
-              {action.label}
+              <CloseIcon />
             </button>
-          ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {allowImages && (
-            <AttachmentsButton
-              images={images}
-              onAdd={(img) => setImages((prev) => [...prev, img])}
-              onRemove={(path) => setImages((prev) => prev.filter((i) => i.path !== path))}
-              variant="inline"
+
+        {errorRow}
+        {chipsRow}
+
+        {/* Textarea */}
+        <div className="relative px-3 py-2">
+          {skillAc.menu && (
+            <SkillReferenceMenu
+              id={skillListboxId}
+              items={skillAc.menu.items}
+              activeIndex={skillAc.menu.activeIndex}
+              onSelect={skillAc.select}
             />
           )}
+          <ComposerTokenTextarea
+            textareaRef={focusOnMountRef}
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              readComposerCaret();
+            }}
+            onKeyDown={handleKeyDown}
+            onSelectCaret={readComposerCaret}
+            placeholder={isGlobal ? "Add a global comment..." : "Add a comment..."}
+            sizeClassName="max-h-64 min-h-[4.5rem]"
+            skillReferences={skillReferences}
+            tokens={skillAc.referenceTokens}
+            mentionChips={mentionChips}
+            listboxId={composerListboxId}
+            listboxOpen={composerListboxOpen}
+            activeOptionId={activeComposerOptionId}
+          />
+          <HumanOnlySkillNotice skills={skillAc.humanOnlyReferences} />
+          {mentionSource?.renderNotice?.(mentionChipPeople)}
+          <MentionAutocompleteMenu
+            id={mentionListboxId}
+            menu={mentionAc.menu}
+            onSelect={mentionAc.select}
+          />
+        </div>
+
+        {/* Footer — same DOM-order/row-reverse pattern as the dialog footer above */}
+        <div className="flex flex-row-reverse items-center justify-between px-3 py-2 border-t border-border/50">
+          {/* Wraps only with the opt-in third action, which can take the row past a narrow box. */}
+          <div
+            className={
+              extraAction
+                ? "flex flex-row-reverse flex-wrap items-center gap-3"
+                : "flex flex-row-reverse items-center gap-3"
+            }
+          >
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            >
+              {submitLabel ?? (isGlobal ? "Add" : "Save")}
+            </button>
+            {extraButton}
+            {quickLookGoodButton}
+            {onAskAI && (
+              <button
+                onClick={handleAskAI}
+                disabled={!canAskAI}
+                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
+              >
+                <SparklesIcon className="w-3 h-3" />
+                {askAILabel ?? "Ask AI"}
+              </button>
+            )}
+            {extraActions?.map((action, i) => (
+              <button
+                key={action.label}
+                onClick={() => runExtraAction(action)}
+                style={{ order: -1 - i }}
+                className="px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            {allowImages && (
+              <AttachmentsButton
+                images={images}
+                onAdd={(img) => setImages((prev) => [...prev, img])}
+                onRemove={(path) => setImages((prev) => prev.filter((i) => i.path !== path))}
+                variant="inline"
+              />
+            )}
+          </div>
         </div>
       </div>
-      </div>
     </>,
-    document.body
+    document.body,
   );
 };
-
 
 // Icons
 
 const ChevronUpIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg
+    className="w-3.5 h-3.5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
   </svg>
 );
 
 const ChevronDownIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg
+    className="w-3.5 h-3.5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
   </svg>
 );
 
 const ExpandIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+  <svg
+    className="w-3.5 h-3.5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"
+    />
   </svg>
 );
 
 const CollapseIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+  <svg
+    className="w-3.5 h-3.5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+    />
   </svg>
 );
 
 const CloseIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg
+    className="w-3.5 h-3.5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
   </svg>
 );

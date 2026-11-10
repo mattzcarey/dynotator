@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Origin } from '@dynotator/core/agents';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Origin } from "@dynotator/core/agents";
 import {
   getAIProviderSettings,
   resolveAIProviderSelection,
   resolveAIModelForProvider,
   saveAIProviderSelection,
   type AIProviderOption,
-} from '../utils/aiProvider';
+} from "../utils/aiProvider";
 
 /**
  * Shared AI provider/model/reasoning-effort selection state for the plan and
@@ -66,10 +66,13 @@ export function useAIProviderConfig({
     if (!available || providers.length === 0) return;
     const saved = getAIProviderSettings();
     const sessionPick = sessionPickRef.current
-      ? providers.find(p => p.id === sessionPickRef.current) ?? null
+      ? (providers.find((p) => p.id === sessionPickRef.current) ?? null)
       : null;
     const selection = sessionPick
-      ? { providerId: sessionPick.id, model: resolveAIModelForProvider(sessionPick, saved.preferredModels) }
+      ? {
+          providerId: sessionPick.id,
+          model: resolveAIModelForProvider(sessionPick, saved.preferredModels),
+        }
       : resolveAIProviderSelection({
           providers,
           origin,
@@ -77,13 +80,15 @@ export function useAIProviderConfig({
           serverDefaultProvider: defaultProvider,
         });
 
-    setAiConfig(prev => {
+    setAiConfig((prev) => {
       if (prev.providerId === selection.providerId && prev.model === selection.model) return prev;
       return {
         ...prev,
         providerId: selection.providerId,
         model: selection.model,
-        reasoningEffort: selection.model ? (prev.reasoningEffortByModel[selection.model] ?? null) : null,
+        reasoningEffort: selection.model
+          ? (prev.reasoningEffortByModel[selection.model] ?? null)
+          : null,
       };
     });
   }, [available, providers, defaultProvider, origin]);
@@ -92,20 +97,29 @@ export function useAIProviderConfig({
   // the caller composes that (see the cycle note above).
   const applyConfigChange = useCallback(
     (
-      config: { providerId?: string | null; model?: string | null; reasoningEffort?: string | null },
+      config: {
+        providerId?: string | null;
+        model?: string | null;
+        reasoningEffort?: string | null;
+      },
       options?: { persist?: boolean },
     ) => {
       const persist = options?.persist !== false;
       if (!persist && config.providerId) sessionPickRef.current = config.providerId;
       else if (persist && config.providerId !== undefined) sessionPickRef.current = null;
-      setAiConfig(prev => {
+      setAiConfig((prev) => {
         const saved = getAIProviderSettings();
         const providerId = config.providerId !== undefined ? config.providerId : prev.providerId;
-        const providerChanged = config.providerId !== undefined && config.providerId !== prev.providerId;
-        const provider = providers.find(p => p.id === providerId) ?? null;
+        const providerChanged =
+          config.providerId !== undefined && config.providerId !== prev.providerId;
+        const provider = providers.find((p) => p.id === providerId) ?? null;
         const model = providerChanged
-          ? (config.model !== undefined ? config.model : resolveAIModelForProvider(provider, saved.preferredModels))
-          : (config.model !== undefined ? config.model : prev.model);
+          ? config.model !== undefined
+            ? config.model
+            : resolveAIModelForProvider(provider, saved.preferredModels)
+          : config.model !== undefined
+            ? config.model
+            : prev.model;
         // Per-model reasoning effort: record an explicit change against the
         // current model, then derive the effective level from the (possibly new)
         // model — so a provider/model switch never carries a stale level across.

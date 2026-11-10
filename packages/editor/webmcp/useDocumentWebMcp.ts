@@ -9,14 +9,19 @@
  * opt-out preference is read lazily (no settings-registry entry, so no
  * cookie is ever seeded for a user who never opts out).
  */
-import { useEffect, useMemo, useRef } from 'react';
-import type { RefObject } from 'react';
-import { blocksForDocument } from '../feedbackDocuments';
-import { getDocPreviewFetcher } from '@dynotator/ui/components/InlineMarkdown';
-import type { ViewerHandle } from '@dynotator/ui/components/Viewer';
-import type { CachedDocState } from '@dynotator/ui/hooks/useLinkedDoc';
-import { AnnotationType, type Annotation, type Block, type VaultNode } from '@dynotator/ui/types';
-import { getWebMcpPolicy, useToolset, useWebMcpToolsEnabled, type DocumentSurface } from '@dynotator/ui/webmcp';
+import { useEffect, useMemo, useRef } from "react";
+import type { RefObject } from "react";
+import { blocksForDocument } from "../feedbackDocuments";
+import { getDocPreviewFetcher } from "@dynotator/ui/components/InlineMarkdown";
+import type { ViewerHandle } from "@dynotator/ui/components/Viewer";
+import type { CachedDocState } from "@dynotator/ui/hooks/useLinkedDoc";
+import { AnnotationType, type Annotation, type Block, type VaultNode } from "@dynotator/ui/types";
+import {
+  getWebMcpPolicy,
+  useToolset,
+  useWebMcpToolsEnabled,
+  type DocumentSurface,
+} from "@dynotator/ui/webmcp";
 import {
   buildDocumentHooks,
   buildDocumentTools,
@@ -28,7 +33,7 @@ import {
   type SessionDecision,
   type SessionMode,
   type SiblingDocument,
-} from './documentTools';
+} from "./documentTools";
 
 export interface DocumentWebMcpFileBrowserDir {
   path: string;
@@ -41,13 +46,13 @@ export interface DocumentWebMcpInputs {
   isSharedSession: boolean;
   goalSetupMode: boolean;
   annotateMode: boolean;
-  annotateSource: 'file' | 'message' | 'folder' | null;
+  annotateSource: "file" | "message" | "folder" | null;
   liveApp: { appUrl: string } | null;
   livePageUrl: string;
   archiveMode: boolean;
   gate: boolean;
-  submitted: 'approved' | 'denied' | 'done' | 'exited' | null;
-  renderAs: 'markdown' | 'html';
+  submitted: "approved" | "denied" | "done" | "exited" | null;
+  renderAs: "markdown" | "html";
   rawHtml: string;
   displayedMarkdown: string;
   blocks: Block[];
@@ -88,21 +93,23 @@ const PAINT_DELAY_MS = 50;
 const NAVIGATION_COMMIT_TIMEOUT_MS = 5000;
 
 function firstHeading(blocks: readonly Block[]): string | null {
-  const heading = blocks.find((b) => b.type === 'heading');
+  const heading = blocks.find((b) => b.type === "heading");
   return heading ? heading.content : null;
 }
 
 function isComposerOpen(): boolean {
-  if (typeof document === 'undefined') return false;
+  if (typeof document === "undefined") return false;
   return !!document.querySelector('[data-comment-popover="true"]');
 }
 
 /** Every file in a directory tree as an absolute path (the file browser's own `${dir}/${node.path}` rule). */
-export function flattenFileBrowserDirs(dirs: readonly DocumentWebMcpFileBrowserDir[]): Array<{ path: string; title?: string }> {
+export function flattenFileBrowserDirs(
+  dirs: readonly DocumentWebMcpFileBrowserDir[],
+): Array<{ path: string; title?: string }> {
   const out: Array<{ path: string; title?: string }> = [];
   const walk = (dirPath: string, nodes: readonly VaultNode[]) => {
     for (const node of nodes) {
-      if (node.type === 'file') out.push({ path: `${dirPath}/${node.path}`, title: node.name });
+      if (node.type === "file") out.push({ path: `${dirPath}/${node.path}`, title: node.name });
       else if (node.children) walk(dirPath, node.children);
     }
   };
@@ -125,16 +132,24 @@ interface OptimisticOverlay {
   removed: Set<string>;
 }
 
-export function applyOverlay(base: readonly Annotation[], overlay: OptimisticOverlay): Annotation[] {
+export function applyOverlay(
+  base: readonly Annotation[],
+  overlay: OptimisticOverlay,
+): Annotation[] {
   const ids = new Set(base.map((a) => a.id));
   // Reconcile: anything the committed list already reflects is done.
   for (const id of overlay.added.keys()) if (ids.has(id)) overlay.added.delete(id);
   for (const id of overlay.removed) if (!ids.has(id)) overlay.removed.delete(id);
   for (const [id, patch] of overlay.patched) {
     const live = base.find((a) => a.id === id);
-    if (!live || Object.entries(patch).every(([k, v]) => (live as unknown as Record<string, unknown>)[k] === v)) overlay.patched.delete(id);
+    if (
+      !live ||
+      Object.entries(patch).every(([k, v]) => (live as unknown as Record<string, unknown>)[k] === v)
+    )
+      overlay.patched.delete(id);
   }
-  if (overlay.added.size === 0 && overlay.removed.size === 0 && overlay.patched.size === 0) return base as Annotation[];
+  if (overlay.added.size === 0 && overlay.removed.size === 0 && overlay.patched.size === 0)
+    return base as Annotation[];
   const merged = base
     .filter((a) => !overlay.removed.has(a.id))
     .map((a) => (overlay.patched.has(a.id) ? { ...a, ...overlay.patched.get(a.id) } : a));
@@ -142,15 +157,24 @@ export function applyOverlay(base: readonly Annotation[], overlay: OptimisticOve
   return merged;
 }
 
-export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: boolean; registered: boolean } {
+export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): {
+  available: boolean;
+  registered: boolean;
+} {
   const inputsRef = useRef(inputs);
   inputsRef.current = inputs;
   const state = useMemo(() => createDocumentToolState(), []);
   const toolsEnabled = useWebMcpToolsEnabled();
-  const overlayRef = useRef<OptimisticOverlay>({ added: new Map(), patched: new Map(), removed: new Set() });
+  const overlayRef = useRef<OptimisticOverlay>({
+    added: new Map(),
+    patched: new Map(),
+    removed: new Set(),
+  });
   // Waiters for `reveal { path }`: resolved by the commit effect below once
   // the navigated document is the open one.
-  const navigationWaitersRef = useRef<Array<{ path: string; resolve: (ok: boolean) => void; timer: ReturnType<typeof setTimeout> }>>([]);
+  const navigationWaitersRef = useRef<
+    Array<{ path: string; resolve: (ok: boolean) => void; timer: ReturnType<typeof setTimeout> }>
+  >([]);
   /** Resolve every waiter for `path` (or all when null) and clear their timers. */
   const settleWaiter = (path: string | null, ok: boolean) => {
     const remaining: typeof navigationWaitersRef.current = [];
@@ -165,10 +189,15 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
     navigationWaitersRef.current = remaining;
   };
 
-  const surface: DocumentSurface = inputs.liveApp ? 'live-app' : inputs.renderAs === 'html' ? 'html' : 'markdown';
+  const surface: DocumentSurface = inputs.liveApp
+    ? "live-app"
+    : inputs.renderAs === "html"
+      ? "html"
+      : "markdown";
   const writable = !inputs.archiveMode && inputs.submitted === null;
-  const folder = inputs.annotateSource === 'folder';
-  const active = (inputs.isApiMode || inputs.isSharedSession) && !inputs.goalSetupMode && toolsEnabled;
+  const folder = inputs.annotateSource === "folder";
+  const active =
+    (inputs.isApiMode || inputs.isSharedSession) && !inputs.goalSetupMode && toolsEnabled;
 
   const adapter = useMemo<DocumentToolAdapter>(() => {
     const current = () => inputsRef.current;
@@ -184,7 +213,7 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
         text: i.liveApp ? null : i.displayedMarkdown,
         blocks: i.liveApp ? [] : i.blocks,
         annotations: annotations(),
-        html: i.renderAs === 'html' ? i.rawHtml : null,
+        html: i.renderAs === "html" ? i.rawHtml : null,
       };
     };
     const paint = (annotation: Annotation) => {
@@ -197,13 +226,15 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
     const isOpen = (path: string | null) => path === null || path === openPath();
     /** The file browser directory that contains `path` (folder sessions). */
     const dirFor = (path: string): string | null =>
-      current().fileBrowserDirs.find((d) => !d.isVault && path.startsWith(`${d.path}/`))?.path ?? null;
+      current().fileBrowserDirs.find((d) => !d.isVault && path.startsWith(`${d.path}/`))?.path ??
+      null;
     /** Navigate to a sibling and resolve once React has committed it as the open document. */
     /** Whether the session knows `path` at all (folder tree or linked-doc cache). */
     const knowsPath = (path: string): boolean => {
       const i = current();
       if (i.linkedDoc.getDocAnnotations().has(path)) return true;
-      if (i.annotateSource === 'folder') return flattenFileBrowserDirs(i.fileBrowserDirs).some((d) => d.path === path);
+      if (i.annotateSource === "folder")
+        return flattenFileBrowserDirs(i.fileBrowserDirs).some((d) => d.path === path);
       return false;
     };
     const navigateTo = (path: string): Promise<boolean> => {
@@ -215,8 +246,9 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
       // Folder sessions open through the file browser's own selection path so
       // the browser's active file, the doc URL (base + doc=1) and the linked
       // document stay in step, exactly like a click in the sidebar.
-      const dir = i.annotateSource === 'folder' ? dirFor(path) : null;
-      const open = dir && i.openFolderFile ? () => i.openFolderFile!(path, dir) : () => i.linkedDoc.open(path);
+      const dir = i.annotateSource === "folder" ? dirFor(path) : null;
+      const open =
+        dir && i.openFolderFile ? () => i.openFolderFile!(path, dir) : () => i.linkedDoc.open(path);
       const commit = new Promise<boolean>((resolve) => {
         const timer = setTimeout(() => settleWaiter(path, false), NAVIGATION_COMMIT_TIMEOUT_MS);
         navigationWaitersRef.current.push({ path, resolve, timer });
@@ -228,14 +260,33 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
       getSession(): DocumentSessionView {
         const i = current();
         const mode: SessionMode = i.archiveMode
-          ? 'archive'
+          ? "archive"
           : i.isSharedSession && !i.isApiMode
-            ? 'shared'
+            ? "shared"
             : i.annotateMode
-              ? i.liveApp ? 'annotate-app' : i.annotateSource === 'folder' ? 'annotate-folder' : i.annotateSource === 'message' ? 'annotate-last' : 'annotate'
-              : 'plan';
-        const decision: SessionDecision = i.submitted === 'approved' ? 'approved' : i.submitted === 'denied' ? 'feedback-sent' : i.submitted === 'done' ? 'done' : i.submitted === 'exited' ? 'exited' : 'pending';
-        const currentSurface: DocumentSurface = i.liveApp ? 'live-app' : i.renderAs === 'html' ? 'html' : 'markdown';
+              ? i.liveApp
+                ? "annotate-app"
+                : i.annotateSource === "folder"
+                  ? "annotate-folder"
+                  : i.annotateSource === "message"
+                    ? "annotate-last"
+                    : "annotate"
+              : "plan";
+        const decision: SessionDecision =
+          i.submitted === "approved"
+            ? "approved"
+            : i.submitted === "denied"
+              ? "feedback-sent"
+              : i.submitted === "done"
+                ? "done"
+                : i.submitted === "exited"
+                  ? "exited"
+                  : "pending";
+        const currentSurface: DocumentSurface = i.liveApp
+          ? "live-app"
+          : i.renderAs === "html"
+            ? "html"
+            : "markdown";
         return {
           mode,
           surface: currentSurface,
@@ -247,11 +298,13 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
           gate: i.gate,
           readOnly: i.archiveMode,
           decision,
-          commentOnly: currentSurface !== 'markdown',
+          commentOnly: currentSurface !== "markdown",
           sourceStale: i.sourceStale,
           editing: i.isEditingMarkdown || i.editorDiffersFromBaseline,
-          versions: i.versionInfo ? { current: i.versionInfo.version, total: i.versionInfo.totalVersions } : null,
-          pageUrl: i.liveApp ? (i.livePageUrl || null) : null,
+          versions: i.versionInfo
+            ? { current: i.versionInfo.version, total: i.versionInfo.totalVersions }
+            : null,
+          pageUrl: i.liveApp ? i.livePageUrl || null : null,
         };
       },
       getDocument,
@@ -259,17 +312,35 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
         const i = current();
         if (!i.isApiMode) return null;
         const cached = i.linkedDoc.getDocAnnotations().get(path);
-        if (cached && typeof cached.markdown === 'string') {
-          return { path, text: cached.markdown, blocks: blocksForDocument(path, cached.markdown), annotations: cached.annotations };
+        if (cached && typeof cached.markdown === "string") {
+          return {
+            path,
+            text: cached.markdown,
+            blocks: blocksForDocument(path, cached.markdown),
+            annotations: cached.annotations,
+          };
         }
-        if (i.annotateSource !== 'folder' && !cached) return null;
+        if (i.annotateSource !== "folder" && !cached) return null;
         try {
           // /api/doc answers `{ markdown }` for annotatable documents and
           // `{ contents }` for code files; a folder file is the former.
-          const result = (await getDocPreviewFetcher()(path, dirFor(path) ?? undefined)) as { contents?: string; markdown?: string } | null;
-          const text = typeof result?.markdown === 'string' ? result.markdown : typeof result?.contents === 'string' ? result.contents : null;
+          const result = (await getDocPreviewFetcher()(path, dirFor(path) ?? undefined)) as {
+            contents?: string;
+            markdown?: string;
+          } | null;
+          const text =
+            typeof result?.markdown === "string"
+              ? result.markdown
+              : typeof result?.contents === "string"
+                ? result.contents
+                : null;
           if (text === null) return null;
-          return { path, text, blocks: blocksForDocument(path, text), annotations: cached?.annotations ?? [] };
+          return {
+            path,
+            text,
+            blocks: blocksForDocument(path, text),
+            annotations: cached?.annotations ?? [],
+          };
         } catch {
           return null;
         }
@@ -282,18 +353,33 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
         for (const [path, cached] of i.linkedDoc.getDocAnnotations()) {
           if (path === open) continue;
           seen.add(path);
-          siblings.push({ path, open: i.fileBrowserActiveFile === path, annotations: cached.annotations, composerOpen: false });
+          siblings.push({
+            path,
+            open: i.fileBrowserActiveFile === path,
+            annotations: cached.annotations,
+            composerOpen: false,
+          });
         }
         // Folder sessions: the file browser's selection is "open" even when
         // the linked-doc cache has not seen the document yet.
-        if (i.annotateSource === 'folder' && i.fileBrowserActiveFile && i.fileBrowserActiveFile !== open && !seen.has(i.fileBrowserActiveFile)) {
-          siblings.push({ path: i.fileBrowserActiveFile, open: true, annotations: [], composerOpen: false });
+        if (
+          i.annotateSource === "folder" &&
+          i.fileBrowserActiveFile &&
+          i.fileBrowserActiveFile !== open &&
+          !seen.has(i.fileBrowserActiveFile)
+        ) {
+          siblings.push({
+            path: i.fileBrowserActiveFile,
+            open: true,
+            annotations: [],
+            composerOpen: false,
+          });
         }
         return siblings;
       },
       listDocuments() {
         const i = current();
-        if (i.annotateSource !== 'folder') return [];
+        if (i.annotateSource !== "folder") return [];
         return flattenFileBrowserDirs(i.fileBrowserDirs);
       },
       getComposer() {
@@ -308,7 +394,10 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
       },
       updateAnnotation(id, patch, path) {
         if (!isOpen(path)) return false;
-        overlayRef.current.patched.set(id, { ...(overlayRef.current.patched.get(id) ?? {}), ...patch });
+        overlayRef.current.patched.set(id, {
+          ...(overlayRef.current.patched.get(id) ?? {}),
+          ...patch,
+        });
         const added = overlayRef.current.added.get(id);
         if (added) overlayRef.current.added.set(id, { ...added, ...patch });
         current().editAnnotation(id, patch);
@@ -337,11 +426,11 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
           const committed = await navigateTo(path);
           if (!committed) return false;
         }
-        if (typeof document === 'undefined') return false;
+        if (typeof document === "undefined") return false;
         const target = document.querySelector<HTMLElement>(`[data-block-id="${blockId}"]`);
         if (!target) return false;
         current().linkedDoc.cancelScrollRestore?.();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
         return true;
       },
       showBanner(message) {
@@ -351,11 +440,19 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
   }, []);
 
   const result = useToolset({
-    id: 'document',
+    id: "document",
     active,
-    build: () => buildDocumentTools(adapter, state, { writable, folder, toolName: (bare) => `${getWebMcpPolicy().namePrefix}${bare}` }),
+    build: () =>
+      buildDocumentTools(adapter, state, {
+        writable,
+        folder,
+        toolName: (bare) => `${getWebMcpPolicy().namePrefix}${bare}`,
+      }),
     deps: [surface, writable, folder],
-    hooks: useMemo(() => buildDocumentHooks(adapter, state, (bare) => `${getWebMcpPolicy().namePrefix}${bare}`), [adapter, state]),
+    hooks: useMemo(
+      () => buildDocumentHooks(adapter, state, (bare) => `${getWebMcpPolicy().namePrefix}${bare}`),
+      [adapter, state],
+    ),
   });
 
   // Observe annotation changes as they happen so tombstones and activity
@@ -381,13 +478,16 @@ export function useDocumentWebMcp(inputs: DocumentWebMcpInputs): { available: bo
   }, [openError]);
   // Unmount: no commit can ever settle a waiter again, so fail them now and
   // clear their timers instead of leaving timeouts firing into a dead hook.
-  useEffect(() => () => {
-    for (const waiter of navigationWaitersRef.current) {
-      clearTimeout(waiter.timer);
-      waiter.resolve(false);
-    }
-    navigationWaitersRef.current = [];
-  }, []);
+  useEffect(
+    () => () => {
+      for (const waiter of navigationWaitersRef.current) {
+        clearTimeout(waiter.timer);
+        waiter.resolve(false);
+      }
+      navigationWaitersRef.current = [];
+    },
+    [],
+  );
 
   return result;
 }

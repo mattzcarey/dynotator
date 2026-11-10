@@ -13,8 +13,8 @@
  * feedback/exit) reads the same value without threading it through props.
  */
 
-import { useSyncExternalStore } from 'react';
-import { SERVER_SESSION_FIELD, SERVER_SESSION_MISMATCH_CODE } from '@dynotator/core/server-session';
+import { useSyncExternalStore } from "react";
+import { SERVER_SESSION_FIELD, SERVER_SESSION_MISMATCH_CODE } from "@dynotator/core/server-session";
 
 let nonce: string | null = null;
 let replaced = false;
@@ -22,7 +22,7 @@ const listeners = new Set<() => void>();
 
 /** Adopt the nonce a payload advertised (absent from an older server: no guard). */
 export function adoptServerSession(value: unknown): void {
-  if (typeof value === 'string' && value) nonce = value;
+  if (typeof value === "string" && value) nonce = value;
 }
 
 /** The nonce this tab holds, or null when the server never advertised one. */
@@ -38,7 +38,7 @@ export function withServerSession<T extends object>(body: T): T & { serverSessio
 /** A decision URL with the nonce as a query parameter (exit posts carry no body). */
 export function withServerSessionQuery(url: string): string {
   if (!nonce) return url;
-  return `${url}${url.includes('?') ? '&' : '?'}${SERVER_SESSION_FIELD}=${encodeURIComponent(nonce)}`;
+  return `${url}${url.includes("?") ? "&" : "?"}${SERVER_SESSION_FIELD}=${encodeURIComponent(nonce)}`;
 }
 
 /** Whether a decision response is the server's session-mismatch refusal. Records it when it is. */

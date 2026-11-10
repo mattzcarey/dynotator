@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { CONTENTS_ACTIVATION_OFFSET } from '../utils/headingScrollSpy';
-import { addScrollViewportListener, getScrollViewportRect } from './useScrollViewport';
+import { useEffect, useState } from "react";
+import { CONTENTS_ACTIVATION_OFFSET } from "../utils/headingScrollSpy";
+import { addScrollViewportListener, getScrollViewportRect } from "./useScrollViewport";
 
 /** Track the heading at the reading line, even when a scroll skips whole sections. */
 export function useActiveSection(
@@ -43,18 +43,22 @@ export function useActiveSection(
     };
     refresh();
     const removeScrollListener = addScrollViewportListener(viewport, scheduleRefresh);
-    window.addEventListener('resize', scheduleRefresh);
-    const resizeObserver = typeof ResizeObserver === 'undefined'
-      ? null : new ResizeObserver(scheduleRefresh);
+    window.addEventListener("resize", scheduleRefresh);
+    const resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleRefresh);
     resizeObserver?.observe(contentContainer);
     if (viewport !== contentContainer) resizeObserver?.observe(viewport);
     const mutationObserver = new MutationObserver(scheduleRefresh);
-    mutationObserver.observe(contentContainer, { childList: true, characterData: true, subtree: true });
+    mutationObserver.observe(contentContainer, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
 
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
       removeScrollListener();
-      window.removeEventListener('resize', scheduleRefresh);
+      window.removeEventListener("resize", scheduleRefresh);
       resizeObserver?.disconnect();
       mutationObserver.disconnect();
     };

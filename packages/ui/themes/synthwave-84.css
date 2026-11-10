@@ -25,8 +25,8 @@
   --warning: #fede5d;
   --warning-foreground: #262335;
 
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, monospace;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, monospace;
   --radius: 0.625rem;
 
   --code-bg: #241b2f;

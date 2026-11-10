@@ -17,7 +17,7 @@ export interface AskDocument {
    *  without a file also counts its text, so a changed text is sent again. */
   key: string;
   /** `plan` is the plan under review; everything else is a document. */
-  kind: 'plan' | 'document';
+  kind: "plan" | "document";
   /** Absolute path of a file on this computer the agent can read. For the
    *  plan, the history copy of this exact version (a separate AI's file). */
   path?: string;
@@ -69,7 +69,7 @@ export function isReadableDocumentPath(path: string | null | undefined): path is
 function fenceFor(text: string): string {
   let longest = 0;
   for (const run of text.match(/`+/g) ?? []) longest = Math.max(longest, run.length);
-  return '`'.repeat(Math.max(3, longest + 1));
+  return "`".repeat(Math.max(3, longest + 1));
 }
 
 function hashText(text: string): string {
@@ -88,7 +88,7 @@ function hashText(text: string): string {
  * absolute path counts as readable.
  */
 export function describeAskDocument(input: {
-  kind: 'plan' | 'document';
+  kind: "plan" | "document";
   path?: string | null;
   ownPath?: string | null;
   sourceUrl?: string | null;
@@ -101,21 +101,28 @@ export function describeAskDocument(input: {
 }): AskDocument {
   const readable = isReadableDocumentPath(input.path) ? input.path : undefined;
   const urlCandidate = input.sourceUrl ?? input.path ?? undefined;
-  const url = !readable && urlCandidate && /^https?:\/\//i.test(urlCandidate) ? urlCandidate : undefined;
+  const url =
+    !readable && urlCandidate && /^https?:\/\//i.test(urlCandidate) ? urlCandidate : undefined;
   const base = {
     kind: input.kind,
     ...(input.renderAs ? { renderAs: input.renderAs } : {}),
     ...(input.converted ? { converted: true } : {}),
     ...(input.version ? { version: input.version } : {}),
     ...(input.position ? { position: input.position } : {}),
-    ...(input.kind === 'plan' && isReadableDocumentPath(input.ownPath) ? { ownPath: input.ownPath } : {}),
+    ...(input.kind === "plan" && isReadableDocumentPath(input.ownPath)
+      ? { ownPath: input.ownPath }
+      : {}),
   };
   if (readable) {
-    return { ...base, key: `${input.kind}|file|${readable}|${input.renderAs ?? ''}|${input.converted ? 'c' : ''}`, path: readable };
+    return {
+      ...base,
+      key: `${input.kind}|file|${readable}|${input.renderAs ?? ""}|${input.converted ? "c" : ""}`,
+      path: readable,
+    };
   }
   return {
     ...base,
-    key: `${input.kind}|text|${url ?? input.label ?? ''}|${input.renderAs ?? ''}|${input.version ?? ''}|${hashText(input.content)}`,
+    key: `${input.kind}|text|${url ?? input.label ?? ""}|${input.renderAs ?? ""}|${input.version ?? ""}|${hashText(input.content)}`,
     ...(url ? { url } : {}),
     ...(input.label ? { label: input.label } : {}),
     content: input.content,
@@ -125,33 +132,35 @@ export function describeAskDocument(input: {
 /** The path a note may point this agent at: "Ask this session" gets the
  *  plan's own file or none, a separate AI the history copy it can read. */
 function pathFor(doc: AskDocument, sessionBridge: boolean): string | undefined {
-  return doc.kind === 'plan' && sessionBridge ? doc.ownPath : doc.path;
+  return doc.kind === "plan" && sessionBridge ? doc.ownPath : doc.path;
 }
 
 function nameOf(doc: AskDocument, sessionBridge: boolean): string {
-  if (doc.kind === 'plan' && sessionBridge) {
+  if (doc.kind === "plan" && sessionBridge) {
     // An earlier version: its own file now holds the newer text.
-    return doc.version ? `the plan (version ${doc.version})` : 'the plan';
+    return doc.version ? `the plan (version ${doc.version})` : "the plan";
   }
-  const where = doc.path ?? doc.url ?? doc.label ?? (doc.kind === 'plan' ? 'the plan' : 'a document');
-  return doc.kind === 'plan' && doc.version ? `${where} (plan version ${doc.version})` : where;
+  const where =
+    doc.path ?? doc.url ?? doc.label ?? (doc.kind === "plan" ? "the plan" : "a document");
+  return doc.kind === "plan" && doc.version ? `${where} (plan version ${doc.version})` : where;
 }
 
 function detailsOf(doc: AskDocument): string {
   const parts: string[] = [];
   if (doc.position) parts.push(`file ${doc.position.index} of ${doc.position.total}`);
-  if (doc.renderAs === 'html') parts.push('shown as a rendered HTML page');
-  if (doc.converted) parts.push('converted to markdown for review, so line numbers may not match the source');
-  return parts.length > 0 ? ` (${parts.join('; ')})` : '';
+  if (doc.renderAs === "html") parts.push("shown as a rendered HTML page");
+  if (doc.converted)
+    parts.push("converted to markdown for review, so line numbers may not match the source");
+  return parts.length > 0 ? ` (${parts.join("; ")})` : "";
 }
 
 function currentLine(doc: AskDocument, earlier: AskDocument[], sessionBridge: boolean): string {
-  const returning = earlier.some(e => e.key === doc.key);
-  if (doc.kind === 'plan') {
+  const returning = earlier.some((e) => e.key === doc.key);
+  if (doc.kind === "plan") {
     const path = pathFor(doc, sessionBridge);
-    const lastPlan = earlier.find(e => e.kind === 'plan');
+    const lastPlan = earlier.find((e) => e.kind === "plan");
     if (lastPlan && lastPlan.key !== doc.key) {
-      const version = doc.version ? ` to version ${doc.version}` : '';
+      const version = doc.version ? ` to version ${doc.version}` : "";
       if (sessionBridge) {
         // The session wrote the revision: name its own file, never ask it to
         // read the history copy.
@@ -163,10 +172,10 @@ function currentLine(doc: AskDocument, earlier: AskDocument[], sessionBridge: bo
         ? `The plan was revised${version}: ${path}. This replaces the plan shown earlier in this chat; read the file for its current text.`
         : `The plan was revised${version}. This replaces the plan shown earlier in this chat.`;
     }
-    const where = path ? `: ${path}` : '';
-    return `The reviewer is ${returning ? 'back on' : 'now looking at'} the plan${where}.`;
+    const where = path ? `: ${path}` : "";
+    return `The reviewer is ${returning ? "back on" : "now looking at"} the plan${where}.`;
   }
-  const verb = returning ? 'is back on' : 'is now looking at';
+  const verb = returning ? "is back on" : "is now looking at";
   if (doc.path) {
     return `The reviewer ${verb} ${doc.path}${detailsOf(doc)}. This replaces the document named earlier in this chat; read the file for its contents.`;
   }
@@ -191,8 +200,8 @@ export function planAskDocumentContext(
   doc: AskDocument,
   options: { freshSession: boolean; sessionBridge: boolean; maxHistory?: number },
 ): { preamble: string; next: AskDocumentLatch } {
-  if (options.freshSession) return { preamble: '', next: { current: doc, history: [] } };
-  if (latch.current?.key === doc.key) return { preamble: '', next: latch };
+  if (options.freshSession) return { preamble: "", next: { current: doc, history: [] } };
+  if (latch.current?.key === doc.key) return { preamble: "", next: latch };
 
   const maxHistory = options.maxHistory ?? MAX_ASK_DOCUMENT_HISTORY;
   const seen = new Set<string>([doc.key]);
@@ -208,21 +217,27 @@ export function planAskDocumentContext(
   const lines = [`[Plannotator] ${currentLine(doc, earlier, options.sessionBridge)}`];
   if (history.length > 0) {
     // Distinct names only: two texts of one agent message read the same.
-    const names = [...new Set(history.map(h => nameOf(h, options.sessionBridge)))];
-    lines.push(`Viewed earlier in this chat, most recent first: ${names.join(', ')}.`);
+    const names = [...new Set(history.map((h) => nameOf(h, options.sessionBridge)))];
+    lines.push(`Viewed earlier in this chat, most recent first: ${names.join(", ")}.`);
   }
   // A text already sent in this chat (the reviewer came back to it) is not sent again.
-  const sentBefore = earlier.some(e => e.key === doc.key);
+  const sentBefore = earlier.some((e) => e.key === doc.key);
   if (!doc.path && !options.sessionBridge && !sentBefore && doc.content?.trim()) {
     let text = doc.content;
     if (text.length > MAX_ASK_DOCUMENT_CONTENT_CHARS) {
       text = `${text.slice(0, MAX_ASK_DOCUMENT_CONTENT_CHARS)}\n\n... [truncated for context window]`;
     }
     const fence = fenceFor(text);
-    const lang = doc.renderAs === 'html' ? 'html' : 'markdown';
-    lines.push('', `Its text (sent once; later questions about it will not repeat it):`, `${fence}${lang}`, text, fence);
+    const lang = doc.renderAs === "html" ? "html" : "markdown";
+    lines.push(
+      "",
+      `Its text (sent once; later questions about it will not repeat it):`,
+      `${fence}${lang}`,
+      text,
+      fence,
+    );
   }
-  return { preamble: lines.join('\n'), next: { current: doc, history } };
+  return { preamble: lines.join("\n"), next: { current: doc, history } };
 }
 
 /**
@@ -247,6 +262,8 @@ export function askDocumentParams(
   });
   return {
     ...(plan.preamble ? { contextPreamble: plan.preamble } : {}),
-    onDelivered: () => { latchRef.current = plan.next; },
+    onDelivered: () => {
+      latchRef.current = plan.next;
+    },
   };
 }

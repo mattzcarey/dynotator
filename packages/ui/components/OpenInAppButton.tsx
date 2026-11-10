@@ -1,16 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Check, Copy, MoreHorizontal } from 'lucide-react';
-import { AppIcon } from './icons/AppIcon';
-import { useOpenInApps, useRememberedOpenInApp } from '../hooks/useOpenInApps';
-import { copyTextToClipboard } from '../utils/clipboard';
-import { noteServerSessionMismatch, withServerSession } from '../utils/serverSession';
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown, Check, Copy, MoreHorizontal } from "lucide-react";
+import { AppIcon } from "./icons/AppIcon";
+import { useOpenInApps, useRememberedOpenInApp } from "../hooks/useOpenInApps";
+import { copyTextToClipboard } from "../utils/clipboard";
+import { noteServerSessionMismatch, withServerSession } from "../utils/serverSession";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from './ui/dropdown-menu';
+} from "./ui/dropdown-menu";
 
 /**
  * OpenInAppButton — split button + file-actions menu.
@@ -45,7 +45,7 @@ interface OpenInAppButtonProps {
 // The host app catalog is static for the session, but the all-files view
 // renders one OpenInAppButton per file — so /api/open-in/apps is fetched once
 // and the promise shared across every instance (useOpenInApps).
-const OPEN_IN_APPS_URL = '/api/open-in/apps';
+const OPEN_IN_APPS_URL = "/api/open-in/apps";
 
 export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
   filePath,
@@ -60,7 +60,7 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
   const available = detected ? detected.available : null;
   const [storedId, rememberApp] = useRememberedOpenInApp();
   // Nothing picked yet: the file manager, as before.
-  const currentId = storedId ?? 'reveal';
+  const currentId = storedId ?? "reveal";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,8 +75,7 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
   const list = apps ?? [];
   // Apps are launchable: server says available, the surface allows it, the path
   // is resolvable, and at least one app was detected.
-  const openable =
-    available === true && canOpen && !!filePath && list.length > 0;
+  const openable = available === true && canOpen && !!filePath && list.length > 0;
 
   // Nothing to do: can't open AND nothing to copy. Also preserve the
   // "hide when unavailable" behavior for surfaces whose only copy action is the
@@ -87,9 +86,9 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
   // Resolve the active app: last-used if still detected, else reveal, else first.
   const resolvedId = list.some((a) => a.id === currentId)
     ? currentId
-    : list.some((a) => a.id === 'reveal')
-      ? 'reveal'
-      : (list[0]?.id ?? 'reveal');
+    : list.some((a) => a.id === "reveal")
+      ? "reveal"
+      : (list[0]?.id ?? "reveal");
   const currentApp = list.find((a) => a.id === resolvedId) ?? list[0];
 
   const flashError = (msg: string) => {
@@ -103,24 +102,22 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/open-in', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/open-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         // The stale-tab guard: a server that took over this port refuses it.
         body: JSON.stringify(withServerSession({ filePath, base: base ?? null, appId })),
       });
       if (await noteServerSessionMismatch(res)) {
-        flashError('This review was replaced. Reload the page.');
+        flashError("This review was replaced. Reload the page.");
         return;
       }
-      const data = (await res.json().catch(() => null)) as
-        | { ok: boolean; error?: string }
-        | null;
+      const data = (await res.json().catch(() => null)) as { ok: boolean; error?: string } | null;
       if (!res.ok || !data || data.ok === false) {
-        flashError(data?.error || 'Failed to open');
+        flashError(data?.error || "Failed to open");
       }
     } catch {
-      flashError('Failed to open');
+      flashError("Failed to open");
     } finally {
       setBusy(false);
     }
@@ -139,9 +136,9 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
 
   // Menu groups: file manager first, then editors, then terminals.
   const grouped = [
-    list.filter((a) => a.kind === 'file-manager'),
-    list.filter((a) => a.kind === 'editor'),
-    list.filter((a) => a.kind === 'terminal'),
+    list.filter((a) => a.kind === "file-manager"),
+    list.filter((a) => a.kind === "editor"),
+    list.filter((a) => a.kind === "terminal"),
   ].filter((g) => g.length > 0);
 
   const Spinner = (
@@ -167,7 +164,7 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
             onClick={() => open(resolvedId)}
             disabled={isDisabled}
             className={`text-xs flex items-center gap-1 py-1 transition-colors text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed ${
-              showLabel ? 'pl-2 pr-1.5' : 'px-1.5'
+              showLabel ? "pl-2 pr-1.5" : "px-1.5"
             }`}
             title={error ?? currentApp.label}
             aria-label={`Open in ${currentApp.label}`}
@@ -184,10 +181,10 @@ export const OpenInAppButton: React.FC<OpenInAppButtonProps> = ({
                 type="button"
                 disabled={isDisabled}
                 className={`text-xs flex items-center py-1 transition-colors text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed ${
-                  openable ? 'px-1 border-l border-border/50' : 'px-1.5'
+                  openable ? "px-1 border-l border-border/50" : "px-1.5"
                 }`}
-                title={openable ? 'Open in…' : 'File actions'}
-                aria-label={openable ? 'Choose app to open in' : 'File actions'}
+                title={openable ? "Open in…" : "File actions"}
+                aria-label={openable ? "Choose app to open in" : "File actions"}
               />
             }
           >

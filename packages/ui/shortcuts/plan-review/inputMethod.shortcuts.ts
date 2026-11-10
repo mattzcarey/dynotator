@@ -1,4 +1,4 @@
-import { defineShortcutScope } from '../core';
+import { defineShortcutScope } from "../core";
 
 // Heads-up for future migrators: these bindings (`Alt hold`, `Alt Alt`) are
 // declarative metadata for the help modal and marketing docs. They do NOT
@@ -9,21 +9,21 @@ import { defineShortcutScope } from '../core';
 // `useDoubleTapShortcuts` in `packages/ui/shortcuts/runtime.ts`.
 
 export const inputMethodShortcuts = defineShortcutScope({
-  id: 'input-method',
-  title: 'Input Method',
+  id: "input-method",
+  title: "Input Method",
   shortcuts: {
     temporarySwitch: {
-      description: 'Temporarily switch input method',
-      bindings: ['Alt hold'],
-      section: 'Input Method',
-      hint: 'Hold Alt to switch between Select and Pinpoint, then release to revert.',
+      description: "Temporarily switch input method",
+      bindings: ["Alt hold"],
+      section: "Input Method",
+      hint: "Hold Alt to switch between Select and Pinpoint, then release to revert.",
       displayOrder: 10,
     },
     toggleSwitch: {
-      description: 'Toggle input method',
-      bindings: ['Alt Alt'],
-      section: 'Input Method',
-      hint: 'Double-tap Alt to switch between Select and Pinpoint until you toggle again.',
+      description: "Toggle input method",
+      bindings: ["Alt Alt"],
+      section: "Input Method",
+      hint: "Double-tap Alt to switch between Select and Pinpoint until you toggle again.",
       displayOrder: 20,
     },
   },

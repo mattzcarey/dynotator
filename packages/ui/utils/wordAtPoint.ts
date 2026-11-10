@@ -12,7 +12,7 @@
  * is two words here.
  */
 
-import { caretAtPoint } from './caretAtPoint';
+import { caretAtPoint } from "./caretAtPoint";
 
 export { caretAtPoint };
 
@@ -26,9 +26,15 @@ export interface WordBounds {
   end: TextPosition;
 }
 
-interface SegmentLike { segment: string; index: number; isWordLike?: boolean }
-interface SegmenterLike { segment(text: string): Iterable<SegmentLike> }
-type SegmenterCtor = new (locales?: string[], options?: { granularity: 'word' }) => SegmenterLike;
+interface SegmentLike {
+  segment: string;
+  index: number;
+  isWordLike?: boolean;
+}
+interface SegmenterLike {
+  segment(text: string): Iterable<SegmentLike>;
+}
+type SegmenterCtor = new (locales?: string[], options?: { granularity: "word" }) => SegmenterLike;
 
 let segmenter: SegmenterLike | null = null;
 let segmenterLooked = false;
@@ -38,7 +44,7 @@ function getSegmenter(): SegmenterLike | null {
     segmenterLooked = true;
     const Ctor = (Intl as unknown as { Segmenter?: SegmenterCtor }).Segmenter;
     try {
-      segmenter = Ctor ? new Ctor([], { granularity: 'word' }) : null;
+      segmenter = Ctor ? new Ctor([], { granularity: "word" }) : null;
     } catch {
       segmenter = null;
     }
@@ -51,34 +57,60 @@ const JOINER = /['’-]/;
 
 /** A hyphen or apostrophe with a letter or digit on both sides: "re-run", "don't". Never a dash with a space beside it. */
 const joinsWords = (text: string, i: number): boolean =>
-  JOINER.test(text[i] ?? '') && WORD_CHAR.test(text[i - 1] ?? '') && WORD_CHAR.test(text[i + 1] ?? '');
+  JOINER.test(text[i] ?? "") &&
+  WORD_CHAR.test(text[i - 1] ?? "") &&
+  WORD_CHAR.test(text[i + 1] ?? "");
 
 /**
  * [start, end) of the word holding the character at `index`, or null when that character is not in a word.
  * Words joined by single hyphens or apostrophes are one word ("Dead-lettered", "well-known", "user's"), and
  * the joiner itself counts as part of it; a slash, a dot or a spaced dash ends a word.
  */
-export function wordSpanAt(text: string, index: number, useSegmenter = true): [number, number] | null {
+export function wordSpanAt(
+  text: string,
+  index: number,
+  useSegmenter = true,
+): [number, number] | null {
   if (index < 0 || index >= text.length) return null;
   const seg = useSegmenter ? getSegmenter() : null;
   if (seg) {
     const words: [number, number][] = [];
-    for (const s of seg.segment(text)) if (s.isWordLike) words.push([s.index, s.index + s.segment.length]);
+    for (const s of seg.segment(text))
+      if (s.isWordLike) words.push([s.index, s.index + s.segment.length]);
     const at = (i: number) => words.find(([from, to]) => i >= from && i < to) ?? null;
     // On the joiner itself: the word before it, which the loops below grow across it.
     const first = at(index) ?? (joinsWords(text, index) ? at(index - 1) : null);
     if (!first) return null;
     let [start, end] = first;
-    for (let next = joinsWords(text, end) ? at(end + 1) : null; next; next = joinsWords(text, end) ? at(end + 1) : null) end = next[1];
-    for (let prev = joinsWords(text, start - 1) ? at(start - 2) : null; prev; prev = joinsWords(text, start - 1) ? at(start - 2) : null) start = prev[0];
+    for (
+      let next = joinsWords(text, end) ? at(end + 1) : null;
+      next;
+      next = joinsWords(text, end) ? at(end + 1) : null
+    )
+      end = next[1];
+    for (
+      let prev = joinsWords(text, start - 1) ? at(start - 2) : null;
+      prev;
+      prev = joinsWords(text, start - 1) ? at(start - 2) : null
+    )
+      start = prev[0];
     // The segmenter keeps "retry.cap" and "a.b:c" whole; a dot or colon ends a word here, except inside a number ("0.28").
-    const splits = (i: number) => /[.:]/.test(text[i] ?? '') && !(/\d/.test(text[i - 1] ?? '') && /\d/.test(text[i + 1] ?? ''));
+    const splits = (i: number) =>
+      /[.:]/.test(text[i] ?? "") && !(/\d/.test(text[i - 1] ?? "") && /\d/.test(text[i + 1] ?? ""));
     if (splits(index)) return null;
-    for (let i = index - 1; i >= start; i -= 1) if (splits(i)) { start = i + 1; break; }
-    for (let i = index + 1; i < end; i += 1) if (splits(i)) { end = i; break; }
+    for (let i = index - 1; i >= start; i -= 1)
+      if (splits(i)) {
+        start = i + 1;
+        break;
+      }
+    for (let i = index + 1; i < end; i += 1)
+      if (splits(i)) {
+        end = i;
+        break;
+      }
     return [start, end];
   }
-  const isWordChar = (i: number) => WORD_CHAR.test(text[i] ?? '');
+  const isWordChar = (i: number) => WORD_CHAR.test(text[i] ?? "");
   const inWord = (i: number) => isWordChar(i) || joinsWords(text, i);
   if (!inWord(index)) return null;
   let start = index;
@@ -92,7 +124,8 @@ function textRun(node: Text): Text[] {
   let first: Node = node;
   while (first.previousSibling?.nodeType === Node.TEXT_NODE) first = first.previousSibling;
   const run: Text[] = [];
-  for (let n: Node | null = first; n && n.nodeType === Node.TEXT_NODE; n = n.nextSibling) run.push(n as Text);
+  for (let n: Node | null = first; n && n.nodeType === Node.TEXT_NODE; n = n.nextSibling)
+    run.push(n as Text);
   return run;
 }
 
@@ -100,7 +133,8 @@ function positionIn(run: Text[], index: number, preferEnd: boolean): TextPositio
   let left = index;
   for (let i = 0; i < run.length; i += 1) {
     const len = run[i].length;
-    if (left < len || (left === len && (preferEnd || i === run.length - 1))) return { node: run[i], offset: left };
+    if (left < len || (left === len && (preferEnd || i === run.length - 1)))
+      return { node: run[i], offset: left };
     left -= len;
   }
   const last = run[run.length - 1];
@@ -119,7 +153,7 @@ export function wordAround(node: Node, offset: number, side: 1 | -1 = 1): WordBo
     if (t === node) break;
     base += t.length;
   }
-  const text = run.map((t) => t.data).join('');
+  const text = run.map((t) => t.data).join("");
   const span = wordSpanAt(text, base + offset + (side === -1 ? -1 : 0));
   if (!span) return null;
   return { start: positionIn(run, span[0], false), end: positionIn(run, span[1], true) };

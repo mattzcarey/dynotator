@@ -4,10 +4,10 @@
   "private": true,
   "description": "Plan review and annotation for coding agents, hosted on Cloudflare Workers. Each review session's server runs in a Dynamic Worker.",
   "license": "MIT OR Apache-2.0",
-  "type": "module",
   "bin": {
     "dynotator": "cli/index.ts"
   },
+  "type": "module",
   "scripts": {
     "dev": "bun run build && wrangler dev",
     "dev:app": "vite",

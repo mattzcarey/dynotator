@@ -5,19 +5,19 @@
  * and New message). CommentPopover renders it with every default, so its
  * markup is unchanged.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { SkillReferenceToken } from '../utils/skillReferences';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { SkillReferenceToken } from "../utils/skillReferences";
 import {
   mentionTokenRanges,
   mergeTokenRanges,
   skillTokenRanges,
   type ComposerTokenRange,
-} from '../utils/composerTokens';
-import type { MentionPerson } from '../utils/mentions';
+} from "../utils/composerTokens";
+import type { MentionPerson } from "../utils/mentions";
 
 /** Classes shared by the textarea and its highlight mirror — font, size,
  * and box metrics MUST stay identical or the overlay drifts out of alignment. */
-export const COMPOSER_TEXT_CLASSES = 'w-full bg-transparent text-sm px-1 py-0.5';
+export const COMPOSER_TEXT_CLASSES = "w-full bg-transparent text-sm px-1 py-0.5";
 
 /** Per-composer memo for the overlay gutter sync below. */
 interface OverlayGutterState {
@@ -64,7 +64,7 @@ function syncOverlayGutter(
 
   const clear = () => {
     if (state.applied === 0) return; // never wrote anything; leave the DOM alone
-    overlay.style.removeProperty('padding-right');
+    overlay.style.removeProperty("padding-right");
     state.applied = 0;
   };
 
@@ -99,7 +99,7 @@ function syncOverlayGutter(
  * `box-shadow: 0 0 0 Npx <background>` through `tokenClassName` — paint, not
  * layout, per the metric rule above.
  */
-const MENTION_CHIP_CLASSES = 'text-primary bg-primary/15 rounded-[3px]';
+const MENTION_CHIP_CLASSES = "text-primary bg-primary/15 rounded-[3px]";
 
 /**
  * One token's span in the highlight overlay.
@@ -117,7 +117,7 @@ function renderTokenSpan(
   text: string,
   mentionTokenClassName?: string,
 ): React.ReactNode {
-  if (range.kind === 'mention') {
+  if (range.kind === "mention") {
     // `data-mention-token` / `data-mention-kind` are the host's styling hook;
     // `tokenClassName` is appended verbatim and is the host's to keep
     // metric-safe (see the rule above).
@@ -127,7 +127,7 @@ function renderTokenSpan(
         data-mention-token={range.person.id}
         data-mention-kind={range.person.kind}
         className={`${MENTION_CHIP_CLASSES}${
-          mentionTokenClassName ? ` ${mentionTokenClassName}` : ''
+          mentionTokenClassName ? ` ${mentionTokenClassName}` : ""
         }`}
       >
         {text}
@@ -142,11 +142,11 @@ function renderTokenSpan(
     <span
       key={`skill-${range.start}`}
       data-skill-ref-token={range.skill.entry.name}
-      data-skill-ref-human-only={range.skill.entry.humanOnly ? 'true' : undefined}
+      data-skill-ref-human-only={range.skill.entry.humanOnly ? "true" : undefined}
       className={`text-primary bg-primary/10 rounded-[3px] ${
         range.skill.entry.humanOnly
-          ? 'underline decoration-dotted decoration-primary/60 underline-offset-2'
-          : ''
+          ? "underline decoration-dotted decoration-primary/60 underline-offset-2"
+          : ""
       }`}
     >
       {text}
@@ -163,7 +163,7 @@ export interface ComposerMentionChips {
 }
 
 /** A host's extra classes, appended after a space; nothing at all when absent (the default markup is unchanged). */
-const extra = (className: string | undefined): string => (className ? ` ${className}` : '');
+const extra = (className: string | undefined): string => (className ? ` ${className}` : "");
 
 export interface ComposerTokenTextareaProps {
   value: string;
@@ -205,7 +205,7 @@ export interface ComposerTokenTextareaProps {
    */
   inputProps?: Omit<
     React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-    'value' | 'onChange' | 'onKeyDown' | 'onSelect' | 'onScroll' | 'className' | 'placeholder'
+    "value" | "onChange" | "onKeyDown" | "onSelect" | "onScroll" | "className" | "placeholder"
   >;
   /** Paint on the mirror that is not in the value. Same metric rule as the token spans: it must add no width. */
   mirrorPaint?: ComposerMirrorPaint;
@@ -305,7 +305,7 @@ export const ComposerTokenTextarea: React.FC<ComposerTokenTextareaProps> = ({
   // keystroke would leave the gutter stale until the next one.
   useEffect(() => {
     const el = innerRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
+    if (!el || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => {
       if (innerRef.current) syncScroll(innerRef.current);
     });
@@ -319,7 +319,7 @@ export const ComposerTokenTextarea: React.FC<ComposerTokenTextareaProps> = ({
         data-pn-mobile-editable="true"
         // Absent any open menu these are all undefined, so the plain textarea
         // renders exactly the attributes it always did.
-        aria-autocomplete={listboxOpen ? 'list' : undefined}
+        aria-autocomplete={listboxOpen ? "list" : undefined}
         aria-controls={listboxOpen ? listboxId : undefined}
         aria-activedescendant={activeOptionId}
         {...inputProps}
@@ -330,7 +330,7 @@ export const ComposerTokenTextarea: React.FC<ComposerTokenTextareaProps> = ({
         onSelect={onSelectCaret}
         placeholder={placeholder}
         className={`${textClassName} placeholder:text-muted-foreground resize-none focus:outline-none ${sizeClassName}${extra(inputClassName)}`}
-        style={{ fieldSizing: 'content' } as React.CSSProperties}
+        style={{ fieldSizing: "content" } as React.CSSProperties}
       />
     );
   }
@@ -344,7 +344,13 @@ export const ComposerTokenTextarea: React.FC<ComposerTokenTextareaProps> = ({
       return;
     }
     const { at, node, wash } = mirrorPaint;
-    const cuts = [start, end, ...[at, wash?.start, wash?.end].filter((cut): cut is number => cut !== undefined && cut > start && cut < end)].sort((a, b) => a - b);
+    const cuts = [
+      start,
+      end,
+      ...[at, wash?.start, wash?.end].filter(
+        (cut): cut is number => cut !== undefined && cut > start && cut < end,
+      ),
+    ].sort((a, b) => a - b);
     for (let i = 0; i + 1 < cuts.length; i++) {
       const from = cuts[i]!;
       const to = cuts[i + 1]!;
@@ -374,7 +380,8 @@ export const ComposerTokenTextarea: React.FC<ComposerTokenTextareaProps> = ({
     pos = range.end;
   }
   pushPlain(pos, value.length);
-  if (mirrorPaint?.at !== undefined && !paintDrawn) segments.push(<React.Fragment key="mirror-paint">{mirrorPaint.node}</React.Fragment>);
+  if (mirrorPaint?.at !== undefined && !paintDrawn)
+    segments.push(<React.Fragment key="mirror-paint">{mirrorPaint.node}</React.Fragment>);
 
   return (
     <div className="relative">
@@ -384,13 +391,13 @@ export const ComposerTokenTextarea: React.FC<ComposerTokenTextareaProps> = ({
         // Names the SKILL-reference layer, so a skill composer's overlay is
         // byte-identical to the one it rendered before mentions existed; a
         // mentions-only overlay is found by its mirror attribute below.
-        data-skill-ref-overlay={skillReferences ? 'true' : undefined}
+        data-skill-ref-overlay={skillReferences ? "true" : undefined}
         data-pn-mobile-editable-mirror="true"
         className={`${textClassName} ${sizeClassName} pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words${extra(mirrorClassName)}`}
-        style={composing ? { visibility: 'hidden' } : undefined}
+        style={composing ? { visibility: "hidden" } : undefined}
       >
         {segments}
-        {'\n'}
+        {"\n"}
       </div>
       <textarea
         data-pn-mobile-editable="true"
@@ -411,9 +418,9 @@ export const ComposerTokenTextarea: React.FC<ComposerTokenTextareaProps> = ({
         onCompositionEnd={() => setComposing(false)}
         placeholder={placeholder}
         className={`${textClassName} placeholder:text-muted-foreground resize-none focus:outline-none relative pn-ref-input ${
-          composing ? 'pn-ref-composing' : ''
+          composing ? "pn-ref-composing" : ""
         } ${sizeClassName}${extra(inputClassName)}`}
-        style={{ fieldSizing: 'content' } as React.CSSProperties}
+        style={{ fieldSizing: "content" } as React.CSSProperties}
       />
     </div>
   );

@@ -20,14 +20,18 @@
  * the 1-based line of the original text where `content` begins, so block line
  * numbers stay accurate.
  */
-export function splitFrontmatter(markdown: string): { raw: string | null; content: string; contentStartLine: number } {
+export function splitFrontmatter(markdown: string): {
+  raw: string | null;
+  content: string;
+  contentStartLine: number;
+} {
   const trimmed = markdown.trimStart();
-  if (!trimmed.startsWith('---')) {
+  if (!trimmed.startsWith("---")) {
     return { raw: null, content: markdown, contentStartLine: 1 };
   }
 
   // Find the closing ---
-  const endIndex = trimmed.indexOf('\n---', 3);
+  const endIndex = trimmed.indexOf("\n---", 3);
   if (endIndex === -1) {
     return { raw: null, content: markdown, contentStartLine: 1 };
   }
@@ -58,19 +62,44 @@ export function splitFrontmatter(markdown: string): { raw: string | null; conten
  * path and renders as escaped text, matching prior behavior.
  */
 export const HTML_BLOCK_TAGS: ReadonlySet<string> = new Set([
-  'details', 'summary',
-  'div', 'section', 'article', 'aside', 'header', 'footer',
-  'blockquote', 'pre',
-  'table', 'thead', 'tbody', 'tr', 'td', 'th',
-  'ul', 'ol', 'li', 'p',
+  "details",
+  "summary",
+  "div",
+  "section",
+  "article",
+  "aside",
+  "header",
+  "footer",
+  "blockquote",
+  "pre",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "td",
+  "th",
+  "ul",
+  "ol",
+  "li",
+  "p",
   // Media: GitHub embeds screenshots/videos as raw HTML on their own line.
-  'img', 'video', 'picture',
+  "img",
+  "video",
+  "picture",
 ]);
 
 /** Void elements — no closing tag, so the block is a single line (don't scan
  *  ahead for a `</tag>` that will never come). */
 export const VOID_HTML_TAGS: ReadonlySet<string> = new Set([
-  'img', 'br', 'hr', 'source', 'input', 'wbr', 'area', 'col', 'embed',
+  "img",
+  "br",
+  "hr",
+  "source",
+  "input",
+  "wbr",
+  "area",
+  "col",
+  "embed",
 ]);
 
 export const HTML_BLOCK_OPEN_RE = /^<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s|>|\/|$)/;
@@ -115,13 +144,13 @@ const REFERENCE_DEFINITION_RE = new RegExp(
 // 4 second bracket, 5 label.
 const REFERENCE_LINK_RE = new RegExp(
   `(\`+)[^\\n]{0,${MAX_CODE_SPAN_CHARS}}?\\1|(!?)\\[([^\\]]{1,${MAX_REF_LABEL_CHARS}})\\](\\[([^\\]]{0,${MAX_REF_LABEL_CHARS}})\\])?`,
-  'g',
+  "g",
 );
 
 // CommonMark label matching is case-insensitive and collapses internal runs of
 // whitespace.
 const normalizeRefLabel = (label: string): string =>
-  label.trim().replace(/\s+/g, ' ').toLowerCase();
+  label.trim().replace(/\s+/g, " ").toLowerCase();
 
 /**
  * One pass over the lines that marks every line the block parser (below) will
@@ -167,8 +196,8 @@ export interface TagCloseIndex {
  * it contains).
  */
 function buildTagCloseIndex(lines: string[], tagName: string): TagCloseIndex {
-  const openRe = new RegExp(`<${tagName}(?:\\s|>|/|$)`, 'gi');
-  const closeRe = new RegExp(`</${tagName}\\s*>`, 'gi');
+  const openRe = new RegExp(`<${tagName}(?:\\s|>|/|$)`, "gi");
+  const closeRe = new RegExp(`</${tagName}\\s*>`, "gi");
   const n = lines.length;
   const augmented = new Array<number>(n + 1);
   augmented[0] = 0;
@@ -253,11 +282,11 @@ export const markProtectedLines = (lines: string[]): boolean[] => {
   for (let i = 0; i < lines.length; i++) {
     if (fenceLen > 0) {
       isProtected[i] = true;
-      if (new RegExp('^\\s*`{' + fenceLen + ',}').test(lines[i])) fenceLen = 0;
+      if (new RegExp("^\\s*`{" + fenceLen + ",}").test(lines[i])) fenceLen = 0;
       continue;
     }
     const trimmed = lines[i].trim();
-    if (trimmed.startsWith('```')) {
+    if (trimmed.startsWith("```")) {
       fenceLen = trimmed.match(/^`+/)![0].length;
       isProtected[i] = true;
       continue;
@@ -278,22 +307,27 @@ export const markProtectedLines = (lines: string[]): boolean[] => {
  * it with `>`, any other tag to its balanced close (or only its own line when
  * it never closes). `closeCache` is per document (see `findHtmlBlockEnd`).
  */
-export function htmlBlockEndAt(lines: string[], i: number, closeCache: Map<string, TagCloseIndex>): number {
+export function htmlBlockEndAt(
+  lines: string[],
+  i: number,
+  closeCache: Map<string, TagCloseIndex>,
+): number {
   const trimmed = lines[i].trim();
   const htmlTagMatch = trimmed.match(HTML_BLOCK_OPEN_RE);
   if (!htmlTagMatch || !HTML_BLOCK_TAGS.has(htmlTagMatch[1].toLowerCase())) return -1;
   const tagName = htmlTagMatch[1].toLowerCase();
   let end = i;
-  if (trimmed.startsWith('</')) {
-    while (end + 1 < lines.length && lines[end + 1].trim() !== '') end++;
+  if (trimmed.startsWith("</")) {
+    while (end + 1 < lines.length && lines[end + 1].trim() !== "") end++;
   } else if (VOID_HTML_TAGS.has(tagName)) {
     // Void element (e.g. <img>): no closing tag, but attributes can wrap across
     // lines. Consume until the line that actually closes the tag with `>` so a
     // multi-line <img> isn't truncated to a bare `<img` fragment.
-    while (!lines[end].includes('>') && end + 1 < lines.length && lines[end + 1].trim() !== '') end++;
+    while (!lines[end].includes(">") && end + 1 < lines.length && lines[end + 1].trim() !== "")
+      end++;
   } else {
-    const openRe = new RegExp(`<${tagName}(?:\\s|>|/|$)`, 'gi');
-    const closeRe = new RegExp(`</${tagName}\\s*>`, 'gi');
+    const openRe = new RegExp(`<${tagName}(?:\\s|>|/|$)`, "gi");
+    const closeRe = new RegExp(`</${tagName}\\s*>`, "gi");
     const depth = (lines[i].match(openRe) || []).length - (lines[i].match(closeRe) || []).length;
     // Scan ahead for the matching close tag via the shared, bounded/linear
     // helper. If none is ever found — a self-closing <video/>, or an unclosed
@@ -314,7 +348,7 @@ export function htmlBlockEndAt(lines: string[], i: number, closeCache: Map<strin
 export function codeFenceCloseIndex(lines: string[], i: number): number {
   const trimmed = lines[i].trim();
   const fenceLen = trimmed.match(/^`+/)?.[0].length ?? 3;
-  const closingFence = new RegExp('^\\s*`{' + fenceLen + ',}');
+  const closingFence = new RegExp("^\\s*`{" + fenceLen + ",}");
   let j = i + 1;
   while (j < lines.length && !closingFence.test(lines[j])) j++;
   return j;
@@ -330,7 +364,7 @@ export function codeFenceCloseIndex(lines: string[], i: number): number {
 export function codeFenceFor(code: string): string {
   let longest = 0;
   for (const run of code.match(/`+/g) ?? []) longest = Math.max(longest, run.length);
-  return '`'.repeat(Math.max(3, longest + 1));
+  return "`".repeat(Math.max(3, longest + 1));
 }
 
 /**
@@ -343,14 +377,18 @@ export function codeFenceFor(code: string): string {
 export function scanDisplayMath(
   lines: string[],
   i: number,
-  delimiter: '$$' | '\\[',
+  delimiter: "$$" | "\\[",
 ): { body: string[]; closeLine: number; remainder: string } | null {
-  const close = delimiter === '$$' ? '$$' : '\\]';
+  const close = delimiter === "$$" ? "$$" : "\\]";
   const afterOpen = lines[i].trim().slice(2);
   const inlineClose = afterOpen.indexOf(close);
   if (inlineClose !== -1) {
     const body = afterOpen.slice(0, inlineClose).trim();
-    return { body: body ? [body] : [], closeLine: i, remainder: afterOpen.slice(inlineClose + 2).trim() };
+    return {
+      body: body ? [body] : [],
+      closeLine: i,
+      remainder: afterOpen.slice(inlineClose + 2).trim(),
+    };
   }
   const scanned: string[] = afterOpen.trim() ? [afterOpen.trim()] : [];
   let j = i;
@@ -358,7 +396,7 @@ export function scanDisplayMath(
     j++;
     // A blank line ends the search: real display math has no blank line
     // before its close, so a blank means this opener was never closed.
-    if (lines[j].trim() === '') break;
+    if (lines[j].trim() === "") break;
     const closeAt = lines[j].indexOf(close);
     if (closeAt !== -1) {
       const before = lines[j].slice(0, closeAt);
@@ -381,7 +419,7 @@ export const DIRECTIVE_OPEN_RE = /^:::\s*([a-zA-Z][a-zA-Z0-9-]*)\s*$/;
  */
 export function directiveCloseIndex(lines: string[], i: number): number {
   for (let j = i + 1; j < lines.length; j++) {
-    if (lines[j].trim() === ':::') return j;
+    if (lines[j].trim() === ":::") return j;
   }
   return lines.length;
 }
@@ -397,7 +435,7 @@ const resolveRefsInLine = (
   defs: Map<string, string>,
   usedLabels: Set<string>,
 ): string => {
-  if (!line.includes('[')) return line;
+  if (!line.includes("[")) return line;
   return line.replace(
     REFERENCE_LINK_RE,
     (match, codeTicks, bang, text, secondBracket, label, offset: number, whole: string) => {
@@ -406,7 +444,7 @@ const resolveRefsInLine = (
       if (secondBracket === undefined) {
         // Shortcut `[text]`: not a link when an inline `(...)` destination
         // follows (that is an inline link the existing renderer already draws).
-        if (whole[offset + match.length] === '(') return match;
+        if (whole[offset + match.length] === "(") return match;
         // Nor when it is a task-list checkbox marker at the start of a list
         // item (`- [x]`); the checkbox parser owns that `[x]`, and resolving it
         // against a stray `x`/`X` definition would clobber the item.
@@ -415,7 +453,7 @@ const resolveRefsInLine = (
         }
         refLabel = text;
       } else {
-        refLabel = label === '' ? text : label;
+        refLabel = label === "" ? text : label;
       }
       const normalized = normalizeRefLabel(refLabel);
       const dest = defs.get(normalized);
@@ -443,8 +481,8 @@ const resolveRefsInLine = (
  * (non-footnote) references.
  */
 export const resolveReferenceLinks = (markdown: string): string => {
-  if (!markdown.includes('[')) return markdown;
-  const lines = markdown.split('\n');
+  if (!markdown.includes("[")) return markdown;
+  const lines = markdown.split("\n");
   const isProtected = markProtectedLines(lines);
   const defs = new Map<string, string>();
   // The normalized label a definition-shaped line defines, or null if the
@@ -463,7 +501,7 @@ export const resolveReferenceLinks = (markdown: string): string => {
       canStartDefinition = true;
       continue;
     }
-    const blank = lines[i].trim() === '';
+    const blank = lines[i].trim() === "";
     const match = canStartDefinition && !blank ? lines[i].match(REFERENCE_DEFINITION_RE) : null;
     if (match) {
       const rawLabel = match[1];
@@ -471,7 +509,7 @@ export const resolveReferenceLinks = (markdown: string): string => {
       // definition. Leave it out of `defs` entirely so it can never be
       // collected, blanked, or accidentally satisfy a footnote reference's
       // lookup; it stays block-starting like any other definition line.
-      if (!rawLabel.startsWith('^') && defs.size < MAX_TRACKED_DEFINITIONS) {
+      if (!rawLabel.startsWith("^") && defs.size < MAX_TRACKED_DEFINITIONS) {
         const label = normalizeRefLabel(rawLabel);
         const dest = match[2] !== undefined ? match[2] : match[3];
         // First definition wins, per CommonMark.
@@ -498,7 +536,7 @@ export const resolveReferenceLinks = (markdown: string): string => {
       const label = defLabelByLine[i];
       if (label === null || !usedLabels.has(label)) return line;
       // Blank in place, preserving this line's own CRLF ending if it had one.
-      return line.endsWith('\r') ? '\r' : '';
+      return line.endsWith("\r") ? "\r" : "";
     })
-    .join('\n');
+    .join("\n");
 };

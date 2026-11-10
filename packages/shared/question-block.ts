@@ -1,1 +1,1 @@
-export * from '@dynotator/core/question-block';
+export * from "@dynotator/core/question-block";

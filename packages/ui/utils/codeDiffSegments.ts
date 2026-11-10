@@ -26,7 +26,12 @@ export interface CodeSegment {
 }
 
 /** `text.slice(start, end)` cut at the run boundaries, each piece in its run's style. */
-export function slicePieces(text: string, runs: readonly HighlightRun[] | null, start: number, end: number): CodePiece[] {
+export function slicePieces(
+  text: string,
+  runs: readonly HighlightRun[] | null,
+  start: number,
+  end: number,
+): CodePiece[] {
   if (start >= end) return [];
   if (!runs || runs.length === 0) return [{ text: text.slice(start, end) }];
   const pieces: CodePiece[] = [];
@@ -47,7 +52,11 @@ export function slicePieces(text: string, runs: readonly HighlightRun[] | null, 
 }
 
 /** `[start, end)` split so each line's leading spaces and tabs are their own range. */
-export function indentRanges(text: string, start: number, end: number): { start: number; end: number; indent: boolean }[] {
+export function indentRanges(
+  text: string,
+  start: number,
+  end: number,
+): { start: number; end: number; indent: boolean }[] {
   const out: { start: number; end: number; indent: boolean }[] = [];
   let from = start;
   let i = start;
@@ -69,7 +78,11 @@ export function indentRanges(text: string, start: number, end: number): { start:
 }
 
 /** A whole chunk: plain, or `struck` (a removed one) with its indentation left unstruck. */
-export function chunkSegments(text: string, runs: readonly HighlightRun[] | null, struck: boolean): CodeSegment[] {
+export function chunkSegments(
+  text: string,
+  runs: readonly HighlightRun[] | null,
+  struck: boolean,
+): CodeSegment[] {
   if (!struck) return [{ pieces: slicePieces(text, runs, 0, text.length) }];
   return indentRanges(text, 0, text.length).map((r) => ({
     struck: !r.indent,
@@ -97,7 +110,9 @@ export function wordDiffSegments(
     if (token.type === "removed") {
       const matches = oldText.slice(o, o + len) === token.value;
       for (const r of indentRanges(oldText, o, o + len)) {
-        const pieces = matches ? slicePieces(oldText, oldRuns, r.start, r.end) : [{ text: oldText.slice(r.start, r.end) }];
+        const pieces = matches
+          ? slicePieces(oldText, oldRuns, r.start, r.end)
+          : [{ text: oldText.slice(r.start, r.end) }];
         out.push(r.indent ? { pieces } : { mark: "removed", pieces });
       }
       o += len;
@@ -113,7 +128,11 @@ export function wordDiffSegments(
 }
 
 function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /** Struck text keeps the diff view's old strike: `line-through decoration-destructive/30`. */
@@ -129,8 +148,10 @@ export function codeSegmentsToHtml(segments: readonly CodeSegment[]): string {
       inner += piece.style ? `<span style="${escapeHtml(piece.style)}">${text}</span>` : text;
     }
     if (segment.mark === "added") html += `<ins class="plan-diff-word-added">${inner}</ins>`;
-    else if (segment.mark === "removed") html += `<del class="plan-diff-word-removed">${inner}</del>`;
-    else if (segment.struck) html += `<span class="${STRUCK_CLASS}" data-plan-diff-struck="">${inner}</span>`;
+    else if (segment.mark === "removed")
+      html += `<del class="plan-diff-word-removed">${inner}</del>`;
+    else if (segment.struck)
+      html += `<span class="${STRUCK_CLASS}" data-plan-diff-struck="">${inner}</span>`;
     else html += inner;
   }
   return html;

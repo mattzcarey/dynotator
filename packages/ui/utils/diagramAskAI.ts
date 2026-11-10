@@ -5,8 +5,8 @@ import {
   type DiagramAnchor,
   type DiagramKind,
   type DiagramTarget,
-} from '@dynotator/core/diagram-anchor';
-import type { CommentAskAIContext } from '../components/CommentPopover';
+} from "@dynotator/core/diagram-anchor";
+import type { CommentAskAIContext } from "../components/CommentPopover";
 
 /**
  * Ask AI from a diagram comment: the question rides the same
@@ -28,8 +28,8 @@ import type { CommentAskAIContext } from '../components/CommentPopover';
  * so a huge whole-file diagram never floods a turn.
  */
 
-const ENGINE_LABELS: Record<DiagramKind, string> = { mermaid: 'Mermaid', graphviz: 'Graphviz' };
-const FENCE_LANGUAGE: Record<DiagramKind, string> = { mermaid: 'mermaid', graphviz: 'dot' };
+const ENGINE_LABELS: Record<DiagramKind, string> = { mermaid: "Mermaid", graphviz: "Graphviz" };
+const FENCE_LANGUAGE: Record<DiagramKind, string> = { mermaid: "mermaid", graphviz: "dot" };
 
 /** Most diagram source lines a question carries. */
 export const MAX_ASK_AI_DIAGRAM_SOURCE_LINES = 40;
@@ -55,11 +55,11 @@ export interface DiagramAskAIInput {
 function fenceFor(source: string): string {
   let longest = 0;
   for (const run of source.match(/`+/g) ?? []) longest = Math.max(longest, run.length);
-  return '`'.repeat(Math.max(4, longest + 1));
+  return "`".repeat(Math.max(4, longest + 1));
 }
 
 /** A line longer than the whole budget is cut, with a visible marker. */
-const TRUNCATION_MARKER = '…';
+const TRUNCATION_MARKER = "…";
 
 /**
  * The bounded slice of the source a question carries, grown outward from the
@@ -77,17 +77,21 @@ function sourceWindow(
 ): { first: number; last: number; body: string; excerpt: boolean } | null {
   let wholeFirst = 1;
   let wholeLast = lines.length;
-  while (wholeLast > 0 && (lines[wholeLast - 1] ?? '').trim() === '') wholeLast -= 1;
-  while (wholeFirst <= wholeLast && (lines[wholeFirst - 1] ?? '').trim() === '') wholeFirst += 1;
+  while (wholeLast > 0 && (lines[wholeLast - 1] ?? "").trim() === "") wholeLast -= 1;
+  while (wholeFirst <= wholeLast && (lines[wholeFirst - 1] ?? "").trim() === "") wholeFirst += 1;
   if (wholeLast === 0 || wholeFirst > wholeLast) return null;
 
-  const partLine = anchor.kind !== 'diagram' && anchor.sourceLine !== null ? anchor.sourceLine[0] - offset : null;
-  const center = partLine !== null && partLine >= wholeFirst && partLine <= wholeLast ? partLine : wholeFirst;
+  const partLine =
+    anchor.kind !== "diagram" && anchor.sourceLine !== null ? anchor.sourceLine[0] - offset : null;
+  const center =
+    partLine !== null && partLine >= wholeFirst && partLine <= wholeLast ? partLine : wholeFirst;
 
-  let centerText = lines[center - 1] ?? '';
+  let centerText = lines[center - 1] ?? "";
   let truncated = false;
   if (centerText.length > MAX_ASK_AI_DIAGRAM_SOURCE_CHARS) {
-    centerText = centerText.slice(0, MAX_ASK_AI_DIAGRAM_SOURCE_CHARS - TRUNCATION_MARKER.length) + TRUNCATION_MARKER;
+    centerText =
+      centerText.slice(0, MAX_ASK_AI_DIAGRAM_SOURCE_CHARS - TRUNCATION_MARKER.length) +
+      TRUNCATION_MARKER;
     truncated = true;
   }
   let chars = centerText.length;
@@ -99,7 +103,7 @@ function sourceWindow(
   while ((growDown || growUp) && count < MAX_ASK_AI_DIAGRAM_SOURCE_LINES) {
     if (growDown) {
       const next = last + 1;
-      const cost = (lines[next - 1] ?? '').length + 1;
+      const cost = (lines[next - 1] ?? "").length + 1;
       if (next > wholeLast || chars + cost > MAX_ASK_AI_DIAGRAM_SOURCE_CHARS) growDown = false;
       else {
         last = next;
@@ -109,7 +113,7 @@ function sourceWindow(
     }
     if (growUp && count < MAX_ASK_AI_DIAGRAM_SOURCE_LINES) {
       const next = first - 1;
-      const cost = (lines[next - 1] ?? '').length + 1;
+      const cost = (lines[next - 1] ?? "").length + 1;
       if (next < wholeFirst || chars + cost > MAX_ASK_AI_DIAGRAM_SOURCE_CHARS) growUp = false;
       else {
         first = next;
@@ -118,7 +122,11 @@ function sourceWindow(
       }
     }
   }
-  const body = [...lines.slice(first - 1, center - 1), centerText, ...lines.slice(center, last)].join('\n');
+  const body = [
+    ...lines.slice(first - 1, center - 1),
+    centerText,
+    ...lines.slice(center, last),
+  ].join("\n");
   return { first, last, body, excerpt: truncated || first > wholeFirst || last < wholeLast };
 }
 
@@ -128,23 +136,25 @@ export function diagramIdentityForAskAI(input: DiagramAskAIInput): string {
   const out: string[] = [diagramAnchorLocationLine(anchor)];
   for (const extra of input.additionalTargets ?? []) {
     const text = diagramTargetText(extra);
-    out.push(`Also: ${diagramTargetName(extra)}${text !== '' && text !== extra.id ? ` "${text}"` : ''}`);
+    out.push(
+      `Also: ${diagramTargetName(extra)}${text !== "" && text !== extra.id ? ` "${text}"` : ""}`,
+    );
   }
   out.push(`Diagram type: ${ENGINE_LABELS[kind]} (${anchor.family})`);
 
-  const lines = source.split('\n');
+  const lines = source.split("\n");
   const window = sourceWindow(lines, anchor, sourceLineOffset);
   if (window !== null) {
     const body = window.body;
     const docFirst = window.first + sourceLineOffset;
     const docLast = window.last + sourceLineOffset;
     const range = docLast > docFirst ? `lines ${docFirst}–${docLast}` : `line ${docFirst}`;
-    const partial = window.excerpt ? ' (excerpt)' : '';
+    const partial = window.excerpt ? " (excerpt)" : "";
     const fence = fenceFor(body);
     out.push(`Diagram source${partial}, document ${range}:`);
     out.push(`${fence}${FENCE_LANGUAGE[kind]}\n${body}\n${fence}`);
   }
-  return out.join('\n');
+  return out.join("\n");
 }
 
 /** The Ask AI context for a question asked from a diagram comment. */
@@ -152,8 +162,11 @@ export function diagramAskAIContext(input: DiagramAskAIInput): CommentAskAIConte
   const { kind, anchor } = input;
   const engine = ENGINE_LABELS[kind];
   return {
-    kind: 'selection',
-    label: anchor.kind === 'diagram' ? `${engine} diagram` : `${engine} diagram ${diagramTargetName(anchor)}`,
+    kind: "selection",
+    label:
+      anchor.kind === "diagram"
+        ? `${engine} diagram`
+        : `${engine} diagram ${diagramTargetName(anchor)}`,
     text: diagramTargetText(anchor),
     ...(input.sourcePath !== undefined ? { sourcePath: input.sourcePath } : {}),
     detail: diagramIdentityForAskAI(input),

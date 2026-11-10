@@ -1,6 +1,6 @@
-import type { Annotation } from '@dynotator/ui/types';
-import type { RestoredAnchor } from '@dynotator/ui/hooks/useAnnotationHighlighter';
-import { annotationOwnsHighlight } from '@dynotator/ui/utils/annotationOwnsHighlight';
+import type { Annotation } from "@dynotator/ui/types";
+import type { RestoredAnchor } from "@dynotator/ui/hooks/useAnnotationHighlighter";
+import { annotationOwnsHighlight } from "@dynotator/ui/utils/annotationOwnsHighlight";
 
 /**
  * Write a restore pass's `moved` anchors back onto the annotations, so the
@@ -32,9 +32,12 @@ export function applyRestoredAnchors(
     // checkbox toggle's block key and a question answer's anchor are not
     // positions in the rendered text, whatever a restore pass reported.
     if (!entry || !annotationOwnsHighlight(ann)) return ann;
-    const dropPositions = entry.positionsStale && (ann.startMeta !== undefined || ann.endMeta !== undefined);
-    const offsetsChange = entry.blockId !== '' && entry.startOffset !== undefined
-      && entry.startOffset !== ann.startOffset;
+    const dropPositions =
+      entry.positionsStale && (ann.startMeta !== undefined || ann.endMeta !== undefined);
+    const offsetsChange =
+      entry.blockId !== "" &&
+      entry.startOffset !== undefined &&
+      entry.startOffset !== ann.startOffset;
     if (entry.blockId === ann.blockId && !dropPositions && !offsetsChange) return ann;
     changed = true;
     const updated: Annotation = { ...ann, blockId: entry.blockId };

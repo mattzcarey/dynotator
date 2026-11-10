@@ -14,17 +14,17 @@
 
 export type AnnotateInstructionsSurface =
   /** Markdown / plain-text file, URL, or converted HTML. */
-  | 'markdown'
+  | "markdown"
   /** Raw HTML file rendered as the page. */
-  | 'html'
+  | "html"
   /** A running local app mirrored through the live proxy. */
-  | 'live-app'
+  | "live-app"
   /** A whole-file Mermaid / Graphviz source rendered as one diagram. */
-  | 'diagram'
+  | "diagram"
   /** A folder session (file browser, one document open at a time). */
-  | 'folder'
+  | "folder"
   /** annotate-last: the agent's own message. */
-  | 'message';
+  | "message";
 
 interface SurfaceSection {
   /** The one command that fetches what the user is looking at. */
@@ -36,17 +36,21 @@ interface SurfaceSection {
 const SURFACES: Record<AnnotateInstructionsSurface, SurfaceSection> = {
   markdown: {
     read: (origin) => `curl -s ${origin}/api/plan | jq -r .plan`,
-    notes: () => `\`originalText\` is matched against the rendered text, so leave out markdown syntax such as \`**\` or \`#\`.`,
+    notes: () =>
+      `\`originalText\` is matched against the rendered text, so leave out markdown syntax such as \`**\` or \`#\`.`,
   },
 
   message: {
     read: (origin) => `curl -s ${origin}/api/plan | jq -r .plan`,
-    notes: () => `The document is an agent message. \`originalText\` is matched against the rendered message text.`,
+    notes: () =>
+      `The document is an agent message. \`originalText\` is matched against the rendered message text.`,
   },
 
   html: {
     read: (origin) => `curl -s ${origin}/api/plan | jq -r .rawHtml`,
-    notes: (origin) => `The document is an HTML page rendered as a real web page. Quote its **visible text**, never markup: \`originalText\` is found by a text search of the rendered page.
+    notes: (
+      origin,
+    ) => `The document is an HTML page rendered as a real web page. Quote its **visible text**, never markup: \`originalText\` is found by a text search of the rendered page.
 
 To pin a comment to an element instead of a phrase, POST it first, then attach an element anchor with PATCH (POST ignores \`htmlAnchor\`):
 
@@ -59,14 +63,17 @@ curl -s -X PATCH "${origin}/api/external-annotations?id=<uuid>" \\
 \`selector\` must match exactly one element; \`text\`, when given, is that element's visible text and is checked when the marker is restored.`,
   },
 
-  'live-app': {
-    read: (origin) => `curl -s ${origin}/api/plan | jq -r .targetUrl   # the running app; open or fetch it`,
-    notes: () => `The user is annotating a running local app, so there is no document text in the API. Quote **visible text** from the app: it is highlighted wherever it is found on the page the user has open. A comment you post shows on every page; to tie it to one route, PATCH \`{"pageUrl": "/settings?tab=2"}\` (path plus query). Prefer \`GLOBAL_COMMENT\` for anything not about specific on-screen text.`,
+  "live-app": {
+    read: (origin) =>
+      `curl -s ${origin}/api/plan | jq -r .targetUrl   # the running app; open or fetch it`,
+    notes: () =>
+      `The user is annotating a running local app, so there is no document text in the API. Quote **visible text** from the app: it is highlighted wherever it is found on the page the user has open. A comment you post shows on every page; to tie it to one route, PATCH \`{"pageUrl": "/settings?tab=2"}\` (path plus query). Prefer \`GLOBAL_COMMENT\` for anything not about specific on-screen text.`,
   },
 
   diagram: {
     read: (origin) => `curl -s ${origin}/api/plan | jq -r .plan`,
-    notes: () => `The document is one Mermaid or Graphviz diagram (the source above). To comment on a node, edge, or cluster, add a \`diagramAnchor\` naming it by its id in the source; \`originalText\` is the part's label:
+    notes:
+      () => `The document is one Mermaid or Graphviz diagram (the source above). To comment on a node, edge, or cluster, add a \`diagramAnchor\` naming it by its id in the source; \`originalText\` is the part's label:
 
 \`\`\`json
 {"source": "claude-code", "type": "COMMENT", "text": "Rename this step.",
@@ -77,8 +84,11 @@ curl -s -X PATCH "${origin}/api/external-annotations?id=<uuid>" \\
   },
 
   folder: {
-    read: (origin) => `curl -s "${origin}/api/doc?path=<path-relative-to-folder>&doc=1" | jq -r '.markdown // .rawHtml'`,
-    notes: (origin) => `The user browses a folder (\`curl -s ${origin}/api/plan | jq -r .filePath\`) and opens one document at a time. No API tells you which document is open.
+    read: (origin) =>
+      `curl -s "${origin}/api/doc?path=<path-relative-to-folder>&doc=1" | jq -r '.markdown // .rawHtml'`,
+    notes: (
+      origin,
+    ) => `The user browses a folder (\`curl -s ${origin}/api/plan | jq -r .filePath\`) and opens one document at a time. No API tells you which document is open.
 
 External comments cannot target a specific document. Every comment you post is a session-level entry: it lists in the annotations panel whichever document is open (or none), is **not** highlighted inline in folder documents, and is included in the feedback the user sends. Name the file in \`text\` and prefer \`GLOBAL_COMMENT\`.`,
   },
@@ -86,7 +96,7 @@ External comments cannot target a specific document. Every comment you post is a
 
 export function buildAnnotateAgentInstructions(
   origin: string,
-  surface: AnnotateInstructionsSurface = 'markdown',
+  surface: AnnotateInstructionsSurface = "markdown",
 ): string {
   const section = SURFACES[surface];
   return `# Plannotator — External Annotations (annotate session)
@@ -150,13 +160,13 @@ curl -s -X DELETE "${origin}/api/external-annotations?source=claude-code"  # rem
  *  the agent needs to know); a live app wins over its HTML render. */
 export function resolveAnnotateInstructionsSurface(input: {
   liveApp: boolean;
-  annotateSource: 'file' | 'message' | 'folder' | null;
+  annotateSource: "file" | "message" | "folder" | null;
   renderAs: string;
 }): AnnotateInstructionsSurface {
-  if (input.liveApp) return 'live-app';
-  if (input.annotateSource === 'folder') return 'folder';
-  if (input.annotateSource === 'message') return 'message';
-  if (input.renderAs === 'html') return 'html';
-  if (input.renderAs === 'mermaid' || input.renderAs === 'graphviz') return 'diagram';
-  return 'markdown';
+  if (input.liveApp) return "live-app";
+  if (input.annotateSource === "folder") return "folder";
+  if (input.annotateSource === "message") return "message";
+  if (input.renderAs === "html") return "html";
+  if (input.renderAs === "mermaid" || input.renderAs === "graphviz") return "diagram";
+  return "markdown";
 }

@@ -6,11 +6,7 @@
  */
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import {
-  computePlanDiff,
-  type PlanDiffBlock,
-  type PlanDiffStats,
-} from "../utils/planDiffEngine";
+import { computePlanDiff, type PlanDiffBlock, type PlanDiffStats } from "../utils/planDiffEngine";
 
 export interface VersionInfo {
   version: number;
@@ -59,9 +55,7 @@ export interface PlanDiffFetchers {
   }>;
 }
 
-const defaultFetchVersion = async (
-  version: number
-): Promise<{ plan: string; version: number }> => {
+const defaultFetchVersion = async (version: number): Promise<{ plan: string; version: number }> => {
   const res = await fetch(`/api/plan/version?v=${version}`);
   if (!res.ok) {
     throw new Error(`Failed to load version ${version}.`);
@@ -104,15 +98,13 @@ export function usePlanDiff(
    * exactly today's one-time-hydration behavior via the two sync effects
    * below.
    */
-  docKey?: string | null
+  docKey?: string | null,
 ): UsePlanDiffReturn {
   const fetchVersionImpl = fetchers?.fetchVersion ?? defaultFetchVersion;
   const fetchVersionsImpl = fetchers?.fetchVersions ?? defaultFetchVersions;
-  const [diffBasePlan, setDiffBasePlan] = useState<string | null>(
-    initialPreviousPlan
-  );
+  const [diffBasePlan, setDiffBasePlan] = useState<string | null>(initialPreviousPlan);
   const [diffBaseVersion, setDiffBaseVersion] = useState<number | null>(
-    versionInfo && versionInfo.version > 1 ? versionInfo.version - 1 : null
+    versionInfo && versionInfo.version > 1 ? versionInfo.version - 1 : null,
   );
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
@@ -146,7 +138,7 @@ export function usePlanDiff(
     new Map<
       string | null | undefined,
       { diffBasePlan: string | null; diffBaseVersion: number | null }
-    >()
+    >(),
   );
 
   // Reset (or restore) diff-base state whenever the active document identity
@@ -173,9 +165,7 @@ export function usePlanDiff(
       setDiffBaseVersion(remembered.diffBaseVersion);
     } else {
       setDiffBasePlan(initialPreviousPlan);
-      setDiffBaseVersion(
-        versionInfo && versionInfo.version > 1 ? versionInfo.version - 1 : null
-      );
+      setDiffBaseVersion(versionInfo && versionInfo.version > 1 ? versionInfo.version - 1 : null);
     }
     setVersions([]);
     setIsLoadingVersions(false);
@@ -216,7 +206,7 @@ export function usePlanDiff(
         setFetchingVersion(null);
       }
     },
-    [fetchVersionImpl]
+    [fetchVersionImpl],
   );
 
   const fetchVersions = useCallback(async () => {

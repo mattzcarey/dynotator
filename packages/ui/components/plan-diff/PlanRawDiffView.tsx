@@ -67,7 +67,10 @@ export const PlanRawDiffView: React.FC<PlanRawDiffViewProps> = ({ blocks }) => {
   }, [blocks]);
 
   return (
-    <div className="font-mono text-[13px] leading-relaxed bg-muted/30 rounded-lg border border-border/30 overflow-x-auto" data-doc-text="">
+    <div
+      className="font-mono text-[13px] leading-relaxed bg-muted/30 rounded-lg border border-border/30 overflow-x-auto"
+      data-doc-text=""
+    >
       <div>
         {lines.map((line, index) => (
           <div
@@ -82,11 +85,7 @@ export const PlanRawDiffView: React.FC<PlanRawDiffViewProps> = ({ blocks }) => {
           >
             {/* Gutter: +/- prefix */}
             <div className="w-5 flex-shrink-0 select-none opacity-60 text-right pr-2">
-              {line.type === "added"
-                ? "+"
-                : line.type === "removed"
-                  ? "-"
-                  : " "}
+              {line.type === "added" ? "+" : line.type === "removed" ? "-" : " "}
             </div>
             {/* Line number */}
             <div className="w-8 flex-shrink-0 select-none text-muted-foreground/40 text-right pr-3 text-[11px]">

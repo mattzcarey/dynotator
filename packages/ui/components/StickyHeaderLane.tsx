@@ -25,26 +25,20 @@
  * No state is duplicated — all props are passed through from App.tsx.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { AnnotationToolstrip } from './AnnotationToolstrip';
-import { DocBadges } from './DocBadges';
-import {
-  getScrollViewportIntersectionRoot,
-  useScrollViewport,
-} from '../hooks/useScrollViewport';
-import type { EditorMode, InputMethod } from '../types';
-import type { PlanDiffStats } from '../utils/planDiffEngine';
-import {
-  resolveCompactHeaderGeometry,
-  snapCompactHeaderWidth,
-} from './compactHeaderLayout';
+import React, { useEffect, useRef, useState } from "react";
+import { AnnotationToolstrip } from "./AnnotationToolstrip";
+import { DocBadges } from "./DocBadges";
+import { getScrollViewportIntersectionRoot, useScrollViewport } from "../hooks/useScrollViewport";
+import type { EditorMode, InputMethod } from "../types";
+import type { PlanDiffStats } from "../utils/planDiffEngine";
+import { resolveCompactHeaderGeometry, snapCompactHeaderWidth } from "./compactHeaderLayout";
 
 // Matches the bar's `md:left-5` inset. The remaining shared geometry lives
 // in compactHeaderLayout so Viewer-owned and standalone lanes cannot drift.
 const LEFT_OFFSET = 20;
 
 /** Controls when the compact header lane is visible and interactive. */
-export type StickyHeaderLaneVisibility = 'stuck' | 'always';
+export type StickyHeaderLaneVisibility = "stuck" | "always";
 
 /** Props for the measured compact annotation and document header lane. */
 export interface StickyHeaderLaneProps {
@@ -81,7 +75,11 @@ export interface StickyHeaderLaneProps {
   /** Baseline suffix + tooltip for the plan-diff badge (see DocBadges). */
   planDiffBaselineLabel?: string;
   planDiffBaselineTooltip?: string;
-  archiveInfo?: { status: 'approved' | 'denied' | 'unknown'; timestamp: string; title: string } | null;
+  archiveInfo?: {
+    status: "approved" | "denied" | "unknown";
+    timestamp: string;
+    title: string;
+  } | null;
 
   // Layout
   maxWidth?: number | null;
@@ -103,7 +101,7 @@ export const StickyHeaderLane: React.FC<StickyHeaderLaneProps> = ({
   onModeChange,
   taterMode,
   hideQuickLabel,
-  visibility = 'stuck',
+  visibility = "stuck",
   sticky = true,
   repoInfo,
   planDiffStats,
@@ -123,11 +121,11 @@ export const StickyHeaderLane: React.FC<StickyHeaderLaneProps> = ({
   const [actionsWidth, setActionsWidth] = useState(0);
   const scrollViewport = useScrollViewport();
   const laneIsStuck = sticky && isStuck;
-  const isVisible = visibility === 'always' || laneIsStuck;
+  const isVisible = visibility === "always" || laneIsStuck;
   // Preserve the incumbent ghost lane exactly: its chrome remains mounted
   // while the whole hidden bar fades out. Only the new always-visible mode
   // removes chrome at rest for the supported chrome-free presentation.
-  const showChrome = visibility === 'always' ? laneIsStuck : true;
+  const showChrome = visibility === "always" ? laneIsStuck : true;
 
   const headerGeometry = resolveCompactHeaderGeometry({
     containerWidth: wrapperWidth,
@@ -135,8 +133,8 @@ export const StickyHeaderLane: React.FC<StickyHeaderLaneProps> = ({
     leadingInset: LEFT_OFFSET,
   });
   const availableForBar = headerGeometry.availableForLeading;
-  const isNarrow = headerGeometry.layout === 'narrow';
-  const isToolstripIconOnly = headerGeometry.layout === 'tight';
+  const isNarrow = headerGeometry.layout === "narrow";
+  const isToolstripIconOnly = headerGeometry.layout === "tight";
 
   useEffect(() => {
     if (!wrapperRef.current) return;
@@ -161,7 +159,7 @@ export const StickyHeaderLane: React.FC<StickyHeaderLaneProps> = ({
     // "no maxWidth cap" path for the one frame between Viewer remounting
     // and the new observer firing its first callback.
     setActionsWidth(0);
-    const el = document.querySelector<HTMLElement>('[data-sticky-actions]');
+    const el = document.querySelector<HTMLElement>("[data-sticky-actions]");
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
       const next = snapCompactHeaderWidth(entry.contentRect.width);
@@ -185,14 +183,11 @@ export const StickyHeaderLane: React.FC<StickyHeaderLaneProps> = ({
       return;
     }
     if (!sentinelRef.current || !scrollViewport) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsStuck(!entry.isIntersecting),
-      {
-        root: getScrollViewportIntersectionRoot(scrollViewport),
-        rootMargin: '80px 0px 0px 0px',
-        threshold: 0,
-      }
-    );
+    const observer = new IntersectionObserver(([entry]) => setIsStuck(!entry.isIntersecting), {
+      root: getScrollViewportIntersectionRoot(scrollViewport),
+      rootMargin: "80px 0px 0px 0px",
+      threshold: 0,
+    });
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, [scrollViewport, sticky]);
@@ -219,8 +214,8 @@ export const StickyHeaderLane: React.FC<StickyHeaderLaneProps> = ({
       <div
         ref={wrapperRef}
         data-sticky-header-lane="true"
-        className={`${sticky ? 'sticky' : 'relative'} z-[60] w-full self-center pointer-events-none ${
-          sticky ? (isNarrow ? 'top-[52px] md:top-[60px]' : 'top-3') : ''
+        className={`${sticky ? "sticky" : "relative"} z-[60] w-full self-center pointer-events-none ${
+          sticky ? (isNarrow ? "top-[52px] md:top-[60px]" : "top-3") : ""
         }`}
         style={maxWidth == null ? { height: 0 } : { maxWidth, height: 0 }}
       >
@@ -241,23 +236,23 @@ export const StickyHeaderLane: React.FC<StickyHeaderLaneProps> = ({
         <div
           inert={!isVisible || undefined}
           className={`absolute left-3 md:left-5 top-0 inline-flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0 overflow-hidden rounded-lg py-1 md:py-1.5 ${
-            showChrome ? 'bg-card/95 backdrop-blur-sm shadow-sm border border-border/30' : ''
+            showChrome ? "bg-card/95 backdrop-blur-sm shadow-sm border border-border/30" : ""
           } motion-reduce:transform-none ${
             isVisible
-              ? 'opacity-100 translate-y-0 pointer-events-auto'
-              : 'opacity-0 -translate-y-1 pointer-events-none'
+              ? "opacity-100 translate-y-0 pointer-events-auto"
+              : "opacity-0 -translate-y-1 pointer-events-none"
           }`}
           style={{
             paddingLeft: 12,
             paddingRight: 12,
             maxWidth: isNarrow
-              ? 'calc(100% - 24px)'
+              ? "calc(100% - 24px)"
               : availableForBar > 0
                 ? availableForBar
                 : undefined,
             transition:
-              'opacity 180ms cubic-bezier(0.2, 0, 0, 1), transform 180ms cubic-bezier(0.2, 0, 0, 1)',
-            willChange: 'opacity, transform',
+              "opacity 180ms cubic-bezier(0.2, 0, 0, 1), transform 180ms cubic-bezier(0.2, 0, 0, 1)",
+            willChange: "opacity, transform",
           }}
         >
           <div className="flex-shrink-0">

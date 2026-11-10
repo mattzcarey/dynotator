@@ -15,19 +15,19 @@
  * bytes are a token and which token wins when two sources claim the same
  * ones.
  */
-import { mentionToken, type MentionPerson } from './mentions';
-import type { SkillReferenceToken } from './skillReferences';
+import { mentionToken, type MentionPerson } from "./mentions";
+import type { SkillReferenceToken } from "./skillReferences";
 
 /** One highlighted span of the composer's text, half-open `[start, end)`. */
 export type ComposerTokenRange =
   | {
-      readonly kind: 'skill';
+      readonly kind: "skill";
       readonly start: number;
       readonly end: number;
       readonly skill: SkillReferenceToken;
     }
   | {
-      readonly kind: 'mention';
+      readonly kind: "mention";
       readonly start: number;
       readonly end: number;
       readonly person: MentionPerson;
@@ -38,11 +38,9 @@ export type ComposerTokenRange =
  * already found, unchanged. Order, spans and duplicates are preserved — a
  * name referenced twice highlights twice.
  */
-export function skillTokenRanges(
-  tokens: readonly SkillReferenceToken[],
-): ComposerTokenRange[] {
+export function skillTokenRanges(tokens: readonly SkillReferenceToken[]): ComposerTokenRange[] {
   return tokens.map((skill) => ({
-    kind: 'skill',
+    kind: "skill",
     start: skill.start,
     end: skill.end,
     skill,
@@ -81,7 +79,7 @@ export function mentionTokenRanges(
     claimed.add(token);
     let from = text.indexOf(token);
     while (from !== -1) {
-      ranges.push({ kind: 'mention', start: from, end: from + token.length, person });
+      ranges.push({ kind: "mention", start: from, end: from + token.length, person });
       from = text.indexOf(token, from + token.length);
     }
   }
@@ -122,10 +120,7 @@ export function mergeTokenRanges(
     }
   });
   candidates.sort(
-    (a, b) =>
-      a.range.start - b.range.start ||
-      b.range.end - a.range.end ||
-      a.priority - b.priority,
+    (a, b) => a.range.start - b.range.start || b.range.end - a.range.end || a.priority - b.priority,
   );
   const merged: ComposerTokenRange[] = [];
   let pos = 0;

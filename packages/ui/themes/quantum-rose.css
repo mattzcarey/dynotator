@@ -48,9 +48,9 @@
   --success: oklch(0.72 0.17 150);
   --success-foreground: oklch(0.15 0.02 260);
   --warning: oklch(0.75 0.15 85);
-  --warning-foreground: oklch(0.20 0.02 260);
+  --warning-foreground: oklch(0.2 0.02 260);
   --code-bg: oklch(0.13 0.015 260);
-  --focus-highlight: oklch(0.70 0.20 200);
+  --focus-highlight: oklch(0.7 0.2 200);
 }
 
 .theme-quantum-rose.light {
@@ -100,10 +100,10 @@
   --shadow-2xl: 0px 3px 0px 0px hsl(330 70% 30% / 0.45);
 
   /* Plannotator extended tokens */
-  --success: oklch(0.45 0.20 150);
+  --success: oklch(0.45 0.2 150);
   --success-foreground: oklch(1 0 0);
   --warning: oklch(0.55 0.18 85);
   --warning-foreground: oklch(0.18 0.02 260);
   --code-bg: oklch(0.96 0.005 260);
-  --focus-highlight: oklch(0.70 0.20 200);
+  --focus-highlight: oklch(0.7 0.2 200);
 }

@@ -1,11 +1,11 @@
-import React from 'react';
-import { useTheme } from './ThemeProvider';
-import { THEME_MODES } from './themeModes';
-import type { ThemeHalf, ThemeInfo } from '../utils/themeRegistry';
-import { useThemePaletteHalves } from '../hooks/useThemePaletteHalves';
-import { configStore } from '../config/configStore';
-import { useConfigValue } from '../config/useConfig';
-import { FAVICON_STYLE_CHOICES, faviconDataUrl, type FaviconStyle } from '@dynotator/core/favicon';
+import React from "react";
+import { useTheme } from "./ThemeProvider";
+import { THEME_MODES } from "./themeModes";
+import type { ThemeHalf, ThemeInfo } from "../utils/themeRegistry";
+import { useThemePaletteHalves } from "../hooks/useThemePaletteHalves";
+import { configStore } from "../config/configStore";
+import { useConfigValue } from "../config/useConfig";
+import { FAVICON_STYLE_CHOICES, faviconDataUrl, type FaviconStyle } from "@dynotator/core/favicon";
 
 interface ThemeTabProps {
   onPreview?: () => void;
@@ -13,12 +13,18 @@ interface ThemeTabProps {
 }
 
 const HALVES: { id: ThemeHalf; label: string }[] = [
-  { id: 'light', label: 'Light' },
-  { id: 'dark', label: 'Dark' },
+  { id: "light", label: "Light" },
+  { id: "dark", label: "Dark" },
 ];
 
 const SyntaxLinesIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2.5}
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
   </svg>
 );
@@ -36,11 +42,11 @@ const FaviconStyleControl: React.FC<{ selected: FaviconStyle }> = ({ selected })
         key={id}
         type="button"
         aria-pressed={selected === id}
-        onClick={() => configStore.set('faviconStyle', id)}
+        onClick={() => configStore.set("faviconStyle", id)}
         className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
           selected === id
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-muted text-muted-foreground hover:text-foreground'
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground hover:text-foreground"
         }`}
       >
         <span className="flex items-center gap-1.5">
@@ -53,7 +59,7 @@ const FaviconStyleControl: React.FC<{ selected: FaviconStyle }> = ({ selected })
 );
 
 // The picker's state lives in hooks/useThemePaletteHalves; re-exported here so existing imports keep working.
-export { useThemePaletteHalves, type ThemePaletteHalves } from '../hooks/useThemePaletteHalves';
+export { useThemePaletteHalves, type ThemePaletteHalves } from "../hooks/useThemePaletteHalves";
 
 /** The five colors a palette tile shows for one half, in ThemeTab's order. */
 export function paletteSwatchColors(theme: ThemeInfo, half: ThemeHalf): string[] {
@@ -63,11 +69,13 @@ export function paletteSwatchColors(theme: ThemeInfo, half: ThemeHalf): string[]
 
 export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
   const { mode, setMode, manageFavicon } = useTheme();
-  const faviconStyle = useConfigValue('faviconStyle');
+  const faviconStyle = useConfigValue("faviconStyle");
   const { half, setHalf, pair, themes, nameOf, choose } = useThemePaletteHalves();
 
   const summary = (
-    <div className={`flex items-center gap-1.5 text-[11px] text-muted-foreground ${compact ? '' : 'flex-wrap'}`}>
+    <div
+      className={`flex items-center gap-1.5 text-[11px] text-muted-foreground ${compact ? "" : "flex-wrap"}`}
+    >
       {HALVES.map(({ id, label }, index) => (
         <React.Fragment key={id}>
           {index > 0 && <span className="text-muted-foreground/40">·</span>}
@@ -75,7 +83,7 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
             onClick={() => setHalf(id)}
             title={`Assign the ${label.toLowerCase()} theme`}
             className={`rounded px-1 py-0.5 transition-colors hover:bg-muted ${
-              half === id ? 'text-foreground' : ''
+              half === id ? "text-foreground" : ""
             }`}
           >
             <span className="text-muted-foreground/70">{label}: </span>
@@ -87,10 +95,14 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
   );
 
   return (
-    <div className={compact ? '' : 'space-y-5'}>
+    <div className={compact ? "" : "space-y-5"}>
       {/* Mode */}
-      <div className={compact ? 'flex items-center gap-3 mb-2' : 'space-y-2'}>
-        {!compact && <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mode</label>}
+      <div className={compact ? "flex items-center gap-3 mb-2" : "space-y-2"}>
+        {!compact && (
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Mode
+          </label>
+        )}
         <div className="flex gap-1">
           {THEME_MODES.map(({ id, label, Icon }) => (
             <button
@@ -99,8 +111,8 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
               onClick={() => setMode(id)}
               className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 mode === id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
               <span className="flex items-center gap-1.5">
@@ -117,7 +129,9 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
         )}
         {!compact && manageFavicon && (
           <div className="space-y-1.5 pt-1">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Favicon</label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Favicon
+            </label>
             <FaviconStyleControl selected={faviconStyle} />
           </div>
         )}
@@ -130,15 +144,16 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
       </div>
 
       {/* Theme pair */}
-      <div className={compact ? 'space-y-2' : 'space-y-3'}>
+      <div className={compact ? "space-y-2" : "space-y-3"}>
         {!compact && (
           <>
             <div className="flex items-center justify-between border-t border-border pt-5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Theme</label>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Theme
+              </label>
               <div className="flex items-center gap-3">
                 <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1">
-                  <SyntaxLinesIcon className="w-2.5 h-2.5" />
-                  = matched syntax colors
+                  <SyntaxLinesIcon className="w-2.5 h-2.5" />= matched syntax colors
                 </span>
                 {onPreview && (
                   <button
@@ -165,8 +180,8 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
                 aria-pressed={half === id}
                 className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
                   half === id
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {label} theme
@@ -175,8 +190,10 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
           </div>
         </div>
 
-        <div className={`grid gap-2 overflow-y-auto pr-1 ${compact ? 'grid-cols-4' : 'grid-cols-3'}`}>
-          {themes.map(theme => {
+        <div
+          className={`grid gap-2 overflow-y-auto pr-1 ${compact ? "grid-cols-4" : "grid-cols-3"}`}
+        >
+          {themes.map((theme) => {
             const isSelected = pair[half] === theme.id;
             return (
               <button
@@ -184,13 +201,16 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
                 onClick={() => choose(half, theme.id)}
                 className={`relative p-2 rounded-md border text-left transition-colors ${
                   isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted-foreground/30 hover:bg-muted/30'
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
                 }`}
               >
                 {/* Syntax highlighting badge */}
                 {theme.syntaxHighlighting && (
-                  <div className="absolute top-1 right-1" title="Matched syntax highlighting in diffs">
+                  <div
+                    className="absolute top-1 right-1"
+                    title="Matched syntax highlighting in diffs"
+                  >
                     <SyntaxLinesIcon className="w-2.5 h-2.5 text-muted-foreground/50" />
                   </div>
                 )}
@@ -208,7 +228,13 @@ export const ThemeTab: React.FC<ThemeTabProps> = ({ onPreview, compact }) => {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-foreground truncate">{theme.name}</span>
                   {isSelected && (
-                    <svg className="w-3 h-3 text-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <svg
+                      className="w-3 h-3 text-primary flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   )}

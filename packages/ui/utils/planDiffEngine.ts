@@ -79,10 +79,7 @@ function countLines(text: string): number {
  * (1-based): leading and trailing blank lines are not counted. Empty when the
  * chunk has no non-blank line.
  */
-function trimmedLineRange(
-  value: string,
-  start: number
-): { start?: number; end?: number } {
+function trimmedLineRange(value: string, start: number): { start?: number; end?: number } {
   const lines = value.split("\n");
   if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
   let first = 0;
@@ -103,21 +100,13 @@ function newRange(value: string, start: number): Pick<PlanDiffBlock, "newStart" 
   return r.start === undefined ? {} : { newStart: r.start, newEnd: r.end };
 }
 
-const INLINE_DIFFABLE_TYPES = new Set<Block["type"]>([
-  "paragraph",
-  "heading",
-  "list-item",
-]);
+const INLINE_DIFFABLE_TYPES = new Set<Block["type"]>(["paragraph", "heading", "list-item"]);
 
 function structuralFieldsMatch(a: Block, b: Block): boolean {
   if (a.type !== b.type) return false;
   if (a.type === "heading") return a.level === b.level;
   if (a.type === "list-item") {
-    return (
-      a.ordered === b.ordered &&
-      a.level === b.level &&
-      a.checked === b.checked
-    );
+    return a.ordered === b.ordered && a.level === b.level && a.checked === b.checked;
   }
   return true; // paragraph
 }
@@ -150,7 +139,7 @@ function sentinelFor(id: number): string {
 function substituteCodeSpans(
   text: string,
   codeMap: Map<string, string>,
-  codeToId: Map<string, number>
+  codeToId: Map<string, number>,
 ): string {
   return text.replace(CODE_SPAN_PATTERN, (match) => {
     let id = codeToId.get(match);
@@ -163,10 +152,7 @@ function substituteCodeSpans(
   });
 }
 
-function restoreCodeSpans(
-  value: string,
-  codeMap: Map<string, string>
-): string {
+function restoreCodeSpans(value: string, codeMap: Map<string, string>): string {
   if (codeMap.size === 0) return value;
   return value.replace(SENTINEL_PATTERN, (m) => codeMap.get(m) ?? m);
 }
@@ -193,7 +179,7 @@ function linkSentinelFor(id: number): string {
 function substituteLinks(
   text: string,
   linkMap: Map<string, string>,
-  linkToId: Map<string, number>
+  linkToId: Map<string, number>,
 ): string {
   return text.replace(LINK_PATTERN, (match) => {
     let id = linkToId.get(match);
@@ -206,10 +192,7 @@ function substituteLinks(
   });
 }
 
-function restoreLinks(
-  value: string,
-  linkMap: Map<string, string>
-): string {
+function restoreLinks(value: string, linkMap: Map<string, string>): string {
   if (linkMap.size === 0) return value;
   return value.replace(LINK_SENTINEL_PATTERN, (m) => linkMap.get(m) ?? m);
 }
@@ -240,7 +223,7 @@ function fenceSentinelFor(id: number): string {
 function substituteFencedBlocks(
   text: string,
   fenceMap: Map<string, string>,
-  fenceToId: Map<string, number>
+  fenceToId: Map<string, number>,
 ): string {
   return text.replace(FENCE_BLOCK_PATTERN, (match) => {
     let id = fenceToId.get(match);
@@ -267,7 +250,7 @@ const QUOTED_FENCE_LINE = /^[ \t]*(?:>[ \t]?)+[ \t]*`{3,}/m;
 function substituteQuotedFenceRuns(
   text: string,
   fenceMap: Map<string, string>,
-  fenceToId: Map<string, number>
+  fenceToId: Map<string, number>,
 ): string {
   return text.replace(QUOTE_RUN_PATTERN, (match) => {
     if (!QUOTED_FENCE_LINE.test(match)) return match;
@@ -281,10 +264,7 @@ function substituteQuotedFenceRuns(
   });
 }
 
-function restoreFencedBlocks(
-  value: string,
-  fenceMap: Map<string, string>
-): string {
+function restoreFencedBlocks(value: string, fenceMap: Map<string, string>): string {
   if (fenceMap.size === 0) return value;
   return value.replace(FENCE_SENTINEL_PATTERN, (m) => fenceMap.get(m) ?? m);
 }
@@ -346,7 +326,7 @@ function pairSentinelFor(id: number): string {
 function substituteEmphasisPairs(
   text: string,
   pairMap: Map<string, string>,
-  pairToId: Map<string, number>
+  pairToId: Map<string, number>,
 ): string {
   for (const { regex } of PAIR_PATTERNS) {
     text = text.replace(regex, (match) => {
@@ -362,10 +342,7 @@ function substituteEmphasisPairs(
   return text;
 }
 
-function restoreEmphasisPairs(
-  value: string,
-  pairMap: Map<string, string>
-): string {
+function restoreEmphasisPairs(value: string, pairMap: Map<string, string>): string {
   if (pairMap.size === 0) return value;
   return value.replace(PAIR_SENTINEL_PATTERN, (m) => pairMap.get(m) ?? m);
 }
@@ -413,8 +390,7 @@ function restoreHyphens(value: string): string {
 // Coalesce when a dirty run has ≥2 change sites (asymmetric counts allowed).
 // Single-site dirty runs pass through so isolated swaps keep word-level
 // highlighting.
-const THIN_UNCHANGED_RE =
-  /^[\s,.;:—–"'‘’“”]+$/;
+const THIN_UNCHANGED_RE = /^[\s,.;:—–"'‘’“”]+$/;
 
 function isChangeToken(t: InlineDiffToken): boolean {
   return t.type !== "unchanged";
@@ -435,10 +411,7 @@ function coalesceChangeTokens(tokens: InlineDiffToken[]): InlineDiffToken[] {
     }
     // Scan first change site.
     let lastChangeEnd = i;
-    while (
-      lastChangeEnd + 1 < tokens.length &&
-      isChangeToken(tokens[lastChangeEnd + 1])
-    ) {
+    while (lastChangeEnd + 1 < tokens.length && isChangeToken(tokens[lastChangeEnd + 1])) {
       lastChangeEnd++;
     }
     let siteCount = 1;
@@ -447,10 +420,7 @@ function coalesceChangeTokens(tokens: InlineDiffToken[]): InlineDiffToken[] {
       while (scan < tokens.length && isThinUnchangedToken(tokens[scan])) scan++;
       if (scan < tokens.length && isChangeToken(tokens[scan])) {
         let newEnd = scan;
-        while (
-          newEnd + 1 < tokens.length &&
-          isChangeToken(tokens[newEnd + 1])
-        ) {
+        while (newEnd + 1 < tokens.length && isChangeToken(tokens[newEnd + 1])) {
           newEnd++;
         }
         lastChangeEnd = newEnd;
@@ -471,8 +441,7 @@ function coalesceChangeTokens(tokens: InlineDiffToken[]): InlineDiffToken[] {
           addedText += t.value;
         }
       }
-      if (removedText.length > 0)
-        out.push({ type: "removed", value: removedText });
+      if (removedText.length > 0) out.push({ type: "removed", value: removedText });
       if (addedText.length > 0) out.push({ type: "added", value: addedText });
     } else {
       for (let j = i; j <= lastChangeEnd; j++) out.push(tokens[j]);
@@ -506,7 +475,7 @@ function wrapFromBlock(block: Block): InlineDiffWrap {
  */
 export function computeInlineDiff(
   oldContent: string,
-  newContent: string
+  newContent: string,
 ): { tokens: InlineDiffToken[]; wrap: InlineDiffWrap } | null {
   const oldBlocks = parseMarkdownToBlocks(oldContent);
   const newBlocks = parseMarkdownToBlocks(newContent);
@@ -559,11 +528,8 @@ export function computeInlineDiff(
   const rawTokens: InlineDiffToken[] = changes.map((c) => ({
     type: c.added ? "added" : c.removed ? "removed" : "unchanged",
     value: restoreCodeSpans(
-      restoreLinks(
-        restoreEmphasisPairs(restoreHyphens(c.value), pairMap),
-        linkMap
-      ),
-      codeMap
+      restoreLinks(restoreEmphasisPairs(restoreHyphens(c.value), pairMap), linkMap),
+      codeMap,
     ),
   }));
 
@@ -617,7 +583,7 @@ export function computeCodeInlineDiff(oldText: string, newText: string): InlineD
  */
 export function computePlanDiff(
   oldText: string,
-  newText: string
+  newText: string,
 ): { blocks: PlanDiffBlock[]; stats: PlanDiffStats } {
   // Pre-pass: collapse every fenced code block to a single-line sentinel
   // so diffLines treats each whole fence atomically. See the comment on
@@ -726,9 +692,7 @@ export interface PlanDiffFold {
   newEnd?: number;
 }
 
-export type PlanDiffSegment =
-  | { kind: "block"; block: PlanDiffBlock; index: number }
-  | PlanDiffFold;
+export type PlanDiffSegment = { kind: "block"; block: PlanDiffBlock; index: number } | PlanDiffFold;
 
 const MAX_FOLD_HEADINGS = 3;
 
@@ -758,7 +722,11 @@ function splitUnchangedChunk(block: PlanDiffBlock): UnchangedPiece[] {
   const parsed = parseMarkdownToBlocks(content);
   if (parsed.length <= 1) {
     const only = parsed[0];
-    return [only?.type === "heading" ? { piece: block, heading: plainHeadingText(only.content) } : { piece: block }];
+    return [
+      only?.type === "heading"
+        ? { piece: block, heading: plainHeadingText(only.content) }
+        : { piece: block },
+    ];
   }
 
   // Character offset of the start of each 1-based line.
@@ -768,7 +736,7 @@ function splitUnchangedChunk(block: PlanDiffBlock): UnchangedPiece[] {
   }
   const lineCount = countLines(content);
   const starts = Array.from(
-    new Set(parsed.map((b) => b.startLine).filter((line) => line >= 1 && line <= lineCount))
+    new Set(parsed.map((b) => b.startLine).filter((line) => line >= 1 && line <= lineCount)),
   ).sort((a, b) => a - b);
   if (starts.length === 0) return [{ piece: block }];
   starts[0] = 1;
@@ -776,7 +744,8 @@ function splitUnchangedChunk(block: PlanDiffBlock): UnchangedPiece[] {
   // The chunk's untrimmed first line on each side (its ranges are trimmed).
   const contentLines = content.split("\n");
   let leadingBlank = 0;
-  while (leadingBlank < contentLines.length && contentLines[leadingBlank].trim() === "") leadingBlank++;
+  while (leadingBlank < contentLines.length && contentLines[leadingBlank].trim() === "")
+    leadingBlank++;
   const oldBase = block.oldStart !== undefined ? block.oldStart - leadingBlank : undefined;
   const newBase = block.newStart !== undefined ? block.newStart - leadingBlank : undefined;
 
@@ -790,7 +759,8 @@ function splitUnchangedChunk(block: PlanDiffBlock): UnchangedPiece[] {
   return starts.map((startLine, i) => {
     const nextStart = starts[i + 1];
     const from = lineOffsets[startLine - 1] ?? content.length;
-    const to = nextStart !== undefined ? lineOffsets[nextStart - 1] ?? content.length : content.length;
+    const to =
+      nextStart !== undefined ? (lineOffsets[nextStart - 1] ?? content.length) : content.length;
     const pieceContent = content.slice(from, to);
     const piece: PlanDiffBlock = {
       type: "unchanged",
@@ -807,7 +777,9 @@ function splitUnchangedChunk(block: PlanDiffBlock): UnchangedPiece[] {
 }
 
 /** The span of several pieces' ranges on each side. */
-function spanOf(pieces: PlanDiffBlock[]): Pick<PlanDiffBlock, "oldStart" | "oldEnd" | "newStart" | "newEnd"> {
+function spanOf(
+  pieces: PlanDiffBlock[],
+): Pick<PlanDiffBlock, "oldStart" | "oldEnd" | "newStart" | "newEnd"> {
   const withOld = pieces.filter((p) => p.oldStart !== undefined);
   const withNew = pieces.filter((p) => p.newStart !== undefined);
   return {
@@ -838,7 +810,7 @@ function joinPieces(pieces: PlanDiffBlock[]): PlanDiffBlock {
  */
 export function foldUnchangedPlanDiff(
   blocks: PlanDiffBlock[],
-  options: { context?: number; minHidden?: number } = {}
+  options: { context?: number; minHidden?: number } = {},
 ): PlanDiffSegment[] {
   const context = Math.max(0, options.context ?? 1);
   const minHidden = Math.max(1, options.minHidden ?? 2);
@@ -858,7 +830,11 @@ export function foldUnchangedPlanDiff(
       return;
     }
     if (head > 0) {
-      segments.push({ kind: "block", block: joinPieces(pieces.slice(0, head).map((p) => p.piece)), index });
+      segments.push({
+        kind: "block",
+        block: joinPieces(pieces.slice(0, head).map((p) => p.piece)),
+        index,
+      });
     }
     const folded = pieces.slice(head, head + hidden);
     const foldPieces = folded.map((p) => p.piece);

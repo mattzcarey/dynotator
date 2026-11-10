@@ -1,6 +1,6 @@
-import { useLayoutEffect } from 'react';
-import { useConfigValue } from '../config';
-import { applyDocumentFont } from '../utils/documentFont';
+import { useLayoutEffect } from "react";
+import { useConfigValue } from "../config";
+import { applyDocumentFont } from "../utils/documentFont";
 
 /**
  * Apply the `documentFontFamily` setting (Settings → Display → Document font)
@@ -9,9 +9,9 @@ import { applyDocumentFont } from '../utils/documentFont';
  * On unmount the theme's font is put back.
  */
 export function useDocumentFont(): void {
-  const family = useConfigValue('documentFontFamily');
+  const family = useConfigValue("documentFontFamily");
   useLayoutEffect(() => {
     applyDocumentFont(document.documentElement, family);
   }, [family]);
-  useLayoutEffect(() => () => applyDocumentFont(document.documentElement, ''), []);
+  useLayoutEffect(() => () => applyDocumentFont(document.documentElement, ""), []);
 }

@@ -87,7 +87,7 @@
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
   /* Darker blue for the near-white light card (other themes inherit --accent). */
-  --annotation-comment: oklch(0.52 0.20 256);
+  --annotation-comment: oklch(0.52 0.2 256);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.004 286.32);

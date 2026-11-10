@@ -5,25 +5,29 @@
  * annotation creation, text-based restoration (drafts/shares), scroll-to-selected.
  */
 
-import { useEffect, useRef, useState, useCallback, type RefObject } from 'react';
-import Highlighter from '@plannotator/web-highlighter';
-import type { Annotation, EditorMode, HostDraft, ImageAttachment } from '../types';
-import { metaWithBelowTitle, metaWithoutBelowTitle, snapRangeOutOfBelowTitle } from '../utils/belowTitleSlot';
-import { AnnotationType } from '../types';
-import { caretAtPoint, type CaretPosition } from '../utils/caretAtPoint';
-import type { QuickLabel } from '../utils/quickLabels';
+import { useEffect, useRef, useState, useCallback, type RefObject } from "react";
+import Highlighter from "@plannotator/web-highlighter";
+import type { Annotation, EditorMode, HostDraft, ImageAttachment } from "../types";
+import {
+  metaWithBelowTitle,
+  metaWithoutBelowTitle,
+  snapRangeOutOfBelowTitle,
+} from "../utils/belowTitleSlot";
+import { AnnotationType } from "../types";
+import { caretAtPoint, type CaretPosition } from "../utils/caretAtPoint";
+import type { QuickLabel } from "../utils/quickLabels";
 import {
   dropEmptyNodes,
   trimWhitespaceOnlyBoundaryNodes,
   type SelectedNodeLike,
-} from '../utils/selectionBoundary';
-import { getIdentity } from '../utils/identity';
-import { annotationOwnsHighlight } from '../utils/annotationOwnsHighlight';
-import { transformPlainText } from '../utils/inlineTransforms';
-import { richCopySourceFromRange, type RichCopySource } from '../utils/richClipboard';
-import { TOUCH_PRIMARY_QUERY, TOUCH_SELECTION_SETTLE_MS } from '../utils/touchSelection';
-import type { ShelvedCommentDraft } from '../utils/commentDraftShelf';
-import { unionToolbarRect, type ToolbarRect } from '../utils/touchToolbarPlacement';
+} from "../utils/selectionBoundary";
+import { getIdentity } from "../utils/identity";
+import { annotationOwnsHighlight } from "../utils/annotationOwnsHighlight";
+import { transformPlainText } from "../utils/inlineTransforms";
+import { richCopySourceFromRange, type RichCopySource } from "../utils/richClipboard";
+import { TOUCH_PRIMARY_QUERY, TOUCH_SELECTION_SETTLE_MS } from "../utils/touchSelection";
+import type { ShelvedCommentDraft } from "../utils/commentDraftShelf";
+import { unionToolbarRect, type ToolbarRect } from "../utils/touchToolbarPlacement";
 
 // --- Exported state types ---
 
@@ -64,7 +68,7 @@ export interface QuickLabelPickerState {
 }
 
 type MathAnnotationSource = {
-  kind: 'math';
+  kind: "math";
   element: HTMLElement;
   text: string;
   blockId: string;
@@ -72,7 +76,7 @@ type MathAnnotationSource = {
 };
 
 const isMathAnnotationSource = (source: any): source is MathAnnotationSource =>
-  source?.kind === 'math';
+  source?.kind === "math";
 
 function commentDraftTargetKey(source: any, selectedText: string): string {
   if (isMathAnnotationSource(source)) {
@@ -82,10 +86,8 @@ function commentDraftTargetKey(source: any, selectedText: string): string {
   const end = source?.endMeta;
   const startKey = start
     ? `${start.parentTagName}:${start.parentIndex}:${start.textOffset}`
-    : 'unknown';
-  const endKey = end
-    ? `${end.parentTagName}:${end.parentIndex}:${end.textOffset}`
-    : 'unknown';
+    : "unknown";
+  const endKey = end ? `${end.parentTagName}:${end.parentIndex}:${end.textOffset}` : "unknown";
   return `selection:${startKey}:${endKey}:${selectedText}`;
 }
 
@@ -104,7 +106,7 @@ function selectionBlockIds(highlighter: any, source: any): string[] {
   const ids: string[] = [];
   for (const dom of doms) {
     if (!(dom instanceof HTMLElement)) continue;
-    const id = dom.closest<HTMLElement>('[data-block-id]')?.dataset.blockId;
+    const id = dom.closest<HTMLElement>("[data-block-id]")?.dataset.blockId;
     if (id && !ids.includes(id)) ids.push(id);
   }
   return ids;
@@ -125,12 +127,15 @@ const elementFromNode = (node: Node | null): HTMLElement | null => {
 
 const closestMathElement = (node: Node | null, root: HTMLElement | null): HTMLElement | null => {
   const element = elementFromNode(node);
-  const math = element?.closest<HTMLElement>('.math-annotatable[data-math-tex]');
+  const math = element?.closest<HTMLElement>(".math-annotatable[data-math-tex]");
   if (!math || !root?.contains(math)) return null;
   return math;
 };
 
-const mathElementFromSelection = (selection: Selection | null, root: HTMLElement | null): HTMLElement | null => {
+const mathElementFromSelection = (
+  selection: Selection | null,
+  root: HTMLElement | null,
+): HTMLElement | null => {
   if (!selection || selection.rangeCount === 0) return null;
   return (
     closestMathElement(selection.anchorNode, root) ||
@@ -151,16 +156,16 @@ const mathSourceFromElement = (element: HTMLElement): MathAnnotationSource | nul
   const text = element.dataset.mathTex;
   if (!text) return null;
 
-  const block = element.closest<HTMLElement>('[data-block-id]');
+  const block = element.closest<HTMLElement>("[data-block-id]");
   const blockId = block?.dataset.blockId;
   if (!blockId) return null;
 
   return {
-    kind: 'math',
+    kind: "math",
     element,
     text,
     blockId,
-    displayMode: element.dataset.mathDisplay === 'true',
+    displayMode: element.dataset.mathDisplay === "true",
   };
 };
 
@@ -172,11 +177,11 @@ const mathTargetsFromSelection = (
 
   const seen = new Set<HTMLElement>();
   const targets: MathAnnotationTarget[] = [];
-  const candidates = root.querySelectorAll<HTMLElement>('.math-annotatable[data-math-tex]');
+  const candidates = root.querySelectorAll<HTMLElement>(".math-annotatable[data-math-tex]");
 
   for (let i = 0; i < selection.rangeCount; i += 1) {
     const range = selection.getRangeAt(i);
-    candidates.forEach(element => {
+    candidates.forEach((element) => {
       if (seen.has(element) || !selectionContainsNode(range, element)) return;
       const source = mathSourceFromElement(element);
       if (!source) return;
@@ -214,7 +219,7 @@ const selectionHasNonMathContent = (
     // spills into an adjacent text node at offset 0, which the browser does on
     // nearly every drag-select of an inline formula.
     const fragment = range.cloneContents();
-    fragment.querySelectorAll?.('.math-annotatable[data-math-tex]').forEach(element => {
+    fragment.querySelectorAll?.(".math-annotatable[data-math-tex]").forEach((element) => {
       element.remove();
     });
     if (fragment.textContent?.trim()) return true;
@@ -225,31 +230,31 @@ const selectionHasNonMathContent = (
 
 const annotationId = (): string => {
   const cryptoRef = globalThis.crypto;
-  if (cryptoRef && typeof cryptoRef.randomUUID === 'function') {
+  if (cryptoRef && typeof cryptoRef.randomUUID === "function") {
     return cryptoRef.randomUUID();
   }
   return `ann-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
 const escapeAttrValue = (value: string): string => {
-  if (globalThis.CSS && typeof globalThis.CSS.escape === 'function') {
+  if (globalThis.CSS && typeof globalThis.CSS.escape === "function") {
     return globalThis.CSS.escape(value);
   }
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 };
 
 // web-highlighter 0.8.x accepts only class, ID, and tag exclusions.
-const ANNOTATION_EXCLUDED_SELECTOR = '.annotation-exclude';
+const ANNOTATION_EXCLUDED_SELECTOR = ".annotation-exclude";
 
 /** Everything the highlighter's painter skips (its `exceptSelectors`). */
 const PAINT_SKIPPED_SELECTORS = [
-  '.annotation-toolbar',
-  'button',
-  '.math-annotatable',
-  '.katex',
+  ".annotation-toolbar",
+  "button",
+  ".math-annotatable",
+  ".katex",
   ANNOTATION_EXCLUDED_SELECTOR,
 ];
-const PAINT_SKIPPED_SELECTOR = PAINT_SKIPPED_SELECTORS.join(',');
+const PAINT_SKIPPED_SELECTOR = PAINT_SKIPPED_SELECTORS.join(",");
 
 const isAnnotationExcludedTextNode = (node: Node): boolean =>
   Boolean(node.parentElement?.closest(ANNOTATION_EXCLUDED_SELECTOR));
@@ -268,7 +273,7 @@ const isAnnotationExcludedTextNode = (node: Node): boolean =>
  * cross-block restore. Content drift — the case that verification exists for
  * (#1509) — still differs once whitespace is gone.
  */
-const compactText = (value: string): string => value.replace(/\s+/g, '');
+const compactText = (value: string): string => value.replace(/\s+/g, "");
 
 /**
  * A quote with nothing but whitespace in it is not an annotation (#881).
@@ -282,8 +287,7 @@ const compactText = (value: string): string => value.replace(/\s+/g, '');
  * `compactText` rather than `trim`: it also removes the non-breaking spaces
  * and other Unicode whitespace a rendered document is full of.
  */
-const isBlankQuote = (value: string | null | undefined): boolean =>
-  compactText(value ?? '') === '';
+const isBlankQuote = (value: string | null | undefined): boolean => compactText(value ?? "") === "";
 
 /**
  * Whether web-highlighter can serialize a range boundary (#881).
@@ -303,8 +307,8 @@ const boundaryResolves = (node: Node, offset: number): boolean => {
 };
 
 const isSerializableRange = (range: Range): boolean =>
-  boundaryResolves(range.startContainer, range.startOffset)
-  && boundaryResolves(range.endContainer, range.endOffset);
+  boundaryResolves(range.startContainer, range.startOffset) &&
+  boundaryResolves(range.endContainer, range.endOffset);
 
 /**
  * Whether a range that reaches outside `container` carries words from there.
@@ -323,7 +327,8 @@ const isSerializableRange = (range: Range): boolean =>
 const carriesTextFromOutside = (container: HTMLElement, range: Range): boolean => {
   const inside = range.cloneRange();
   if (!container.contains(inside.startContainer)) inside.setStart(container, 0);
-  if (!container.contains(inside.endContainer)) inside.setEnd(container, container.childNodes.length);
+  if (!container.contains(inside.endContainer))
+    inside.setEnd(container, container.childNodes.length);
   return compactText(inside.toString()) !== compactText(range.toString());
 };
 
@@ -348,7 +353,7 @@ const warnHighlighterFailure = (context: string, error: unknown): void => {
  * therefore rejected correct restores over anything non-selectable.
  */
 const paintedTextOf = (doms: readonly HTMLElement[]): string => {
-  let painted = '';
+  let painted = "";
   for (const dom of doms) {
     if (!dom) continue;
     if (dom.closest?.(ANNOTATION_EXCLUDED_SELECTOR)) continue;
@@ -356,7 +361,7 @@ const paintedTextOf = (doms: readonly HTMLElement[]): string => {
     let node: Node | null;
     while ((node = walker.nextNode())) {
       if (isAnnotationExcludedTextNode(node)) continue;
-      painted += node.textContent ?? '';
+      painted += node.textContent ?? "";
     }
   }
   return painted;
@@ -377,10 +382,13 @@ const blockElementOf = (dom: Node | null | undefined): HTMLElement | null => {
  *  set by a whole-file code document) is measured, so its offset names the
  *  copy that was painted when the same line appears twice. `undefined` for
  *  every other block, which keeps the first-match offset it always stored. */
-const sourceOffsetOf = (blockEl: HTMLElement | null, firstDom: Node | null | undefined): number | undefined => {
+const sourceOffsetOf = (
+  blockEl: HTMLElement | null,
+  firstDom: Node | null | undefined,
+): number | undefined => {
   if (!blockEl || !firstDom || blockEl.dataset.contentStartLine === undefined) return undefined;
   if (!blockEl.contains(firstDom)) return undefined;
-  const code = blockEl.querySelector('code');
+  const code = blockEl.querySelector("code");
   const base = code && code.contains(firstDom) ? code : blockEl;
   try {
     const range = document.createRange();
@@ -420,7 +428,7 @@ const quoteOffsetIn = (text: string, quote: string): number => {
   if (!needle) return 0;
   // Compact the text while remembering each kept character's original index.
   const positions: number[] = [];
-  let compact = '';
+  let compact = "";
   for (let i = 0; i < text.length; i++) {
     if (/\s/.test(text[i])) continue;
     compact += text[i];
@@ -438,11 +446,47 @@ const quoteOffsetIn = (text: string, quote: string): number => {
  * read per text node on every restore.
  */
 const BLOCK_LEVEL_TAGS = new Set([
-  'ADDRESS', 'ARTICLE', 'ASIDE', 'BLOCKQUOTE', 'BODY', 'DD', 'DETAILS', 'DIALOG',
-  'DIV', 'DL', 'DT', 'FIELDSET', 'FIGCAPTION', 'FIGURE', 'FOOTER', 'FORM',
-  'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HEADER', 'HGROUP', 'HR', 'LI', 'MAIN',
-  'NAV', 'OL', 'P', 'PRE', 'SECTION', 'SUMMARY', 'TABLE', 'TBODY', 'TD',
-  'TFOOT', 'TH', 'THEAD', 'TR', 'UL',
+  "ADDRESS",
+  "ARTICLE",
+  "ASIDE",
+  "BLOCKQUOTE",
+  "BODY",
+  "DD",
+  "DETAILS",
+  "DIALOG",
+  "DIV",
+  "DL",
+  "DT",
+  "FIELDSET",
+  "FIGCAPTION",
+  "FIGURE",
+  "FOOTER",
+  "FORM",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "HEADER",
+  "HGROUP",
+  "HR",
+  "LI",
+  "MAIN",
+  "NAV",
+  "OL",
+  "P",
+  "PRE",
+  "SECTION",
+  "SUMMARY",
+  "TABLE",
+  "TBODY",
+  "TD",
+  "TFOOT",
+  "TH",
+  "THEAD",
+  "TR",
+  "UL",
 ]);
 
 const nearestBlockAncestor = (node: Node): Element | null => {
@@ -497,9 +541,7 @@ const startBoundaryNode = (range: Range): Node => {
 
 const excludedAncestor = (node: Node | null): HTMLElement | null => {
   if (!node) return null;
-  const element = node.nodeType === Node.ELEMENT_NODE
-    ? (node as HTMLElement)
-    : node.parentElement;
+  const element = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
   return element?.closest<HTMLElement>(ANNOTATION_EXCLUDED_SELECTOR) ?? null;
 };
 
@@ -537,9 +579,8 @@ const snapRangeStartPastExcluded = (range: Range): boolean => {
   if (!excluded) return false;
 
   const scopeNode = range.commonAncestorContainer;
-  const scope = scopeNode.nodeType === Node.ELEMENT_NODE
-    ? (scopeNode as Element)
-    : scopeNode.parentElement;
+  const scope =
+    scopeNode.nodeType === Node.ELEMENT_NODE ? (scopeNode as Element) : scopeNode.parentElement;
   // A range that lies entirely inside the excluded subtree has nothing to snap
   // to; leave it alone (it paints nothing, exactly as before).
   if (!scope || excluded.contains(scope)) return false;
@@ -572,7 +613,8 @@ const snapRangeStartPastExcluded = (range: Range): boolean => {
 /** The outermost element around `node`, inside `container`, that the painter skips. */
 const paintSkippedAncestor = (container: Element, node: Node | null): Element | null => {
   let skipped: Element | null = null;
-  let element = node?.nodeType === Node.ELEMENT_NODE ? (node as Element) : node?.parentElement ?? null;
+  let element =
+    node?.nodeType === Node.ELEMENT_NODE ? (node as Element) : (node?.parentElement ?? null);
   while (element && element !== container && container.contains(element)) {
     if (element.matches(PAINT_SKIPPED_SELECTOR)) skipped = element;
     element = element.parentElement;
@@ -601,9 +643,10 @@ const paintSkippedAncestor = (container: Element, node: Node | null): Element | 
 const snapRangeEndBeforeSkipped = (container: Element, range: Range): boolean => {
   const { endContainer, endOffset } = range;
   // An element boundary addresses the child at its offset (`formatDomNode`).
-  const endNode = endContainer.nodeType === Node.ELEMENT_NODE
-    ? endContainer.childNodes[endOffset] ?? endContainer
-    : endContainer;
+  const endNode =
+    endContainer.nodeType === Node.ELEMENT_NODE
+      ? (endContainer.childNodes[endOffset] ?? endContainer)
+      : endContainer;
   if (!container.contains(endNode)) return false;
   const skipped = paintSkippedAncestor(container, endNode);
   if (!skipped || skipped.contains(range.commonAncestorContainer)) return false;
@@ -638,12 +681,14 @@ const selectionRanAway = (length: number, last: number): boolean => length > las
 const DRAG_SLOP_PX = 4;
 
 /** A press on these is theirs (a click, a native drag, typing), never the start of a text selection to repair. */
-const NOT_A_TEXT_PRESS = 'a, button, input, textarea, select, label, summary, img, svg, canvas, video, [role="button"], [draggable="true"], [contenteditable]:not([contenteditable="false"])';
+const NOT_A_TEXT_PRESS =
+  'a, button, input, textarea, select, label, summary, img, svg, canvas, video, [role="button"], [draggable="true"], [contenteditable]:not([contenteditable="false"])';
 
 /** The text position under a point, when it is text of `container` that can be painted. */
 const textCaretAt = (container: Element, x: number, y: number): CaretPosition | null => {
   const caret = caretAtPoint(x, y);
-  if (!caret || caret.node.nodeType !== Node.TEXT_NODE || !container.contains(caret.node)) return null;
+  if (!caret || caret.node.nodeType !== Node.TEXT_NODE || !container.contains(caret.node))
+    return null;
   if (paintSkippedAncestor(container, caret.node)) return null;
   return caret;
 };
@@ -652,7 +697,8 @@ const textCaretAt = (container: Element, x: number, y: number): CaretPosition | 
 const isScrollbarPress = (event: MouseEvent): boolean => {
   const target = event.target instanceof HTMLElement ? event.target : null;
   if (!target || target.clientWidth === 0) return false;
-  if (target.scrollWidth <= target.clientWidth && target.scrollHeight <= target.clientHeight) return false;
+  if (target.scrollWidth <= target.clientWidth && target.scrollHeight <= target.clientHeight)
+    return false;
   return event.offsetX >= target.clientWidth || event.offsetY >= target.clientHeight;
 };
 
@@ -664,11 +710,7 @@ interface RestoreBoundary {
 
 /** The nearest text node on one side of `node` that annotation painting can
  *  reach, skipping every `.annotation-exclude` run. */
-const annotatableTextNeighbour = (
-  root: Element,
-  node: Node,
-  direction: 1 | -1,
-): Text | null => {
+const annotatableTextNeighbour = (root: Element, node: Node, direction: 1 | -1): Text | null => {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const all: Text[] = [];
   let current: Node | null;
@@ -746,9 +788,8 @@ const rangeTextPieces = (range: Range): RangeTextPiece[] | null => {
   if (endContainer?.nodeType !== Node.TEXT_NODE) return null;
 
   const scopeNode = range.commonAncestorContainer;
-  const scope = scopeNode?.nodeType === Node.ELEMENT_NODE
-    ? (scopeNode as Element)
-    : scopeNode?.parentElement;
+  const scope =
+    scopeNode?.nodeType === Node.ELEMENT_NODE ? (scopeNode as Element) : scopeNode?.parentElement;
   if (!scope) return null;
 
   const pieces: RangeTextPiece[] = [];
@@ -763,7 +804,7 @@ const rangeTextPieces = (range: Range): RangeTextPiece[] | null => {
     }
     const from = text === startContainer ? startOffset : 0;
     const to = text === endContainer ? endOffset : text.length;
-    const slice = (text.textContent ?? '').slice(from, to);
+    const slice = (text.textContent ?? "").slice(from, to);
     if (slice) pieces.push({ text: slice, excluded: isAnnotationExcludedTextNode(text) });
     if (text === endContainer) return pieces;
   }
@@ -800,7 +841,7 @@ const quoteWithoutExcludedText = (
 ): string => {
   if (!selectionText) return selectionText;
   if (compactText(selectionText) === compactText(paintedText)) return selectionText;
-  if (!pieces || !pieces.some(piece => piece.excluded)) return selectionText;
+  if (!pieces || !pieces.some((piece) => piece.excluded)) return selectionText;
 
   // Excluded spans in compacted (whitespace-free) coordinates.
   const spans: { start: number; end: number }[] = [];
@@ -818,16 +859,16 @@ const quoteWithoutExcludedText = (
   if (compactText(selectionText).length !== compactLength) return selectionText;
 
   let cursor = 0;
-  let quote = '';
+  let quote = "";
   for (const char of selectionText) {
     if (/\s/.test(char)) {
       // Whitespace has no compacted position of its own: drop it only when it
       // sits inside an excluded run or immediately after one, so removing
       // "Tip:" takes the space that followed it with it.
-      if (!spans.some(span => cursor > span.start && cursor <= span.end)) quote += char;
+      if (!spans.some((span) => cursor > span.start && cursor <= span.end)) quote += char;
       continue;
     }
-    if (!spans.some(span => cursor >= span.start && cursor < span.end)) quote += char;
+    if (!spans.some((span) => cursor >= span.start && cursor < span.end)) quote += char;
     cursor += 1;
   }
 
@@ -841,37 +882,33 @@ const applyMathAnnotationClass = (
   displayMode: boolean,
 ) => {
   element.classList.add(
-    'annotation-highlight',
-    displayMode ? 'math-block-annotation' : 'math-inline-annotation',
+    "annotation-highlight",
+    displayMode ? "math-block-annotation" : "math-inline-annotation",
   );
-  element.classList.remove('deletion', 'comment');
+  element.classList.remove("deletion", "comment");
   if (type === AnnotationType.DELETION) {
-    element.classList.add('deletion');
+    element.classList.add("deletion");
   } else if (type === AnnotationType.COMMENT) {
-    element.classList.add('comment');
+    element.classList.add("comment");
   }
   element.dataset.bindId = id;
-  element.dataset.mathAnnotation = 'true';
+  element.dataset.mathAnnotation = "true";
 };
 
-const applyMathTargets = (
-  targets: MathAnnotationTarget[],
-  id: string,
-  type: AnnotationType,
-) => {
-  targets.forEach(target => {
+const applyMathTargets = (targets: MathAnnotationTarget[], id: string, type: AnnotationType) => {
+  targets.forEach((target) => {
     applyMathAnnotationClass(target.element, id, type, target.displayMode);
   });
 };
 
 const clearMathAnnotationClass = (element: Element) => {
   element.classList.remove(
-    'annotation-highlight',
-    'math-block-annotation',
-    'math-inline-annotation',
-    'deletion',
-    'comment',
-    'focused',
+    "annotation-highlight",
+    "math-block-annotation",
+    "math-inline-annotation",
+    "deletion",
+    "comment",
+    "focused",
   );
   delete (element as HTMLElement).dataset.bindId;
   delete (element as HTMLElement).dataset.mathAnnotation;
@@ -1015,7 +1052,7 @@ export interface UseAnnotationHighlighterReturn {
 }
 
 /** The class a draft mark's highlight carries (`commentDraftShelf`). */
-export const COMMENT_DRAFT_CLASS = 'comment-draft';
+export const COMMENT_DRAFT_CLASS = "comment-draft";
 
 /**
  * Own pointer and caller-supplied range annotations for a Markdown container.
@@ -1070,13 +1107,23 @@ export function useAnnotationHighlighter({
   const [quickLabelPicker, setQuickLabelPicker] = useState<QuickLabelPickerState | null>(null);
 
   // Keep refs in sync
-  useEffect(() => { modeRef.current = mode; }, [mode]);
-  useEffect(() => { onAddAnnotationRef.current = onAddAnnotation; }, [onAddAnnotation]);
-  useEffect(() => { onSelectAnnotationRef.current = onSelectAnnotation; }, [onSelectAnnotation]);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+  useEffect(() => {
+    onAddAnnotationRef.current = onAddAnnotation;
+  }, [onAddAnnotation]);
+  useEffect(() => {
+    onSelectAnnotationRef.current = onSelectAnnotation;
+  }, [onSelectAnnotation]);
   const onRestoreMismatchRef = useRef(onRestoreMismatch);
-  useEffect(() => { onRestoreMismatchRef.current = onRestoreMismatch; }, [onRestoreMismatch]);
+  useEffect(() => {
+    onRestoreMismatchRef.current = onRestoreMismatch;
+  }, [onRestoreMismatch]);
   const onRestoreReportRef = useRef(onRestoreReport);
-  useEffect(() => { onRestoreReportRef.current = onRestoreReport; }, [onRestoreReport]);
+  useEffect(() => {
+    onRestoreReportRef.current = onRestoreReport;
+  }, [onRestoreReport]);
 
   const clearPendingSelection = useCallback(() => {
     pendingSourceRef.current = null;
@@ -1092,7 +1139,12 @@ export function useAnnotationHighlighter({
   // Paint a preview highlight on a formula the moment its toolbar/popover opens,
   // so the target is visible before the user commits the annotation.
   const showPendingMathPreview = useCallback((source: MathAnnotationSource) => {
-    applyMathAnnotationClass(source.element, 'pending-math', AnnotationType.COMMENT, source.displayMode);
+    applyMathAnnotationClass(
+      source.element,
+      "pending-math",
+      AnnotationType.COMMENT,
+      source.displayMode,
+    );
     pendingMathElementRef.current = source.element;
   }, []);
 
@@ -1115,9 +1167,11 @@ export function useAnnotationHighlighter({
 
   // Track mouse position for quick label picker
   useEffect(() => {
-    const track = (e: MouseEvent) => { lastMousePosRef.current = { x: e.clientX, y: e.clientY }; };
-    document.addEventListener('mouseup', track, true);
-    return () => document.removeEventListener('mouseup', track, true);
+    const track = (e: MouseEvent) => {
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    document.addEventListener("mouseup", track, true);
+    return () => document.removeEventListener("mouseup", track, true);
   }, [clearPendingSelection]);
 
   // --- Helpers ---
@@ -1130,15 +1184,10 @@ export function useAnnotationHighlighter({
     const searchOnce = (needle: string): Range | null => {
       if (!needle || !containerRef.current) return null;
 
-      const walker = document.createTreeWalker(
-        containerRef.current,
-        NodeFilter.SHOW_TEXT,
-        {
-          acceptNode: (node) => isAnnotationExcludedTextNode(node)
-            ? NodeFilter.FILTER_REJECT
-            : NodeFilter.FILTER_ACCEPT,
-        },
-      );
+      const walker = document.createTreeWalker(containerRef.current, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) =>
+          isAnnotationExcludedTextNode(node) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+      });
       const textNodes: Text[] = [];
       let currentNode: Text | null;
       while ((currentNode = walker.nextNode() as Text | null)) {
@@ -1186,20 +1235,20 @@ export function useAnnotationHighlighter({
         text: string,
         boundaries?: ReadonlySet<number>,
       ): { text: string; map: number[] } => {
-        let normalized = '';
+        let normalized = "";
         const map: number[] = [];
         let inWhitespace = false;
 
         for (let i = 0; i < text.length; i++) {
           if (boundaries?.has(i) && !inWhitespace && normalized.length > 0) {
-            normalized += ' ';
+            normalized += " ";
             map.push(i);
             inWhitespace = true;
           }
           const ch = text[i];
           if (/\s/.test(ch)) {
             if (!inWhitespace) {
-              normalized += ' ';
+              normalized += " ";
               map.push(i);
               inWhitespace = true;
             }
@@ -1212,8 +1261,8 @@ export function useAnnotationHighlighter({
 
         let start = 0;
         let end = normalized.length;
-        while (start < end && normalized[start] === ' ') start++;
-        while (end > start && normalized[end - 1] === ' ') end--;
+        while (start < end && normalized[start] === " ") start++;
+        while (end > start && normalized[end - 1] === " ") end--;
 
         return {
           text: normalized.slice(start, end),
@@ -1222,7 +1271,7 @@ export function useAnnotationHighlighter({
       };
 
       for (const node of textNodes) {
-        const text = node.textContent || '';
+        const text = node.textContent || "";
         const index = text.indexOf(needle);
         if (index !== -1) {
           const range = document.createRange();
@@ -1232,7 +1281,7 @@ export function useAnnotationHighlighter({
         }
       }
 
-      const fullText = textNodes.map((node) => node.textContent ?? '').join('');
+      const fullText = textNodes.map((node) => node.textContent ?? "").join("");
       const searchIndex = fullText.indexOf(needle);
       if (searchIndex !== -1) {
         return rangeFromTextOffsets(searchIndex, searchIndex + needle.length);
@@ -1282,7 +1331,7 @@ export function useAnnotationHighlighter({
     if (isBlankQuote(source?.text)) return null;
 
     const doms = highlighter.getDoms(source.id);
-    let blockId = '';
+    let blockId = "";
     let startOffset = 0;
 
     if (doms?.length > 0) {
@@ -1293,7 +1342,7 @@ export function useAnnotationHighlighter({
       }
       if (parent?.dataset.blockId) {
         blockId = parent.dataset.blockId;
-        const blockText = parent.textContent || '';
+        const blockText = parent.textContent || "";
         const beforeText = blockText.split(source.text)[0];
         startOffset = sourceOffsetOf(parent, el) ?? (beforeText?.length || 0);
       }
@@ -1317,13 +1366,15 @@ export function useAnnotationHighlighter({
       // Host capability: present only when a mentionSource was supplied AND a
       // token survived, so an annotation created without one is unchanged.
       ...(mentions && mentions.length > 0 ? { mentions } : {}),
-      ...(mathTargets.length > 0 ? {
-        mathTargets: mathTargets.map(target => ({
-          blockId: target.blockId,
-          tex: target.tex,
-          displayMode: target.displayMode,
-        })),
-      } : {}),
+      ...(mathTargets.length > 0
+        ? {
+            mathTargets: mathTargets.map((target) => ({
+              blockId: target.blockId,
+              tex: target.tex,
+              displayMode: target.displayMode,
+            })),
+          }
+        : {}),
       ...(isQuickLabel ? { isQuickLabel: true } : {}),
       ...(quickLabelTip ? { quickLabelTip } : {}),
     };
@@ -1340,14 +1391,23 @@ export function useAnnotationHighlighter({
     quickLabelTip?: string,
     mentions?: readonly string[],
   ) => {
-    const newAnnotation = buildAnnotationFromSource(highlighter, source, type, text, images, isQuickLabel, quickLabelTip, mentions);
+    const newAnnotation = buildAnnotationFromSource(
+      highlighter,
+      source,
+      type,
+      text,
+      images,
+      isQuickLabel,
+      quickLabelTip,
+      mentions,
+    );
     if (!newAnnotation) return;
     const mathTargets = pendingMathTargetsRef.current;
 
     if (type === AnnotationType.DELETION) {
-      highlighter.addClass('deletion', source.id);
+      highlighter.addClass("deletion", source.id);
     } else if (type === AnnotationType.COMMENT) {
-      highlighter.addClass('comment', source.id);
+      highlighter.addClass("comment", source.id);
     }
     applyMathTargets(mathTargets, source.id, type);
 
@@ -1394,18 +1454,18 @@ export function useAnnotationHighlighter({
     if (!containerRef.current || !ann.blockId || !ann.originalText) return null;
 
     const block = containerRef.current.querySelector<HTMLElement>(
-      `[data-block-id="${escapeAttrValue(ann.blockId)}"]`
+      `[data-block-id="${escapeAttrValue(ann.blockId)}"]`,
     );
     if (!block) return null;
 
     if (
-      block.matches('.math-annotatable[data-math-tex]') &&
+      block.matches(".math-annotatable[data-math-tex]") &&
       block.dataset.mathTex === ann.originalText
     ) {
       return block;
     }
 
-    const candidates = block.querySelectorAll<HTMLElement>('.math-annotatable[data-math-tex]');
+    const candidates = block.querySelectorAll<HTMLElement>(".math-annotatable[data-math-tex]");
     for (const candidate of Array.from(candidates)) {
       if (candidate.dataset.mathTex === ann.originalText) return candidate;
     }
@@ -1413,286 +1473,309 @@ export function useAnnotationHighlighter({
     return null;
   }, []);
 
-  const findMathElementsForAnnotation = useCallback((ann: Annotation): MathAnnotationTarget[] => {
-    if (!containerRef.current) return [];
+  const findMathElementsForAnnotation = useCallback(
+    (ann: Annotation): MathAnnotationTarget[] => {
+      if (!containerRef.current) return [];
 
-    if (ann.mathTargets?.length) {
-      const targets: MathAnnotationTarget[] = [];
-      const seen = new Set<HTMLElement>();
+      if (ann.mathTargets?.length) {
+        const targets: MathAnnotationTarget[] = [];
+        const seen = new Set<HTMLElement>();
 
-      ann.mathTargets.forEach(target => {
-        const block = containerRef.current?.querySelector<HTMLElement>(
-          `[data-block-id="${escapeAttrValue(target.blockId)}"]`
-        );
-        if (!block) return;
+        ann.mathTargets.forEach((target) => {
+          const block = containerRef.current?.querySelector<HTMLElement>(
+            `[data-block-id="${escapeAttrValue(target.blockId)}"]`,
+          );
+          if (!block) return;
 
-        const candidates = [
-          ...(block.matches('.math-annotatable[data-math-tex]') ? [block] : []),
-          ...Array.from(block.querySelectorAll<HTMLElement>('.math-annotatable[data-math-tex]')),
-        ];
-        const element = candidates.find(candidate => candidate.dataset.mathTex === target.tex);
-        if (!element || seen.has(element)) return;
+          const candidates = [
+            ...(block.matches(".math-annotatable[data-math-tex]") ? [block] : []),
+            ...Array.from(block.querySelectorAll<HTMLElement>(".math-annotatable[data-math-tex]")),
+          ];
+          const element = candidates.find((candidate) => candidate.dataset.mathTex === target.tex);
+          if (!element || seen.has(element)) return;
 
-        seen.add(element);
-        targets.push({
-          element,
-          blockId: target.blockId,
-          tex: target.tex,
-          displayMode: target.displayMode,
+          seen.add(element);
+          targets.push({
+            element,
+            blockId: target.blockId,
+            tex: target.tex,
+            displayMode: target.displayMode,
+          });
         });
-      });
 
-      return targets;
-    }
+        return targets;
+      }
 
-    const mathElement = findMathElementForAnnotation(ann);
-    if (!mathElement) return [];
+      const mathElement = findMathElementForAnnotation(ann);
+      if (!mathElement) return [];
 
-    return [{
-      element: mathElement,
-      blockId: ann.blockId,
-      tex: mathElement.dataset.mathTex ?? ann.originalText,
-      displayMode: mathElement.dataset.mathDisplay === 'true',
-    }];
-  }, [findMathElementForAnnotation]);
+      return [
+        {
+          element: mathElement,
+          blockId: ann.blockId,
+          tex: mathElement.dataset.mathTex ?? ann.originalText,
+          displayMode: mathElement.dataset.mathDisplay === "true",
+        },
+      ];
+    },
+    [findMathElementForAnnotation],
+  );
 
   // --- Imperative methods ---
 
-  const applyAnnotationsInternal = useCallback((anns: Annotation[]) => {
-    const highlighter = highlighterRef.current;
-    if (!highlighter || !containerRef.current) return;
+  const applyAnnotationsInternal = useCallback(
+    (anns: Annotation[]) => {
+      const highlighter = highlighterRef.current;
+      if (!highlighter || !containerRef.current) return;
 
-    const attempted: string[] = [];
-    const unanchored: string[] = [];
-    const moved: RestoredAnchor[] = [];
+      const attempted: string[] = [];
+      const unanchored: string[] = [];
+      const moved: RestoredAnchor[] = [];
 
-    // Record where a restored annotation's text sits when its stored blockId
-    // no longer names that place. Block ids are positional (`block-N`), so
-    // after the document changed the stored id can name a different block,
-    // and a line label read from it would point at the wrong line. Nothing is
-    // recorded while the stored block still holds the quote — an unchanged
-    // document, or a quote that also appears in the stored block — so the
-    // stored id (and the export built from it) stays exactly as it was.
-    const noteAnchor = (ann: Annotation, firstDom: Node | null | undefined, positionsStale: boolean) => {
-      if (!ann.blockId) return;
-      const blockEl = blockElementOf(firstDom);
-      const blockId = blockEl?.dataset.blockId;
-      if (!blockEl || !blockId || blockId === ann.blockId) return;
-      const stored = containerRef.current?.querySelector(
-        `[data-block-id="${escapeAttrValue(ann.blockId)}"]`,
-      );
-      const quote = compactText(ann.originalText);
-      if (stored && quote && compactText(stored.textContent ?? '').includes(quote)) return;
-      moved.push({
-        id: ann.id,
-        blockId,
-        startOffset: sourceOffsetOf(blockEl, firstDom) ?? quoteOffsetIn(blockEl.textContent ?? '', ann.originalText),
-        positionsStale,
-      });
-    };
-
-    anns.forEach(ann => {
-      if (ann.type === AnnotationType.GLOBAL_COMMENT) return;
-      // Diff-view comments (`diff-block-N`, drawn by the diff view) and
-      // checkbox toggles (raw-markdown quotes keyed by their block) are never
-      // text highlights. Callers filter them out; skipping them here as well
-      // keeps a stray one from being reported unanchored or moved, which would
-      // rewrite its blockId.
-      if (!annotationOwnsHighlight(ann)) return;
-      // A comment on a rendered diagram part has no text anchor: the
-      // diagram overlay restores it against its render and reports its own
-      // verdict, so it is neither attempted nor unanchored here (the same
-      // rule the raw-HTML pinpoints follow on their surface).
-      if (ann.diagramAnchor) return;
-      // A comment on part of an image has no text either: the image viewer
-      // draws its box, and the Viewer reports it unanchored when its image is
-      // gone from the document.
-      if (ann.imageRegion != null) return;
-      // An answer to a `:::question` block quotes the prompt but is not a
-      // selection: the question block draws it from the annotation, so it is
-      // never painted as a highlight (and never reported as unanchored here).
-      if (ann.questionAnswer) return;
-      // #881: a row whose quote is only whitespace has nothing to anchor to.
-      // Older drafts carry such rows (a double-click at a block boundary used
-      // to create one), and the stored positions still resolve, so restoring
-      // it paints an invisible mark on a spot the reviewer never chose. Skip
-      // it outright — neither attempted nor unanchored, the same treatment a
-      // diagram row gets, so a legacy draft does not raise an "Unanchored"
-      // chip and a toast on every load.
-      if (isBlankQuote(ann.originalText)) return;
-      attempted.push(ann.id);
-
-      // Skip if already highlighted
-      try {
-        const existingDoms = highlighter.getDoms(ann.id);
-        if (existingDoms && existingDoms.length > 0) return;
-      } catch {}
-      const existingManual = containerRef.current?.querySelector(`[data-bind-id="${ann.id}"]`);
-      if (existingManual) return;
-
-      const mathTargets = findMathElementsForAnnotation(ann);
-      const paintedMath = mathTargets.length > 0;
-      if (paintedMath) {
-        applyMathTargets(mathTargets, ann.id, ann.type);
-        if (!ann.startMeta && !ann.endMeta && !ann.mathTargets?.length) {
-          return;
-        }
-      }
-
-      // When a meta-based restore paints text that no longer matches the
-      // anchor's originalText (document drift), remember what it painted so
-      // the mismatch can be reported if the text fallback also fails.
-      let rejectedRestoreText: string | null = null;
-
-      if (ann.startMeta && ann.endMeta) {
-        try {
-          highlighter.fromStore(
-            metaWithBelowTitle(containerRef.current, ann.startMeta),
-            metaWithBelowTitle(containerRef.current, ann.endMeta),
-            ann.originalText,
-            ann.id,
-          );
-          const restoredDoms = highlighter.getDoms(ann.id);
-          if (restoredDoms && restoredDoms.length > 0) {
-            const restoredText = paintedTextOf(restoredDoms as HTMLElement[]);
-            if (
-              verifyRestoredContent &&
-              compactText(restoredText) !== compactText(ann.originalText)
-            ) {
-              // Positions resolved, but onto the WRONG text — remove the bad
-              // highlight and fall through to the text-search fallback.
-              try { highlighter.remove(ann.id); } catch {}
-              rejectedRestoreText = restoredText;
-            } else {
-              if (ann.type === AnnotationType.DELETION) {
-                highlighter.addClass('deletion', ann.id);
-              } else if (ann.type === AnnotationType.COMMENT) {
-                highlighter.addClass('comment', ann.id);
-              }
-              if (!paintedMath) noteAnchor(ann, restoredDoms[0] as Node, false);
-              return;
-            }
-          }
-        } catch {}
-      }
-
-      const range = findTextInDOM(ann.originalText);
-      if (!range) {
-        if (rejectedRestoreText !== null) {
-          onRestoreMismatchRef.current?.(ann, rejectedRestoreText);
-        }
-        // Nothing painted it: not the stored positions (absent, unresolvable,
-        // or onto other text) and not the search. A formula the math path
-        // painted above is anchored, whatever its quote search says.
-        if (!paintedMath) {
-          unanchored.push(ann.id);
-          moved.push({ id: ann.id, blockId: '', positionsStale: true });
-        }
-        console.warn(`Could not find text for annotation ${ann.id}: "${ann.originalText.slice(0, 50)}..."`);
-        return;
-      }
-
-      try {
-        const textNodes: { node: Text; start: number; end: number }[] = [];
-        // Excluded chrome is rejected by the search that produced this range,
-        // so a run of it inside the range is not part of the quote; wrapping it
-        // anyway would paint a list marker the reviewer never selected (and,
-        // on the next reload, make the painted text disagree with the quote).
-        const walker = document.createTreeWalker(
-          range.commonAncestorContainer.nodeType === Node.TEXT_NODE
-            ? range.commonAncestorContainer.parentNode!
-            : range.commonAncestorContainer,
-          NodeFilter.SHOW_TEXT,
-          {
-            acceptNode: (node) => isAnnotationExcludedTextNode(node)
-              ? NodeFilter.FILTER_REJECT
-              : NodeFilter.FILTER_ACCEPT,
-          },
+      // Record where a restored annotation's text sits when its stored blockId
+      // no longer names that place. Block ids are positional (`block-N`), so
+      // after the document changed the stored id can name a different block,
+      // and a line label read from it would point at the wrong line. Nothing is
+      // recorded while the stored block still holds the quote — an unchanged
+      // document, or a quote that also appears in the stored block — so the
+      // stored id (and the export built from it) stays exactly as it was.
+      const noteAnchor = (
+        ann: Annotation,
+        firstDom: Node | null | undefined,
+        positionsStale: boolean,
+      ) => {
+        if (!ann.blockId) return;
+        const blockEl = blockElementOf(firstDom);
+        const blockId = blockEl?.dataset.blockId;
+        if (!blockEl || !blockId || blockId === ann.blockId) return;
+        const stored = containerRef.current?.querySelector(
+          `[data-block-id="${escapeAttrValue(ann.blockId)}"]`,
         );
+        const quote = compactText(ann.originalText);
+        if (stored && quote && compactText(stored.textContent ?? "").includes(quote)) return;
+        moved.push({
+          id: ann.id,
+          blockId,
+          startOffset:
+            sourceOffsetOf(blockEl, firstDom) ??
+            quoteOffsetIn(blockEl.textContent ?? "", ann.originalText),
+          positionsStale,
+        });
+      };
 
-        let node: Text | null;
-        let inRange = false;
+      anns.forEach((ann) => {
+        if (ann.type === AnnotationType.GLOBAL_COMMENT) return;
+        // Diff-view comments (`diff-block-N`, drawn by the diff view) and
+        // checkbox toggles (raw-markdown quotes keyed by their block) are never
+        // text highlights. Callers filter them out; skipping them here as well
+        // keeps a stray one from being reported unanchored or moved, which would
+        // rewrite its blockId.
+        if (!annotationOwnsHighlight(ann)) return;
+        // A comment on a rendered diagram part has no text anchor: the
+        // diagram overlay restores it against its render and reports its own
+        // verdict, so it is neither attempted nor unanchored here (the same
+        // rule the raw-HTML pinpoints follow on their surface).
+        if (ann.diagramAnchor) return;
+        // A comment on part of an image has no text either: the image viewer
+        // draws its box, and the Viewer reports it unanchored when its image is
+        // gone from the document.
+        if (ann.imageRegion != null) return;
+        // An answer to a `:::question` block quotes the prompt but is not a
+        // selection: the question block draws it from the annotation, so it is
+        // never painted as a highlight (and never reported as unanchored here).
+        if (ann.questionAnswer) return;
+        // #881: a row whose quote is only whitespace has nothing to anchor to.
+        // Older drafts carry such rows (a double-click at a block boundary used
+        // to create one), and the stored positions still resolve, so restoring
+        // it paints an invisible mark on a spot the reviewer never chose. Skip
+        // it outright — neither attempted nor unanchored, the same treatment a
+        // diagram row gets, so a legacy draft does not raise an "Unanchored"
+        // chip and a toast on every load.
+        if (isBlankQuote(ann.originalText)) return;
+        attempted.push(ann.id);
 
-        while ((node = walker.nextNode() as Text | null)) {
-          if (node === range.startContainer) {
-            inRange = true;
-            const start = range.startOffset;
-            const end = node === range.endContainer ? range.endOffset : node.length;
-            if (end > start) {
-              textNodes.push({ node, start, end });
-            }
-            if (node === range.endContainer) break;
-            continue;
-          }
+        // Skip if already highlighted
+        try {
+          const existingDoms = highlighter.getDoms(ann.id);
+          if (existingDoms && existingDoms.length > 0) return;
+        } catch {}
+        const existingManual = containerRef.current?.querySelector(`[data-bind-id="${ann.id}"]`);
+        if (existingManual) return;
 
-          if (node === range.endContainer) {
-            if (inRange) {
-              const end = range.endOffset;
-              if (end > 0) {
-                textNodes.push({ node, start: 0, end });
-              }
-            }
-            break;
-          }
-
-          if (inRange && node.length > 0) {
-            textNodes.push({ node, start: 0, end: node.length });
+        const mathTargets = findMathElementsForAnnotation(ann);
+        const paintedMath = mathTargets.length > 0;
+        if (paintedMath) {
+          applyMathTargets(mathTargets, ann.id, ann.type);
+          if (!ann.startMeta && !ann.endMeta && !ann.mathTargets?.length) {
+            return;
           }
         }
 
-        if (textNodes.length === 0) {
-          console.warn(`No text nodes found for annotation ${ann.id}`);
+        // When a meta-based restore paints text that no longer matches the
+        // anchor's originalText (document drift), remember what it painted so
+        // the mismatch can be reported if the text fallback also fails.
+        let rejectedRestoreText: string | null = null;
+
+        if (ann.startMeta && ann.endMeta) {
+          try {
+            highlighter.fromStore(
+              metaWithBelowTitle(containerRef.current, ann.startMeta),
+              metaWithBelowTitle(containerRef.current, ann.endMeta),
+              ann.originalText,
+              ann.id,
+            );
+            const restoredDoms = highlighter.getDoms(ann.id);
+            if (restoredDoms && restoredDoms.length > 0) {
+              const restoredText = paintedTextOf(restoredDoms as HTMLElement[]);
+              if (
+                verifyRestoredContent &&
+                compactText(restoredText) !== compactText(ann.originalText)
+              ) {
+                // Positions resolved, but onto the WRONG text — remove the bad
+                // highlight and fall through to the text-search fallback.
+                try {
+                  highlighter.remove(ann.id);
+                } catch {}
+                rejectedRestoreText = restoredText;
+              } else {
+                if (ann.type === AnnotationType.DELETION) {
+                  highlighter.addClass("deletion", ann.id);
+                } else if (ann.type === AnnotationType.COMMENT) {
+                  highlighter.addClass("comment", ann.id);
+                }
+                if (!paintedMath) noteAnchor(ann, restoredDoms[0] as Node, false);
+                return;
+              }
+            }
+          } catch {}
+        }
+
+        const range = findTextInDOM(ann.originalText);
+        if (!range) {
+          if (rejectedRestoreText !== null) {
+            onRestoreMismatchRef.current?.(ann, rejectedRestoreText);
+          }
+          // Nothing painted it: not the stored positions (absent, unresolvable,
+          // or onto other text) and not the search. A formula the math path
+          // painted above is anchored, whatever its quote search says.
+          if (!paintedMath) {
+            unanchored.push(ann.id);
+            moved.push({ id: ann.id, blockId: "", positionsStale: true });
+          }
+          console.warn(
+            `Could not find text for annotation ${ann.id}: "${ann.originalText.slice(0, 50)}..."`,
+          );
           return;
         }
 
-        if (!paintedMath) noteAnchor(ann, textNodes[0].node, true);
+        try {
+          const textNodes: { node: Text; start: number; end: number }[] = [];
+          // Excluded chrome is rejected by the search that produced this range,
+          // so a run of it inside the range is not part of the quote; wrapping it
+          // anyway would paint a list marker the reviewer never selected (and,
+          // on the next reload, make the painted text disagree with the quote).
+          const walker = document.createTreeWalker(
+            range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+              ? range.commonAncestorContainer.parentNode!
+              : range.commonAncestorContainer,
+            NodeFilter.SHOW_TEXT,
+            {
+              acceptNode: (node) =>
+                isAnnotationExcludedTextNode(node)
+                  ? NodeFilter.FILTER_REJECT
+                  : NodeFilter.FILTER_ACCEPT,
+            },
+          );
 
-        textNodes.reverse().forEach(({ node, start, end }) => {
-          try {
-            const nodeRange = document.createRange();
-            nodeRange.setStart(node, start);
-            nodeRange.setEnd(node, end);
+          let node: Text | null;
+          let inRange = false;
 
-            const mark = document.createElement('mark');
-            mark.className = 'annotation-highlight';
-            mark.dataset.bindId = ann.id;
-
-            if (ann.type === AnnotationType.DELETION) {
-              mark.classList.add('deletion');
-            } else if (ann.type === AnnotationType.COMMENT) {
-              mark.classList.add('comment');
+          while ((node = walker.nextNode() as Text | null)) {
+            if (node === range.startContainer) {
+              inRange = true;
+              const start = range.startOffset;
+              const end = node === range.endContainer ? range.endOffset : node.length;
+              if (end > start) {
+                textNodes.push({ node, start, end });
+              }
+              if (node === range.endContainer) break;
+              continue;
             }
 
-            nodeRange.surroundContents(mark);
+            if (node === range.endContainer) {
+              if (inRange) {
+                const end = range.endOffset;
+                if (end > 0) {
+                  textNodes.push({ node, start: 0, end });
+                }
+              }
+              break;
+            }
 
-            mark.addEventListener('click', () => {
-              onSelectAnnotationRef.current?.(ann.id);
-            });
-          } catch (e) {
-            console.warn(`Failed to wrap text node for annotation ${ann.id}:`, e);
+            if (inRange && node.length > 0) {
+              textNodes.push({ node, start: 0, end: node.length });
+            }
           }
-        });
-      } catch (e) {
-        console.warn(`Failed to apply highlight for annotation ${ann.id}:`, e);
-      }
-    });
 
-    if (attempted.length > 0) {
-      onRestoreReportRef.current?.({ attempted, unanchored, ...(moved.length > 0 ? { moved } : {}) });
-    }
-  }, [findMathElementsForAnnotation, findTextInDOM, verifyRestoredContent]);
+          if (textNodes.length === 0) {
+            console.warn(`No text nodes found for annotation ${ann.id}`);
+            return;
+          }
+
+          if (!paintedMath) noteAnchor(ann, textNodes[0].node, true);
+
+          textNodes.reverse().forEach(({ node, start, end }) => {
+            try {
+              const nodeRange = document.createRange();
+              nodeRange.setStart(node, start);
+              nodeRange.setEnd(node, end);
+
+              const mark = document.createElement("mark");
+              mark.className = "annotation-highlight";
+              mark.dataset.bindId = ann.id;
+
+              if (ann.type === AnnotationType.DELETION) {
+                mark.classList.add("deletion");
+              } else if (ann.type === AnnotationType.COMMENT) {
+                mark.classList.add("comment");
+              }
+
+              nodeRange.surroundContents(mark);
+
+              mark.addEventListener("click", () => {
+                onSelectAnnotationRef.current?.(ann.id);
+              });
+            } catch (e) {
+              console.warn(`Failed to wrap text node for annotation ${ann.id}:`, e);
+            }
+          });
+        } catch (e) {
+          console.warn(`Failed to apply highlight for annotation ${ann.id}:`, e);
+        }
+      });
+
+      if (attempted.length > 0) {
+        onRestoreReportRef.current?.({
+          attempted,
+          unanchored,
+          ...(moved.length > 0 ? { moved } : {}),
+        });
+      }
+    },
+    [findMathElementsForAnnotation, findTextInDOM, verifyRestoredContent],
+  );
 
   const removeHighlight = useCallback((id: string) => {
     highlighterRef.current?.remove(id);
 
     const mathHighlights = containerRef.current?.querySelectorAll(
-      `[data-bind-id="${id}"][data-math-annotation="true"]`
+      `[data-bind-id="${id}"][data-math-annotation="true"]`,
     );
     mathHighlights?.forEach(clearMathAnnotationClass);
 
     const manualHighlights = containerRef.current?.querySelectorAll(`[data-bind-id="${id}"]`);
-    manualHighlights?.forEach(el => {
-      if ((el as HTMLElement).dataset.mathAnnotation === 'true') return;
+    manualHighlights?.forEach((el) => {
+      if ((el as HTMLElement).dataset.mathAnnotation === "true") return;
       const parent = el.parentNode;
       while (el.firstChild) {
         parent?.insertBefore(el.firstChild, el);
@@ -1705,9 +1788,9 @@ export function useAnnotationHighlighter({
     const mathHighlights = containerRef.current?.querySelectorAll('[data-math-annotation="true"]');
     mathHighlights?.forEach(clearMathAnnotationClass);
 
-    const manualHighlights = containerRef.current?.querySelectorAll('[data-bind-id]');
-    manualHighlights?.forEach(el => {
-      if ((el as HTMLElement).dataset.mathAnnotation === 'true') return;
+    const manualHighlights = containerRef.current?.querySelectorAll("[data-bind-id]");
+    manualHighlights?.forEach((el) => {
+      if ((el as HTMLElement).dataset.mathAnnotation === "true") return;
       const parent = el.parentNode;
       while (el.firstChild) {
         parent?.insertBefore(el.firstChild, el);
@@ -1715,9 +1798,9 @@ export function useAnnotationHighlighter({
       el.remove();
     });
 
-    const webHighlights = containerRef.current?.querySelectorAll('.annotation-highlight');
-    webHighlights?.forEach(el => {
-      if ((el as HTMLElement).dataset.mathAnnotation === 'true') return;
+    const webHighlights = containerRef.current?.querySelectorAll(".annotation-highlight");
+    webHighlights?.forEach((el) => {
+      if ((el as HTMLElement).dataset.mathAnnotation === "true") return;
       const parent = el.parentNode;
       while (el.firstChild) {
         parent?.insertBefore(el.firstChild, el);
@@ -1735,8 +1818,8 @@ export function useAnnotationHighlighter({
     const highlighter = new Highlighter({
       $root: containerRef.current,
       exceptSelectors: PAINT_SKIPPED_SELECTORS,
-      wrapTag: 'mark',
-      style: { className: 'annotation-highlight' },
+      wrapTag: "mark",
+      style: { className: "annotation-highlight" },
     });
 
     // Chromium can extend a triple-clicked line into empty or indentation nodes of the next block.
@@ -1748,7 +1831,9 @@ export function useAnnotationHighlighter({
     // hook's own callback type rather than importing SelectedNode from the package's dist/.
     type SelectedNodesTap = Parameters<typeof highlighter.hooks.Render.SelectedNodes.tap>[0];
     highlighter.hooks.Render.SelectedNodes.tap(((...args: unknown[]) =>
-      trimWhitespaceOnlyBoundaryNodes(dropEmptyNodes(args[1] as SelectedNodeLike[]))) as SelectedNodesTap);
+      trimWhitespaceOnlyBoundaryNodes(
+        dropEmptyNodes(args[1] as SelectedNodeLike[]),
+      )) as SelectedNodesTap);
 
     highlighterRef.current = highlighter;
     // Whether the library's pointer-end handler is attached (`run()`), and whether this effect was cleaned up.
@@ -1773,117 +1858,131 @@ export function useAnnotationHighlighter({
     /** The selection string of a drag let go outside the document, while its highlight is made. */
     let releasedOutsideQuote: string | null = null;
 
-    highlighter.on(Highlighter.event.CREATE, ({ sources, type }: { sources: any[]; type?: string }) => {
-      if (type === 'from-store') return;
-      // Store positions as if a host's `belowTitle` slot were not there, so
-      // its contents never renumber a comment's parent element (identity
-      // when the document has no slot). See utils/belowTitleSlot.
-      for (const created of sources) {
-        const startMeta = metaWithoutBelowTitle(containerRef.current, created.startMeta, 'start');
-        const endMeta = metaWithoutBelowTitle(containerRef.current, created.endMeta, 'end');
-        if (startMeta !== created.startMeta) created.startMeta = startMeta;
-        if (endMeta !== created.endMeta) created.endMeta = endMeta;
-      }
-      if (sources.length > 0) {
-        const source = sources[0];
-        const doms = highlighter.getDoms(source.id);
-        if (doms?.length > 0) {
-          // Repair the quote before anything reads it: the popover preview,
-          // the comment draft key, and the annotation's own `originalText` all
-          // come from `source.text`.
-          // A selection let go outside the document was painted from its
-          // range; its quote is the selection's own string, as for one let go
-          // inside.
-          if (releasedOutsideQuote !== null) source.text = releasedOutsideQuote;
-          source.text = quoteWithoutExcludedText(
-            pendingRangeRunsRef.current,
-            source.text,
-            doms.map((dom: HTMLElement) => dom.textContent ?? '').join(''),
-          );
-          // #881, belt to the capture-phase guard's braces: every producer of
-          // a selection highlight lands here (the library's own pointer-end
-          // listener, the touch selectionchange bridge, vim and pinpoint
-          // ranges), and the quote repair above can itself leave nothing but
-          // whitespace. A blank quote opens no toolbar, no composer and
-          // creates no annotation; the painted-but-invisible highlight goes
-          // with it, and the pending selection already on screen is untouched.
-          if (isBlankQuote(source.text)) {
-            try { highlighter.remove(source.id); } catch (error) {
-              warnHighlighterFailure('cleanup of a blank selection', error);
+    highlighter.on(
+      Highlighter.event.CREATE,
+      ({ sources, type }: { sources: any[]; type?: string }) => {
+        if (type === "from-store") return;
+        // Store positions as if a host's `belowTitle` slot were not there, so
+        // its contents never renumber a comment's parent element (identity
+        // when the document has no slot). See utils/belowTitleSlot.
+        for (const created of sources) {
+          const startMeta = metaWithoutBelowTitle(containerRef.current, created.startMeta, "start");
+          const endMeta = metaWithoutBelowTitle(containerRef.current, created.endMeta, "end");
+          if (startMeta !== created.startMeta) created.startMeta = startMeta;
+          if (endMeta !== created.endMeta) created.endMeta = endMeta;
+        }
+        if (sources.length > 0) {
+          const source = sources[0];
+          const doms = highlighter.getDoms(source.id);
+          if (doms?.length > 0) {
+            // Repair the quote before anything reads it: the popover preview,
+            // the comment draft key, and the annotation's own `originalText` all
+            // come from `source.text`.
+            // A selection let go outside the document was painted from its
+            // range; its quote is the selection's own string, as for one let go
+            // inside.
+            if (releasedOutsideQuote !== null) source.text = releasedOutsideQuote;
+            source.text = quoteWithoutExcludedText(
+              pendingRangeRunsRef.current,
+              source.text,
+              doms.map((dom: HTMLElement) => dom.textContent ?? "").join(""),
+            );
+            // #881, belt to the capture-phase guard's braces: every producer of
+            // a selection highlight lands here (the library's own pointer-end
+            // listener, the touch selectionchange bridge, vim and pinpoint
+            // ranges), and the quote repair above can itself leave nothing but
+            // whitespace. A blank quote opens no toolbar, no composer and
+            // creates no annotation; the painted-but-invisible highlight goes
+            // with it, and the pending selection already on screen is untouched.
+            if (isBlankQuote(source.text)) {
+              try {
+                highlighter.remove(source.id);
+              } catch (error) {
+                warnHighlighterFailure("cleanup of a blank selection", error);
+              }
+              pendingRangeRunsRef.current = null;
+              window.getSelection()?.removeAllRanges();
+              return;
             }
-            pendingRangeRunsRef.current = null;
-            window.getSelection()?.removeAllRanges();
-            return;
-          }
-          // Clean up previous pending. Visible drafts: a composer with words left open as other words are
-          // selected stays, as a draft mark with its badge.
-          if (pendingSourceRef.current && !keepAsDraftMarkRef.current(pendingSourceRef.current.id)) {
-            highlighter.remove(pendingSourceRef.current.id);
-          }
-          clearPendingSelection();
-          pendingMathTargetsRef.current = mathTargetsFromSelection(window.getSelection(), containerRef.current);
-          setCommentPopover(null);
-          setQuickLabelPicker(null);
+            // Clean up previous pending. Visible drafts: a composer with words left open as other words are
+            // selected stays, as a draft mark with its badge.
+            if (
+              pendingSourceRef.current &&
+              !keepAsDraftMarkRef.current(pendingSourceRef.current.id)
+            ) {
+              highlighter.remove(pendingSourceRef.current.id);
+            }
+            clearPendingSelection();
+            pendingMathTargetsRef.current = mathTargetsFromSelection(
+              window.getSelection(),
+              containerRef.current,
+            );
+            setCommentPopover(null);
+            setQuickLabelPicker(null);
 
-          const effectiveMode = pendingModeOverrideRef.current ?? modeRef.current;
-          pendingModeOverrideRef.current = null;
+            const effectiveMode = pendingModeOverrideRef.current ?? modeRef.current;
+            pendingModeOverrideRef.current = null;
 
-          if (effectiveMode === 'redline') {
-            createAnnotationFromSource(highlighter, source, AnnotationType.DELETION);
-            window.getSelection()?.removeAllRanges();
-          } else if (effectiveMode === 'comment') {
-            pendingSourceRef.current = source;
-            // A comment reopened by its host (`reopenComment`) comes back with its words.
-            const reopened = reopenTextRef.current;
-            if (reopened !== null) reopenOpenedRef.current = true;
-            setCommentPopover({
-              anchorEl: doms[0] as HTMLElement,
-              contextText: source.text.slice(0, 80),
-              selectedText: source.text,
-              ...(reopened !== null ? { initialText: reopened } : {}),
-              source,
-              draftKey: commentDraftTargetKey(source, source.text),
-              blockIds: selectionBlockIds(highlighter, source),
-              ...withStartOffset(selectionSourceOffset(highlighter, source)),
-            });
-          } else if (effectiveMode === 'quickLabel') {
-            pendingSourceRef.current = source;
-            setQuickLabelPicker({
-              anchorEl: doms[0] as HTMLElement,
-              cursorHint: lastMousePosRef.current,
-              source,
-            });
-          } else {
-            // Selection mode — show toolbar
-            pendingSourceRef.current = source;
-            const marks = [...doms] as HTMLElement[];
-            const selectionText = source.text;
-            setToolbarState({
-              element: doms[0] as HTMLElement,
-              source,
-              selectionText,
-              // Built only when Copy (rich text) is pressed: the pending
-              // highlight's marks still bound the selected words, and the
-              // sanitizer drops the marks themselves.
-              getRichCopy: () => {
-                const first = marks[0];
-                const last = marks[marks.length - 1];
-                if (!first?.isConnected || !last?.isConnected) return null;
-                const range = document.createRange();
-                range.setStartBefore(first);
-                range.setEndAfter(last);
-                return richCopySourceFromRange(range, selectionText);
-              },
-              // The marks split at every text node: the touch toolbar goes
-              // below all of them, not under the first.
-              getAnchorRect: () => unionToolbarRect(
-                marks.filter((m) => m.isConnected).flatMap((m) => Array.from(m.getClientRects())),
-              ),
-            });
+            if (effectiveMode === "redline") {
+              createAnnotationFromSource(highlighter, source, AnnotationType.DELETION);
+              window.getSelection()?.removeAllRanges();
+            } else if (effectiveMode === "comment") {
+              pendingSourceRef.current = source;
+              // A comment reopened by its host (`reopenComment`) comes back with its words.
+              const reopened = reopenTextRef.current;
+              if (reopened !== null) reopenOpenedRef.current = true;
+              setCommentPopover({
+                anchorEl: doms[0] as HTMLElement,
+                contextText: source.text.slice(0, 80),
+                selectedText: source.text,
+                ...(reopened !== null ? { initialText: reopened } : {}),
+                source,
+                draftKey: commentDraftTargetKey(source, source.text),
+                blockIds: selectionBlockIds(highlighter, source),
+                ...withStartOffset(selectionSourceOffset(highlighter, source)),
+              });
+            } else if (effectiveMode === "quickLabel") {
+              pendingSourceRef.current = source;
+              setQuickLabelPicker({
+                anchorEl: doms[0] as HTMLElement,
+                cursorHint: lastMousePosRef.current,
+                source,
+              });
+            } else {
+              // Selection mode — show toolbar
+              pendingSourceRef.current = source;
+              const marks = [...doms] as HTMLElement[];
+              const selectionText = source.text;
+              setToolbarState({
+                element: doms[0] as HTMLElement,
+                source,
+                selectionText,
+                // Built only when Copy (rich text) is pressed: the pending
+                // highlight's marks still bound the selected words, and the
+                // sanitizer drops the marks themselves.
+                getRichCopy: () => {
+                  const first = marks[0];
+                  const last = marks[marks.length - 1];
+                  if (!first?.isConnected || !last?.isConnected) return null;
+                  const range = document.createRange();
+                  range.setStartBefore(first);
+                  range.setEndAfter(last);
+                  return richCopySourceFromRange(range, selectionText);
+                },
+                // The marks split at every text node: the touch toolbar goes
+                // below all of them, not under the first.
+                getAnchorRect: () =>
+                  unionToolbarRect(
+                    marks
+                      .filter((m) => m.isConnected)
+                      .flatMap((m) => Array.from(m.getClientRects())),
+                  ),
+              });
+            }
           }
         }
-      }
-    });
+      },
+    );
 
     highlighter.on(Highlighter.event.CLICK, ({ id }: { id: string }) => {
       // A draft mark (visible drafts) opens its composer again; it is no annotation yet.
@@ -1962,8 +2061,8 @@ export function useAnnotationHighlighter({
     };
 
     const container = containerRef.current;
-    container.addEventListener('mouseup', handlePointerEndCapture, true);
-    container.addEventListener('touchend', handlePointerEndCapture, true);
+    container.addEventListener("mouseup", handlePointerEndCapture, true);
+    container.addEventListener("touchend", handlePointerEndCapture, true);
 
     // A drag that starts in the document and is let go OUTSIDE it (left of the
     // text, below the card, over a panel, outside the window). The library
@@ -1997,56 +2096,101 @@ export function useAnnotationHighlighter({
     // pointer is level with (a caret looked up just inside the document's box),
     // and in redline not stretched at all. Above or below the document the
     // browser's selection grows as the page scrolls, and is trusted as said.
-    type SeenSelection = { anchorNode: Node; anchorOffset: number; focusNode: Node; focusOffset: number; length: number };
+    type SeenSelection = {
+      anchorNode: Node;
+      anchorOffset: number;
+      focusNode: Node;
+      focusOffset: number;
+      length: number;
+    };
     let seenInside: SeenSelection | null = null;
     let seenUnderPointer: SeenSelection | null = null;
     let pointerOverDocument = true;
     /** Where the pointer last was with the button down, for a release the page never hears. */
     let lastPressPoint: { x: number; y: number } | null = null;
     const stillThere = (seen: SeenSelection) =>
-      seen.anchorNode.isConnected && seen.focusNode.isConnected
-      && seen.anchorOffset <= (seen.anchorNode.nodeValue?.length ?? seen.anchorNode.childNodes.length)
-      && seen.focusOffset <= (seen.focusNode.nodeValue?.length ?? seen.focusNode.childNodes.length);
+      seen.anchorNode.isConnected &&
+      seen.focusNode.isConnected &&
+      seen.anchorOffset <=
+        (seen.anchorNode.nodeValue?.length ?? seen.anchorNode.childNodes.length) &&
+      seen.focusOffset <= (seen.focusNode.nodeValue?.length ?? seen.focusNode.childNodes.length);
     const noteSelectionInside = () => {
       const selection = window.getSelection();
       if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
       const { anchorNode, focusNode } = selection;
-      if (!anchorNode || !focusNode || !container.contains(anchorNode) || !container.contains(focusNode)) return;
+      if (
+        !anchorNode ||
+        !focusNode ||
+        !container.contains(anchorNode) ||
+        !container.contains(focusNode)
+      )
+        return;
       const length = selection.getRangeAt(0).toString().length;
       if (seenInside && selectionRanAway(length, seenInside.length)) return;
-      const seen = { anchorNode, anchorOffset: selection.anchorOffset, focusNode, focusOffset: selection.focusOffset, length };
+      const seen = {
+        anchorNode,
+        anchorOffset: selection.anchorOffset,
+        focusNode,
+        focusOffset: selection.focusOffset,
+        length,
+      };
       seenInside = seen;
       if (pointerOverDocument) seenUnderPointer = seen;
     };
     /** At most this many characters past what was selected under the pointer: the rest of a line or two. */
     const LINE_EDGE_STRETCH = 400;
-    const commitReleasedOutside = (seen: SeenSelection | null, underPointer: SeenSelection | null, at: { x: number; y: number } | null) => {
+    const commitReleasedOutside = (
+      seen: SeenSelection | null,
+      underPointer: SeenSelection | null,
+      at: { x: number; y: number } | null,
+    ) => {
       const selection = window.getSelection();
-      if (disposed || !listening || !selection || selection.isCollapsed || selection.rangeCount === 0) return;
+      if (
+        disposed ||
+        !listening ||
+        !selection ||
+        selection.isCollapsed ||
+        selection.rangeCount === 0
+      )
+        return;
       const box = container.getBoundingClientRect();
       if (at && (at.x < box.left || at.x > box.right)) {
         // Off to the side.
         if (!underPointer || !stillThere(underPointer)) return;
         const { anchorNode, anchorOffset, focusNode, focusOffset, length } = underPointer;
-        const edge = (pendingModeOverrideRef.current ?? modeRef.current) === 'redline' ? null : textCaretAt(
-          container,
-          Math.min(Math.max(at.x, box.left + 1), box.right - 1),
-          Math.min(Math.max(at.y, Math.max(box.top, 0) + 1), Math.min(box.bottom, window.innerHeight) - 1),
-        );
+        const edge =
+          (pendingModeOverrideRef.current ?? modeRef.current) === "redline"
+            ? null
+            : textCaretAt(
+                container,
+                Math.min(Math.max(at.x, box.left + 1), box.right - 1),
+                Math.min(
+                  Math.max(at.y, Math.max(box.top, 0) + 1),
+                  Math.min(box.bottom, window.innerHeight) - 1,
+                ),
+              );
         if (edge) {
           selection.setBaseAndExtent(anchorNode, anchorOffset, edge.node, edge.offset);
-          const stretched = selection.rangeCount > 0 ? selection.getRangeAt(0).toString().length : 0;
-          if (stretched < length || stretched > length + LINE_EDGE_STRETCH) selection.setBaseAndExtent(anchorNode, anchorOffset, focusNode, focusOffset);
+          const stretched =
+            selection.rangeCount > 0 ? selection.getRangeAt(0).toString().length : 0;
+          if (stretched < length || stretched > length + LINE_EDGE_STRETCH)
+            selection.setBaseAndExtent(anchorNode, anchorOffset, focusNode, focusOffset);
         } else {
           selection.setBaseAndExtent(anchorNode, anchorOffset, focusNode, focusOffset);
         }
         if (selection.isCollapsed || selection.rangeCount === 0) return;
       } else {
         const live = selection.getRangeAt(0);
-        const liveInside = container.contains(live.startContainer) && container.contains(live.endContainer);
+        const liveInside =
+          container.contains(live.startContainer) && container.contains(live.endContainer);
         if (!liveInside || (seen && selectionRanAway(live.toString().length, seen.length))) {
           if (!seen || !stillThere(seen)) return;
-          selection.setBaseAndExtent(seen.anchorNode, seen.anchorOffset, seen.focusNode, seen.focusOffset);
+          selection.setBaseAndExtent(
+            seen.anchorNode,
+            seen.anchorOffset,
+            seen.focusNode,
+            seen.focusOffset,
+          );
           if (selection.isCollapsed || selection.rangeCount === 0) return;
         }
       }
@@ -2066,7 +2210,7 @@ export function useAnnotationHighlighter({
         if (highlighter.fromRange(range)) window.getSelection()?.removeAllRanges();
       } catch (error) {
         pendingRangeRunsRef.current = null;
-        warnHighlighterFailure('painting a selection released outside the document', error);
+        warnHighlighterFailure("painting a selection released outside the document", error);
       } finally {
         releasedOutsideQuote = null;
       }
@@ -2093,19 +2237,29 @@ export function useAnnotationHighlighter({
       const selection = window.getSelection();
       const focus = textCaretAt(container, x, y);
       if (!caretDrag || !selection || !focus || !caretDrag.anchor.node.isConnected) return;
-      selection.setBaseAndExtent(caretDrag.anchor.node, caretDrag.anchor.offset, focus.node, focus.offset);
+      selection.setBaseAndExtent(
+        caretDrag.anchor.node,
+        caretDrag.anchor.offset,
+        focus.node,
+        focus.offset,
+      );
     };
     const followCaretDrag = (event: MouseEvent) => {
       const drag = caretDrag;
       if (!drag || !listening) return;
-      if (!drag.moved && Math.hypot(event.clientX - drag.x0, event.clientY - drag.y0) >= DRAG_SLOP_PX) drag.moved = true;
+      if (
+        !drag.moved &&
+        Math.hypot(event.clientX - drag.x0, event.clientY - drag.y0) >= DRAG_SLOP_PX
+      )
+        drag.moved = true;
       if (!drag.moved) return;
       if (!drag.driving) {
         // The selection read here is the one the browser made of the move before.
         const selection = window.getSelection();
         const collapsed = !selection || selection.rangeCount === 0 || selection.isCollapsed;
         const focus = textCaretAt(container, event.clientX, event.clientY);
-        const elsewhere = !!focus && (focus.node !== drag.anchor.node || focus.offset !== drag.anchor.offset);
+        const elsewhere =
+          !!focus && (focus.node !== drag.anchor.node || focus.offset !== drag.anchor.offset);
         drag.caretMoves = collapsed && elsewhere ? drag.caretMoves + 1 : 0;
         if (drag.caretMoves < 2) return;
         drag.driving = true;
@@ -2121,9 +2275,9 @@ export function useAnnotationHighlighter({
       pointerOverDocument = true;
       lastPressPoint = null;
       pressed = null;
-      document.removeEventListener('mouseup', handlePressRelease, true);
-      document.removeEventListener('mousemove', handlePressMove, true);
-      document.removeEventListener('selectionchange', noteSelectionInside);
+      document.removeEventListener("mouseup", handlePressRelease, true);
+      document.removeEventListener("mousemove", handlePressMove, true);
+      document.removeEventListener("selectionchange", noteSelectionInside);
     };
     const handlePressRelease = (event: MouseEvent) => {
       if (event.button !== 0) return;
@@ -2140,8 +2294,15 @@ export function useAnnotationHighlighter({
       // Collapsed here, before the library's handler reads it, it makes
       // nothing (it used to make a one-letter highlight, often with no toolbar).
       const selection = window.getSelection();
-      if (press?.plain && !press.moved && selection && !selection.isCollapsed && selection.toString().length <= 2
-        && container.contains(selection.anchorNode) && container.contains(selection.focusNode)) {
+      if (
+        press?.plain &&
+        !press.moved &&
+        selection &&
+        !selection.isCollapsed &&
+        selection.toString().length <= 2 &&
+        container.contains(selection.anchorNode) &&
+        container.contains(selection.focusNode)
+      ) {
         selection.removeAllRanges();
         return;
       }
@@ -2153,17 +2314,22 @@ export function useAnnotationHighlighter({
       const commit = () => {
         if (done) return;
         done = true;
-        window.removeEventListener('mouseup', commit);
+        window.removeEventListener("mouseup", commit);
         commitReleasedOutside(seen, underPointer, at);
       };
-      window.addEventListener('mouseup', commit);
+      window.addEventListener("mouseup", commit);
       window.setTimeout(commit, 0);
     };
     // A release the page never hears (over a frame): the first move with the
     // button up ends the drag.
     const handlePressMove = (event: MouseEvent) => {
       if (event.buttons & 1) {
-        if (pressed && !pressed.moved && Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) >= DRAG_SLOP_PX) pressed.moved = true;
+        if (
+          pressed &&
+          !pressed.moved &&
+          Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) >= DRAG_SLOP_PX
+        )
+          pressed.moved = true;
         // The selection read at this move is the one the browser made of the move before.
         noteSelectionInside();
         pointerOverDocument = event.target instanceof Node && container.contains(event.target);
@@ -2182,20 +2348,33 @@ export function useAnnotationHighlighter({
       // The main button only; Ctrl+click is the context menu on a Mac.
       if (event.button !== 0 || event.ctrlKey) return;
       endPress();
-      document.addEventListener('mouseup', handlePressRelease, true);
-      document.addEventListener('mousemove', handlePressMove, true);
-      document.addEventListener('selectionchange', noteSelectionInside);
+      document.addEventListener("mouseup", handlePressRelease, true);
+      document.addEventListener("mousemove", handlePressMove, true);
+      document.addEventListener("selectionchange", noteSelectionInside);
       // Multi-clicks and Shift+click select without moving: only a single plain press can be a wobbling click.
-      pressed = { x: event.clientX, y: event.clientY, moved: false, plain: event.detail <= 1 && !event.shiftKey };
+      pressed = {
+        x: event.clientX,
+        y: event.clientY,
+        moved: false,
+        plain: event.detail <= 1 && !event.shiftKey,
+      };
       // A single plain press on text: multi-clicks, modified presses, controls,
       // links and scrollbars keep the browser's own handling.
       const target = event.target instanceof Element ? event.target : null;
       if (event.detail > 1 || event.shiftKey || event.altKey || event.metaKey) return;
       if (!target || target.closest(NOT_A_TEXT_PRESS) || isScrollbarPress(event)) return;
       const anchor = textCaretAt(container, event.clientX, event.clientY);
-      if (anchor) caretDrag = { x0: event.clientX, y0: event.clientY, anchor, moved: false, caretMoves: 0, driving: false };
+      if (anchor)
+        caretDrag = {
+          x0: event.clientX,
+          y0: event.clientY,
+          anchor,
+          moved: false,
+          caretMoves: 0,
+          driving: false,
+        };
     };
-    container.addEventListener('mousedown', handlePressStart, true);
+    container.addEventListener("mousedown", handlePressStart, true);
 
     // On a touch screen a host that composes takes the selection when the
     // person chooses its Comment (takeSelection); the library painting it at
@@ -2226,8 +2405,8 @@ export function useAnnotationHighlighter({
       if (!mathElement) return;
 
       const existingId = mathElement.dataset.bindId;
-      const selectedText = selection?.toString().trim() ?? '';
-      if (!selectedText && existingId && modeRef.current !== 'redline') {
+      const selectedText = selection?.toString().trim() ?? "";
+      if (!selectedText && existingId && modeRef.current !== "redline") {
         event.preventDefault();
         event.stopPropagation();
         onSelectAnnotationRef.current?.(existingId);
@@ -2255,13 +2434,13 @@ export function useAnnotationHighlighter({
       setCommentPopover(null);
       setQuickLabelPicker(null);
 
-      if (modeRef.current === 'redline') {
+      if (modeRef.current === "redline") {
         createAnnotationFromMathSource(source, AnnotationType.DELETION);
         selection?.removeAllRanges();
         return;
       }
 
-      if (modeRef.current === 'comment') {
+      if (modeRef.current === "comment") {
         pendingSourceRef.current = source;
         showPendingMathPreview(source);
         setCommentPopover({
@@ -2275,7 +2454,7 @@ export function useAnnotationHighlighter({
         return;
       }
 
-      if (modeRef.current === 'quickLabel') {
+      if (modeRef.current === "quickLabel") {
         pendingSourceRef.current = source;
         showPendingMathPreview(source);
         setQuickLabelPicker({
@@ -2295,8 +2474,8 @@ export function useAnnotationHighlighter({
       });
     };
 
-    containerRef.current.addEventListener('mousedown', handleMathMouseDown, true);
-    containerRef.current.addEventListener('mouseup', handleMathMouseUp, true);
+    containerRef.current.addEventListener("mousedown", handleMathMouseDown, true);
+    containerRef.current.addEventListener("mouseup", handleMathMouseUp, true);
 
     // Mobile bridge
     let selectionTimer: ReturnType<typeof setTimeout>;
@@ -2320,7 +2499,7 @@ export function useAnnotationHighlighter({
         return true;
       } catch (error) {
         pendingRangeRunsRef.current = null;
-        warnHighlighterFailure('painting a touch selection', error);
+        warnHighlighterFailure("painting a touch selection", error);
         return false;
       }
     };
@@ -2334,7 +2513,7 @@ export function useAnnotationHighlighter({
       : null;
 
     if (handleSelectionChange) {
-      document.addEventListener('selectionchange', handleSelectionChange);
+      document.addEventListener("selectionchange", handleSelectionChange);
     }
 
     // Visible drafts waiting from another mount of this document come back as draft marks.
@@ -2347,136 +2526,139 @@ export function useAnnotationHighlighter({
     return () => {
       if (handleSelectionChange) {
         clearTimeout(selectionTimer);
-        document.removeEventListener('selectionchange', handleSelectionChange);
+        document.removeEventListener("selectionchange", handleSelectionChange);
       }
-      containerRef.current?.removeEventListener('mousedown', handleMathMouseDown, true);
-      containerRef.current?.removeEventListener('mouseup', handleMathMouseUp, true);
-      container.removeEventListener('mouseup', handlePointerEndCapture, true);
-      container.removeEventListener('touchend', handlePointerEndCapture, true);
-      container.removeEventListener('mousedown', handlePressStart, true);
+      containerRef.current?.removeEventListener("mousedown", handleMathMouseDown, true);
+      containerRef.current?.removeEventListener("mouseup", handleMathMouseUp, true);
+      container.removeEventListener("mouseup", handlePointerEndCapture, true);
+      container.removeEventListener("touchend", handlePointerEndCapture, true);
+      container.removeEventListener("mousedown", handlePressStart, true);
       endPress();
       disposed = true;
       highlighter.dispose();
     };
   }, [clearPendingSelection, enabled]);
 
-  const highlightRange = useCallback((range: Range, modeOverride?: EditorMode) => {
-    const highlighter = highlighterRef.current;
-    const container = containerRef.current;
-    if (!highlighter || !container || range.collapsed) return;
-    if (!container.contains(range.commonAncestorContainer)) return;
-    // A caller-built range (vim, pinpoint) can name a boundary the library
-    // cannot serialize just as a pointer selection can (#881); refuse it
-    // rather than let the serializer throw through this call.
-    if (!isSerializableRange(range)) return;
+  const highlightRange = useCallback(
+    (range: Range, modeOverride?: EditorMode) => {
+      const highlighter = highlighterRef.current;
+      const container = containerRef.current;
+      if (!highlighter || !container || range.collapsed) return;
+      if (!container.contains(range.commonAncestorContainer)) return;
+      // A caller-built range (vim, pinpoint) can name a boundary the library
+      // cannot serialize just as a pointer selection can (#881); refuse it
+      // rather than let the serializer throw through this call.
+      if (!isSerializableRange(range)) return;
 
-    // Pinpoint clicks and vim visual selections anchor on the first
-    // annotatable text node of a block, which for a titled GitHub alert is the
-    // visually hidden type word; snap off it before painting (the caller's own
-    // range is left untouched).
-    const painted = range.cloneRange();
-    snapRangeOutOfBelowTitle(container, painted);
-    snapRangeStartPastExcluded(painted);
-    snapRangeEndBeforeSkipped(container, painted);
-    pendingRangeRunsRef.current = rangeTextPieces(painted);
+      // Pinpoint clicks and vim visual selections anchor on the first
+      // annotatable text node of a block, which for a titled GitHub alert is the
+      // visually hidden type word; snap off it before painting (the caller's own
+      // range is left untouched).
+      const painted = range.cloneRange();
+      snapRangeOutOfBelowTitle(container, painted);
+      snapRangeStartPastExcluded(painted);
+      snapRangeEndBeforeSkipped(container, painted);
+      pendingRangeRunsRef.current = rangeTextPieces(painted);
 
-    const selection = window.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(painted.cloneRange());
-    pendingModeOverrideRef.current = modeOverride ?? null;
-
-    try {
-      highlighter.fromRange(painted);
-    } catch (error) {
-      pendingRangeRunsRef.current = null;
-      warnHighlighterFailure('painting a range', error);
-    } finally {
-      pendingModeOverrideRef.current = null;
+      const selection = window.getSelection();
       selection?.removeAllRanges();
-    }
-  }, [containerRef]);
+      selection?.addRange(painted.cloneRange());
+      pendingModeOverrideRef.current = modeOverride ?? null;
 
-  const highlightMathElement = useCallback((
-    element: HTMLElement,
-    modeOverride?: EditorMode,
-  ) => {
-    const container = containerRef.current;
-    const mathElement = closestMathElement(element, container);
-    if (!container || !mathElement) return;
+      try {
+        highlighter.fromRange(painted);
+      } catch (error) {
+        pendingRangeRunsRef.current = null;
+        warnHighlighterFailure("painting a range", error);
+      } finally {
+        pendingModeOverrideRef.current = null;
+        selection?.removeAllRanges();
+      }
+    },
+    [containerRef],
+  );
 
-    const effectiveMode = modeOverride ?? modeRef.current;
-    const existingId = mathElement.dataset.bindId;
-    if (existingId && effectiveMode !== 'redline') {
-      onSelectAnnotationRef.current?.(existingId);
-      return;
-    }
+  const highlightMathElement = useCallback(
+    (element: HTMLElement, modeOverride?: EditorMode) => {
+      const container = containerRef.current;
+      const mathElement = closestMathElement(element, container);
+      if (!container || !mathElement) return;
 
-    const source = mathSourceFromElement(mathElement);
-    if (!source) return;
+      const effectiveMode = modeOverride ?? modeRef.current;
+      const existingId = mathElement.dataset.bindId;
+      if (existingId && effectiveMode !== "redline") {
+        onSelectAnnotationRef.current?.(existingId);
+        return;
+      }
 
-    const highlighter = highlighterRef.current;
-    if (
-      pendingSourceRef.current &&
-      highlighter &&
-      !isMathAnnotationSource(pendingSourceRef.current) &&
-      !keepAsDraftMarkRef.current(pendingSourceRef.current.id)
-    ) {
-      highlighter.remove(pendingSourceRef.current.id);
-    }
-    clearPendingSelection();
-    setToolbarState(null);
-    setCommentPopover(null);
-    setQuickLabelPicker(null);
+      const source = mathSourceFromElement(mathElement);
+      if (!source) return;
 
-    if (effectiveMode === 'redline') {
-      createAnnotationFromMathSource(source, AnnotationType.DELETION);
-      return;
-    }
+      const highlighter = highlighterRef.current;
+      if (
+        pendingSourceRef.current &&
+        highlighter &&
+        !isMathAnnotationSource(pendingSourceRef.current) &&
+        !keepAsDraftMarkRef.current(pendingSourceRef.current.id)
+      ) {
+        highlighter.remove(pendingSourceRef.current.id);
+      }
+      clearPendingSelection();
+      setToolbarState(null);
+      setCommentPopover(null);
+      setQuickLabelPicker(null);
 
-    pendingSourceRef.current = source;
-    showPendingMathPreview(source);
+      if (effectiveMode === "redline") {
+        createAnnotationFromMathSource(source, AnnotationType.DELETION);
+        return;
+      }
 
-    if (effectiveMode === 'comment') {
-      setCommentPopover({
-        anchorEl: source.element,
-        contextText: source.text.slice(0, 80),
-        selectedText: source.text,
+      pendingSourceRef.current = source;
+      showPendingMathPreview(source);
+
+      if (effectiveMode === "comment") {
+        setCommentPopover({
+          anchorEl: source.element,
+          contextText: source.text.slice(0, 80),
+          selectedText: source.text,
+          source,
+          draftKey: commentDraftTargetKey(source, source.text),
+          blockIds: [source.blockId],
+        });
+        return;
+      }
+
+      if (effectiveMode === "quickLabel") {
+        setQuickLabelPicker({
+          anchorEl: source.element,
+          cursorHint: lastMousePosRef.current,
+          source,
+        });
+        return;
+      }
+
+      setToolbarState({
+        element: source.element,
         source,
-        draftKey: commentDraftTargetKey(source, source.text),
-        blockIds: [source.blockId],
+        selectionText: source.text,
       });
-      return;
-    }
-
-    if (effectiveMode === 'quickLabel') {
-      setQuickLabelPicker({
-        anchorEl: source.element,
-        cursorHint: lastMousePosRef.current,
-        source,
-      });
-      return;
-    }
-
-    setToolbarState({
-      element: source.element,
-      source,
-      selectionText: source.text,
-    });
-  }, [clearPendingSelection, containerRef, showPendingMathPreview]);
+    },
+    [clearPendingSelection, containerRef, showPendingMathPreview],
+  );
 
   // Apply CSS classes to existing annotations
   useEffect(() => {
     const highlighter = highlighterRef.current;
     if (!highlighter) return;
 
-    annotations.forEach(ann => {
+    annotations.forEach((ann) => {
       try {
         const doms = highlighter.getDoms(ann.id);
         if (doms && doms.length > 0) {
           if (ann.type === AnnotationType.DELETION) {
-            highlighter.addClass('deletion', ann.id);
+            highlighter.addClass("deletion", ann.id);
           } else if (ann.type === AnnotationType.COMMENT) {
-            highlighter.addClass('comment', ann.id);
+            highlighter.addClass("comment", ann.id);
           }
         }
       } catch {}
@@ -2488,8 +2670,8 @@ export function useAnnotationHighlighter({
     if (!containerRef.current) return;
 
     // Clear all previously focused highlights
-    containerRef.current.querySelectorAll('.annotation-highlight.focused').forEach(el => {
-      el.classList.remove('focused');
+    containerRef.current.querySelectorAll(".annotation-highlight.focused").forEach((el) => {
+      el.classList.remove("focused");
     });
 
     if (!selectedAnnotationId) return;
@@ -2512,18 +2694,18 @@ export function useAnnotationHighlighter({
 
     if (targetElements.length === 0) {
       const manualMarks = containerRef.current.querySelectorAll(
-        `[data-bind-id="${selectedAnnotationId}"]`
+        `[data-bind-id="${selectedAnnotationId}"]`,
       );
       if (manualMarks.length > 0) targetElements = Array.from(manualMarks);
     }
 
     if (targetElements.length === 0) return;
 
-    targetElements.forEach(el => el.classList.add('focused'));
-    targetElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    targetElements.forEach((el) => el.classList.add("focused"));
+    targetElements[0].scrollIntoView({ behavior: "smooth", block: "center" });
 
     const timer = setTimeout(() => {
-      targetElements.forEach(el => el.classList.remove('focused'));
+      targetElements.forEach((el) => el.classList.remove("focused"));
     }, 2000);
     return () => clearTimeout(timer);
   }, [selectedAnnotationId]);
@@ -2552,8 +2734,12 @@ export function useAnnotationHighlighter({
     if (!toolbarState) return;
     if (isMathAnnotationSource(toolbarState.source)) {
       createAnnotationFromMathSource(
-        toolbarState.source, AnnotationType.COMMENT,
-        `${label.emoji} ${label.text}`, undefined, true, label.tip
+        toolbarState.source,
+        AnnotationType.COMMENT,
+        `${label.emoji} ${label.text}`,
+        undefined,
+        true,
+        label.tip,
       );
       clearPendingSelection();
       setToolbarState(null);
@@ -2562,8 +2748,13 @@ export function useAnnotationHighlighter({
     }
     if (!highlighter) return;
     createAnnotationFromSource(
-      highlighter, toolbarState.source, AnnotationType.COMMENT,
-      `${label.emoji} ${label.text}`, undefined, true, label.tip
+      highlighter,
+      toolbarState.source,
+      AnnotationType.COMMENT,
+      `${label.emoji} ${label.text}`,
+      undefined,
+      true,
+      label.tip,
     );
     clearPendingSelection();
     setToolbarState(null);
@@ -2617,8 +2808,14 @@ export function useAnnotationHighlighter({
     }
     if (commentPopover.source && highlighterRef.current) {
       createAnnotationFromSource(
-        highlighterRef.current, commentPopover.source,
-        AnnotationType.COMMENT, text, images, undefined, undefined, mentions
+        highlighterRef.current,
+        commentPopover.source,
+        AnnotationType.COMMENT,
+        text,
+        images,
+        undefined,
+        undefined,
+        mentions,
       );
       clearPendingSelection();
       window.getSelection()?.removeAllRanges();
@@ -2628,7 +2825,7 @@ export function useAnnotationHighlighter({
 
   const handleCommentClose = useCallback(() => {
     if (!commentDraftShelfRef.current) {
-      setCommentPopover(prev => {
+      setCommentPopover((prev) => {
         if (prev?.source && highlighterRef.current && !isMathAnnotationSource(prev.source)) {
           highlighterRef.current.remove(prev.source.id);
         }
@@ -2657,7 +2854,14 @@ export function useAnnotationHighlighter({
     const shelf = commentDraftShelfRef.current;
     const open = commentPopoverRef.current;
     const highlighter = highlighterRef.current;
-    if (!shelf || !highlighter || !open?.source || open.source.id !== id || isMathAnnotationSource(open.source)) return false;
+    if (
+      !shelf ||
+      !highlighter ||
+      !open?.source ||
+      open.source.id !== id ||
+      isMathAnnotationSource(open.source)
+    )
+      return false;
     if (!shelf.keeps(open)) return false;
     highlighter.addClass(COMMENT_DRAFT_CLASS, id);
     setCommentDrafts((list) => [...list.filter((d) => d.source?.id !== id), open]);
@@ -2671,12 +2875,22 @@ export function useAnnotationHighlighter({
     const open = commentPopover;
     if (!shelf || !open?.source || isMathAnnotationSource(open.source)) return;
     const { startMeta, endMeta } = open.source;
-    if (startMeta && endMeta) shelf.put({ draftKey: open.draftKey, startMeta, endMeta, text: open.source.text ?? open.selectedText });
-    const twins = commentDraftsRef.current.filter((d) => d.draftKey === open.draftKey && d.source?.id !== open.source.id);
+    if (startMeta && endMeta)
+      shelf.put({
+        draftKey: open.draftKey,
+        startMeta,
+        endMeta,
+        text: open.source.text ?? open.selectedText,
+      });
+    const twins = commentDraftsRef.current.filter(
+      (d) => d.draftKey === open.draftKey && d.source?.id !== open.source.id,
+    );
     if (twins.length === 0) return;
     for (const twin of twins) {
-      try { highlighterRef.current?.remove(twin.source.id); } catch (error) {
-        warnHighlighterFailure('removal of a draft mark picked again', error);
+      try {
+        highlighterRef.current?.remove(twin.source.id);
+      } catch (error) {
+        warnHighlighterFailure("removal of a draft mark picked again", error);
       }
     }
     setCommentDrafts((list) => list.filter((d) => !twins.includes(d)));
@@ -2694,13 +2908,20 @@ export function useAnnotationHighlighter({
       const id = annotationId();
       let doms: HTMLElement[] = [];
       try {
-        highlighter.fromStore(metaWithBelowTitle(root, draft.startMeta), metaWithBelowTitle(root, draft.endMeta), draft.text, id);
+        highlighter.fromStore(
+          metaWithBelowTitle(root, draft.startMeta),
+          metaWithBelowTitle(root, draft.endMeta),
+          draft.text,
+          id,
+        );
         doms = (highlighter.getDoms(id) ?? []) as HTMLElement[];
       } catch {}
       // The words moved or are gone (the document changed): no mark; the words still wait for the same selection.
       if (doms.length === 0 || compactText(paintedTextOf(doms)) !== compactText(draft.text)) {
         if (doms.length > 0) {
-          try { highlighter.remove(id); } catch {}
+          try {
+            highlighter.remove(id);
+          } catch {}
         }
         continue;
       }
@@ -2719,29 +2940,49 @@ export function useAnnotationHighlighter({
     if (painted.length > 0 || commentDraftsRef.current.length > 0) setCommentDrafts(painted);
   };
 
-  const reopenCommentDraft = useCallback((id: string) => {
-    const draft = commentDraftsRef.current.find((d) => d.source?.id === id);
-    const highlighter = highlighterRef.current;
-    if (!draft || !highlighter) return;
-    if (commentPopoverRef.current) handleCommentClose();
-    setToolbarState((open) => {
-      if (open?.source && !isMathAnnotationSource(open.source) && open.source.id !== id) highlighter.remove(open.source.id);
-      return null;
-    });
-    highlighter.removeClass(COMMENT_DRAFT_CLASS, id);
-    const doms = highlighter.getDoms(id) as HTMLElement[] | undefined;
-    const anchorEl = doms?.find((el) => el.isConnected) ?? draft.anchorEl;
-    pendingSourceRef.current = draft.source;
-    setCommentDrafts((list) => list.filter((d) => d.source?.id !== id));
-    setCommentPopover({ ...draft, anchorEl, initialText: undefined });
-  }, [handleCommentClose]);
+  const reopenCommentDraft = useCallback(
+    (id: string) => {
+      const draft = commentDraftsRef.current.find((d) => d.source?.id === id);
+      const highlighter = highlighterRef.current;
+      if (!draft || !highlighter) return;
+      if (commentPopoverRef.current) handleCommentClose();
+      setToolbarState((open) => {
+        if (open?.source && !isMathAnnotationSource(open.source) && open.source.id !== id)
+          highlighter.remove(open.source.id);
+        return null;
+      });
+      highlighter.removeClass(COMMENT_DRAFT_CLASS, id);
+      const doms = highlighter.getDoms(id) as HTMLElement[] | undefined;
+      const anchorEl = doms?.find((el) => el.isConnected) ?? draft.anchorEl;
+      pendingSourceRef.current = draft.source;
+      setCommentDrafts((list) => list.filter((d) => d.source?.id !== id));
+      setCommentPopover({ ...draft, anchorEl, initialText: undefined });
+    },
+    [handleCommentClose],
+  );
   const reopenCommentDraftRef = useRef(reopenCommentDraft);
   reopenCommentDraftRef.current = reopenCommentDraft;
 
-  const handleFloatingQuickLabel = useCallback((label: QuickLabel) => {
-    if (!quickLabelPicker?.source) return;
-    if (isMathAnnotationSource(quickLabelPicker.source)) {
-      createAnnotationFromMathSource(
+  const handleFloatingQuickLabel = useCallback(
+    (label: QuickLabel) => {
+      if (!quickLabelPicker?.source) return;
+      if (isMathAnnotationSource(quickLabelPicker.source)) {
+        createAnnotationFromMathSource(
+          quickLabelPicker.source,
+          AnnotationType.COMMENT,
+          `${label.emoji} ${label.text}`,
+          undefined,
+          true,
+          label.tip,
+        );
+        clearPendingSelection();
+        setQuickLabelPicker(null);
+        window.getSelection()?.removeAllRanges();
+        return;
+      }
+      if (!highlighterRef.current) return;
+      createAnnotationFromSource(
+        highlighterRef.current,
         quickLabelPicker.source,
         AnnotationType.COMMENT,
         `${label.emoji} ${label.text}`,
@@ -2752,17 +2993,9 @@ export function useAnnotationHighlighter({
       clearPendingSelection();
       setQuickLabelPicker(null);
       window.getSelection()?.removeAllRanges();
-      return;
-    }
-    if (!highlighterRef.current) return;
-    createAnnotationFromSource(
-      highlighterRef.current, quickLabelPicker.source, AnnotationType.COMMENT,
-      `${label.emoji} ${label.text}`, undefined, true, label.tip
-    );
-    clearPendingSelection();
-    setQuickLabelPicker(null);
-    window.getSelection()?.removeAllRanges();
-  }, [clearPendingSelection, quickLabelPicker]);
+    },
+    [clearPendingSelection, quickLabelPicker],
+  );
 
   const handleQuickLabelPickerDismiss = useCallback(() => {
     if (
@@ -2789,10 +3022,12 @@ export function useAnnotationHighlighter({
       onMissing?.();
       return;
     }
-    const words = annotation.text ?? '';
+    const words = annotation.text ?? "";
     const previous = pendingSourceRef.current;
     if (previous && !isMathAnnotationSource(previous)) {
-      try { highlighter.remove(previous.id); } catch {}
+      try {
+        highlighter.remove(previous.id);
+      } catch {}
     }
     clearPendingSelection();
     setToolbarState(null);
@@ -2814,8 +3049,16 @@ export function useAnnotationHighlighter({
         );
         doms = (highlighter.getDoms(id) ?? []) as HTMLElement[];
       } catch {}
-      if (doms.length > 0 && compactText(paintedTextOf(doms)) === compactText(annotation.originalText)) {
-        const source = { id, startMeta: annotation.startMeta, endMeta: annotation.endMeta, text: annotation.originalText };
+      if (
+        doms.length > 0 &&
+        compactText(paintedTextOf(doms)) === compactText(annotation.originalText)
+      ) {
+        const source = {
+          id,
+          startMeta: annotation.startMeta,
+          endMeta: annotation.endMeta,
+          text: annotation.originalText,
+        };
         pendingSourceRef.current = source;
         setCommentPopover({
           anchorEl: doms[0],
@@ -2830,7 +3073,9 @@ export function useAnnotationHighlighter({
         return;
       }
       if (doms.length > 0) {
-        try { highlighter.remove(id); } catch {}
+        try {
+          highlighter.remove(id);
+        } catch {}
       }
     }
     const range = findTextInDOM(annotation.originalText);
@@ -2841,22 +3086,25 @@ export function useAnnotationHighlighter({
     reopenTextRef.current = words;
     reopenOpenedRef.current = false;
     try {
-      highlightRange(range, 'comment');
+      highlightRange(range, "comment");
     } finally {
       reopenTextRef.current = null;
     }
     if (!reopenOpenedRef.current) onMissing?.();
     reopenOpenedRef.current = false;
   };
-  const reopenComment = useCallback((annotation: Annotation, onMissing?: () => void): boolean => {
-    if (!enabled) return false;
-    if (!highlighterRef.current || !containerRef.current) {
-      reopenQueueRef.current.push({ annotation, onMissing });
+  const reopenComment = useCallback(
+    (annotation: Annotation, onMissing?: () => void): boolean => {
+      if (!enabled) return false;
+      if (!highlighterRef.current || !containerRef.current) {
+        reopenQueueRef.current.push({ annotation, onMissing });
+        return true;
+      }
+      reopenNowRef.current(annotation, onMissing);
       return true;
-    }
-    reopenNowRef.current(annotation, onMissing);
-    return true;
-  }, [containerRef, enabled]);
+    },
+    [containerRef, enabled],
+  );
 
   // --- The comment being written, read without touching it (ViewerHandle.peekComment) ---
   const buildAnnotationRef = useRef(buildAnnotationFromSource);
@@ -2866,7 +3114,7 @@ export function useAnnotationHighlighter({
     const highlighter = highlighterRef.current;
     if (!open?.source || !highlighter || isMathAnnotationSource(open.source)) return null;
     try {
-      return buildAnnotationRef.current(highlighter, open.source, AnnotationType.COMMENT, '');
+      return buildAnnotationRef.current(highlighter, open.source, AnnotationType.COMMENT, "");
     } catch {
       return null;
     }
@@ -2903,13 +3151,13 @@ export function useAnnotationHighlighter({
         startOffset: 0,
         endOffset: source.text.length,
         type: AnnotationType.COMMENT,
-        text: '',
+        text: "",
         originalText: source.text,
         createdA: Date.now(),
         author: getIdentity(),
       };
     } else {
-      annotation = buildAnnotationFromSource(highlighter, source, AnnotationType.COMMENT, '');
+      annotation = buildAnnotationFromSource(highlighter, source, AnnotationType.COMMENT, "");
     }
     if (!annotation) {
       report(null);
@@ -2917,7 +3165,7 @@ export function useAnnotationHighlighter({
     }
     report({
       annotation,
-      intent: commentPopover ? 'compose' : 'selection',
+      intent: commentPopover ? "compose" : "selection",
       cancel: () => {
         // A newer selection owns the pending state now: leave it alone.
         if (pendingSourceRef.current !== source) return;

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState } from "react";
 
 /**
  * "Open Plannotator at plannotator.localhost" (#2184) for Settings → General: on
@@ -25,16 +25,17 @@ export interface CookieHostSetting {
  * the new address.
  */
 export function cookieHostDescription(
-  setting: Pick<CookieHostSetting, 'on' | 'env' | 'urlHost'>,
+  setting: Pick<CookieHostSetting, "on" | "env" | "urlHost">,
   options: { inbox?: boolean } = {},
 ): string {
   if (setting.env !== undefined) {
-    return setting.env.trim() === ''
-      ? 'Set by PLANNOTATOR_URL_HOST in your environment (empty).'
+    return setting.env.trim() === ""
+      ? "Set by PLANNOTATOR_URL_HOST in your environment (empty)."
       : `Set by PLANNOTATOR_URL_HOST=${setting.env.trim()} in your environment.`;
   }
-  if (setting.urlHost !== undefined) return `config.json sets urlHost to ${setting.urlHost}; this switch never replaces it.`;
-  const notifications = options.inbox ? ' Notifications need allowing once there.' : '';
+  if (setting.urlHost !== undefined)
+    return `config.json sets urlHost to ${setting.urlHost}; this switch never replaces it.`;
+  const notifications = options.inbox ? " Notifications need allowing once there." : "";
   return `Keeps Plannotator's cookies away from your other localhost apps. Starts from the next session; this browser's preferences start fresh once.${notifications}`;
 }
 
@@ -45,13 +46,13 @@ interface CookieHostState {
 }
 
 function parseState(value: unknown): CookieHostState | undefined {
-  if (!value || typeof value !== 'object') return undefined;
+  if (!value || typeof value !== "object") return undefined;
   const v = value as Record<string, unknown>;
-  if (typeof v.on !== 'boolean') return undefined;
+  if (typeof v.on !== "boolean") return undefined;
   return {
     on: v.on,
-    ...(typeof v.env === 'string' && { env: v.env }),
-    ...(typeof v.urlHost === 'string' && { urlHost: v.urlHost }),
+    ...(typeof v.env === "string" && { env: v.env }),
+    ...(typeof v.urlHost === "string" && { urlHost: v.urlHost }),
   };
 }
 
@@ -69,23 +70,26 @@ export function useCookieHostSetting(): {
   const onChange = useCallback((next: boolean) => {
     setError(undefined);
     setState((current) => (current ? { ...current, on: next } : current));
-    void fetch('/api/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    void fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cookieHost: next }),
     })
       .then(async (res) => {
-        const body = (await res.json().catch(() => ({}))) as { error?: unknown; cookieHost?: unknown };
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: unknown;
+          cookieHost?: unknown;
+        };
         const saved = parseState(body.cookieHost);
         if (saved) setState(saved);
         if (!res.ok) {
           if (!saved) setState((current) => (current ? { ...current, on: !next } : current));
-          setError(typeof body.error === 'string' ? body.error : 'The setting could not be saved.');
+          setError(typeof body.error === "string" ? body.error : "The setting could not be saved.");
         }
       })
       .catch(() => {
         setState((current) => (current ? { ...current, on: !next } : current));
-        setError('The setting could not be saved.');
+        setError("The setting could not be saved.");
       });
   }, []);
 

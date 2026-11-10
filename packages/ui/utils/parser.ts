@@ -1,8 +1,18 @@
-import type { Block, Annotation, CodeAnnotation, EditorAnnotation, ImageAttachment } from '../types';
-import { planDenyFeedback } from '@dynotator/core/feedback-templates';
-import { resolveReplyParents } from '@dynotator/core/annotation-threads';
-import { diagramAnchorLocationLine, parseDiagramAnchor } from '@dynotator/core/diagram-anchor';
-import { imageRegionLocationLines, parseImageRegion, type ImageRegion } from '@dynotator/core/image-region';
+import type {
+  Block,
+  Annotation,
+  CodeAnnotation,
+  EditorAnnotation,
+  ImageAttachment,
+} from "../types";
+import { planDenyFeedback } from "@dynotator/core/feedback-templates";
+import { resolveReplyParents } from "@dynotator/core/annotation-threads";
+import { diagramAnchorLocationLine, parseDiagramAnchor } from "@dynotator/core/diagram-anchor";
+import {
+  imageRegionLocationLines,
+  parseImageRegion,
+  type ImageRegion,
+} from "@dynotator/core/image-region";
 import {
   formatQuestionAnswerLines,
   formatQuestionAnswerText,
@@ -12,7 +22,7 @@ import {
   questionExportItems,
   type QuestionAnswer,
   type QuestionExportItem,
-} from '@dynotator/core/question-block';
+} from "@dynotator/core/question-block";
 import {
   DIRECTIVE_OPEN_RE,
   HTML_BLOCK_TAGS,
@@ -23,8 +33,8 @@ import {
   scanDisplayMath,
   splitFrontmatter,
   type TagCloseIndex,
-} from '@dynotator/core/markdown-structure';
-import { skillReferenceExportBlock } from './skillReferences';
+} from "@dynotator/core/markdown-structure";
+import { skillReferenceExportBlock } from "./skillReferences";
 
 // The structural helpers moved to `@dynotator/core/markdown-structure` so
 // `findQuestionBlocks` (core) splits a document exactly as this parser does.
@@ -33,10 +43,7 @@ export { HTML_BLOCK_TAGS, resolveReferenceLinks };
 /**
  * Parsed YAML frontmatter value: scalar string, array, or nested map.
  */
-export type FrontmatterValue =
-  | string
-  | FrontmatterValue[]
-  | { [key: string]: FrontmatterValue };
+export type FrontmatterValue = string | FrontmatterValue[] | { [key: string]: FrontmatterValue };
 
 /**
  * Parsed YAML frontmatter as key-value pairs.
@@ -52,9 +59,9 @@ function indentWidth(line: string): number {
 
 /** Strip the common leading indentation shared by all non-empty lines. */
 function dedentLines(lines: string[]): string[] {
-  const indents = lines.filter((l) => l !== '').map(indentWidth);
+  const indents = lines.filter((l) => l !== "").map(indentWidth);
   const minIndent = indents.length ? Math.min(...indents) : 0;
-  return lines.map((l) => (l === '' ? '' : l.slice(minIndent)));
+  return lines.map((l) => (l === "" ? "" : l.slice(minIndent)));
 }
 
 /**
@@ -63,11 +70,11 @@ function dedentLines(lines: string[]): string[] {
  * newlines.
  */
 function foldScalarLines(lines: string[]): string {
-  let text = '';
+  let text = "";
   let started = false;
   let blanks = 0;
   for (const l of lines) {
-    if (l === '') {
+    if (l === "") {
       blanks++;
       continue;
     }
@@ -75,7 +82,7 @@ function foldScalarLines(lines: string[]): string {
       text = l;
       started = true;
     } else {
-      text += blanks > 0 ? '\n'.repeat(blanks) : ' ';
+      text += blanks > 0 ? "\n".repeat(blanks) : " ";
       text += l;
     }
     blanks = 0;
@@ -101,17 +108,17 @@ function parseBlockScalar(
   for (; j < lines.length; j++) {
     // CRLF sources split on '\n' leave a trailing '\r' that would otherwise
     // survive into the folded value (every other parser path trims lines).
-    const bodyLine = lines[j].replace(/\r$/, '');
-    if (bodyLine.trim() === '') {
-      body.push('');
+    const bodyLine = lines[j].replace(/\r$/, "");
+    if (bodyLine.trim() === "") {
+      body.push("");
       continue;
     }
     if (indentWidth(bodyLine) <= keyIndent) break; // dedent ends the block
     body.push(bodyLine);
   }
   const dedented = dedentLines(body);
-  while (dedented.length && dedented[dedented.length - 1] === '') dedented.pop();
-  const value = (folded ? foldScalarLines(dedented) : dedented.join('\n')).trim();
+  while (dedented.length && dedented[dedented.length - 1] === "") dedented.pop();
+  const value = (folded ? foldScalarLines(dedented) : dedented.join("\n")).trim();
   return { value, endIndex: j - 1 };
 }
 
@@ -128,18 +135,18 @@ function parseKeyValue(str: string): { key: string; value: string } | null {
   if (quote === '"' || quote === "'") {
     const closing = str.indexOf(quote, 1);
     if (closing === -1) return null;
-    if (str[closing + 1] !== ':') return null;
+    if (str[closing + 1] !== ":") return null;
     // Same rule the unquoted branch applies: `key:value` is a scalar, not a
     // mapping entry. A colon at end of line (empty value) is fine.
     const afterColon = str[closing + 2];
-    if (afterColon !== undefined && afterColon !== ' ' && afterColon !== '\t') {
+    if (afterColon !== undefined && afterColon !== " " && afterColon !== "\t") {
       return null;
     }
     return { key: str.slice(1, closing), value: str.slice(closing + 2).trim() };
   }
-  const colonIndex = str.indexOf(':');
+  const colonIndex = str.indexOf(":");
   if (colonIndex <= 0) return null;
-  if (colonIndex < str.length - 1 && str[colonIndex + 1] !== ' ' && str[colonIndex + 1] !== '\t') {
+  if (colonIndex < str.length - 1 && str[colonIndex + 1] !== " " && str[colonIndex + 1] !== "\t") {
     return null;
   }
   const key = str.slice(0, colonIndex).trim();
@@ -153,8 +160,16 @@ function parseKeyValue(str: string): { key: string; value: string } | null {
  * line number where content begins in the original file (so downstream
  * line references stay accurate).
  */
-export function extractFrontmatter(markdown: string): { frontmatter: Frontmatter | null; content: string; contentStartLine: number } {
-  const { raw: frontmatterRaw, content: afterFrontmatter, contentStartLine } = splitFrontmatter(markdown);
+export function extractFrontmatter(markdown: string): {
+  frontmatter: Frontmatter | null;
+  content: string;
+  contentStartLine: number;
+} {
+  const {
+    raw: frontmatterRaw,
+    content: afterFrontmatter,
+    contentStartLine,
+  } = splitFrontmatter(markdown);
   if (frontmatterRaw === null) {
     return { frontmatter: null, content: markdown, contentStartLine: 1 };
   }
@@ -171,9 +186,9 @@ export function extractFrontmatter(markdown: string): { frontmatter: Frontmatter
     parentMap: { [key: string]: FrontmatterValue };
   } | null = null;
 
-  const lines = frontmatterRaw.split('\n');
+  const lines = frontmatterRaw.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i].replace(/\r$/, '');
+    const rawLine = lines[i].replace(/\r$/, "");
     const trimmedLine = rawLine.trim();
 
     if (!trimmedLine) continue;
@@ -181,7 +196,7 @@ export function extractFrontmatter(markdown: string): { frontmatter: Frontmatter
     const lineIndent = indentWidth(rawLine);
 
     // Array item (- value or - key: value)
-    if (trimmedLine.startsWith('- ')) {
+    if (trimmedLine.startsWith("- ")) {
       const afterDash = trimmedLine.slice(2).trim();
       const kv = parseKeyValue(afterDash);
 
@@ -211,7 +226,7 @@ export function extractFrontmatter(markdown: string): { frontmatter: Frontmatter
             lines,
             i + 1,
             lineIndent,
-            blockScalar[1] === '>',
+            blockScalar[1] === ">",
           );
           scalarVal = parsedScalar;
           i = endIndex;
@@ -269,7 +284,7 @@ export function extractFrontmatter(markdown: string): { frontmatter: Frontmatter
           lines,
           i + 1,
           lineIndent,
-          blockScalar[1] === '>',
+          blockScalar[1] === ">",
         );
         parentMap[kv.key] = scalarValue;
         i = endIndex;
@@ -286,7 +301,6 @@ export function extractFrontmatter(markdown: string): { frontmatter: Frontmatter
 
   return { frontmatter, content: afterFrontmatter, contentStartLine };
 }
-
 
 /** The most blank lines `keepBlankLines` keeps before a paragraph: a paste of hundreds does not push the text off screen. */
 const MAX_KEPT_BLANK_LINES = 10;
@@ -307,7 +321,6 @@ export interface ParseMarkdownOptions {
   keepBlankLines?: boolean;
 }
 
-
 /**
  * The block list for a whole-file diagram source (`plannotator annotate
  * flow.mmd`): ONE code block carrying the file's raw text, which `Viewer`
@@ -326,17 +339,17 @@ export interface ParseMarkdownOptions {
  * block itself, so the export's `(lines a–b)` label names the file's real
  * span.
  */
-export const diagramDocumentBlocks = (text: string, kind: 'mermaid' | 'graphviz'): Block[] => [
+export const diagramDocumentBlocks = (text: string, kind: "mermaid" | "graphviz"): Block[] => [
   {
-    id: 'block-0',
-    type: 'code',
+    id: "block-0",
+    type: "code",
     content: text,
     // `dot` is what isGraphvizLanguage reads for the Graphviz engine.
-    language: kind === 'graphviz' ? 'dot' : 'mermaid',
+    language: kind === "graphviz" ? "dot" : "mermaid",
     order: 1,
     startLine: 1,
     // A trailing newline ends the last line, it does not start another.
-    sourceLineCount: text === '' ? 0 : text.replace(/\n$/, '').split('\n').length,
+    sourceLineCount: text === "" ? 0 : text.replace(/\n$/, "").split("\n").length,
     diagramSourceLineOffset: 0,
   },
 ];
@@ -356,8 +369,8 @@ export const CODE_DOCUMENT_HIGHLIGHT_LIMIT = 128 * 1024;
  */
 export const codeDocumentBlocks = (text: string, language: string | undefined): Block[] => [
   {
-    id: 'block-0',
-    type: 'code',
+    id: "block-0",
+    type: "code",
     content: text,
     language: language && text.length <= CODE_DOCUMENT_HIGHLIGHT_LIMIT ? language : undefined,
     order: 1,
@@ -365,7 +378,7 @@ export const codeDocumentBlocks = (text: string, language: string | undefined): 
     // A comment names the lines it sits on, not the whole file.
     contentStartLine: 1,
     // A trailing newline ends the last line, it does not start another.
-    sourceLineCount: text === '' ? 0 : text.replace(/\n$/, '').split('\n').length,
+    sourceLineCount: text === "" ? 0 : text.replace(/\n$/, "").split("\n").length,
   },
 ];
 
@@ -374,7 +387,10 @@ export const codeDocumentBlocks = (text: string, language: string | undefined): 
  * For a production app, we would use a robust AST walker (remark),
  * but for this demo, we want predictable text-anchoring.
  */
-export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownOptions): Block[] => {
+export const parseMarkdownToBlocks = (
+  markdown: string,
+  options?: ParseMarkdownOptions,
+): Block[] => {
   const { content: rawContent, contentStartLine } =
     options?.frontmatter === false
       ? { content: markdown, contentStartLine: 1 }
@@ -383,7 +399,7 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
   // blanks definition lines in place, so line count (and every block's
   // startLine) is preserved.
   const cleanMarkdown = resolveReferenceLinks(rawContent);
-  const lines = cleanMarkdown.split('\n');
+  const lines = cleanMarkdown.split("\n");
   const blocks: Block[] = [];
   let currentId = 0;
   // Cache for findHtmlBlockEnd's per-tag-name prefix-sum index — scoped per
@@ -393,7 +409,7 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
   const htmlCloseCache = new Map<string, TagCloseIndex>();
 
   let buffer: string[] = [];
-  let currentType: Block['type'] = 'paragraph';
+  let currentType: Block["type"] = "paragraph";
   let currentLevel = 0;
   let bufferStartLine = contentStartLine;
   let lastLineWasBlank = false;
@@ -401,15 +417,17 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
 
   const flush = () => {
     if (buffer.length > 0) {
-      const content = buffer.join('\n');
+      const content = buffer.join("\n");
       blocks.push({
-        ...(currentType === 'paragraph' && bufferBlankRun > 1 ? { blankLinesBefore: bufferBlankRun } : {}),
+        ...(currentType === "paragraph" && bufferBlankRun > 1
+          ? { blankLinesBefore: bufferBlankRun }
+          : {}),
         id: `block-${currentId++}`,
         type: currentType,
         content: content,
         level: currentLevel,
         order: currentId,
-        startLine: bufferStartLine
+        startLine: bufferStartLine,
       });
       buffer = [];
     }
@@ -431,24 +449,24 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
       const level = headingMatch[1].length;
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'heading',
-        content: trimmed.replace(/^#+\s*/, ''),
+        type: "heading",
+        content: trimmed.replace(/^#+\s*/, ""),
         level,
         order: currentId,
-        startLine: currentLineNum
+        startLine: currentLineNum,
       });
       continue;
     }
 
     // Horizontal Rule
-    if (trimmed === '---' || trimmed === '***') {
+    if (trimmed === "---" || trimmed === "***") {
       flush();
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'hr',
-        content: '',
+        type: "hr",
+        content: "",
         order: currentId,
-        startLine: currentLineNum
+        startLine: currentLineNum,
       });
       continue;
     }
@@ -458,9 +476,9 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
     if (listMatch) {
       flush(); // Treat each list item as a separate block for easier annotation
       // Calculate indentation level from leading whitespace
-      const leadingWhitespace = line.match(/^(\s*)/)?.[1] || '';
+      const leadingWhitespace = line.match(/^(\s*)/)?.[1] || "";
       // Count spaces (2 spaces = 1 level) or tabs (1 tab = 1 level)
-      const spaceCount = leadingWhitespace.replace(/\t/g, '  ').length;
+      const spaceCount = leadingWhitespace.replace(/\t/g, "  ").length;
       const listLevel = Math.floor(spaceCount / 2);
 
       // Distinguish numeric markers (\d+.) from bullet markers (* / -)
@@ -474,20 +492,20 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
       let checked: boolean | undefined = undefined;
       const checkboxMatch = content.match(/^\[([ xX])\]\s*/);
       if (checkboxMatch) {
-        checked = checkboxMatch[1].toLowerCase() === 'x';
-        content = content.replace(/^\[([ xX])\]\s*/, '');
+        checked = checkboxMatch[1].toLowerCase() === "x";
+        content = content.replace(/^\[([ xX])\]\s*/, "");
       }
 
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'list-item',
+        type: "list-item",
         content,
         level: listLevel,
         checked,
         ordered: ordered || undefined,
         orderedStart,
         order: currentId,
-        startLine: currentLineNum
+        startLine: currentLineNum,
       });
       continue;
     }
@@ -513,49 +531,54 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
     // following space or tab removed and trailing whitespace trimmed, as a
     // quote's content is (so a fence nested under a list item keeps its
     // indentation), empty leading lines skipped. AlertBlock renders it.
-    if (trimmed.startsWith('>')) {
+    if (trimmed.startsWith(">")) {
       flush();
       let runEnd = i;
-      while (runEnd + 1 < lines.length && lines[runEnd + 1].trim().startsWith('>')) runEnd++;
+      while (runEnd + 1 < lines.length && lines[runEnd + 1].trim().startsWith(">")) runEnd++;
       const run = lines.slice(i, runEnd + 1);
       const quoteStartLine = currentLineNum;
       i = runEnd;
       const alertMatch = trimmed
-        .replace(/^>\s*/, '')
+        .replace(/^>\s*/, "")
         .match(/^\[!(NOTE|TIP|WARNING|CAUTION|IMPORTANT)\]\s*$/i);
       if (alertMatch) {
         const body = run.slice(1).reduce((acc, raw) => {
-          const stripped = raw.replace(/^\s*>[ \t]?/, '').trimEnd();
-          return acc ? acc + '\n' + stripped : stripped;
-        }, '');
+          const stripped = raw.replace(/^\s*>[ \t]?/, "").trimEnd();
+          return acc ? acc + "\n" + stripped : stripped;
+        }, "");
         blocks.push({
           id: `block-${currentId++}`,
-          type: 'blockquote',
+          type: "blockquote",
           content: body,
-          alertKind: alertMatch[1].toLowerCase() as 'note' | 'tip' | 'warning' | 'caution' | 'important',
+          alertKind: alertMatch[1].toLowerCase() as
+            | "note"
+            | "tip"
+            | "warning"
+            | "caution"
+            | "important",
           order: currentId,
           startLine: quoteStartLine,
         });
         continue;
       }
-      const inner = run.map((raw) => raw.replace(/^\s*>[ \t]?/, '').trimEnd());
+      const inner = run.map((raw) => raw.replace(/^\s*>[ \t]?/, "").trimEnd());
       let first = 0;
-      while (first < inner.length - 1 && inner[first] === '') first++;
+      while (first < inner.length - 1 && inner[first] === "") first++;
       let last = inner.length - 1;
-      while (last > first && inner[last] === '') last--;
+      while (last > first && inner[last] === "") last--;
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'blockquote',
-        content: inner.slice(first, last + 1).join('\n'),
+        type: "blockquote",
+        content: inner.slice(first, last + 1).join("\n"),
         order: currentId,
         startLine: quoteStartLine + first,
       });
       continue;
     }
-    
+
     // Code blocks (naive). Count backticks in the opening fence to support
     // nested fences (e.g. ```` wrapping ```); the extent is shared with core.
-    if (trimmed.startsWith('```')) {
+    if (trimmed.startsWith("```")) {
       flush();
       const codeStartLine = currentLineNum;
       const fenceLen = trimmed.match(/^`+/)?.[0].length ?? 3;
@@ -566,11 +589,11 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
       i = close;
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'code',
-        content: codeContent.join('\n'),
+        type: "code",
+        content: codeContent.join("\n"),
         language,
         order: currentId,
-        startLine: codeStartLine
+        startLine: codeStartLine,
       });
       continue;
     }
@@ -580,7 +603,11 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
     // "$$100k for infra", a `\[deprecated\]`-style line) must NOT swallow the
     // rest of the document: scanDisplayMath scans ahead without committing
     // and answers null, and the line falls through as ordinary text.
-    const mathDelimiter = trimmed.startsWith('$$') ? '$$' : trimmed.startsWith('\\[') ? '\\[' : null;
+    const mathDelimiter = trimmed.startsWith("$$")
+      ? "$$"
+      : trimmed.startsWith("\\[")
+        ? "\\["
+        : null;
     const math = mathDelimiter ? scanDisplayMath(lines, i, mathDelimiter) : null;
     if (math) {
       flush();
@@ -588,8 +615,8 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
       i = math.closeLine;
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'math',
-        content: math.body.join('\n'),
+        type: "math",
+        content: math.body.join("\n"),
         order: currentId,
         startLine: mathStartLine,
         sourceLineCount: i + contentStartLine - mathStartLine + 1,
@@ -604,7 +631,7 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
     }
 
     // Tables (lines starting with |)
-    if (trimmed.startsWith('|')) {
+    if (trimmed.startsWith("|")) {
       flush();
       const tableStartLine = currentLineNum;
       const tableLines: string[] = [line];
@@ -613,7 +640,7 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
       while (i + 1 < lines.length) {
         const nextLine = lines[i + 1].trim();
         // Continue if line starts with | (table row or separator)
-        if (nextLine.startsWith('|')) {
+        if (nextLine.startsWith("|")) {
           i++;
           tableLines.push(lines[i]);
         } else {
@@ -623,10 +650,10 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
 
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'table',
-        content: tableLines.join('\n'),
+        type: "table",
+        content: tableLines.join("\n"),
         order: currentId,
-        startLine: tableStartLine
+        startLine: tableStartLine,
       });
       continue;
     }
@@ -644,8 +671,8 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
       i = close;
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'directive',
-        content: bodyLines.join('\n'),
+        type: "directive",
+        content: bodyLines.join("\n"),
         directiveKind: kind,
         order: currentId,
         startLine: directiveStartLine,
@@ -668,8 +695,8 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
       i = htmlEnd;
       blocks.push({
         id: `block-${currentId++}`,
-        type: 'html',
-        content: htmlLines.join('\n'),
+        type: "html",
+        content: htmlLines.join("\n"),
         order: currentId,
         startLine: htmlStartLine,
       });
@@ -677,9 +704,9 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
     }
 
     // Empty lines separate paragraphs
-    if (trimmed === '') {
+    if (trimmed === "") {
       flush();
-      currentType = 'paragraph';
+      currentType = "paragraph";
       lastLineWasBlank = true;
       continue;
     }
@@ -689,10 +716,10 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
     if (
       buffer.length === 0 &&
       blocks.length > 0 &&
-      blocks[blocks.length - 1].type === 'list-item' &&
+      blocks[blocks.length - 1].type === "list-item" &&
       (prevLineWasBlank ? /^\s{2,}/ : /^\s+/).test(line)
     ) {
-      const sep = prevLineWasBlank ? '\n\n' : '\n';
+      const sep = prevLineWasBlank ? "\n\n" : "\n";
       blocks[blocks.length - 1].content += sep + trimmed;
       continue;
     }
@@ -702,12 +729,17 @@ export const parseMarkdownToBlocks = (markdown: string, options?: ParseMarkdownO
       bufferStartLine = currentLineNum;
       bufferBlankRun = 0;
       if (options?.keepBlankLines && blocks.length > 0) {
-        for (let j = i - 1; j >= 0 && lines[j].trim() === '' && bufferBlankRun < MAX_KEPT_BLANK_LINES; j--) bufferBlankRun++;
+        for (
+          let j = i - 1;
+          j >= 0 && lines[j].trim() === "" && bufferBlankRun < MAX_KEPT_BLANK_LINES;
+          j--
+        )
+          bufferBlankRun++;
       }
     }
     buffer.push(line);
   }
-  
+
   flush(); // Final flush
 
   return blocks;
@@ -735,7 +767,7 @@ export const computeListIndices = (blocks: Block[]): (number | null)[] => {
   const counters: number[] = [];
   const lastOrderedAtLevel: boolean[] = [];
 
-  return blocks.map(block => {
+  return blocks.map((block) => {
     const lvl = block.level || 0;
     // Sibling change at any deeper level resets those levels.
     counters.length = lvl + 1;
@@ -759,23 +791,23 @@ export const computeListIndices = (blocks: Block[]): (number | null)[] => {
 /** A run of blocks to render: a single block, or consecutive list items grouped
  *  together so list numbering/indent can be computed across the run. */
 export type RenderGroup =
-  | { type: 'single'; block: Block }
-  | { type: 'list-group'; blocks: Block[]; key: string };
+  | { type: "single"; block: Block }
+  | { type: "list-group"; blocks: Block[]; key: string };
 
 /** Groups consecutive list-item blocks so a list renders as one unit. */
 export function groupBlocks(blocks: Block[]): RenderGroup[] {
   const groups: RenderGroup[] = [];
   let i = 0;
   while (i < blocks.length) {
-    if (blocks[i].type === 'list-item') {
+    if (blocks[i].type === "list-item") {
       const listBlocks: Block[] = [];
-      while (i < blocks.length && blocks[i].type === 'list-item') {
+      while (i < blocks.length && blocks[i].type === "list-item") {
         listBlocks.push(blocks[i]);
         i++;
       }
-      groups.push({ type: 'list-group', blocks: listBlocks, key: `list-${listBlocks[0].id}` });
+      groups.push({ type: "list-group", blocks: listBlocks, key: `list-${listBlocks[0].id}` });
     } else {
-      groups.push({ type: 'single', block: blocks[i] });
+      groups.push({ type: "single", block: blocks[i] });
       i++;
     }
   }
@@ -783,8 +815,7 @@ export function groupBlocks(blocks: Block[]): RenderGroup[] {
 }
 
 /** Wrap feedback output with the deny preamble for pasting into agent sessions */
-export const wrapFeedbackForAgent = (feedback: string): string =>
-  planDenyFeedback(feedback);
+export const wrapFeedbackForAgent = (feedback: string): string => planDenyFeedback(feedback);
 
 export interface ExportAnnotationsOptions {
   sourceConverted?: boolean;
@@ -796,9 +827,9 @@ const blockEndLine = (block: Block): number => {
     return block.startLine + block.sourceLineCount - 1;
   }
   if (!block.content) return block.startLine;
-  const contentLines = block.content.split('\n').length;
-  if (block.type === 'code') return block.startLine + contentLines + 1;
-  if (block.type === 'directive') return block.startLine + contentLines + 1;
+  const contentLines = block.content.split("\n").length;
+  if (block.type === "code") return block.startLine + contentLines + 1;
+  if (block.type === "directive") return block.startLine + contentLines + 1;
   if (block.alertKind) return block.startLine + contentLines;
   return block.startLine + contentLines - 1;
 };
@@ -809,7 +840,7 @@ const blockEndLine = (block: Block): number => {
  *  collapse whitespace (no injected markdown structure) and defuse any
  *  backtick run that could close an inline code span or a fence. */
 const safeInline = (value: unknown, max = 200): string => {
-  const collapsed = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+  const collapsed = typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
   const defused = collapsed.replace(/`+/g, "'");
   return defused.length > max ? `${defused.slice(0, max)}…` : defused;
 };
@@ -817,7 +848,7 @@ const safeInline = (value: unknown, max = 200): string => {
 /** The synthesized quote the bridge posts for a text-less element
  *  (`[element: Navigation]`): a placeholder, not something the agent can use. */
 const isElementPlaceholderQuote = (text: unknown): boolean =>
-  typeof text === 'string' && /^\[element: [^\]]*\]$/.test(text.trim());
+  typeof text === "string" && /^\[element: [^\]]*\]$/.test(text.trim());
 
 /** The heading line for a COMMENT entry. When the quote is the bridge's
  *  text-less placeholder and the annotation carries element context, name the
@@ -837,17 +868,18 @@ const commentHeadingLine = (ann: any): string => {
  *  the agent reads one format (#2626); Ask's one-line drafts carry the same
  *  tip text after the label. */
 export const quickLabelTipLine = (ann: any): string =>
-  ann?.isQuickLabel && ann.quickLabelTip ? `> ${ann.quickLabelTip}\n` : '';
+  ann?.isQuickLabel && ann.quickLabelTip ? `> ${ann.quickLabelTip}\n` : "";
 
 /** `the <nav> element — "Primary"` for a text-less pinpoint whose quote is
  *  the bridge's placeholder; null for every other annotation. */
 const elementSubject = (ann: any): string | null => {
   const context = ann?.elementContext;
-  if (!context || typeof context.tag !== 'string' || !isElementPlaceholderQuote(ann.originalText)) return null;
+  if (!context || typeof context.tag !== "string" || !isElementPlaceholderQuote(ann.originalText))
+    return null;
   const tag = safeInline(context.tag, 32);
-  const name = context.name ? safeInline(context.name, 120) : '';
+  const name = context.name ? safeInline(context.name, 120) : "";
   const file = elementSourceFileName(context);
-  return `the <${tag}> element${name ? ` — "${name}"` : ''}${file && file !== name ? ` (${file})` : ''}`;
+  return `the <${tag}> element${name ? ` — "${name}"` : ""}${file && file !== name ? ` (${file})` : ""}`;
 };
 
 /** The file a media element shows, so two nameless images read differently in a heading:
@@ -859,16 +891,19 @@ const elementSubject = (ann: any): string | null => {
  *  heading and the quote can never name different files. Contexts captured
  *  before that field existed fall back to the scrubbed `src` attribute. */
 const elementSourceFileName = (context: any): string => {
-  if (typeof context?.sourceName === 'string' && context.sourceName.trim()) {
+  if (typeof context?.sourceName === "string" && context.sourceName.trim()) {
     return safeInline(context.sourceName, 60);
   }
   const attrs = Array.isArray(context?.attrs) ? context.attrs : [];
-  const pair = attrs.find((p: unknown) => Array.isArray(p) && p[0] === 'src' && typeof p[1] === 'string');
-  if (!pair) return '';
+  const pair = attrs.find(
+    (p: unknown) => Array.isArray(p) && p[0] === "src" && typeof p[1] === "string",
+  );
+  if (!pair) return "";
   const value: string = pair[1].trim();
-  if (/^data:/i.test(value)) return safeInline(`data:${value.slice(5).split(/[;,]/)[0] || 'unknown'}`, 60);
-  const path = value.replace(/\?…$/, '').replace(/\/+$/, '');
-  const name = path.slice(path.lastIndexOf('/') + 1);
+  if (/^data:/i.test(value))
+    return safeInline(`data:${value.slice(5).split(/[;,]/)[0] || "unknown"}`, 60);
+  const path = value.replace(/\?…$/, "").replace(/\/+$/, "");
+  const name = path.slice(path.lastIndexOf("/") + 1);
   return safeInline(name || path, 60);
 };
 
@@ -886,47 +921,54 @@ export interface ElementContextExportOptions {
  *  become structure) plus the identity lines an agent greps for. Emits
  *  nothing when the annotation carries no context, keeping every other
  *  annotation's output byte-identical. */
-export const elementContextExportBlock = (ann: any, opts: ElementContextExportOptions = {}): string => {
+export const elementContextExportBlock = (
+  ann: any,
+  opts: ElementContextExportOptions = {},
+): string => {
   const context = ann?.elementContext;
-  if (!context || typeof context !== 'object' || typeof context.tag !== 'string') return '';
+  if (!context || typeof context !== "object" || typeof context.tag !== "string") return "";
   const includeOutline = opts.includeOutline ?? true;
-  let block = '';
-  if (includeOutline && typeof context.outline === 'string' && context.outline.trim()) {
+  let block = "";
+  if (includeOutline && typeof context.outline === "string" && context.outline.trim()) {
     // Fence at 4 backticks; the boundary already defuses 3+ runs inside the
     // outline, and a 4-run here cannot be closed by anything the page wrote.
     const outline = context.outline.replace(/`{3,}/g, "'''").trim();
     block += `\n\`\`\`\`html\n${outline}\n\`\`\`\`\n`;
   } else {
-    block += '\n';
+    block += "\n";
   }
   const selector = ann?.htmlAnchor?.selector;
-  if (typeof selector === 'string' && selector) block += `- **selector** \`${safeInline(selector, 300)}\`\n`;
+  if (typeof selector === "string" && selector)
+    block += `- **selector** \`${safeInline(selector, 300)}\`\n`;
   if (context.path) block += `- **path** \`${safeInline(context.path, 512)}\`\n`;
   const identity: string[] = [];
   if (context.role) identity.push(`**role** ${safeInline(context.role, 32)}`);
   if (context.name) identity.push(`**name** "${safeInline(context.name, 120)}"`);
   if (context.component) identity.push(`**component** \`${safeInline(context.component, 100)}\``);
-  if (identity.length) block += `- ${identity.join(' · ')}\n`;
+  if (identity.length) block += `- ${identity.join(" · ")}\n`;
   if (Array.isArray(context.attrs) && context.attrs.length) {
     const attrs = context.attrs
       .filter((pair: unknown) => Array.isArray(pair) && pair.length === 2)
       .map((pair: [string, string]) => `${safeInline(pair[0], 40)}="${safeInline(pair[1], 120)}"`)
-      .join(' ');
+      .join(" ");
     if (attrs) block += `- **attrs** \`${attrs.replace(/`/g, "'")}\`\n`;
   }
   if (context.text) block += `- **text** "${safeInline(context.text, 300)}"\n`;
   if (opts.includeRoute && context.page && context.page.url) {
-    const title = context.page.title ? ` — "${safeInline(context.page.title, 200)}"` : '';
+    const title = context.page.title ? ` — "${safeInline(context.page.title, 200)}"` : "";
     block += `- **route** \`${safeInline(context.page.url, 2048)}\`${title}\n`;
   }
   const r = context.rect;
-  if (r && ['x', 'y', 'w', 'h', 'vw', 'vh'].every((k) => typeof r[k] === 'number' && Number.isFinite(r[k]))) {
+  if (
+    r &&
+    ["x", "y", "w", "h", "vw", "vh"].every((k) => typeof r[k] === "number" && Number.isFinite(r[k]))
+  ) {
     block += `- **box** ${r.x},${r.y} ${r.w}×${r.h} (viewport ${r.vw}×${r.vh})\n`;
   }
   const near: string[] = [];
   if (context.landmark) near.push(safeInline(context.landmark, 80));
   if (context.heading) near.push(`heading ${safeInline(context.heading, 130)}`);
-  if (near.length) block += `- **near** ${near.join(' · ')}\n`;
+  if (near.length) block += `- **near** ${near.join(" · ")}\n`;
   return block;
 };
 
@@ -937,19 +979,20 @@ export const elementContextExportBlock = (ann: any, opts: ElementContextExportOp
  *  single-target annotations, keeping their output byte-identical. */
 const additionalTargetsExportBlock = (ann: any): string => {
   const targets = ann?.htmlAdditionalTargets;
-  if (!Array.isArray(targets) || targets.length === 0) return '';
+  if (!Array.isArray(targets) || targets.length === 0) return "";
   // Leading blank line: the preceding comment line is a `> blockquote`, and
   // markdown lazy continuation would otherwise fold this block into it.
-  let block = `\n**Also applies to ${targets.length} more element${targets.length > 1 ? 's' : ''}:**\n`;
+  let block = `\n**Also applies to ${targets.length} more element${targets.length > 1 ? "s" : ""}:**\n`;
   targets.forEach((target: any) => {
     // Labels and texts are page-controlled (aria-label etc.). The DTO
     // boundary already collapses label whitespace; do it here again (defense
     // in depth) so persisted pre-fix data can never smuggle newlines — and
     // with them fake markdown structure — into agent-read feedback.
-    const rawLabel = typeof target?.label === 'string' ? target.label.replace(/\s+/g, ' ').trim() : '';
-    const label = rawLabel ? `[${rawLabel}] ` : '';
-    const raw = typeof target?.text === 'string' ? target.text : '';
-    const excerpt = raw.replace(/\s+/g, ' ').trim();
+    const rawLabel =
+      typeof target?.label === "string" ? target.label.replace(/\s+/g, " ").trim() : "";
+    const label = rawLabel ? `[${rawLabel}] ` : "";
+    const raw = typeof target?.text === "string" ? target.text : "";
+    const excerpt = raw.replace(/\s+/g, " ").trim();
     const clipped = excerpt.length > 120 ? `${excerpt.slice(0, 120)}…` : excerpt;
     // Element identity for the agent, one line per extra target: the
     // selector and the path (a full context block per target would swamp
@@ -960,13 +1003,14 @@ const additionalTargetsExportBlock = (ann: any): string => {
     // captured before it existed (or restored from an older draft) has an
     // anchor but no context, and exports byte-identically to before.
     const locators: string[] = [];
-    if (target?.context && typeof target.context === 'object') {
+    if (target?.context && typeof target.context === "object") {
       const selector = target?.anchor?.selector;
-      if (typeof selector === 'string' && selector) locators.push(`\`${safeInline(selector, 300)}\``);
+      if (typeof selector === "string" && selector)
+        locators.push(`\`${safeInline(selector, 300)}\``);
       const path = target?.context?.path;
-      if (typeof path === 'string' && path) locators.push(`\`${safeInline(path, 512)}\``);
+      if (typeof path === "string" && path) locators.push(`\`${safeInline(path, 512)}\``);
     }
-    block += `- ${label}"${clipped}"${locators.length ? ` — ${locators.join(' · ')}` : ''}\n`;
+    block += `- ${label}"${clipped}"${locators.length ? ` — ${locators.join(" · ")}` : ""}\n`;
   });
   return block;
 };
@@ -982,15 +1026,17 @@ const scrubUrlQuery = (url: string): string => {
  *  (the persisted context keeps it, since that is the page that was reviewed). */
 const withoutRouteQuery = (context: unknown): unknown => {
   const page = (context as any)?.page;
-  if (!page || typeof page.url !== 'string') return context;
+  if (!page || typeof page.url !== "string") return context;
   return { ...(context as object), page: { ...page, url: scrubUrlQuery(page.url) } };
 };
 
 /** The anchor's `href`/`src` selector rung carries the raw attribute value,
  *  query included (it must, to stay a working selector); Ask AI gets the
  *  value with the query scrubbed instead. */
-const withoutSelectorQuery = (anchor: AskAIElementTarget['anchor']): AskAIElementTarget['anchor'] => {
-  if (!anchor || typeof anchor.selector !== 'string') return anchor;
+const withoutSelectorQuery = (
+  anchor: AskAIElementTarget["anchor"],
+): AskAIElementTarget["anchor"] => {
+  if (!anchor || typeof anchor.selector !== "string") return anchor;
   const selector = anchor.selector.replace(
     /(\[(?:href|src)=")((?:[^"\\]|\\.)*)(")/g,
     (_m, open: string, value: string, close: string) => `${open}${scrubUrlQuery(value)}${close}`,
@@ -1013,22 +1059,27 @@ export interface AskAIElementTarget {
  * question covers several. Empty when no target carries element context, so
  * a plain text selection asks exactly what it asked before.
  */
-export const elementIdentityForAskAI = (targets: readonly AskAIElementTarget[] | null | undefined): string => {
-  if (!Array.isArray(targets)) return '';
+export const elementIdentityForAskAI = (
+  targets: readonly AskAIElementTarget[] | null | undefined,
+): string => {
+  if (!Array.isArray(targets)) return "";
   const blocks = targets
     .map((target) => ({
-      text: typeof target?.text === 'string' ? safeInline(target.text, 200) : '',
+      text: typeof target?.text === "string" ? safeInline(target.text, 200) : "",
       lines: elementContextExportBlock(
-        { elementContext: withoutRouteQuery(target?.context), htmlAnchor: withoutSelectorQuery(target?.anchor) },
+        {
+          elementContext: withoutRouteQuery(target?.context),
+          htmlAnchor: withoutSelectorQuery(target?.anchor),
+        },
         { includeOutline: false, includeRoute: true },
       ).trim(),
     }))
     .filter((block) => block.lines);
-  if (blocks.length === 0) return '';
+  if (blocks.length === 0) return "";
   if (blocks.length === 1) return blocks[0].lines;
   return blocks
-    .map((block, i) => `Element ${i + 1}${block.text ? `: "${block.text}"` : ''}\n${block.lines}`)
-    .join('\n\n');
+    .map((block, i) => `Element ${i + 1}${block.text ? `: "${block.text}"` : ""}\n${block.lines}`)
+    .join("\n\n");
 };
 
 /**
@@ -1040,18 +1091,21 @@ export const elementIdentityForAskAI = (targets: readonly AskAIElementTarget[] |
  * standalone entry has no `## Page:` heading above it. Plannotator's own
  * panel chrome does not use it.
  */
-export const exportAnnotationEntry = (ann: any, opts: ElementContextExportOptions = { includeRoute: true }): string => {
+export const exportAnnotationEntry = (
+  ann: any,
+  opts: ElementContextExportOptions = { includeRoute: true },
+): string => {
   // An answer to a `:::question` block: the question and the answer lines.
   const answer = ann?.questionAnswer == null ? null : parseQuestionAnswer(ann.questionAnswer);
   if (answer) {
     return `Answer to the question "${safeInline(answer.prompt, 400)}"\n${formatQuestionAnswerLines(answer)}`;
   }
-  let output = '';
+  let output = "";
   switch (ann?.type) {
-    case 'DELETION':
+    case "DELETION":
       output += `Remove this\n\`\`\`\n${ann.originalText}\n\`\`\`\n`;
       break;
-    case 'GLOBAL_COMMENT':
+    case "GLOBAL_COMMENT":
       output += `General feedback\n> ${ann.text}\n`;
       break;
     default:
@@ -1061,7 +1115,7 @@ export const exportAnnotationEntry = (ann: any, opts: ElementContextExportOption
         if (region) output += imageRegionExportLines(region);
         output += quickLabelTipLine(ann);
       } else {
-        output += `${commentHeadingLine(ann)}\n${diagramLocationExportLine(ann)}> ${ann?.text ?? ''}\n`;
+        output += `${commentHeadingLine(ann)}\n${diagramLocationExportLine(ann)}> ${ann?.text ?? ""}\n`;
       }
   }
   const resolvedOpts: ElementContextExportOptions = {
@@ -1112,7 +1166,7 @@ const diagramLocationExportLine = (ann: any): string => {
  *  every other annotation's output is byte-identical. One line, capped. */
 const hostLocationExportLine = (ann: any): string => {
   const line = ann?.exportLocation;
-  return typeof line === 'string' && line.trim() !== '' ? `${safeInline(line, 300)}\n` : '';
+  return typeof line === "string" && line.trim() !== "" ? `${safeInline(line, 300)}\n` : "";
 };
 
 /** The document lines a quote covers inside a block that sets
@@ -1128,12 +1182,15 @@ const quoteLinesInContent = (
   quote: unknown,
   startOffset?: unknown,
 ): { first: number; last: number } | null => {
-  if (typeof block.contentStartLine !== 'number' || typeof quote !== 'string' || quote === '') return null;
+  if (typeof block.contentStartLine !== "number" || typeof quote !== "string" || quote === "")
+    return null;
   const content = block.content;
   let start: number;
   if (
-    typeof startOffset === 'number' && Number.isInteger(startOffset) && startOffset >= 0
-    && content.startsWith(quote, startOffset)
+    typeof startOffset === "number" &&
+    Number.isInteger(startOffset) &&
+    startOffset >= 0 &&
+    content.startsWith(quote, startOffset)
   ) {
     start = startOffset;
   } else {
@@ -1143,7 +1200,8 @@ const quoteLinesInContent = (
   const base = block.contentStartLine;
   const lineAt = (offset: number) => {
     let line = base;
-    for (let i = content.indexOf('\n'); i !== -1 && i < offset; i = content.indexOf('\n', i + 1)) line++;
+    for (let i = content.indexOf("\n"); i !== -1 && i < offset; i = content.indexOf("\n", i + 1))
+      line++;
     return line;
   };
   // The quote's last character, so a quote ending in its line's newline
@@ -1152,15 +1210,18 @@ const quoteLinesInContent = (
 };
 
 const lineLabelForAnnotation = (blocks: Block[], ann: any): string | null => {
-  if (!ann.blockId || ann.type === 'GLOBAL_COMMENT') return null;
+  if (!ann.blockId || ann.type === "GLOBAL_COMMENT") return null;
   // A region names the line its image is written on, not its block's span.
   const region = imageRegionOf(ann);
   if (region?.sourceLine != null) return `line ${region.sourceLine}`;
-  if (typeof ann.blockId === 'string' && ann.blockId.startsWith('diff-block-')) return null;
-  const block = blocks.find(b => b.id === ann.blockId);
-  if (!block || typeof block.startLine !== 'number') return null;
+  if (typeof ann.blockId === "string" && ann.blockId.startsWith("diff-block-")) return null;
+  const block = blocks.find((b) => b.id === ann.blockId);
+  if (!block || typeof block.startLine !== "number") return null;
   const quoted = quoteLinesInContent(block, ann.originalText, ann.startOffset);
-  if (quoted) return quoted.first === quoted.last ? `line ${quoted.first}` : `lines ${quoted.first}–${quoted.last}`;
+  if (quoted)
+    return quoted.first === quoted.last
+      ? `line ${quoted.first}`
+      : `lines ${quoted.first}–${quoted.last}`;
   const end = blockEndLine(block);
   if (end <= block.startLine) return `line ${block.startLine}`;
   return `lines ${block.startLine}–${end}`;
@@ -1186,9 +1247,9 @@ export const selectionSourceLines = (
   let lineStart = Infinity;
   let lineEnd = -Infinity;
   for (const [index, id] of blockIds.entries()) {
-    if (id.startsWith('diff-block-')) continue;
-    const block = blocks.find(b => b.id === id);
-    if (!block || typeof block.startLine !== 'number' || block.startLine < 1) continue;
+    if (id.startsWith("diff-block-")) continue;
+    const block = blocks.find((b) => b.id === id);
+    if (!block || typeof block.startLine !== "number" || block.startLine < 1) continue;
     const quoted = quoteLinesInContent(block, selectedText, index === 0 ? startOffset : undefined);
     if (quoted) {
       lineStart = Math.min(lineStart, quoted.first);
@@ -1230,7 +1291,7 @@ const questionItemsFromAnswers = (answers: QuestionAnswer[]): QuestionExportItem
 /** The diff-block index of a comment made in the plan/version diff view
  *  (`blockId` `diff-block-N`), or null for every other annotation. */
 const diffBlockIndex = (ann: any): number | null => {
-  const match = typeof ann?.blockId === 'string' ? /^diff-block-(\d+)$/.exec(ann.blockId) : null;
+  const match = typeof ann?.blockId === "string" ? /^diff-block-(\d+)$/.exec(ann.blockId) : null;
   return match ? Number(match[1]) : null;
 };
 
@@ -1263,7 +1324,9 @@ const sortAnnotationsInDocumentOrder = (annotations: any[], blocks: Block[] | un
       // offset so the main document keeps its pre-#1696 order.
       const byBlock = blocks
         ? (order.get(a.blockId) ?? -1) - (order.get(b.blockId) ?? -1)
-        : String(a.blockId ?? '').localeCompare(String(b.blockId ?? ''), undefined, { numeric: true });
+        : String(a.blockId ?? "").localeCompare(String(b.blockId ?? ""), undefined, {
+            numeric: true,
+          });
       if (byBlock) return byBlock;
     }
     return a.startOffset - b.startOffset;
@@ -1273,16 +1336,16 @@ const sortAnnotationsInDocumentOrder = (annotations: any[], blocks: Block[] | un
 /** `Label Summary` heading (at `level`) tallying quick labels, or '' when none. */
 const labelSummaryBlock = (sortedAnns: any[], level: number): string => {
   const labeledAnns = sortedAnns.filter((a: any) => a.isQuickLabel && a.text);
-  if (labeledAnns.length === 0) return '';
+  if (labeledAnns.length === 0) return "";
   const grouped = new Map<string, number>();
   labeledAnns.forEach((a: any) => {
     grouped.set(a.text, (grouped.get(a.text) || 0) + 1);
   });
-  let output = `${'#'.repeat(level)} Label Summary\n\n`;
+  let output = `${"#".repeat(level)} Label Summary\n\n`;
   for (const [text, count] of grouped) {
     output += `- **${text}**: ${count}\n`;
   }
-  output += '\n';
+  output += "\n";
   return output;
 };
 
@@ -1300,8 +1363,8 @@ const renderAnnotationEntries = (
   opts: { subject: string; level: number; injectedSkills: Set<string> },
 ): string => {
   const { subject, injectedSkills } = opts;
-  const hashes = (n: number) => '#'.repeat(n);
-  let output = '';
+  const hashes = (n: number) => "#".repeat(n);
+  let output = "";
 
   // Live app sessions stamp annotations with the page they were made on.
   // When any exported annotation carries a pageUrl, entries are grouped under
@@ -1315,11 +1378,9 @@ const renderAnnotationEntries = (
   // With no pageUrl anywhere the output is byte-identical to the ungrouped
   // export (entries at `level`, no page headers).
   const hasPageGroups = sortedAnns.some(
-    (a: any) => typeof a.pageUrl === 'string' && a.pageUrl.length > 0,
+    (a: any) => typeof a.pageUrl === "string" && a.pageUrl.length > 0,
   );
-  const annotationNumbers = new Map<any, number>(
-    sortedAnns.map((ann, index) => [ann, index + 1]),
-  );
+  const annotationNumbers = new Map<any, number>(sortedAnns.map((ann, index) => [ann, index + 1]));
   let emitOrder = sortedAnns;
   if (hasPageGroups) {
     const unpaged = sortedAnns.filter((a: any) => !a.pageUrl);
@@ -1356,7 +1417,8 @@ const renderAnnotationEntries = (
       list.push(a);
       repliesByParent.set(parent, list);
     }
-    for (const list of repliesByParent.values()) list.sort((a: any, b: any) => a.createdA - b.createdA);
+    for (const list of repliesByParent.values())
+      list.sort((a: any, b: any) => a.createdA - b.createdA);
     emitOrder = emitOrder.filter((a) => !isReply(a));
     // Numbers stay consecutive over the entries that are actually emitted.
     annotationNumbers.clear();
@@ -1378,9 +1440,11 @@ const renderAnnotationEntries = (
     pushReplies(parent, 0);
     while (stack.length > 0) {
       const { reply, depth } = stack.pop()!;
-      const who = reply.author ? `${reply.author}` : 'reply';
-      const indent = '  '.repeat(Math.min(depth, MAX_REPLY_INDENT_DEPTH));
-      parts.push(`${indent}- **Reply (${who}):** ${String(reply.text ?? '').replace(/\r?\n/g, `\n${indent}  `)}\n`);
+      const who = reply.author ? `${reply.author}` : "reply";
+      const indent = "  ".repeat(Math.min(depth, MAX_REPLY_INDENT_DEPTH));
+      parts.push(
+        `${indent}- **Reply (${who}):** ${String(reply.text ?? "").replace(/\r?\n/g, `\n${indent}  `)}\n`,
+      );
       if (reply.images && reply.images.length > 0) {
         reply.images.forEach((img: ImageAttachment) => {
           parts.push(`${indent}  - [${img.name}] \`${img.path}\`\n`);
@@ -1388,7 +1452,7 @@ const renderAnnotationEntries = (
       }
       pushReplies(reply, depth + 1);
     }
-    return parts.join('');
+    return parts.join("");
   };
 
   let lastEmittedPage: string | null = null;
@@ -1408,13 +1472,13 @@ const renderAnnotationEntries = (
     }
 
     switch (ann.type) {
-      case 'DELETION':
+      case "DELETION":
         output += `Remove this\n`;
         output += `\`\`\`\n${ann.originalText}\n\`\`\`\n`;
         output += `> I don't want this in the ${subject}.\n`;
         break;
 
-      case 'COMMENT':
+      case "COMMENT":
         if (ann.isQuickLabel) {
           output += `[${ann.text}] ${commentHeadingLine(ann)}\n`;
           output += diagramLocationExportLine(ann);
@@ -1426,7 +1490,7 @@ const renderAnnotationEntries = (
         }
         break;
 
-      case 'GLOBAL_COMMENT':
+      case "GLOBAL_COMMENT":
         output += `General feedback about the ${subject}\n`;
         output += `> ${ann.text}\n`;
         break;
@@ -1460,7 +1524,7 @@ const renderAnnotationEntries = (
       if (thread) output += `**Replies:**\n${thread}`;
     }
 
-    output += '\n';
+    output += "\n";
   });
 
   return output;
@@ -1470,18 +1534,21 @@ export const exportAnnotations = (
   blocks: Block[],
   allAnnotations: any[],
   globalAttachments: ImageAttachment[] = [],
-  title: string = 'Plan Feedback',
-  subject: string = 'plan',
+  title: string = "Plan Feedback",
+  subject: string = "plan",
   opts: ExportAnnotationsOptions = {},
 ): string => {
   // Answers to `:::question` blocks are printed first, in their own section,
   // and never counted as numbered feedback.
   const { answers, annotations } = splitQuestionAnswers(allAnnotations);
-  const answersSection = answers.length > 0
-    ? formatQuestionAnswersSection(questionExportItems(indexQuestionBlocks(blocks)), answers, { headingLevel: 2 })
-    : '';
+  const answersSection =
+    answers.length > 0
+      ? formatQuestionAnswersSection(questionExportItems(indexQuestionBlocks(blocks)), answers, {
+          headingLevel: 2,
+        })
+      : "";
   if (annotations.length === 0 && globalAttachments.length === 0 && !answersSection) {
-    return 'No changes detected.';
+    return "No changes detected.";
   }
 
   const sortedAnns = sortAnnotationsInDocumentOrder(annotations, blocks);
@@ -1509,7 +1576,7 @@ export const exportAnnotations = (
   }
 
   if (annotations.length > 0) {
-    output += `I've reviewed this ${subject} and have ${annotations.length} piece${annotations.length > 1 ? 's' : ''} of feedback:\n\n`;
+    output += `I've reviewed this ${subject} and have ${annotations.length} piece${annotations.length > 1 ? "s" : ""} of feedback:\n\n`;
   }
 
   output += renderAnnotationEntries(sortedAnns, blocks, { subject, level: 2, injectedSkills });
@@ -1544,18 +1611,19 @@ export interface LinkedDocExportHeading {
 }
 
 export const LINKED_DOC_EXPORT_HEADING: LinkedDocExportHeading = {
-  title: 'Linked Document Feedback',
-  intro: 'The following feedback is on documents referenced in the plan.',
+  title: "Linked Document Feedback",
+  intro: "The following feedback is on documents referenced in the plan.",
 };
 
 export const FOLDER_DOC_EXPORT_HEADING: LinkedDocExportHeading = {
-  title: 'Folder Document Feedback',
-  intro: 'The following feedback is on files in the reviewed folder, grouped by file.',
+  title: "Folder Document Feedback",
+  intro: "The following feedback is on files in the reviewed folder, grouped by file.",
 };
 
 export const BUNDLE_DOC_EXPORT_HEADING: LinkedDocExportHeading = {
-  title: 'File Feedback',
-  intro: 'The following feedback is on the files under review, one section per file, in the order they were given for review.',
+  title: "File Feedback",
+  intro:
+    "The following feedback is on the files under review, one section per file, in the order they were given for review.",
 };
 
 export const exportLinkedDocAnnotations = (
@@ -1567,14 +1635,24 @@ export const exportLinkedDocAnnotations = (
   // One injection per export, across all linked documents.
   const injectedSkills = new Set<string>();
 
-  for (const [filepath, { annotations: docAnnotationList, globalAttachments, blocks: docBlocks, markdown: docMarkdown, isConverted }] of docAnnotations) {
+  for (const [
+    filepath,
+    {
+      annotations: docAnnotationList,
+      globalAttachments,
+      blocks: docBlocks,
+      markdown: docMarkdown,
+      isConverted,
+    },
+  ] of docAnnotations) {
     if (docAnnotationList.length === 0 && globalAttachments.length === 0) continue;
     const { answers, annotations } = splitQuestionAnswers(docAnnotationList);
 
-    output += `## ${filepath}${isConverted ? ' (converted from HTML — line numbers refer to converted markdown)' : ''}\n\n`;
+    output += `## ${filepath}${isConverted ? " (converted from HTML — line numbers refer to converted markdown)" : ""}\n\n`;
 
     if (answers.length > 0) {
-      const questionBlocks = docBlocks ?? (docMarkdown !== undefined ? parseMarkdownToBlocks(docMarkdown) : null);
+      const questionBlocks =
+        docBlocks ?? (docMarkdown !== undefined ? parseMarkdownToBlocks(docMarkdown) : null);
       const items = questionBlocks
         ? questionExportItems(indexQuestionBlocks(questionBlocks))
         : questionItemsFromAnswers(answers);
@@ -1593,10 +1671,14 @@ export const exportLinkedDocAnnotations = (
     const sortedAnns = sortAnnotationsInDocumentOrder(annotations, docBlocks);
 
     if (annotations.length > 0 || answers.length === 0) {
-      output += `I've reviewed this ${heading.subject ?? 'document'} and have ${annotations.length} piece${annotations.length !== 1 ? 's' : ''} of feedback:\n\n`;
+      output += `I've reviewed this ${heading.subject ?? "document"} and have ${annotations.length} piece${annotations.length !== 1 ? "s" : ""} of feedback:\n\n`;
     }
 
-    output += renderAnnotationEntries(sortedAnns, docBlocks, { subject: heading.subject ?? 'document', level: 3, injectedSkills });
+    output += renderAnnotationEntries(sortedAnns, docBlocks, {
+      subject: heading.subject ?? "document",
+      level: 3,
+      injectedSkills,
+    });
     output += labelSummaryBlock(sortedAnns, 3);
   }
 
@@ -1605,14 +1687,15 @@ export const exportLinkedDocAnnotations = (
 };
 
 export const exportEditorAnnotations = (editorAnnotations: EditorAnnotation[]): string => {
-  if (editorAnnotations.length === 0) return '';
+  if (editorAnnotations.length === 0) return "";
 
   let output = `\n# Editor File Annotations\n\nThe following annotations reference code files in the project.\n\n`;
 
   editorAnnotations.forEach((ann, index) => {
-    const lineRange = ann.lineStart === ann.lineEnd
-      ? `line ${ann.lineStart}`
-      : `lines ${ann.lineStart}-${ann.lineEnd}`;
+    const lineRange =
+      ann.lineStart === ann.lineEnd
+        ? `line ${ann.lineStart}`
+        : `lines ${ann.lineStart}-${ann.lineEnd}`;
 
     output += `## ${index + 1}. ${ann.filePath} (${lineRange})\n`;
     output += `\`\`\`\n${ann.selectedText}\n\`\`\`\n`;
@@ -1621,7 +1704,7 @@ export const exportEditorAnnotations = (editorAnnotations: EditorAnnotation[]): 
       output += `> ${ann.comment}\n`;
     }
 
-    output += '\n';
+    output += "\n";
   });
 
   output += `---\n`;
@@ -1629,7 +1712,7 @@ export const exportEditorAnnotations = (editorAnnotations: EditorAnnotation[]): 
 };
 
 export const exportCodeFileAnnotations = (annotations: CodeAnnotation[]): string => {
-  if (annotations.length === 0) return '';
+  if (annotations.length === 0) return "";
 
   let output = `\n# Code File Feedback\n\nThe following feedback is on code files referenced from the reviewed document.\n\n`;
   // One injection per export, across all code-file comments.
@@ -1641,9 +1724,10 @@ export const exportCodeFileAnnotations = (annotations: CodeAnnotation[]): string
   });
 
   sorted.forEach((ann, index) => {
-    const lineRange = ann.lineStart === ann.lineEnd
-      ? `line ${ann.lineStart}`
-      : `lines ${ann.lineStart}-${ann.lineEnd}`;
+    const lineRange =
+      ann.lineStart === ann.lineEnd
+        ? `line ${ann.lineStart}`
+        : `lines ${ann.lineStart}-${ann.lineEnd}`;
 
     output += `## ${index + 1}. ${ann.filePath} (${lineRange})\n`;
     if (ann.originalCode) {
@@ -1660,7 +1744,7 @@ export const exportCodeFileAnnotations = (annotations: CodeAnnotation[]): string
         output += `- [${img.name}] \`${img.path}\`\n`;
       });
     }
-    output += '\n';
+    output += "\n";
   });
 
   output += `---\n`;
@@ -1702,7 +1786,7 @@ export const formatDraftAnnotationsForAsk = (input: DraftAnnotationsForAsk): str
   type Row = { ann: any; where: string | null };
   const rows: Row[] = [];
   const placeOf = (blocks: Block[] | undefined, ann: any): string | null => {
-    if (ann.diffContext) return 'in the version diff';
+    if (ann.diffContext) return "in the version diff";
     return blocks ? lineLabelForAnnotation(blocks, ann) : null;
   };
   for (const ann of sortAnnotationsInDocumentOrder([...input.annotations], input.blocks)) {
@@ -1717,43 +1801,45 @@ export const formatDraftAnnotationsForAsk = (input: DraftAnnotationsForAsk): str
 
   const numbers = new Map<string, number>();
   rows.forEach((row, index) => {
-    if (typeof row.ann?.id === 'string') numbers.set(row.ann.id, index + 1);
+    if (typeof row.ann?.id === "string") numbers.set(row.ann.id, index + 1);
   });
   const replyParents = resolveReplyParents(rows.map((row) => row.ann));
   const quote = (value: unknown) => `"${safeInline(value, ASK_DRAFT_QUOTE_CHARS)}"`;
   const text = (value: unknown) => safeInline(value, ASK_DRAFT_TEXT_CHARS);
   const imageList = (list: readonly ImageAttachment[]): string =>
-    list.map((img) => `[${safeInline(img?.name, 80)}] ${safeInline(img?.path, 300)}`).join(', ');
+    list.map((img) => `[${safeInline(img?.name, 80)}] ${safeInline(img?.path, 300)}`).join(", ");
   const images = (list: unknown): string =>
-    Array.isArray(list) && list.length > 0 ? ` (attached: ${imageList(list)})` : '';
+    Array.isArray(list) && list.length > 0 ? ` (attached: ${imageList(list)})` : "";
 
   const lines: string[] = [];
   rows.forEach(({ ann, where }, index) => {
     const parent = replyParents.get(ann.id);
     const parentNumber = parent ? numbers.get(parent) : undefined;
-    const head = `Draft ${index + 1}${where ? ` (${where})` : ''}:`;
-    const from = ann.source ? ` (from ${safeInline(ann.source, 60)})` : '';
+    const head = `Draft ${index + 1}${where ? ` (${where})` : ""}:`;
+    const from = ann.source ? ` (from ${safeInline(ann.source, 60)})` : "";
     const answer = ann.questionAnswer == null ? null : parseQuestionAnswer(ann.questionAnswer);
     let body: string;
     if (answer) {
       body = `answer to the question ${quote(answer.prompt)} — ${text(formatQuestionAnswerText(answer))}`;
     } else if (parentNumber !== undefined) {
       body = `reply to draft ${parentNumber} — ${text(ann.text)}`;
-    } else if (ann.type === 'DELETION') {
+    } else if (ann.type === "DELETION") {
       body = `suggests removing ${quote(ann.originalText)}`;
-    } else if (ann.type === 'GLOBAL_COMMENT') {
+    } else if (ann.type === "GLOBAL_COMMENT") {
       body = `general note — ${text(ann.text)}`;
     } else {
       const subject = elementSubject(ann) ?? quote(ann.originalText);
       const anchor = ann.diagramAnchor === undefined ? null : parseDiagramAnchor(ann.diagramAnchor);
       const region = imageRegionOf(ann);
       const target = region
-        ? `a region of the image ${quote(region.src)} [${safeInline(imageRegionLocationLines(region).replace('\n', '; '), 300)}]`
-        : anchor ? `${subject} [${safeInline(diagramAnchorLocationLine(anchor), 300)}]` : subject;
+        ? `a region of the image ${quote(region.src)} [${safeInline(imageRegionLocationLines(region).replace("\n", "; "), 300)}]`
+        : anchor
+          ? `${subject} [${safeInline(diagramAnchorLocationLine(anchor), 300)}]`
+          : subject;
       // A label's tip is its instruction to the agent: it takes the place a
       // comment's words take, on the draft's one line (#2626).
       body = ann.isQuickLabel
-        ? `label ${quote(ann.text)} on ${target}${ann.quickLabelTip ? ` — ${text(ann.quickLabelTip)}` : ''}`
+        ? `label ${quote(ann.text)} on ${target}${ann.quickLabelTip ? ` — ${text(ann.quickLabelTip)}` : ""}`
         : `comment on ${target} — ${text(ann.text)}`;
     }
     lines.push(`${head} ${body}${from}${images(ann.images)}`);
@@ -1762,27 +1848,40 @@ export const formatDraftAnnotationsForAsk = (input: DraftAnnotationsForAsk): str
   let next = rows.length;
   for (const ann of input.codeAnnotations ?? []) {
     next += 1;
-    const range = ann.lineStart === ann.lineEnd ? `line ${ann.lineStart}` : `lines ${ann.lineStart}–${ann.lineEnd}`;
-    const on = ann.originalCode ? ` on ${quote(ann.originalCode)}` : '';
-    lines.push(`Draft ${next} (${safeInline(ann.filePath, 300)}, ${range}): comment${on} — ${text(ann.text)}${ann.source ? ` (from ${safeInline(ann.source, 60)})` : ''}${images(ann.images)}`);
+    const range =
+      ann.lineStart === ann.lineEnd
+        ? `line ${ann.lineStart}`
+        : `lines ${ann.lineStart}–${ann.lineEnd}`;
+    const on = ann.originalCode ? ` on ${quote(ann.originalCode)}` : "";
+    lines.push(
+      `Draft ${next} (${safeInline(ann.filePath, 300)}, ${range}): comment${on} — ${text(ann.text)}${ann.source ? ` (from ${safeInline(ann.source, 60)})` : ""}${images(ann.images)}`,
+    );
   }
   for (const ann of input.editorAnnotations ?? []) {
     next += 1;
-    const range = ann.lineStart === ann.lineEnd ? `line ${ann.lineStart}` : `lines ${ann.lineStart}–${ann.lineEnd}`;
-    lines.push(`Draft ${next} (${safeInline(ann.filePath, 300)}, ${range}): comment on ${quote(ann.selectedText)} — ${text(ann.comment)}`);
+    const range =
+      ann.lineStart === ann.lineEnd
+        ? `line ${ann.lineStart}`
+        : `lines ${ann.lineStart}–${ann.lineEnd}`;
+    lines.push(
+      `Draft ${next} (${safeInline(ann.filePath, 300)}, ${range}): comment on ${quote(ann.selectedText)} — ${text(ann.comment)}`,
+    );
   }
 
   const shown = lines.slice(0, MAX_ASK_DRAFT_ENTRIES);
-  if (lines.length > shown.length) shown.push(`… and ${lines.length - shown.length} more draft annotations`);
+  if (lines.length > shown.length)
+    shown.push(`… and ${lines.length - shown.length} more draft annotations`);
 
   const attachments = input.globalAttachments ?? [];
   if (attachments.length > 0) shown.push(`Reference images: ${imageList(attachments)}`);
   for (const [path, doc] of input.documents ?? []) {
     if (doc.globalAttachments.length > 0) {
-      shown.push(`Reference images (${safeInline(path, 300)}): ${imageList(doc.globalAttachments)}`);
+      shown.push(
+        `Reference images (${safeInline(path, 300)}): ${imageList(doc.globalAttachments)}`,
+      );
     }
   }
-  return shown.join('\n');
+  return shown.join("\n");
 };
 
 export interface MessageAnnotationEntry {
@@ -1804,9 +1903,9 @@ const excerptMessageText = (text: string): string => {
   return `${trimmed.slice(0, MESSAGE_EXCERPT_MAX_CHARS).trimEnd()}...`;
 };
 
-const fencedBlock = (text: string, language = ''): string => {
-  let fence = '```';
-  while (text.includes(fence)) fence += '`';
+const fencedBlock = (text: string, language = ""): string => {
+  let fence = "```";
+  while (text.includes(fence)) fence += "`";
   return `${fence}${language}\n${text}\n${fence}\n`;
 };
 
@@ -1815,7 +1914,7 @@ export const exportMessageAnnotations = (entries: MessageAnnotationEntry[]): str
     const linkedDocCount = entry.linkedDocs
       ? Array.from(entry.linkedDocs.values()).reduce(
           (sum, doc) => sum + doc.annotations.length + doc.globalAttachments.length,
-          0
+          0,
         )
       : 0;
     return (
@@ -1827,17 +1926,17 @@ export const exportMessageAnnotations = (entries: MessageAnnotationEntry[]): str
   });
 
   if (nonEmpty.length === 0) {
-    return 'User reviewed the messages and has no feedback.';
+    return "User reviewed the messages and has no feedback.";
   }
 
-  let output = `# Message Feedback\n\nThe following feedback spans ${nonEmpty.length} assistant message${nonEmpty.length === 1 ? '' : 's'}. Each section includes an excerpt of the message it applies to.\n\n`;
+  let output = `# Message Feedback\n\nThe following feedback spans ${nonEmpty.length} assistant message${nonEmpty.length === 1 ? "" : "s"}. Each section includes an excerpt of the message it applies to.\n\n`;
 
   nonEmpty.forEach((entry, index) => {
-    const label = entry.timestamp ? ` (${entry.timestamp})` : '';
+    const label = entry.timestamp ? ` (${entry.timestamp})` : "";
     output += `## Message ${index + 1}${label}\n\n`;
     output += `Message excerpt:\n`;
-    output += fencedBlock(excerptMessageText(entry.text), 'markdown');
-    output += '\n';
+    output += fencedBlock(excerptMessageText(entry.text), "markdown");
+    output += "\n";
 
     if (entry.annotations.length > 0 || entry.globalAttachments.length > 0) {
       output += exportAnnotations(
@@ -1845,24 +1944,24 @@ export const exportMessageAnnotations = (entries: MessageAnnotationEntry[]): str
         entry.annotations,
         entry.globalAttachments,
         `Feedback for Message ${index + 1}`,
-        'message',
+        "message",
       );
-      output += '\n';
+      output += "\n";
     }
 
     const hasLinkedDocFeedback = entry.linkedDocs
       ? Array.from(entry.linkedDocs.values()).some(
-          (doc) => doc.annotations.length > 0 || doc.globalAttachments.length > 0
+          (doc) => doc.annotations.length > 0 || doc.globalAttachments.length > 0,
         )
       : false;
     if (entry.linkedDocs && hasLinkedDocFeedback) {
       output += exportLinkedDocAnnotations(entry.linkedDocs);
-      output += '\n';
+      output += "\n";
     }
 
     if (entry.codeAnnotations?.length) {
       output += exportCodeFileAnnotations(entry.codeAnnotations);
-      output += '\n';
+      output += "\n";
     }
   });
 

@@ -8,7 +8,7 @@
  * (sent, binned, taken by a host) is dropped as the shelf is read. Kept in this window's memory, like the draft
  * store: a reload starts clean.
  */
-import type { AnnotationTextMeta } from '../types';
+import type { AnnotationTextMeta } from "../types";
 
 export interface ShelvedCommentDraft {
   /** The composer's own `draftKey` (the hook's; a host prefixes it with its scope for the draft store). */
@@ -34,7 +34,10 @@ export function shelveCommentDraft(scope: string, draft: ShelvedCommentDraft): v
 }
 
 /** The drafts waiting in `scope`, oldest first; an entry whose words no longer wait (`waits` false) is dropped. */
-export function shelvedCommentDrafts(scope: string, waits: (draftKey: string) => boolean): ShelvedCommentDraft[] {
+export function shelvedCommentDrafts(
+  scope: string,
+  waits: (draftKey: string) => boolean,
+): ShelvedCommentDraft[] {
   const shelf = shelves.get(scope);
   if (!shelf) return [];
   const kept: ShelvedCommentDraft[] = [];

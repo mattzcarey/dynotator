@@ -2,13 +2,12 @@ import { createContext, useContext } from "react";
 import type { ValidatedMap } from "../hooks/useValidatedCodePaths";
 
 export interface CodePathValidationContextValue {
-	validated: ValidatedMap;
-	ready: boolean;
+  validated: ValidatedMap;
+  ready: boolean;
 }
 
-export const CodePathValidationContext =
-	createContext<CodePathValidationContextValue | null>(null);
+export const CodePathValidationContext = createContext<CodePathValidationContextValue | null>(null);
 
 export function useCodePathValidation(): CodePathValidationContextValue | null {
-	return useContext(CodePathValidationContext);
+  return useContext(CodePathValidationContext);
 }

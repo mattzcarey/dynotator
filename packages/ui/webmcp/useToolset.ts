@@ -8,10 +8,10 @@
  * tool list, and the registry reconciles by name so an unchanged descriptor
  * merely swaps its handler in place.
  */
-import { useEffect, useMemo, useRef } from 'react';
-import { resolveModelContext, type ModelContextLike } from './modelContext';
-import { getWebMcpPolicy } from './policy';
-import { getRegistryFor, type ToolSpec, type ToolsetHooks } from './toolset';
+import { useEffect, useMemo, useRef } from "react";
+import { resolveModelContext, type ModelContextLike } from "./modelContext";
+import { getWebMcpPolicy } from "./policy";
+import { getRegistryFor, type ToolSpec, type ToolsetHooks } from "./toolset";
 
 export interface UseToolsetOptions {
   /** Stable set id (one per surface). */
@@ -43,10 +43,13 @@ export function useToolset(options: UseToolsetOptions): UseToolsetResult {
 
   const hooksRef = useRef(hooks);
   hooksRef.current = hooks;
-  const stableHooks = useMemo<ToolsetHooks>(() => ({
-    buildNudges: (info) => hooksRef.current.buildNudges(info),
-    afterResponse: (response) => hooksRef.current.afterResponse?.(response),
-  }), []);
+  const stableHooks = useMemo<ToolsetHooks>(
+    () => ({
+      buildNudges: (info) => hooksRef.current.buildNudges(info),
+      afterResponse: (response) => hooksRef.current.afterResponse?.(response),
+    }),
+    [],
+  );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const tools = useMemo(() => (enabled ? build() : null), [enabled, ...deps]);

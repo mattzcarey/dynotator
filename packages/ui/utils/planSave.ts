@@ -8,10 +8,10 @@
  * random port, and localStorage is scoped by origin including port.
  */
 
-import { storage } from './storage';
+import { storage } from "./storage";
 
-const STORAGE_KEY_ENABLED = 'plannotator-save-enabled';
-const STORAGE_KEY_PATH = 'plannotator-save-path';
+const STORAGE_KEY_ENABLED = "plannotator-save-enabled";
+const STORAGE_KEY_PATH = "plannotator-save-path";
 
 export interface PlanSaveSettings {
   enabled: boolean;
@@ -31,7 +31,7 @@ export function getPlanSaveSettings(): PlanSaveSettings {
   const customPath = storage.getItem(STORAGE_KEY_PATH);
 
   return {
-    enabled: enabled !== 'false', // default to true
+    enabled: enabled !== "false", // default to true
     customPath: customPath || null,
   };
 }

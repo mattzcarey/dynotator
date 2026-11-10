@@ -1,5 +1,5 @@
 /** Direction in which a recorded history action is replayed. */
-export type HistoryDirection = 'undo' | 'redo';
+export type HistoryDirection = "undo" | "redo";
 
 /** Immutable state for one bounded undo/redo context. */
 export interface UndoHistoryState<TAction> {
@@ -32,7 +32,9 @@ export function recordUndoAction<TAction>(
 }
 
 /** Take the newest undo action, if one exists. */
-export function takeUndoAction<TAction>(state: UndoHistoryState<TAction>): UndoHistoryStep<TAction> {
+export function takeUndoAction<TAction>(
+  state: UndoHistoryState<TAction>,
+): UndoHistoryStep<TAction> {
   const action = state.past.at(-1) ?? null;
   if (action === null) return { state, action: null };
   return {
@@ -63,9 +65,9 @@ export function takeRedoAction<TAction>(
 
 /** One reversible mutation to an ID-addressed collection. */
 export type CollectionMutation<TItem> =
-  | { readonly kind: 'add'; readonly item: TItem; readonly index: number }
-  | { readonly kind: 'edit'; readonly before: TItem; readonly after: TItem }
-  | { readonly kind: 'delete'; readonly item: TItem; readonly index: number };
+  | { readonly kind: "add"; readonly item: TItem; readonly index: number }
+  | { readonly kind: "edit"; readonly before: TItem; readonly after: TItem }
+  | { readonly kind: "delete"; readonly item: TItem; readonly index: number };
 
 function insertAt<TItem>(items: readonly TItem[], item: TItem, index: number): TItem[] {
   const insertionIndex = Math.max(0, Math.min(index, items.length));
@@ -80,17 +82,17 @@ export function applyCollectionMutation<TItem>(
   getId: (item: TItem) => string,
 ): TItem[] {
   switch (mutation.kind) {
-    case 'add':
-      return direction === 'undo'
+    case "add":
+      return direction === "undo"
         ? items.filter((item) => getId(item) !== getId(mutation.item))
         : insertAt(items, mutation.item, mutation.index);
-    case 'delete':
-      return direction === 'undo'
+    case "delete":
+      return direction === "undo"
         ? insertAt(items, mutation.item, mutation.index)
         : items.filter((item) => getId(item) !== getId(mutation.item));
-    case 'edit': {
-      const replacement = direction === 'undo' ? mutation.before : mutation.after;
-      return items.map((item) => getId(item) === getId(replacement) ? replacement : item);
+    case "edit": {
+      const replacement = direction === "undo" ? mutation.before : mutation.after;
+      return items.map((item) => (getId(item) === getId(replacement) ? replacement : item));
     }
   }
 }
@@ -102,7 +104,7 @@ export function applyCollectionMutations<TItem>(
   direction: HistoryDirection,
   getId: (item: TItem) => string,
 ): TItem[] {
-  const ordered = direction === 'undo' ? [...mutations].reverse() : mutations;
+  const ordered = direction === "undo" ? [...mutations].reverse() : mutations;
   return ordered.reduce<TItem[]>(
     (current, mutation) => applyCollectionMutation(current, mutation, direction, getId),
     [...items],
@@ -110,20 +112,20 @@ export function applyCollectionMutations<TItem>(
 }
 
 const NATIVE_HISTORY_SELECTOR = [
-  'input',
-  'textarea',
+  "input",
+  "textarea",
   '[contenteditable]:not([contenteditable="false"])',
-  '.cm-editor',
+  ".cm-editor",
   '[role="textbox"]',
-].join(',');
+].join(",");
 
 const ACTIVE_HISTORY_OVERLAY_SELECTOR = [
   '[role="dialog"]',
-  '[data-popover-layer]',
+  "[data-popover-layer]",
   '[data-comment-popover="true"]',
-  '[data-history-owner]',
-  '.cm-editor.cm-focused',
-].join(',');
+  "[data-history-owner]",
+  ".cm-editor.cm-focused",
+].join(",");
 
 /**
  * Return whether the event belongs to native text history or another active
@@ -132,8 +134,7 @@ const ACTIVE_HISTORY_OVERLAY_SELECTOR = [
 export function isNativeHistoryOwner(event: KeyboardEvent): boolean {
   const first = event.composedPath()[0];
   if (!(first instanceof Element)) return false;
-  return first.matches(NATIVE_HISTORY_SELECTOR)
-    || first.closest(NATIVE_HISTORY_SELECTOR) !== null;
+  return first.matches(NATIVE_HISTORY_SELECTOR) || first.closest(NATIVE_HISTORY_SELECTOR) !== null;
 }
 
 /** Return whether a dialog, composer, or source editor currently owns history. */

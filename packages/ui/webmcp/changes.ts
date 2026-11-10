@@ -11,7 +11,7 @@
  */
 
 /** `source` stamped on every annotation a browser agent creates through the tools. */
-export const BROWSER_AGENT_SOURCE = 'browser-agent';
+export const BROWSER_AGENT_SOURCE = "browser-agent";
 
 /** The slice of an annotation the tracker hashes. */
 export interface TrackedAnnotation {
@@ -48,14 +48,14 @@ export function isAgentAnnotation(annotation: { source?: string }): boolean {
 
 export function hashAnnotation(annotation: TrackedAnnotation): string {
   return JSON.stringify([
-    annotation.text ?? '',
-    annotation.originalText ?? '',
-    annotation.inReplyTo ?? '',
+    annotation.text ?? "",
+    annotation.originalText ?? "",
+    annotation.inReplyTo ?? "",
     annotation.images?.map((image) => image.path) ?? [],
   ]);
 }
 
-const CURSOR_PREFIX = 'w:';
+const CURSOR_PREFIX = "w:";
 
 /**
  * Tombstones kept per tracker. A removal past this many is forgotten oldest
@@ -97,8 +97,8 @@ export class AnnotationChangeTracker {
 
   /** Accepts a `cursor` string (`w:47`) or a bare number; anything else is null. */
   static parseSince(value: unknown): number | null {
-    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return Math.floor(value);
-    if (typeof value === 'string') {
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) return Math.floor(value);
+    if (typeof value === "string") {
       const digits = value.startsWith(CURSOR_PREFIX) ? value.slice(CURSOR_PREFIX.length) : value;
       if (/^\d+$/.test(digits)) return Number(digits);
     }
@@ -118,7 +118,8 @@ export class AnnotationChangeTracker {
   claimOwn(annotation: TrackedAnnotation): void {
     this.ownHashes.set(annotation.id, hashAnnotation(annotation));
     const entry = this.entries.get(annotation.id);
-    if (entry && entry.hash === this.ownHashes.get(annotation.id)) this.ownSeqs.set(annotation.id, entry.seq);
+    if (entry && entry.hash === this.ownHashes.get(annotation.id))
+      this.ownSeqs.set(annotation.id, entry.seq);
   }
 
   /**

@@ -19,7 +19,7 @@
  * This module has NO static import of `mermaid`; the only place the
  * dependency is named at runtime is the default loader's `import('mermaid')`.
  */
-import type { Mermaid, MermaidConfig } from 'mermaid';
+import type { Mermaid, MermaidConfig } from "mermaid";
 
 /**
  * Width in px at which node labels wrap (#2064). Mermaid 12 lowered the
@@ -38,22 +38,22 @@ export const MERMAID_LABEL_WRAP_WIDTH = 140;
  */
 export const MERMAID_CONFIG: MermaidConfig = {
   startOnLoad: false,
-  securityLevel: 'strict',
-  theme: 'dark',
+  securityLevel: "strict",
+  theme: "dark",
   themeVariables: {
-    primaryColor: '#3b82f6',
-    primaryTextColor: '#f8fafc',
-    primaryBorderColor: '#475569',
-    lineColor: '#64748b',
-    secondaryColor: '#1e293b',
-    tertiaryColor: '#0f172a',
-    background: '#1e293b',
-    mainBkg: '#1e293b',
-    nodeBorder: '#475569',
-    clusterBkg: '#1e293b',
-    clusterBorder: '#475569',
-    titleColor: '#f8fafc',
-    edgeLabelBackground: '#1e293b',
+    primaryColor: "#3b82f6",
+    primaryTextColor: "#f8fafc",
+    primaryBorderColor: "#475569",
+    lineColor: "#64748b",
+    secondaryColor: "#1e293b",
+    tertiaryColor: "#0f172a",
+    background: "#1e293b",
+    mainBkg: "#1e293b",
+    nodeBorder: "#475569",
+    clusterBkg: "#1e293b",
+    clusterBorder: "#475569",
+    titleColor: "#f8fafc",
+    edgeLabelBackground: "#1e293b",
     /**
      * Mermaid 12's neo look shadows every node from a fixed
      * `drop-shadow(1px 2px 2px rgba(185,185,185,1))` grey, which reads as a
@@ -65,11 +65,11 @@ export const MERMAID_CONFIG: MermaidConfig = {
      * ground, which is dark — hence a light shadow, exactly as Mermaid's own
      * `insertLookDefs` uses a white flood colour on dark themes.
      */
-    dropShadow: 'drop-shadow(0.79px 1.58px 1.58px rgba(210, 212, 217, 0.684))',
+    dropShadow: "drop-shadow(0.79px 1.58px 1.58px rgba(210, 212, 217, 0.684))",
   },
   flowchart: {
     htmlLabels: true,
-    curve: 'basis',
+    curve: "basis",
     wrappingWidth: MERMAID_LABEL_WRAP_WIDTH,
   },
   /**
@@ -87,13 +87,13 @@ export const MERMAID_CONFIG: MermaidConfig = {
  * how `tests/entry-assets.test.ts` proves on the built HTML that Plannotator's
  * own bundles do NOT register the runtime eagerly.
  */
-export type MermaidRuntimeSource = 'plannotator-mermaid-eager' | 'loader' | 'host';
+export type MermaidRuntimeSource = "plannotator-mermaid-eager" | "loader" | "host";
 
 export type MermaidRuntimeLoader = () => Promise<Mermaid>;
 
 /** Default lazy loader: import the runtime and initialize it once. */
 const defaultMermaidLoader: MermaidRuntimeLoader = () =>
-  import('mermaid').then(({ default: mermaid }) => {
+  import("mermaid").then(({ default: mermaid }) => {
     mermaid.initialize(MERMAID_CONFIG);
     return mermaid;
   });
@@ -122,7 +122,7 @@ export function getMermaidRuntimeSource(): MermaidRuntimeSource | null {
 }
 
 /** Register an already-initialized runtime (what `./mermaid-eager` does). */
-export function setMermaidRuntime(next: Mermaid, source: MermaidRuntimeSource = 'host'): void {
+export function setMermaidRuntime(next: Mermaid, source: MermaidRuntimeSource = "host"): void {
   runtime = next;
   runtimeSource = source;
   pending = null;
@@ -144,7 +144,7 @@ export function loadMermaidRuntime(): Promise<Mermaid> {
   if (!pending) {
     const attempt = loader().then(
       (loaded) => {
-        setMermaidRuntime(loaded, 'loader');
+        setMermaidRuntime(loaded, "loader");
         return loaded;
       },
       (err: unknown) => {

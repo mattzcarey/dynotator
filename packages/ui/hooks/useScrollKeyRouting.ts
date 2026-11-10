@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { hasBlockingOverlay } from './useVimDocumentFocus';
-import { isDocumentScrollViewport } from './useScrollViewport';
+import { useEffect } from "react";
+import { hasBlockingOverlay } from "./useVimDocumentFocus";
+import { isDocumentScrollViewport } from "./useScrollViewport";
 
 /**
  * Scroll keys with no browser target (#1647).
@@ -40,30 +40,37 @@ const PAGE_OVERLAP_PX = 40;
 const OPEN_POPUP_SELECTOR = '[role="menu"], [role="listbox"]';
 
 export type ScrollKeyAction =
-  | { readonly kind: 'line'; readonly direction: 1 | -1 }
-  | { readonly kind: 'page'; readonly direction: 1 | -1 }
-  | { readonly kind: 'edge'; readonly edge: 'start' | 'end' };
+  | { readonly kind: "line"; readonly direction: 1 | -1 }
+  | { readonly kind: "page"; readonly direction: 1 | -1 }
+  | { readonly kind: "edge"; readonly edge: "start" | "end" };
 
 /** The keydown fields the mapping reads (pure, so it runs without a DOM). */
 export type ScrollKeyInput = Pick<
   KeyboardEvent,
-  'key' | 'isComposing' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'
+  "key" | "isComposing" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"
 >;
 
 /** Map a keydown to the scroll it asks for, or null when it is not a plain scroll key. */
 export function scrollKeyAction(event: ScrollKeyInput): ScrollKeyAction | null {
   if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return null;
-  const isSpace = event.key === ' ' || event.key === 'Spacebar';
-  if (isSpace) return { kind: 'page', direction: event.shiftKey ? -1 : 1 };
+  const isSpace = event.key === " " || event.key === "Spacebar";
+  if (isSpace) return { kind: "page", direction: event.shiftKey ? -1 : 1 };
   if (event.shiftKey) return null;
   switch (event.key) {
-    case 'ArrowDown': return { kind: 'line', direction: 1 };
-    case 'ArrowUp': return { kind: 'line', direction: -1 };
-    case 'PageDown': return { kind: 'page', direction: 1 };
-    case 'PageUp': return { kind: 'page', direction: -1 };
-    case 'Home': return { kind: 'edge', edge: 'start' };
-    case 'End': return { kind: 'edge', edge: 'end' };
-    default: return null;
+    case "ArrowDown":
+      return { kind: "line", direction: 1 };
+    case "ArrowUp":
+      return { kind: "line", direction: -1 };
+    case "PageDown":
+      return { kind: "page", direction: 1 };
+    case "PageUp":
+      return { kind: "page", direction: -1 };
+    case "Home":
+      return { kind: "edge", edge: "start" };
+    case "End":
+      return { kind: "edge", edge: "end" };
+    default:
+      return null;
   }
 }
 
@@ -71,7 +78,7 @@ function canScrollVertically(element: Element): boolean {
   if (!(element instanceof HTMLElement)) return false;
   if (element.scrollHeight <= element.clientHeight) return false;
   const overflowY = getComputedStyle(element).overflowY;
-  return overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
+  return overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
 }
 
 /**
@@ -95,22 +102,26 @@ function focusIsNeutral(event: KeyboardEvent): boolean {
   const active = doc.activeElement;
   if (active !== null && active !== doc.body && active !== doc.documentElement) return false;
   const origin = event.composedPath?.()[0] ?? event.target;
-  return origin === doc.body || origin === doc.documentElement || origin === doc || origin === window;
+  return (
+    origin === doc.body || origin === doc.documentElement || origin === doc || origin === window
+  );
 }
 
 function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 }
 
 function applyScroll(viewport: HTMLElement, action: ScrollKeyAction): void {
-  if (action.kind === 'line') {
-    viewport.scrollBy({ top: action.direction * LINE_STEP_PX, behavior: 'auto' });
+  if (action.kind === "line") {
+    viewport.scrollBy({ top: action.direction * LINE_STEP_PX, behavior: "auto" });
     return;
   }
-  const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
-  if (action.kind === 'edge') {
-    viewport.scrollTo({ top: action.edge === 'start' ? 0 : viewport.scrollHeight, behavior });
+  const behavior: ScrollBehavior = prefersReducedMotion() ? "auto" : "smooth";
+  if (action.kind === "edge") {
+    viewport.scrollTo({ top: action.edge === "start" ? 0 : viewport.scrollHeight, behavior });
     return;
   }
   const height = viewport.clientHeight;
@@ -147,11 +158,11 @@ export function useScrollKeyRouting({ viewport, enabled }: UseScrollKeyRoutingOp
       applyScroll(viewport, action);
     };
 
-    window.addEventListener('pointerdown', handlePointerDown, true);
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('pointerdown', handlePointerDown, true);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [enabled, viewport]);
 }

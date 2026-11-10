@@ -128,7 +128,8 @@
   scrollbar-width: none;
   touch-action: none;
   pointer-events: none;
-  transition: max-height var(--motion-duration-basic, 150ms) var(--ease-exit, cubic-bezier(0.4, 0, 0.2, 1));
+  transition: max-height var(--motion-duration-basic, 150ms)
+    var(--ease-exit, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 .pn-contents-rail[data-revealed] .pn-contents-rail-list {
@@ -194,7 +195,18 @@
 .pn-contents-rail[data-revealed] .pn-contents-rail-line {
   transition:
     transform var(--motion-duration-basic, 150ms)
-      linear(0, 0.398 10%, 0.682 20%, 0.843 30%, 0.925 40%, 0.972 50%, 1.004 60%, 1.008 70%, 1.003 80%, 1),
+      linear(
+        0,
+        0.398 10%,
+        0.682 20%,
+        0.843 30%,
+        0.925 40%,
+        0.972 50%,
+        1.004 60%,
+        1.008 70%,
+        1.003 80%,
+        1
+      ),
     opacity var(--motion-duration-basic, 150ms) ease,
     background-color var(--motion-duration-basic, 150ms) ease;
 }
@@ -233,18 +245,44 @@
   opacity: 0.78;
 }
 
-.pn-contents-rail-marker:has(+ .pn-contents-rail-marker + .pn-contents-rail-marker[data-highlighted]) .pn-contents-rail-line,
-.pn-contents-rail-marker:has(+ .pn-contents-rail-marker + .pn-contents-rail-marker:focus-visible) .pn-contents-rail-line,
-.pn-contents-rail-marker[data-highlighted] + .pn-contents-rail-marker + .pn-contents-rail-marker .pn-contents-rail-line,
-.pn-contents-rail-marker:focus-visible + .pn-contents-rail-marker + .pn-contents-rail-marker .pn-contents-rail-line {
+.pn-contents-rail-marker:has(
+    + .pn-contents-rail-marker + .pn-contents-rail-marker[data-highlighted]
+  )
+  .pn-contents-rail-line,
+.pn-contents-rail-marker:has(+ .pn-contents-rail-marker + .pn-contents-rail-marker:focus-visible)
+  .pn-contents-rail-line,
+.pn-contents-rail-marker[data-highlighted]
+  + .pn-contents-rail-marker
+  + .pn-contents-rail-marker
+  .pn-contents-rail-line,
+.pn-contents-rail-marker:focus-visible
+  + .pn-contents-rail-marker
+  + .pn-contents-rail-marker
+  .pn-contents-rail-line {
   --marker-progress: 0.4;
   opacity: 0.58;
 }
 
-.pn-contents-rail-marker:has(+ .pn-contents-rail-marker + .pn-contents-rail-marker + .pn-contents-rail-marker[data-highlighted]) .pn-contents-rail-line,
-.pn-contents-rail-marker:has(+ .pn-contents-rail-marker + .pn-contents-rail-marker + .pn-contents-rail-marker:focus-visible) .pn-contents-rail-line,
-.pn-contents-rail-marker[data-highlighted] + .pn-contents-rail-marker + .pn-contents-rail-marker + .pn-contents-rail-marker .pn-contents-rail-line,
-.pn-contents-rail-marker:focus-visible + .pn-contents-rail-marker + .pn-contents-rail-marker + .pn-contents-rail-marker .pn-contents-rail-line {
+.pn-contents-rail-marker:has(
+    + .pn-contents-rail-marker
+      + .pn-contents-rail-marker
+      + .pn-contents-rail-marker[data-highlighted]
+  )
+  .pn-contents-rail-line,
+.pn-contents-rail-marker:has(
+    + .pn-contents-rail-marker + .pn-contents-rail-marker + .pn-contents-rail-marker:focus-visible
+  )
+  .pn-contents-rail-line,
+.pn-contents-rail-marker[data-highlighted]
+  + .pn-contents-rail-marker
+  + .pn-contents-rail-marker
+  + .pn-contents-rail-marker
+  .pn-contents-rail-line,
+.pn-contents-rail-marker:focus-visible
+  + .pn-contents-rail-marker
+  + .pn-contents-rail-marker
+  + .pn-contents-rail-marker
+  .pn-contents-rail-line {
   --marker-progress: 0.2;
   opacity: 0.46;
 }
@@ -292,7 +330,8 @@
 .pn-contents-rail[data-revealed] .pn-contents-rail-label {
   opacity: 1;
   transform: translateX(0);
-  transition-delay: var(--motion-duration-basic, 150ms), var(--motion-duration-basic, 150ms), 0ms, 0ms;
+  transition-delay:
+    var(--motion-duration-basic, 150ms), var(--motion-duration-basic, 150ms), 0ms, 0ms;
 }
 
 .pn-contents-rail-marker[data-current] .pn-contents-rail-label {

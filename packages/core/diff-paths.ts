@@ -5,8 +5,15 @@ export interface DiffPathPair {
 
 /** Single-char C escapes git emits (see git's quote.c) mapped to their byte. */
 const C_ESCAPES: Record<string, number> = {
-  '"': 0x22, "\\": 0x5c, a: 0x07, b: 0x08, f: 0x0c,
-  n: 0x0a, r: 0x0d, t: 0x09, v: 0x0b,
+  '"': 0x22,
+  "\\": 0x5c,
+  a: 0x07,
+  b: 0x08,
+  f: 0x0c,
+  n: 0x0a,
+  r: 0x0d,
+  t: 0x09,
+  v: 0x0b,
 };
 
 /**
@@ -245,7 +252,16 @@ export function isContentlessBinaryPatch(patch: string): boolean {
  * Safari-only, so they keep the plain binary notice.
  */
 export const REVIEW_IMAGE_PREVIEW_EXTENSIONS: readonly string[] = [
-  "png", "jpg", "jpeg", "gif", "webp", "svg", "avif", "bmp", "ico", "apng",
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "svg",
+  "avif",
+  "bmp",
+  "ico",
+  "apng",
 ];
 
 /** Per-side byte cap for an image preview. Separate from the 5 MB text cap. */
@@ -270,11 +286,7 @@ export function isReviewImagePath(path: string | undefined | null): boolean {
  * the GitHub files-API and GitLab JSON fallbacks emit header-only chunks for
  * binaries with no marker at all, and those deserve a preview too.
  */
-export function isImagePreviewCandidate(
-  patch: string,
-  path: string,
-  oldPath?: string,
-): boolean {
+export function isImagePreviewCandidate(patch: string, path: string, oldPath?: string): boolean {
   if (!isReviewImagePath(path) && !isReviewImagePath(oldPath)) return false;
   return !patch.split("\n").some((line) => line.startsWith("@@ "));
 }
@@ -285,7 +297,9 @@ export function parseDiffMetadataPathLines(lines: string[]): DiffPathPair {
 
   for (const line of lines) {
     if (line.startsWith("rename from ") || line.startsWith("copy from ")) {
-      const parsed = parseDiffMetadataPathToken(line.slice(line.indexOf(" from ") + " from ".length));
+      const parsed = parseDiffMetadataPathToken(
+        line.slice(line.indexOf(" from ") + " from ".length),
+      );
       if (parsed !== "/dev/null") oldPath = parsed;
     } else if (line.startsWith("rename to ") || line.startsWith("copy to ")) {
       const parsed = parseDiffMetadataPathToken(line.slice(line.indexOf(" to ") + " to ".length));

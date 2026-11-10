@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import type { ScreenRect } from '../../utils/diagram-projection';
-import { DOUBLE_TAP_ZOOM } from '../imageZoom';
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import type { ScreenRect } from "../../utils/diagram-projection";
+import { DOUBLE_TAP_ZOOM } from "../imageZoom";
 
 /**
  * The canvas viewport: a translate plus a scale on the wrapper around the
@@ -99,7 +99,7 @@ export function useDiagramViewport(
   useEffect(() => {
     if (!adjustedRef.current) fit();
     const host = hostRef.current;
-    if (host === null || typeof ResizeObserver === 'undefined') return;
+    if (host === null || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => {
       if (!adjustedRef.current) fit();
     });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 
 export interface VisualViewportSnapshot {
   width: number;
@@ -54,11 +54,11 @@ const ZERO_INSETS: ViewportEdgeInsets = {
 };
 
 const VIEWPORT_PROPERTIES = [
-  '--pn-viewport-width',
-  '--pn-viewport-height',
-  '--pn-viewport-offset-top',
-  '--pn-viewport-offset-left',
-  '--pn-keyboard-inset',
+  "--pn-viewport-width",
+  "--pn-viewport-height",
+  "--pn-viewport-offset-top",
+  "--pn-viewport-offset-left",
+  "--pn-keyboard-inset",
 ] as const;
 
 type ViewportProperty = (typeof VIEWPORT_PROPERTIES)[number];
@@ -185,9 +185,9 @@ export function shouldUseExpandedComposer({
 
 /** Returns whether the device's primary pointing input is coarse. */
 export function hasPrimaryCoarsePointer(targetWindow?: Window): boolean {
-  const resolvedWindow = targetWindow ?? (typeof window === 'undefined' ? undefined : window);
+  const resolvedWindow = targetWindow ?? (typeof window === "undefined" ? undefined : window);
   if (!resolvedWindow?.matchMedia) return false;
-  return resolvedWindow.matchMedia('(pointer: coarse)').matches;
+  return resolvedWindow.matchMedia("(pointer: coarse)").matches;
 }
 
 function readViewportEnvironment(targetWindow: Window): ViewportEnvironment {
@@ -207,32 +207,31 @@ function readViewportEnvironment(targetWindow: Window): ViewportEnvironment {
   });
 }
 
-function environmentsEqual(
-  left: ViewportEnvironment | null,
-  right: ViewportEnvironment,
-): boolean {
-  return !!left
-    && left.width === right.width
-    && left.height === right.height
-    && left.offsetTop === right.offsetTop
-    && left.offsetLeft === right.offsetLeft
-    && left.keyboardInset === right.keyboardInset;
+function environmentsEqual(left: ViewportEnvironment | null, right: ViewportEnvironment): boolean {
+  return (
+    !!left &&
+    left.width === right.width &&
+    left.height === right.height &&
+    left.offsetTop === right.offsetTop &&
+    left.offsetLeft === right.offsetLeft &&
+    left.keyboardInset === right.keyboardInset
+  );
 }
 
 function getViewportEnvironmentSnapshot(): ViewportEnvironment {
   if (currentEnvironment) return currentEnvironment;
-  if (typeof window === 'undefined') return ZERO_ENVIRONMENT;
+  if (typeof window === "undefined") return ZERO_ENVIRONMENT;
   currentEnvironment = readViewportEnvironment(window);
   return currentEnvironment;
 }
 
 function cssValues(environment: ViewportEnvironment): Record<ViewportProperty, string> {
   return {
-    '--pn-viewport-width': `${environment.width}px`,
-    '--pn-viewport-height': `${environment.height}px`,
-    '--pn-viewport-offset-top': `${environment.offsetTop}px`,
-    '--pn-viewport-offset-left': `${environment.offsetLeft}px`,
-    '--pn-keyboard-inset': `${environment.keyboardInset}px`,
+    "--pn-viewport-width": `${environment.width}px`,
+    "--pn-viewport-height": `${environment.height}px`,
+    "--pn-viewport-offset-top": `${environment.offsetTop}px`,
+    "--pn-viewport-offset-left": `${environment.offsetLeft}px`,
+    "--pn-keyboard-inset": `${environment.keyboardInset}px`,
   };
 }
 
@@ -261,7 +260,7 @@ function startViewportEnvironmentObserver(
       rootStyle.setProperty(property, nextValue);
       writtenValues.set(property, nextValue);
     }
-    if (changed) environmentListeners.forEach(listener => listener());
+    if (changed) environmentListeners.forEach((listener) => listener());
   };
 
   const scheduleWrite = () => {
@@ -270,25 +269,25 @@ function startViewportEnvironmentObserver(
   };
 
   const visualViewport = targetWindow.visualViewport;
-  targetWindow.addEventListener('resize', scheduleWrite);
-  targetWindow.addEventListener('orientationchange', scheduleWrite);
-  targetWindow.addEventListener('pageshow', scheduleWrite);
-  targetDocument.addEventListener('visibilitychange', scheduleWrite);
-  visualViewport?.addEventListener('resize', scheduleWrite);
-  visualViewport?.addEventListener('scroll', scheduleWrite);
+  targetWindow.addEventListener("resize", scheduleWrite);
+  targetWindow.addEventListener("orientationchange", scheduleWrite);
+  targetWindow.addEventListener("pageshow", scheduleWrite);
+  targetDocument.addEventListener("visibilitychange", scheduleWrite);
+  visualViewport?.addEventListener("resize", scheduleWrite);
+  visualViewport?.addEventListener("scroll", scheduleWrite);
   write();
 
   return () => {
-    targetWindow.removeEventListener('resize', scheduleWrite);
-    targetWindow.removeEventListener('orientationchange', scheduleWrite);
-    targetWindow.removeEventListener('pageshow', scheduleWrite);
-    targetDocument.removeEventListener('visibilitychange', scheduleWrite);
-    visualViewport?.removeEventListener('resize', scheduleWrite);
-    visualViewport?.removeEventListener('scroll', scheduleWrite);
+    targetWindow.removeEventListener("resize", scheduleWrite);
+    targetWindow.removeEventListener("orientationchange", scheduleWrite);
+    targetWindow.removeEventListener("pageshow", scheduleWrite);
+    targetDocument.removeEventListener("visibilitychange", scheduleWrite);
+    visualViewport?.removeEventListener("resize", scheduleWrite);
+    visualViewport?.removeEventListener("scroll", scheduleWrite);
     if (animationFrame !== null) targetWindow.cancelAnimationFrame(animationFrame);
 
     for (const property of VIEWPORT_PROPERTIES) {
-      const previousValue = previousValues.get(property) ?? '';
+      const previousValue = previousValues.get(property) ?? "";
       if (previousValue) rootStyle.setProperty(property, previousValue);
       else rootStyle.removeProperty(property);
     }
@@ -296,7 +295,7 @@ function startViewportEnvironmentObserver(
 }
 
 function acquireViewportEnvironment(): () => void {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return () => {};
+  if (typeof window === "undefined" || typeof document === "undefined") return () => {};
 
   subscriberCount += 1;
   if (subscriberCount === 1) {

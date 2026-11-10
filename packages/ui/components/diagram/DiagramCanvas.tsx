@@ -1,4 +1,4 @@
-import { Maximize2, Minus, Plus } from 'lucide-react';
+import { Maximize2, Minus, Plus } from "lucide-react";
 import React, {
   useCallback,
   useEffect,
@@ -9,14 +9,14 @@ import React, {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
-} from 'react';
-import { cn } from '../../lib/utils';
-import { diagramHitSource } from '../../utils/diagram-render';
-import { isMac, isModKeyHeld } from '../../utils/platform';
-import { Button } from '../ui/button';
-import { DOUBLE_TAP_MS, DOUBLE_TAP_SLOP_PX } from '../imageZoom';
-import { isDiagramControlEvent } from './diagramControls';
-import { svgContentSize } from './svgContentSize';
+} from "react";
+import { cn } from "../../lib/utils";
+import { diagramHitSource } from "../../utils/diagram-render";
+import { isMac, isModKeyHeld } from "../../utils/platform";
+import { Button } from "../ui/button";
+import { DOUBLE_TAP_MS, DOUBLE_TAP_SLOP_PX } from "../imageZoom";
+import { isDiagramControlEvent } from "./diagramControls";
+import { svgContentSize } from "./svgContentSize";
 import {
   DRAG_THRESHOLD_PX,
   TOUCH_DRAG_THRESHOLD_PX,
@@ -25,7 +25,7 @@ import {
   ZOOM_STEP,
   type ContentSize,
   type Viewport,
-} from './useDiagramViewport';
+} from "./useDiagramViewport";
 
 /**
  * The canvas: the rendered svg inside a transformed wrapper, edge to edge in
@@ -78,7 +78,7 @@ import {
 // `svgContentSize` is the canvas's, but the document's fence block needs it
 // without the canvas: it lives in its own dependency-free module and is
 // re-exported here so every published path keeps resolving.
-export { svgContentSize } from './svgContentSize';
+export { svgContentSize } from "./svgContentSize";
 
 /** One arrow-key press pans this far (the diagram moves WITH the arrow, as
  * a scroll would); Shift multiplies it by five. */
@@ -87,13 +87,13 @@ export const KEY_PAN_PX = 40;
 export interface DiagramCanvasHandle {
   readonly viewport: Viewport;
   readonly hostRef: React.RefObject<HTMLDivElement | null>;
-  readonly panIntoView: ReturnType<typeof useDiagramViewport>['panIntoView'];
+  readonly panIntoView: ReturnType<typeof useDiagramViewport>["panIntoView"];
 }
 
 /** What an Escape on the canvas did: `consumed` closed something the viewer
  * owns (a draft, a selection) and the key goes no further; `pass` lets it
  * reach whatever holds the canvas (a popout's close). */
-export type DiagramEscapeOutcome = 'consumed' | 'pass';
+export type DiagramEscapeOutcome = "consumed" | "pass";
 
 export function DiagramCanvas({
   svgNode,
@@ -139,7 +139,10 @@ export function DiagramCanvas({
   const hostRef = useRef<HTMLDivElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [content, setContent] = useState<ContentSize | null>(null);
-  const { viewport, fit, zoomBy, toggleZoom, panBy, panIntoView } = useDiagramViewport(hostRef, content);
+  const { viewport, fit, zoomBy, toggleZoom, panBy, panIntoView } = useDiagramViewport(
+    hostRef,
+    content,
+  );
 
   // Mount the sanitized node once per render and size the wrapper to the
   // diagram's own box so the transform scales real pixels.
@@ -155,9 +158,9 @@ export function DiagramCanvas({
     wrapper.replaceChildren(svgNode);
     const size = svgContentSize(svgNode);
     if (size !== null) {
-      svgNode.style.width = '100%';
-      svgNode.style.height = '100%';
-      svgNode.style.maxWidth = 'none';
+      svgNode.style.width = "100%";
+      svgNode.style.height = "100%";
+      svgNode.style.maxWidth = "none";
     }
     setContent(size);
     onSvgRoot(svgNode);
@@ -180,8 +183,8 @@ export function DiagramCanvas({
       event.preventDefault();
       zoomBy(Math.exp(-event.deltaY * WHEEL_ZOOM_SENSITIVITY), event.clientX, event.clientY);
     };
-    host.addEventListener('wheel', onWheel, { passive: false });
-    return () => host.removeEventListener('wheel', onWheel);
+    host.addEventListener("wheel", onWheel, { passive: false });
+    return () => host.removeEventListener("wheel", onWheel);
   }, [zoomBy]);
 
   const targetUnder = useCallback(
@@ -196,15 +199,19 @@ export function DiagramCanvas({
       // engine (happy-dom) the event's own target is all there is.
       const doc = wrapper.ownerDocument;
       const stack =
-        typeof doc.elementsFromPoint === 'function' ? doc.elementsFromPoint(event.clientX, event.clientY) : [];
-      const under = stack.length > 0 ? stack : event.target instanceof Element ? [event.target] : [];
+        typeof doc.elementsFromPoint === "function"
+          ? doc.elementsFromPoint(event.clientX, event.clientY)
+          : [];
+      const under =
+        stack.length > 0 ? stack : event.target instanceof Element ? [event.target] : [];
       const candidates: Element[] = [];
       for (const el of under) {
         if (!wrapper.contains(el)) continue;
         // A hit path stands for the visible edge it was made from.
         const node = diagramHitSource(el) ?? el;
         const target = node.closest(targetSelector);
-        if (target !== null && wrapper.contains(target) && !candidates.includes(target)) candidates.push(target);
+        if (target !== null && wrapper.contains(target) && !candidates.includes(target))
+          candidates.push(target);
       }
       if (candidates.length === 0) return null;
       return pickTarget ? pickTarget(candidates) : (candidates[0] ?? null);
@@ -218,7 +225,7 @@ export function DiagramCanvas({
   useEffect(() => {
     const win = hostRef.current?.ownerDocument.defaultView;
     if (!win) return;
-    const modKey = isMac ? 'Meta' : 'Control';
+    const modKey = isMac ? "Meta" : "Control";
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.key === modKey) onHoverElement(null);
     };
@@ -226,13 +233,13 @@ export function DiagramCanvas({
       if (event.key !== modKey) onHoverElement(null);
     };
     const onBlur = () => onHoverElement(null);
-    win.addEventListener('keyup', onKeyUp);
-    win.addEventListener('keydown', onKeyDown);
-    win.addEventListener('blur', onBlur);
+    win.addEventListener("keyup", onKeyUp);
+    win.addEventListener("keydown", onKeyDown);
+    win.addEventListener("blur", onBlur);
     return () => {
-      win.removeEventListener('keyup', onKeyUp);
-      win.removeEventListener('keydown', onKeyDown);
-      win.removeEventListener('blur', onBlur);
+      win.removeEventListener("keyup", onKeyUp);
+      win.removeEventListener("keydown", onKeyDown);
+      win.removeEventListener("blur", onBlur);
     };
   }, [onHoverElement]);
 
@@ -256,14 +263,23 @@ export function DiagramCanvas({
   const pinchOf = useCallback(() => {
     const [a, b] = [...fingersRef.current.values()];
     if (a === undefined || b === undefined) return null;
-    return { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), midX: (a.x + b.x) / 2, midY: (a.y + b.y) / 2 };
+    return {
+      dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+      midX: (a.x + b.x) / 2,
+      midY: (a.y + b.y) / 2,
+    };
   }, []);
 
   // A finger's tap on empty space waits out the double-tap window before it
   // clicks (a tap on a part clicks at once, inside the touch, so iOS raises
   // the keyboard for the composer it opens): where and when it landed, and
   // its click while it waits.
-  const pendingTapRef = useRef<{ t: number; x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const pendingTapRef = useRef<{
+    t: number;
+    x: number;
+    y: number;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
   const onClickElementRef = useRef(onClickElement);
   onClickElementRef.current = onClickElement;
   const cancelTap = useCallback(() => {
@@ -286,46 +302,49 @@ export function DiagramCanvas({
       const onCanvas = target instanceof Node && host.contains(target);
       if (!onCanvas || isDiagramControlEvent(event)) cancelTap();
     };
-    doc.addEventListener('pointerdown', onDown, true);
-    return () => doc.removeEventListener('pointerdown', onDown, true);
+    doc.addEventListener("pointerdown", onDown, true);
+    return () => doc.removeEventListener("pointerdown", onDown, true);
   }, [cancelTap]);
 
-  const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    // Pressing a control is not the start of a pan either.
-    if (isDiagramControlEvent(event)) {
-      pressRef.current = null;
-      return;
-    }
-    if (event.pointerType === 'touch') {
-      // The first finger down starts afresh (a lift the canvas never saw
-      // leaves no finger behind).
-      if (event.isPrimary) {
-        fingersRef.current.clear();
-        pinchRef.current = null;
-      }
-      fingersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      // A second finger makes it a pinch: neither finger is a tap on a part
-      // or a one-finger pan any more, so the press ends here.
-      if (fingersRef.current.size >= 2) {
-        pinchRef.current = pinchOf();
-        if (pressRef.current?.panning) setPanning(false);
+  const onPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+      // Pressing a control is not the start of a pan either.
+      if (isDiagramControlEvent(event)) {
         pressRef.current = null;
-        cancelTap();
         return;
       }
-    }
-    pressRef.current = {
-      id: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      lastX: event.clientX,
-      lastY: event.clientY,
-      // A fingertip wobbles more than a mouse: a tap must still be a tap.
-      threshold: event.pointerType === 'touch' ? TOUCH_DRAG_THRESHOLD_PX : DRAG_THRESHOLD_PX,
-      panning: false,
-    };
-  }, [cancelTap, pinchOf]);
+      if (event.pointerType === "touch") {
+        // The first finger down starts afresh (a lift the canvas never saw
+        // leaves no finger behind).
+        if (event.isPrimary) {
+          fingersRef.current.clear();
+          pinchRef.current = null;
+        }
+        fingersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        // A second finger makes it a pinch: neither finger is a tap on a part
+        // or a one-finger pan any more, so the press ends here.
+        if (fingersRef.current.size >= 2) {
+          pinchRef.current = pinchOf();
+          if (pressRef.current?.panning) setPanning(false);
+          pressRef.current = null;
+          cancelTap();
+          return;
+        }
+      }
+      pressRef.current = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        lastX: event.clientX,
+        lastY: event.clientY,
+        // A fingertip wobbles more than a mouse: a tap must still be a tap.
+        threshold: event.pointerType === "touch" ? TOUCH_DRAG_THRESHOLD_PX : DRAG_THRESHOLD_PX,
+        panning: false,
+      };
+    },
+    [cancelTap, pinchOf],
+  );
 
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -356,7 +375,7 @@ export function DiagramCanvas({
         setPanning(true);
         onHoverElement(null);
         cancelTap();
-        if (typeof event.currentTarget.setPointerCapture === 'function') {
+        if (typeof event.currentTarget.setPointerCapture === "function") {
           event.currentTarget.setPointerCapture(event.pointerId);
         }
       }
@@ -377,7 +396,15 @@ export function DiagramCanvas({
         pressRef.current =
           rest === undefined
             ? null
-            : { id: rest[0], x: rest[1].x, y: rest[1].y, lastX: rest[1].x, lastY: rest[1].y, threshold: 0, panning: true };
+            : {
+                id: rest[0],
+                x: rest[1].x,
+                y: rest[1].y,
+                lastX: rest[1].x,
+                lastY: rest[1].y,
+                threshold: 0,
+                panning: true,
+              };
         return;
       }
       const press = pressRef.current;
@@ -393,14 +420,17 @@ export function DiagramCanvas({
       if (press.panning) {
         setPanning(false);
         const target = event.currentTarget;
-        if (typeof target.hasPointerCapture === 'function' && target.hasPointerCapture(event.pointerId)) {
+        if (
+          typeof target.hasPointerCapture === "function" &&
+          target.hasPointerCapture(event.pointerId)
+        ) {
           target.releasePointerCapture(event.pointerId);
         }
         return;
       }
       if (!click) return;
       const element = targetUnder(event);
-      if (event.pointerType !== 'touch') {
+      if (event.pointerType !== "touch") {
         onClickElement(element, event.shiftKey);
         return;
       }
@@ -409,7 +439,11 @@ export function DiagramCanvas({
       const now = Date.now();
       const pending = pendingTapRef.current;
       cancelTap();
-      if (pending !== null && now - pending.t <= DOUBLE_TAP_MS && Math.hypot(event.clientX - pending.x, event.clientY - pending.y) <= DOUBLE_TAP_SLOP_PX) {
+      if (
+        pending !== null &&
+        now - pending.t <= DOUBLE_TAP_MS &&
+        Math.hypot(event.clientX - pending.x, event.clientY - pending.y) <= DOUBLE_TAP_SLOP_PX
+      ) {
         toggleZoom(event.clientX, event.clientY);
         return;
       }
@@ -438,31 +472,31 @@ export function DiagramCanvas({
       // Mod+0, Mod+-, Alt+Arrow belong to the browser (page zoom, history).
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       switch (event.key) {
-        case '+':
-        case '=':
+        case "+":
+        case "=":
           zoomBy(ZOOM_STEP);
           break;
-        case '-':
-        case '_':
+        case "-":
+        case "_":
           zoomBy(1 / ZOOM_STEP);
           break;
-        case '0':
+        case "0":
           fit();
           break;
-        case 'ArrowLeft':
+        case "ArrowLeft":
           panBy(event.shiftKey ? KEY_PAN_PX * 5 : KEY_PAN_PX, 0);
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           panBy(event.shiftKey ? -KEY_PAN_PX * 5 : -KEY_PAN_PX, 0);
           break;
-        case 'ArrowUp':
+        case "ArrowUp":
           panBy(0, event.shiftKey ? KEY_PAN_PX * 5 : KEY_PAN_PX);
           break;
-        case 'ArrowDown':
+        case "ArrowDown":
           panBy(0, event.shiftKey ? -KEY_PAN_PX * 5 : -KEY_PAN_PX);
           break;
-        case 'Escape': {
-          if (onEscape() !== 'consumed') return;
+        case "Escape": {
+          if (onEscape() !== "consumed") return;
           event.stopPropagation();
           break;
         }
@@ -474,7 +508,10 @@ export function DiagramCanvas({
     [fit, onEscape, panBy, zoomBy],
   );
 
-  const handle = useMemo<DiagramCanvasHandle>(() => ({ viewport, hostRef, panIntoView }), [panIntoView, viewport]);
+  const handle = useMemo<DiagramCanvasHandle>(
+    () => ({ viewport, hostRef, panIntoView }),
+    [panIntoView, viewport],
+  );
 
   return (
     <div
@@ -483,8 +520,8 @@ export function DiagramCanvas({
       tabIndex={0}
       aria-label="Diagram canvas. Drag or arrow keys to pan, wheel or plus and minus to zoom, 0 to fit, click a part to comment."
       className={cn(
-        'relative h-full w-full touch-pan-y select-none overflow-hidden outline-none',
-        panning ? 'cursor-grabbing' : 'cursor-grab',
+        "relative h-full w-full touch-pan-y select-none overflow-hidden outline-none",
+        panning ? "cursor-grabbing" : "cursor-grab",
         className,
       )}
       onPointerDown={onPointerDown}
@@ -497,7 +534,10 @@ export function DiagramCanvas({
       <div
         ref={wrapperRef}
         data-diagram-svg=""
-        className={cn('absolute left-0 top-0 origin-top-left transition-opacity duration-150', dimmed && 'opacity-40')}
+        className={cn(
+          "absolute left-0 top-0 origin-top-left transition-opacity duration-150",
+          dimmed && "opacity-40",
+        )}
         style={{
           width: content?.width,
           height: content?.height,
@@ -528,7 +568,15 @@ export function DiagramCanvas({
         >
           <Minus aria-hidden="true" />
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="size-7" aria-label="Fit diagram" title="Fit (0)" onClick={fit}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          aria-label="Fit diagram"
+          title="Fit (0)"
+          onClick={fit}
+        >
           <Maximize2 aria-hidden="true" />
         </Button>
         <Button

@@ -68,7 +68,7 @@ export const DOUBLE_TAP_ZOOM = 2;
  * left). The smallest scale is always `contain`, so a reader can zoom out to
  * the whole image from either.
  */
-export type FitAxis = 'contain' | 'width' | 'height';
+export type FitAxis = "contain" | "width" | "height";
 
 const FULL: ZoomInset = { x: 1, y: 1 };
 
@@ -81,12 +81,17 @@ export function clampNumber(value: number, min: number, max: number): number {
 }
 
 /** The scale at which the whole image (or its width, or its height) fits the stage, never above 1. */
-export function fitScale(image: ZoomSize, stage: ZoomSize, inset: ZoomInset = FULL, axis: FitAxis = 'contain'): number {
+export function fitScale(
+  image: ZoomSize,
+  stage: ZoomSize,
+  inset: ZoomInset = FULL,
+  axis: FitAxis = "contain",
+): number {
   if (!valid(image) || !valid(stage)) return 1;
   const across = (stage.width * inset.x) / image.width;
   const down = (stage.height * inset.y) / image.height;
-  if (axis === 'width') return Math.min(1, across);
-  if (axis === 'height') return Math.min(1, down);
+  if (axis === "width") return Math.min(1, across);
+  if (axis === "height") return Math.min(1, down);
   return Math.min(1, across, down);
 }
 
@@ -101,7 +106,12 @@ function placeAxis(position: number, content: number, room: number): number {
 }
 
 /** The scale within the limits, and the image centred or covering the stage on each axis. */
-export function clampViewport(view: ZoomViewport, image: ZoomSize, stage: ZoomSize, limits: ZoomLimits): ZoomViewport {
+export function clampViewport(
+  view: ZoomViewport,
+  image: ZoomSize,
+  stage: ZoomSize,
+  limits: ZoomLimits,
+): ZoomViewport {
   const scale = clampNumber(view.scale, limits.min, limits.max);
   return {
     scale,
@@ -111,9 +121,19 @@ export function clampViewport(view: ZoomViewport, image: ZoomSize, stage: ZoomSi
 }
 
 /** Fit: the whole image, centred (or its width from the top, or its height from the left). */
-export function fitViewport(image: ZoomSize, stage: ZoomSize, inset: ZoomInset = FULL, axis: FitAxis = 'contain'): ZoomViewport {
+export function fitViewport(
+  image: ZoomSize,
+  stage: ZoomSize,
+  inset: ZoomInset = FULL,
+  axis: FitAxis = "contain",
+): ZoomViewport {
   const limits = zoomLimits(image, stage, inset);
-  return clampViewport({ x: 0, y: 0, scale: fitScale(image, stage, inset, axis) }, image, stage, limits);
+  return clampViewport(
+    { x: 0, y: 0, scale: fitScale(image, stage, inset, axis) },
+    image,
+    stage,
+    limits,
+  );
 }
 
 /**
@@ -123,10 +143,16 @@ export function fitViewport(image: ZoomSize, stage: ZoomSize, inset: ZoomInset =
  */
 /** Whether two viewports are the same on screen (a half pixel, a thousandth of scale): a picture still resting where Fit put it. */
 export function sameViewport(a: ZoomViewport, b: ZoomViewport): boolean {
-  return Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5 && Math.abs(a.scale - b.scale) < 0.001;
+  return (
+    Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5 && Math.abs(a.scale - b.scale) < 0.001
+  );
 }
 
-export function actualViewport(image: ZoomSize, stage: ZoomSize, inset: ZoomInset = FULL): ZoomViewport {
+export function actualViewport(
+  image: ZoomSize,
+  stage: ZoomSize,
+  inset: ZoomInset = FULL,
+): ZoomViewport {
   const limits = zoomLimits(image, stage, inset);
   return clampViewport({ x: 0, y: 0, scale: 1 }, image, stage, limits);
 }
@@ -143,22 +169,36 @@ export function zoomAt(
 ): ZoomViewport {
   const scale = clampNumber(view.scale * factor, limits.min, limits.max);
   const ratio = scale / view.scale;
-  return clampViewport({ x: px - (px - view.x) * ratio, y: py - (py - view.y) * ratio, scale }, image, stage, limits);
+  return clampViewport(
+    { x: px - (px - view.x) * ratio, y: py - (py - view.y) * ratio, scale },
+    image,
+    stage,
+    limits,
+  );
 }
 
 /** Move the image by a pointer's travel (or a scroll's, negated by the caller). */
-export function panBy(view: ZoomViewport, dx: number, dy: number, image: ZoomSize, stage: ZoomSize, limits: ZoomLimits): ZoomViewport {
+export function panBy(
+  view: ZoomViewport,
+  dx: number,
+  dy: number,
+  image: ZoomSize,
+  stage: ZoomSize,
+  limits: ZoomLimits,
+): ZoomViewport {
   return clampViewport({ x: view.x + dx, y: view.y + dy, scale: view.scale }, image, stage, limits);
 }
 
 /** Whether the image is larger than the stage on either axis (so there is something to pan). */
 export function overflows(view: ZoomViewport, image: ZoomSize, stage: ZoomSize): boolean {
-  return image.width * view.scale > stage.width + 0.5 || image.height * view.scale > stage.height + 0.5;
+  return (
+    image.width * view.scale > stage.width + 0.5 || image.height * view.scale > stage.height + 0.5
+  );
 }
 
 /** Whether a viewport is at the Fit scale (`limits.min`, or a given Fit scale). */
 export function atFit(view: ZoomViewport, limits: ZoomLimits | number): boolean {
-  const fit = typeof limits === 'number' ? limits : limits.min;
+  const fit = typeof limits === "number" ? limits : limits.min;
   return Math.abs(view.scale - fit) < 1e-3;
 }
 
@@ -168,7 +208,11 @@ export function atFit(view: ZoomViewport, limits: ZoomLimits | number): boolean 
  * `-1` more of its left. A swipe that way pans first, and steps once the
  * image is at its edge (approval "inbox-image-swipe").
  */
-export function canPanToward(box: Pick<NaturalBox, 'x' | 'w'> | null, naturalWidth: number, dir: 1 | -1): boolean {
+export function canPanToward(
+  box: Pick<NaturalBox, "x" | "w"> | null,
+  naturalWidth: number,
+  dir: 1 | -1,
+): boolean {
   if (!box || !(naturalWidth > 0)) return false;
   return dir > 0 ? box.x + box.w < naturalWidth - 1 : box.x > 1;
 }
@@ -176,7 +220,10 @@ export function canPanToward(box: Pick<NaturalBox, 'x' | 'w'> | null, naturalWid
 /** The share of a stage that leaves `padding` CSS pixels on every side (at least a tenth). */
 export function paddingInset(stage: ZoomSize, padding: number): ZoomInset {
   if (!valid(stage) || padding <= 0) return FULL;
-  return { x: Math.max(0.1, (stage.width - 2 * padding) / stage.width), y: Math.max(0.1, (stage.height - 2 * padding) / stage.height) };
+  return {
+    x: Math.max(0.1, (stage.width - 2 * padding) / stage.width),
+    y: Math.max(0.1, (stage.height - 2 * padding) / stage.height),
+  };
 }
 
 /**
@@ -200,7 +247,9 @@ export function wheelTravel(
 
 /** The zoom factor for a wheel's vertical travel: up (negative) zooms in. */
 export function wheelZoomFactor(dy: number): number {
-  return Math.exp(-clampNumber(dy, -WHEEL_ZOOM_DELTA_CAP, WHEEL_ZOOM_DELTA_CAP) * WHEEL_ZOOM_SENSITIVITY);
+  return Math.exp(
+    -clampNumber(dy, -WHEEL_ZOOM_DELTA_CAP, WHEEL_ZOOM_DELTA_CAP) * WHEEL_ZOOM_SENSITIVITY,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -227,7 +276,11 @@ export interface StageRect {
 }
 
 /** A stage point (CSS pixels from the stage's top-left) in the image's own pixels. Not clamped. */
-export function stageToNatural(view: ZoomViewport, px: number, py: number): { x: number; y: number } {
+export function stageToNatural(
+  view: ZoomViewport,
+  px: number,
+  py: number,
+): { x: number; y: number } {
   return { x: (px - view.x) / view.scale, y: (py - view.y) / view.scale };
 }
 
@@ -255,7 +308,12 @@ export function naturalBoxFromPoints(
 
 /** Where a natural-pixel box is on the stage at a viewport. */
 export function naturalBoxToStage(view: ZoomViewport, box: NaturalBox): StageRect {
-  return { left: view.x + box.x * view.scale, top: view.y + box.y * view.scale, width: box.w * view.scale, height: box.h * view.scale };
+  return {
+    left: view.x + box.x * view.scale,
+    top: view.y + box.y * view.scale,
+    width: box.w * view.scale,
+    height: box.h * view.scale,
+  };
 }
 
 /**
@@ -264,7 +322,11 @@ export function naturalBoxToStage(view: ZoomViewport, box: NaturalBox): StageRec
  * the spot with Actual size and the scroll keys, then press Enter). Null when
  * nothing of the image is on the stage.
  */
-export function visibleNaturalBox(view: ZoomViewport, image: ZoomSize, stage: ZoomSize): NaturalBox | null {
+export function visibleNaturalBox(
+  view: ZoomViewport,
+  image: ZoomSize,
+  stage: ZoomSize,
+): NaturalBox | null {
   return naturalBoxFromPoints(view, { x: 0, y: 0 }, { x: stage.width, y: stage.height }, image);
 }
 
@@ -284,8 +346,20 @@ export function viewportForBox(
   limits: ZoomLimits,
   share = ZOOM_TO_BOX_SHARE,
 ): ZoomViewport {
-  const scale = clampNumber(Math.min((stage.width * share) / Math.max(1, box.w), (stage.height * share) / Math.max(1, box.h)), limits.min, limits.max);
+  const scale = clampNumber(
+    Math.min(
+      (stage.width * share) / Math.max(1, box.w),
+      (stage.height * share) / Math.max(1, box.h),
+    ),
+    limits.min,
+    limits.max,
+  );
   const cx = box.x + box.w / 2;
   const cy = box.y + box.h / 2;
-  return clampViewport({ scale, x: stage.width / 2 - cx * scale, y: stage.height / 2 - cy * scale }, image, stage, limits);
+  return clampViewport(
+    { scale, x: stage.width / 2 - cx * scale, y: stage.height / 2 - cy * scale },
+    image,
+    stage,
+    limits,
+  );
 }

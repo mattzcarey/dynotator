@@ -193,7 +193,12 @@ export function embedFragment(theme: EmbedTheme, mode: EmbedMode = "inline"): st
 }
 
 /** A message the host sends an embed: a theme change, applied without a reload. */
-export function embedThemeMessage(theme: EmbedTheme): { pnEmbed: 1; kind: "theme"; vars: Record<string, string>; scheme: EmbedScheme } {
+export function embedThemeMessage(theme: EmbedTheme): {
+  pnEmbed: 1;
+  kind: "theme";
+  vars: Record<string, string>;
+  scheme: EmbedScheme;
+} {
   return { pnEmbed: 1, kind: "theme", vars: theme.vars, scheme: theme.scheme };
 }
 
@@ -207,12 +212,21 @@ export type EmbedMessage =
  * already checked that it came from its own frame (`event.source`).
  */
 export function readEmbedMessage(data: unknown): EmbedMessage | null {
-  if (!data || typeof data !== "object" || (data as { pnEmbed?: unknown }).pnEmbed !== 1) return null;
+  if (!data || typeof data !== "object" || (data as { pnEmbed?: unknown }).pnEmbed !== 1)
+    return null;
   const m = data as Record<string, unknown>;
   if (m.kind === "height" && typeof m.height === "number" && Number.isFinite(m.height)) {
-    return { kind: "height", height: Math.max(0, Math.min(EMBED_MAX_HEIGHT, Math.round(m.height))) };
+    return {
+      kind: "height",
+      height: Math.max(0, Math.min(EMBED_MAX_HEIGHT, Math.round(m.height))),
+    };
   }
-  if (m.kind === "link" && typeof m.url === "string" && m.url.length <= 4096 && /^https?:\/\/[^\s]+$/i.test(m.url)) {
+  if (
+    m.kind === "link" &&
+    typeof m.url === "string" &&
+    m.url.length <= 4096 &&
+    /^https?:\/\/[^\s]+$/i.test(m.url)
+  ) {
     return { kind: "link", url: m.url };
   }
   if (m.kind === "escape") return { kind: "escape" };

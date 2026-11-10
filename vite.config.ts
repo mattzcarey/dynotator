@@ -16,10 +16,19 @@ export default defineConfig({
     alias: [
       // @pierre/diffs picks its Shiki engine at runtime; we only use the JS
       // regex engine, so stub out the ~600 KB Oniguruma WASM.
-      { find: "shiki/wasm", replacement: path.resolve(import.meta.dirname, "app/shiki-wasm-stub.ts") },
-      { find: "@dynotator/ui/theme-modes", replacement: path.join(pkgDir("ui"), "components/themeModes.tsx") },
+      {
+        find: "shiki/wasm",
+        replacement: path.resolve(import.meta.dirname, "app/shiki-wasm-stub.ts"),
+      },
+      {
+        find: "@dynotator/ui/theme-modes",
+        replacement: path.join(pkgDir("ui"), "components/themeModes.tsx"),
+      },
       { find: /^@dynotator\/editor$/, replacement: path.join(pkgDir("editor"), "App.tsx") },
-      { find: /^@dynotator\/(ui|core|shared|editor)\//, replacement: `${path.resolve(import.meta.dirname, "packages")}/$1/` },
+      {
+        find: /^@dynotator\/(ui|core|shared|editor)\//,
+        replacement: `${path.resolve(import.meta.dirname, "packages")}/$1/`,
+      },
     ],
   },
   server: {

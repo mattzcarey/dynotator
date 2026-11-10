@@ -76,12 +76,14 @@
     margin: 0.75in;
   }
 
-  html, body {
+  html,
+  body {
     margin: 0;
     padding: 0;
     background: white !important;
     color: #1a1a1a !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
     font-size: 11pt;
     overflow: visible !important;
@@ -144,7 +146,8 @@
     overflow: visible !important;
   }
 
-  main, [data-print-region="document"] {
+  main,
+  [data-print-region="document"] {
     width: 100% !important;
     overflow: visible !important;
     background: white !important;
@@ -157,8 +160,8 @@
     margin: 0 !important;
   }
 
-
-  article, [data-print-region="article"] {
+  article,
+  [data-print-region="article"] {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -261,7 +264,8 @@
     color: #000 !important;
   }
 
-  h5, h6 {
+  h5,
+  h6 {
     font-size: 11pt;
     font-weight: bold;
     margin: 0.6em 0 0.2em 0;
@@ -276,7 +280,8 @@
 
   /* ========== Lists ========== */
 
-  ul, ol {
+  ul,
+  ol {
     margin: 0.5em 0;
     padding-left: 2em;
   }
@@ -294,7 +299,7 @@
 
   code,
   code[class] {
-    font-family: 'Courier New', Monaco, Consolas, monospace !important;
+    font-family: "Courier New", Monaco, Consolas, monospace !important;
     font-size: 10pt !important;
     background: #e8e8e8 !important;
     background-color: #e8e8e8 !important;
@@ -343,7 +348,9 @@
     color: #1a1a1a !important;
   }
 
-  pre span, pre code span, code span,
+  pre span,
+  pre code span,
+  code span,
   .code-snippet-preview span {
     color: #1a1a1a !important;
     background: transparent !important;
@@ -449,11 +456,19 @@
 
   /* ========== Page Break Hints ========== */
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     page-break-after: avoid;
   }
 
-  pre, blockquote, table, figure {
+  pre,
+  blockquote,
+  table,
+  figure {
     page-break-inside: avoid;
   }
 

@@ -24,9 +24,9 @@ import {
   sameTarget,
   type DiagramFamily,
   type DiagramTarget,
-} from '@dynotator/core/diagram-anchor';
+} from "@dynotator/core/diagram-anchor";
 
-export * from '@dynotator/core/diagram-anchor';
+export * from "@dynotator/core/diagram-anchor";
 
 /**
  * The finder seam (the renderer slot pairs one with each engine): everything
@@ -52,14 +52,14 @@ export interface DiagramFinder {
  * id grammar this file knows. Families without element ids (sequence,
  * gitGraph, pie) are `other`: a comment there is diagram-level. */
 export function diagramFamilyOf(svg: Element): DiagramFamily {
-  const role = svg.getAttribute('aria-roledescription') ?? '';
-  if (role.startsWith('flowchart')) return 'flowchart';
-  if (role === 'stateDiagram') return 'state';
-  if (role === 'classDiagram') return 'class';
-  if (role === 'er') return 'er';
-  if (role === 'requirement') return 'requirement';
-  if (role === 'sequence') return 'sequence';
-  return 'other';
+  const role = svg.getAttribute("aria-roledescription") ?? "";
+  if (role.startsWith("flowchart")) return "flowchart";
+  if (role === "stateDiagram") return "state";
+  if (role === "classDiagram") return "class";
+  if (role === "er") return "er";
+  if (role === "requirement") return "requirement";
+  if (role === "sequence") return "sequence";
+  return "other";
 }
 
 /** `render(id, …)` prefixes every element id with `${id}-`; the marker
@@ -77,12 +77,20 @@ function stripCounter(suffix: string): string | null {
 /** The node ids a rendered flowchart or class diagram declares on its
  * `g.node` elements (`flowchart-{id}-{n}`, `classId-{Name}-{n}`), read once
  * per walk so an edge stem can be split against them. */
-export function nodeIdsOf(svg: Element, family: DiagramFamily, renderId: string): ReadonlySet<string> {
+export function nodeIdsOf(
+  svg: Element,
+  family: DiagramFamily,
+  renderId: string,
+): ReadonlySet<string> {
   const ids = new Set<string>();
   const pattern =
-    family === 'flowchart' ? /^flowchart-(.+)-\d+$/u : family === 'class' ? /^classId-(.+)-\d+$/u : null;
+    family === "flowchart"
+      ? /^flowchart-(.+)-\d+$/u
+      : family === "class"
+        ? /^classId-(.+)-\d+$/u
+        : null;
   if (pattern === null) return ids;
-  for (const node of svg.querySelectorAll('g.node')) {
+  for (const node of svg.querySelectorAll("g.node")) {
     const suffix = idSuffix(node.id, renderId);
     const id = suffix === null ? undefined : pattern.exec(suffix)?.[1];
     if (id !== undefined) ids.add(id);
@@ -103,13 +111,15 @@ export function splitEdgeStem(
   nodeIds: ReadonlySet<string>,
 ): { from: string; to: string } | null {
   const candidates: Array<{ from: string; to: string }> = [];
-  for (let at = stem.indexOf('_'); at !== -1; at = stem.indexOf('_', at + 1)) {
+  for (let at = stem.indexOf("_"); at !== -1; at = stem.indexOf("_", at + 1)) {
     if (at > 0 && at < stem.length - 1) {
       candidates.push({ from: stem.slice(0, at), to: stem.slice(at + 1) });
     }
   }
   const longestFrom = (a: { from: string }, b: { from: string }) => b.from.length - a.from.length;
-  const both = candidates.filter((c) => nodeIds.has(c.from) && nodeIds.has(c.to)).sort(longestFrom)[0];
+  const both = candidates
+    .filter((c) => nodeIds.has(c.from) && nodeIds.has(c.to))
+    .sort(longestFrom)[0];
   if (both !== undefined) return both;
   const fromOnly = candidates.filter((c) => nodeIds.has(c.from)).sort(longestFrom)[0];
   if (fromOnly !== undefined) return fromOnly;
@@ -118,9 +128,9 @@ export function splitEdgeStem(
 
 /** The label a rendered part shows: the htmlLabels span, else the svg text. */
 function partLabel(el: Element): string {
-  const span = el.querySelector('.nodeLabel, .label');
-  const text = (span ?? el.querySelector('text'))?.textContent ?? '';
-  return text.replace(/\s+/gu, ' ').trim();
+  const span = el.querySelector(".nodeLabel, .label");
+  const text = (span ?? el.querySelector("text"))?.textContent ?? "";
+  return text.replace(/\s+/gu, " ").trim();
 }
 
 /** The edge label Mermaid renders in a sibling group keyed by the edge's
@@ -128,11 +138,11 @@ function partLabel(el: Element): string {
  * `data-id` sits on the inner `g.label`), empty when the edge has none. */
 function edgeLabel(svg: Element, elementSuffix: string): string {
   const group = svg.querySelector(`.label[data-id="${cssEscape(elementSuffix)}"]`);
-  return group === null ? '' : (group.textContent ?? '').replace(/\s+/gu, ' ').trim();
+  return group === null ? "" : (group.textContent ?? "").replace(/\s+/gu, " ").trim();
 }
 
 function cssEscape(value: string): string {
-  return value.replace(/["\\]/gu, '\\$&');
+  return value.replace(/["\\]/gu, "\\$&");
 }
 
 /** The sequence family's addressable elements. Mermaid gives them classes,
@@ -140,7 +150,7 @@ function cssEscape(value: string): string {
  * is its text plus its line, a note its rect plus its text, a loop / alt /
  * opt frame the group that holds its `loopLine`s and its label. */
 const SEQUENCE_TARGET_SELECTOR =
-  'rect.actor, text.actor, line.actor-line, text.messageText, line.messageLine0, line.messageLine1, path.messageLine0, path.messageLine1, rect.note, text.noteText, line.loopLine, polygon.labelBox, text.labelText, text.loopText';
+  "rect.actor, text.actor, line.actor-line, text.messageText, line.messageLine0, line.messageLine1, path.messageLine0, path.messageLine1, rect.note, text.noteText, line.loopLine, polygon.labelBox, text.labelText, text.loopText";
 
 /** The selector of every element the pointer can address. An edge LABEL is
  * one too: it is painted over its edge and is where a person clicks an edge,
@@ -148,18 +158,18 @@ const SEQUENCE_TARGET_SELECTOR =
 export const DIAGRAM_TARGET_SELECTOR = `g.node, g.cluster, g.statediagram-cluster, path.flowchart-link, path.transition, path.relation, path.relationshipLine, g.edgeLabel, ${SEQUENCE_TARGET_SELECTOR}`;
 
 function cleanText(value: string | null | undefined): string {
-  return (value ?? '').replace(/\s+/gu, ' ').trim();
+  return (value ?? "").replace(/\s+/gu, " ").trim();
 }
 
 function sequenceMessageLines(svg: Element): Element[] {
-  return Array.from(svg.querySelectorAll('.messageLine0, .messageLine1'));
+  return Array.from(svg.querySelectorAll(".messageLine0, .messageLine1"));
 }
 
 /** The frames of a sequence diagram: the distinct groups that hold
  * `loopLine`s, in document order. */
 function sequenceFrames(svg: Element): Element[] {
   const frames: Element[] = [];
-  for (const line of Array.from(svg.querySelectorAll('line.loopLine'))) {
+  for (const line of Array.from(svg.querySelectorAll("line.loopLine"))) {
     const group = line.parentElement;
     if (group !== null && !frames.includes(group)) frames.push(group);
   }
@@ -167,9 +177,9 @@ function sequenceFrames(svg: Element): Element[] {
 }
 
 function sequenceActorLabel(svg: Element, name: string): string {
-  for (const rect of Array.from(svg.querySelectorAll('rect.actor'))) {
-    if (rect.getAttribute('name') !== name) continue;
-    const text = rect.parentElement?.querySelector('text.actor');
+  for (const rect of Array.from(svg.querySelectorAll("rect.actor"))) {
+    if (rect.getAttribute("name") !== name) continue;
+    const text = rect.parentElement?.querySelector("text.actor");
     if (text) return cleanText(text.textContent);
   }
   return name;
@@ -179,16 +189,16 @@ function sequenceMessageTarget(svg: Element, index: number): DiagramTarget | nul
   const lines = sequenceMessageLines(svg);
   const line = lines[index];
   if (line === undefined) return null;
-  const texts = Array.from(svg.querySelectorAll('text.messageText'));
+  const texts = Array.from(svg.querySelectorAll("text.messageText"));
   // Texts and lines pair by document order; when the counts differ (a
   // renderer that splits a message text) the label is left empty rather
   // than guessed.
-  const label = texts.length === lines.length ? cleanText(texts[index]?.textContent) : '';
-  const from = line.getAttribute('data-from');
-  const to = line.getAttribute('data-to');
+  const label = texts.length === lines.length ? cleanText(texts[index]?.textContent) : "";
+  const from = line.getAttribute("data-from");
+  const to = line.getAttribute("data-to");
   return {
-    family: 'sequence',
-    kind: 'edge',
+    family: "sequence",
+    kind: "edge",
     id: `msg-${index + 1}`,
     ...(from !== null && to !== null ? { from, to } : {}),
     label,
@@ -197,32 +207,47 @@ function sequenceMessageTarget(svg: Element, index: number): DiagramTarget | nul
 
 function sequenceTargetFromElement(svg: Element, el: Element): DiagramTarget | null {
   const cl = el.classList;
-  if (cl.contains('actor') || cl.contains('actor-line')) {
-    const name = el.getAttribute('name') ?? el.parentElement?.querySelector('rect.actor[name]')?.getAttribute('name') ?? null;
-    if (name === null || name === '') return null;
-    return { family: 'sequence', kind: 'node', id: name, label: sequenceActorLabel(svg, name) };
+  if (cl.contains("actor") || cl.contains("actor-line")) {
+    const name =
+      el.getAttribute("name") ??
+      el.parentElement?.querySelector("rect.actor[name]")?.getAttribute("name") ??
+      null;
+    if (name === null || name === "") return null;
+    return { family: "sequence", kind: "node", id: name, label: sequenceActorLabel(svg, name) };
   }
-  if (cl.contains('messageText')) {
-    const texts = Array.from(svg.querySelectorAll('text.messageText'));
+  if (cl.contains("messageText")) {
+    const texts = Array.from(svg.querySelectorAll("text.messageText"));
     if (texts.length !== sequenceMessageLines(svg).length) return null;
     return sequenceMessageTarget(svg, texts.indexOf(el));
   }
-  if (cl.contains('messageLine0') || cl.contains('messageLine1')) {
+  if (cl.contains("messageLine0") || cl.contains("messageLine1")) {
     return sequenceMessageTarget(svg, sequenceMessageLines(svg).indexOf(el));
   }
-  if (cl.contains('note') || cl.contains('noteText')) {
+  if (cl.contains("note") || cl.contains("noteText")) {
     const group = el.parentElement;
-    const notes = Array.from(svg.querySelectorAll('rect.note'));
+    const notes = Array.from(svg.querySelectorAll("rect.note"));
     const index = notes.findIndex((note) => note === el || note.parentElement === group);
     if (index === -1) return null;
-    return { family: 'sequence', kind: 'node', id: `note-${index + 1}`, label: cleanText(group?.querySelector('text.noteText')?.textContent) };
+    return {
+      family: "sequence",
+      kind: "node",
+      id: `note-${index + 1}`,
+      label: cleanText(group?.querySelector("text.noteText")?.textContent),
+    };
   }
-  if (cl.contains('loopLine') || cl.contains('labelBox') || cl.contains('labelText') || cl.contains('loopText')) {
+  if (
+    cl.contains("loopLine") ||
+    cl.contains("labelBox") ||
+    cl.contains("labelText") ||
+    cl.contains("loopText")
+  ) {
     const index = sequenceFrames(svg).indexOf(el.parentElement as Element);
     if (index === -1) return null;
     const group = el.parentElement;
-    const label = cleanText(`${group?.querySelector('text.labelText')?.textContent ?? ''} ${group?.querySelector('text.loopText')?.textContent ?? ''}`);
-    return { family: 'sequence', kind: 'cluster', id: `frame-${index + 1}`, label };
+    const label = cleanText(
+      `${group?.querySelector("text.labelText")?.textContent ?? ""} ${group?.querySelector("text.loopText")?.textContent ?? ""}`,
+    );
+    return { family: "sequence", kind: "cluster", id: `frame-${index + 1}`, label };
   }
   return null;
 }
@@ -232,14 +257,18 @@ function sequenceElementById(svg: Element, target: DiagramTarget): Element | nul
   if (target.id === undefined) return null;
   const ordinal = /^(msg|note|frame)-(\d+)$/u.exec(target.id);
   if (ordinal === null) {
-    if (target.kind !== 'node') return null;
-    const rects = Array.from(svg.querySelectorAll('rect.actor')).filter((rect) => rect.getAttribute('name') === target.id);
-    return rects.find((rect) => rect.classList.contains('actor-top')) ?? rects[0] ?? null;
+    if (target.kind !== "node") return null;
+    const rects = Array.from(svg.querySelectorAll("rect.actor")).filter(
+      (rect) => rect.getAttribute("name") === target.id,
+    );
+    return rects.find((rect) => rect.classList.contains("actor-top")) ?? rects[0] ?? null;
   }
   const index = Number(ordinal[2]) - 1;
-  if (ordinal[1] === 'msg') return target.kind === 'edge' ? (sequenceMessageLines(svg)[index] ?? null) : null;
-  if (ordinal[1] === 'note') return target.kind === 'node' ? (svg.querySelectorAll('rect.note')[index] ?? null) : null;
-  return target.kind === 'cluster' ? (sequenceFrames(svg)[index] ?? null) : null;
+  if (ordinal[1] === "msg")
+    return target.kind === "edge" ? (sequenceMessageLines(svg)[index] ?? null) : null;
+  if (ordinal[1] === "note")
+    return target.kind === "node" ? (svg.querySelectorAll("rect.note")[index] ?? null) : null;
+  return target.kind === "cluster" ? (sequenceFrames(svg)[index] ?? null) : null;
 }
 
 /**
@@ -254,18 +283,26 @@ function findSequenceTarget(svg: Element, target: DiagramTarget): Element | null
   const isOrdinal = target.id !== undefined && /^(msg|note|frame)-\d+$/u.test(target.id);
   if (!isOrdinal) {
     if (byId !== null) return byId;
-    if (target.kind !== 'node' || target.label === '') return null;
-    const named = Array.from(svg.querySelectorAll('rect.actor.actor-top, rect.actor')).filter(
-      (rect) => sequenceActorLabel(svg, rect.getAttribute('name') ?? '') === target.label,
+    if (target.kind !== "node" || target.label === "") return null;
+    const named = Array.from(svg.querySelectorAll("rect.actor.actor-top, rect.actor")).filter(
+      (rect) => sequenceActorLabel(svg, rect.getAttribute("name") ?? "") === target.label,
     );
-    const names = new Set(named.map((rect) => rect.getAttribute('name')));
-    return names.size === 1 ? (named.find((rect) => rect.classList.contains('actor-top')) ?? named[0] ?? null) : null;
+    const names = new Set(named.map((rect) => rect.getAttribute("name")));
+    return names.size === 1
+      ? (named.find((rect) => rect.classList.contains("actor-top")) ?? named[0] ?? null)
+      : null;
   }
-  const labelOf = (el: Element): string => sequenceTargetFromElement(svg, el.matches('g') ? (el.querySelector('line.loopLine') ?? el) : el)?.label ?? '';
-  if (byId !== null && (target.label === '' || labelOf(byId) === target.label)) return byId;
-  if (target.label !== '') {
+  const labelOf = (el: Element): string =>
+    sequenceTargetFromElement(svg, el.matches("g") ? (el.querySelector("line.loopLine") ?? el) : el)
+      ?.label ?? "";
+  if (byId !== null && (target.label === "" || labelOf(byId) === target.label)) return byId;
+  if (target.label !== "") {
     const pool =
-      target.kind === 'edge' ? sequenceMessageLines(svg) : target.kind === 'node' ? Array.from(svg.querySelectorAll('rect.note')) : sequenceFrames(svg);
+      target.kind === "edge"
+        ? sequenceMessageLines(svg)
+        : target.kind === "node"
+          ? Array.from(svg.querySelectorAll("rect.note"))
+          : sequenceFrames(svg);
     const matches = pool.filter((el) => labelOf(el) === target.label);
     if (matches.length === 1) return matches[0] ?? null;
   }
@@ -287,80 +324,88 @@ export function targetFromElement(
   nodeIds?: ReadonlySet<string>,
 ): DiagramTarget | null {
   const family = diagramFamilyOf(svg);
-  if (family === 'sequence') return sequenceTargetFromElement(svg, el);
-  if (el.classList.contains('edgeLabel')) {
+  if (family === "sequence") return sequenceTargetFromElement(svg, el);
+  if (el.classList.contains("edgeLabel")) {
     // An edge label names its edge through `data-id` (the edge's element
     // id without the render prefix); it IS that edge to the pointer.
-    const dataId = (el.matches('[data-id]') ? el : el.querySelector('[data-id]'))?.getAttribute('data-id') ?? null;
+    const dataId =
+      (el.matches("[data-id]") ? el : el.querySelector("[data-id]"))?.getAttribute("data-id") ??
+      null;
     if (dataId === null) return null;
     const edge = svg.querySelector(`[id="${cssEscape(`${renderId}-${dataId}`)}"]`);
     return edge === null || edge === el ? null : targetFromElement(svg, edge, renderId, nodeIds);
   }
   const suffix = idSuffix(el.id, renderId);
   if (suffix === null) return null;
-  const isPath = el.tagName.toLowerCase() === 'path';
+  const isPath = el.tagName.toLowerCase() === "path";
   const declared = () => nodeIds ?? nodeIdsOf(svg, family, renderId);
   switch (family) {
-    case 'flowchart': {
+    case "flowchart": {
       if (isPath) {
         const stem = /^(L_.+)_\d+$/u.exec(suffix)?.[1];
         if (stem === undefined) return null;
         const pair = splitEdgeStem(stem.slice(2), declared());
         if (pair === null) return null;
-        return { family, kind: 'edge', ...pair, label: edgeLabel(svg, suffix) };
+        return { family, kind: "edge", ...pair, label: edgeLabel(svg, suffix) };
       }
-      if (el.classList.contains('cluster')) {
-        return { family, kind: 'cluster', id: suffix, label: partLabel(el) };
+      if (el.classList.contains("cluster")) {
+        return { family, kind: "cluster", id: suffix, label: partLabel(el) };
       }
       const node = /^flowchart-(.+)-\d+$/u.exec(suffix)?.[1];
       if (node === undefined) return null;
-      return { family, kind: 'node', id: node, label: partLabel(el) };
+      return { family, kind: "node", id: node, label: partLabel(el) };
     }
-    case 'state': {
+    case "state": {
       if (isPath) {
         if (!/^edge\d+$/u.test(suffix)) return null;
-        return { family, kind: 'edge', id: suffix, label: edgeLabel(svg, suffix) };
+        return { family, kind: "edge", id: suffix, label: edgeLabel(svg, suffix) };
       }
       const state = /^state-(.+)-\d+$/u.exec(suffix)?.[1];
       if (state === undefined || /_(?:start|end)$/u.test(state)) return null;
-      return { family, kind: 'node', id: state, label: partLabel(el) };
+      return { family, kind: "node", id: state, label: partLabel(el) };
     }
-    case 'class': {
+    case "class": {
       if (isPath) {
         const stem = /^id_(.+)_\d+$/u.exec(suffix)?.[1];
         if (stem === undefined) return null;
         const pair = splitEdgeStem(stem, declared());
         if (pair === null) return null;
-        return { family, kind: 'edge', ...pair, label: edgeLabel(svg, suffix) };
+        return { family, kind: "edge", ...pair, label: edgeLabel(svg, suffix) };
       }
       const name = /^classId-(.+)-\d+$/u.exec(suffix)?.[1];
       if (name === undefined) return null;
-      return { family, kind: 'node', id: name, label: partLabel(el) };
+      return { family, kind: "node", id: name, label: partLabel(el) };
     }
-    case 'er': {
+    case "er": {
       if (isPath) {
         const m = /^id_entity-(.+)-\d+_entity-(.+)-\d+_\d+$/u.exec(suffix);
         if (m === null) return null;
-        return { family, kind: 'edge', from: m[1] ?? '', to: m[2] ?? '', label: edgeLabel(svg, suffix) };
+        return {
+          family,
+          kind: "edge",
+          from: m[1] ?? "",
+          to: m[2] ?? "",
+          label: edgeLabel(svg, suffix),
+        };
       }
       const entity = /^entity-(.+)-\d+$/u.exec(suffix)?.[1];
       if (entity === undefined) return null;
-      return { family, kind: 'node', id: entity, label: partLabel(el) };
+      return { family, kind: "node", id: entity, label: partLabel(el) };
     }
-    case 'requirement': {
+    case "requirement": {
       if (isPath) {
         const stem = stripCounter(suffix);
         if (stem === null) return null;
-        return { family, kind: 'edge', id: stem, label: edgeLabel(svg, suffix) };
+        return { family, kind: "edge", id: stem, label: edgeLabel(svg, suffix) };
       }
-      if (!el.classList.contains('node')) return null;
-      return { family, kind: 'node', id: suffix, label: partLabel(el) };
+      if (!el.classList.contains("node")) return null;
+      return { family, kind: "node", id: suffix, label: partLabel(el) };
     }
     // (`sequence` returned above: its parts carry classes, not ids.)
-    case 'other':
+    case "other":
     // A Graphviz svg never reaches this codec: its finder is
     // diagram-anchor-graphviz.ts, paired by the renderer slot.
-    case 'graphviz':
+    case "graphviz":
       return null;
   }
 }
@@ -371,22 +416,28 @@ export function targetFromElement(
  * treats that as unanchored (the gutter mark from `sourceLine` is the
  * Source pane's concern).
  */
-export function findDiagramTarget(svg: Element, target: DiagramTarget, renderId: string): Element | null {
-  if (target.kind === 'diagram') return svg;
+export function findDiagramTarget(
+  svg: Element,
+  target: DiagramTarget,
+  renderId: string,
+): Element | null {
+  if (target.kind === "diagram") return svg;
   const family = diagramFamilyOf(svg);
-  if (family === 'sequence') return findSequenceTarget(svg, target);
+  if (family === "sequence") return findSequenceTarget(svg, target);
   const nodeIds = nodeIdsOf(svg, family, renderId);
   for (const el of Array.from(svg.querySelectorAll(DIAGRAM_TARGET_SELECTOR))) {
     // A label resolves to its edge; the edge itself is the element.
-    if (el.classList.contains('edgeLabel')) continue;
+    if (el.classList.contains("edgeLabel")) continue;
     const candidate = targetFromElement(svg, el, renderId, nodeIds);
     if (candidate !== null && sameTarget(candidate, target)) return el;
   }
-  if (target.kind === 'node' && target.label !== '') {
+  if (target.kind === "node" && target.label !== "") {
     // Step (2) holds only while the label names ONE node: with two nodes
     // carrying it, the first match is a coin toss onto the wrong node, so
     // the restore falls through to the source line instead.
-    const matches = Array.from(svg.querySelectorAll('g.node')).filter((el) => partLabel(el) === target.label);
+    const matches = Array.from(svg.querySelectorAll("g.node")).filter(
+      (el) => partLabel(el) === target.label,
+    );
     if (matches.length === 1) return matches[0] ?? null;
   }
   return null;

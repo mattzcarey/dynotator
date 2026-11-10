@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type React from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type React from "react";
 import {
   extractSkillReferences,
   filterSkillCatalog,
@@ -9,8 +9,12 @@ import {
   type SkillCatalogEntry,
   type SkillReferenceToken,
   type SkillTriggerContext,
-} from '../utils/skillReferences';
-import { fetchSkillCatalog, getCachedSkillCatalog, onSkillCatalogReload } from '../utils/skillCatalog';
+} from "../utils/skillReferences";
+import {
+  fetchSkillCatalog,
+  getCachedSkillCatalog,
+  onSkillCatalogReload,
+} from "../utils/skillCatalog";
 
 export interface SkillReferenceMenuState {
   items: SkillCatalogEntry[];
@@ -91,13 +95,26 @@ export function useSkillReferenceAutocomplete(options: {
    */
   hostRowsFirst?: boolean;
 }): UseSkillReferenceAutocompleteResult {
-  const { text, setText, textareaRef, enabled, bareEscapeDismisses = false, catalogFilter, commands, onCommand, hostRowsFirst = false } = options;
+  const {
+    text,
+    setText,
+    textareaRef,
+    enabled,
+    bareEscapeDismisses = false,
+    catalogFilter,
+    commands,
+    onCommand,
+    hostRowsFirst = false,
+  } = options;
   // Seed from the memory cache only when the surface opted in — a disabled
   // composer must stay inert even after another surface warmed the catalog.
   const [fullCatalog, setCatalog] = useState<SkillCatalogEntry[]>(() =>
     enabled ? getCachedSkillCatalog() : [],
   );
-  const catalog = useMemo(() => (catalogFilter ? fullCatalog.filter(catalogFilter) : fullCatalog), [fullCatalog, catalogFilter]);
+  const catalog = useMemo(
+    () => (catalogFilter ? fullCatalog.filter(catalogFilter) : fullCatalog),
+    [fullCatalog, catalogFilter],
+  );
   const [caret, setCaret] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   // Escape dismisses the menu for the trigger it was open on; the same trigger
@@ -106,7 +123,10 @@ export function useSkillReferenceAutocomplete(options: {
 
   // A reload (the host's catalog changed at its source) reads it again here too.
   const [reloads, setReloads] = useState(0);
-  useEffect(() => (enabled ? onSkillCatalogReload(() => setReloads((n) => n + 1)) : undefined), [enabled]);
+  useEffect(
+    () => (enabled ? onSkillCatalogReload(() => setReloads((n) => n + 1)) : undefined),
+    [enabled],
+  );
 
   useEffect(() => {
     if (!enabled) return;
@@ -126,17 +146,23 @@ export function useSkillReferenceAutocomplete(options: {
 
   // What a `/` lists: the catalog, with the host's commands after its leading host-served rows.
   const slashList = useMemo(() => {
-    const offered = commands?.filter((command) => !catalog.some((skill) => skill.name === command.name)) ?? [];
+    const offered =
+      commands?.filter((command) => !catalog.some((skill) => skill.name === command.name)) ?? [];
     if (offered.length === 0) return catalog;
-    const lead = catalog.findIndex((skill) => skill.root !== 'plannotator');
+    const lead = catalog.findIndex((skill) => skill.root !== "plannotator");
     const at = lead === -1 ? catalog.length : lead;
     return [...catalog.slice(0, at), ...offered, ...catalog.slice(at)];
   }, [catalog, commands]);
 
   const items = useMemo(() => {
     if (!trigger) return [];
-    const found = filterSkillCatalog(trigger.trigger === '/' ? slashList : catalog, trigger.query);
-    return hostRowsFirst ? [...found.filter((row) => row.root === 'plannotator'), ...found.filter((row) => row.root !== 'plannotator')] : found;
+    const found = filterSkillCatalog(trigger.trigger === "/" ? slashList : catalog, trigger.query);
+    return hostRowsFirst
+      ? [
+          ...found.filter((row) => row.root === "plannotator"),
+          ...found.filter((row) => row.root !== "plannotator"),
+        ]
+      : found;
   }, [catalog, hostRowsFirst, slashList, trigger]);
 
   const open = trigger !== null && items.length > 0 && trigger.start !== dismissedStart;
@@ -173,7 +199,9 @@ export function useSkillReferenceAutocomplete(options: {
   // The caret a pick owes the field, placed in the commit that writes the new text (below), before the person can
   // type again. Placed only from a timer, a key pressed in between landed where the commit had left the caret (the
   // end), and the timer then pulled the caret back over it: a quick "/b" after a click came out "b/".
-  const pendingCaret = useRef<{ el: HTMLTextAreaElement; text: string; caret: number } | null>(null);
+  const pendingCaret = useRef<{ el: HTMLTextAreaElement; text: string; caret: number } | null>(
+    null,
+  );
   useLayoutEffect(() => {
     const pending = pendingCaret.current;
     if (!pending || pending.el.value !== pending.text) return;
@@ -239,8 +267,8 @@ export function useSkillReferenceAutocomplete(options: {
       if (e.nativeEvent.isComposing) return false;
       if (e.metaKey || e.ctrlKey || e.altKey) return false;
       switch (e.key) {
-        case 'ArrowDown':
-        case 'ArrowUp':
+        case "ArrowDown":
+        case "ArrowUp":
           // BARE trigger, zero query, nothing active: the arrows were aimed
           // at the textarea (proven regression: "first line\ncost: $" +
           // ArrowUp must move the caret up, not arm the menu's last row so
@@ -252,7 +280,7 @@ export function useSkillReferenceAutocomplete(options: {
             return false;
           }
           e.preventDefault();
-          if (e.key === 'ArrowDown') {
+          if (e.key === "ArrowDown") {
             setActiveIndex(boundedActive === null ? 0 : (boundedActive + 1) % items.length);
           } else {
             setActiveIndex(
@@ -262,8 +290,8 @@ export function useSkillReferenceAutocomplete(options: {
             );
           }
           return true;
-        case 'Enter':
-        case 'Tab':
+        case "Enter":
+        case "Tab":
           // NO row active means these keys were NOT aimed at the menu:
           // Enter stays a newline, Tab still leaves the field. This is the
           // proven regression ("This costs $" + Enter); never consume here.
@@ -271,11 +299,12 @@ export function useSkillReferenceAutocomplete(options: {
           e.preventDefault();
           select(boundedActive);
           return true;
-        case 'Escape':
+        case "Escape":
           // Only consume Escape when the user engaged with the menu (typed a
           // query or activated a row). A bare-trigger menu the user ignored
           // must not cost an extra Escape on the way to closing the composer.
-          if (!bareEscapeDismisses && boundedActive === null && trigger.query.length === 0) return false;
+          if (!bareEscapeDismisses && boundedActive === null && trigger.query.length === 0)
+            return false;
           e.preventDefault();
           e.stopPropagation();
           setActiveIndex(null);

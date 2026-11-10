@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 import {
   MarkdownEditor as PackagedMarkdownEditor,
   type MarkdownEditorHandle,
-} from '@plannotator/markdown-editor';
-import type { Extension } from '@codemirror/state';
-import '@plannotator/markdown-editor/themes/plannotator.css';
-import { useTheme } from './ThemeProvider';
+} from "@plannotator/markdown-editor";
+import type { Extension } from "@codemirror/state";
+import "@plannotator/markdown-editor/themes/plannotator.css";
+import { useTheme } from "./ThemeProvider";
 
 export type { MarkdownEditorHandle };
 
@@ -15,13 +15,13 @@ export type { MarkdownEditorHandle };
    wikiLinks(config) and pass it through the `extensions` prop below; the
    capture-once-per-documentId caveat on `extensions` applies (config callbacks
    like suggest/resolve/onOpen may close over live state). */
-export { wikiLinks } from '@plannotator/atomic-editor';
+export { wikiLinks } from "@plannotator/atomic-editor";
 export type {
   WikiLinksConfig,
   WikiLinkSuggestion,
   WikiLinkResolvedTarget,
   WikiLinkStatus,
-} from '@plannotator/atomic-editor';
+} from "@plannotator/atomic-editor";
 
 /* The engine's other opt-in UI extensions, re-exported for the same reason:
    slashCommands() is a Notion-style insert menu on `/` at the start of a
@@ -29,10 +29,14 @@ export type {
    over selected text (multi-line and table-cell aware). Both compose
    through the `extensions` prop and theme via the --atomic-editor-menu-*
    CSS variables. */
-export { defaultSlashCommands, slashCommandSource, slashCommands } from '@plannotator/atomic-editor';
-export type { SlashCommandItem, SlashCommandsConfig } from '@plannotator/atomic-editor';
-export { selectionToolbar } from '@plannotator/atomic-editor';
-export type { SelectionToolbarConfig, InlineFormat } from '@plannotator/atomic-editor';
+export {
+  defaultSlashCommands,
+  slashCommandSource,
+  slashCommands,
+} from "@plannotator/atomic-editor";
+export type { SlashCommandItem, SlashCommandsConfig } from "@plannotator/atomic-editor";
+export { selectionToolbar } from "@plannotator/atomic-editor";
+export type { SelectionToolbarConfig, InlineFormat } from "@plannotator/atomic-editor";
 
 /* Host link widgets (engine ≥0.9.0), re-exported for the same reason as
    wikiLinks. linkWidgets(...specs) lets a host swap an inline markdown link
@@ -40,24 +44,20 @@ export type { SelectionToolbarConfig, InlineFormat } from '@plannotator/atomic-e
    the engine's normal link rendering). Compose it through the `extensions`
    prop; dispatch refreshLinkWidgets.of(null) on the view to re-run every
    spec's match after host state the specs read has changed. */
-export { linkWidgets, refreshLinkWidgets } from '@plannotator/atomic-editor';
-export type { LinkWidgetSpec, LinkWidgetLink } from '@plannotator/atomic-editor';
+export { linkWidgets, refreshLinkWidgets } from "@plannotator/atomic-editor";
+export type { LinkWidgetSpec, LinkWidgetLink } from "@plannotator/atomic-editor";
 
 /* Host-configured embed media authoring. The picker is per editor mount so its
    callbacks can close over live route state; nothing enters configurePlannotatorUI.
    The package owns paragraph-safe splicing while the host owns embed grammar. */
-export { embedPicker, embedSlashItem } from './MarkdownEditor/embedPicker';
-export type {
-  EmbedKind,
-  EmbedPickerConfig,
-  EmbedTarget,
-} from './MarkdownEditor/embedPicker';
-export { planEmbedInsert } from '@dynotator/core/embed-insert';
-export type { EmbedInsertPlan } from '@dynotator/core/embed-insert';
+export { embedPicker, embedSlashItem } from "./MarkdownEditor/embedPicker";
+export type { EmbedKind, EmbedPickerConfig, EmbedTarget } from "./MarkdownEditor/embedPicker";
+export { planEmbedInsert } from "@dynotator/core/embed-insert";
+export type { EmbedInsertPlan } from "@dynotator/core/embed-insert";
 
 /* Grid-mode card utilities stay here (not in the package): they're Plannotator
    design-system Tailwind classes, and this file is @source-scanned. */
-const GRID_CARD_CLASSES = 'px-5 md:px-8 lg:px-10 xl:px-12 shadow-xl border border-border/50';
+const GRID_CARD_CLASSES = "px-5 md:px-8 lg:px-10 xl:px-12 shadow-xl border border-border/50";
 
 interface MarkdownEditorProps {
   /** Initial markdown. Read at mount only — the editor owns the text after that.
@@ -73,7 +73,7 @@ interface MarkdownEditorProps {
   gridEnabled?: boolean;
   /** Theme color mode. Defaults to the ThemeProvider's resolved mode (Plannotator
       passes nothing); a host without ThemeProvider can supply it directly. */
-  mode?: React.ComponentProps<typeof PackagedMarkdownEditor>['mode'];
+  mode?: React.ComponentProps<typeof PackagedMarkdownEditor>["mode"];
   /**
    * Extra CodeMirror 6 extensions, forwarded verbatim to the underlying editor
    * (e.g. `wikiLinks(config)`, collaboration bindings like y-codemirror.next).

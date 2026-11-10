@@ -34,14 +34,20 @@ let layout: CommentCardLayout = {};
 let lastPointer: { x: number; t: number } | null = null;
 let listening = false;
 function listen(): void {
-  if (listening || typeof document === 'undefined') return;
+  if (listening || typeof document === "undefined") return;
   listening = true;
-  document.addEventListener('pointerdown', (event) => { lastPointer = { x: event.clientX, t: performance.now() }; }, true);
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      lastPointer = { x: event.clientX, t: performance.now() };
+    },
+    true,
+  );
 }
 
 export function setCommentCardEnabled(on: boolean | CommentCardLayout): void {
   commentCard = on !== false;
-  layout = typeof on === 'object' ? { ...on } : {};
+  layout = typeof on === "object" ? { ...on } : {};
   if (commentCard) listen();
 }
 

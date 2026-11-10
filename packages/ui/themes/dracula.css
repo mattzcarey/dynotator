@@ -25,7 +25,8 @@
   --warning-foreground: rgb(40, 42, 54);
 
   --font-sans: ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
   --radius: 0.625rem;
 
   --code-bg: rgb(33, 34, 44);

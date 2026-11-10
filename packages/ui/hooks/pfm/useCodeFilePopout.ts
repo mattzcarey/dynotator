@@ -35,9 +35,7 @@ export interface UseCodeFilePopoutReturn {
   } | null;
 }
 
-export function useCodeFilePopout(
-  options: UseCodeFilePopoutOptions
-): UseCodeFilePopoutReturn {
+export function useCodeFilePopout(options: UseCodeFilePopoutOptions): UseCodeFilePopoutReturn {
   const { buildUrl } = options;
   const [state, setState] = useState<CodeFileState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +61,13 @@ export function useCodeFilePopout(
           line?: number;
           lineEnd?: number;
         };
-        if (!res.ok || data.error || !data.codeFile || typeof data.contents !== 'string' || !data.filepath) {
+        if (
+          !res.ok ||
+          data.error ||
+          !data.codeFile ||
+          typeof data.contents !== "string" ||
+          !data.filepath
+        ) {
           setState({
             filepath: codePath,
             contents: "",
@@ -92,7 +96,7 @@ export function useCodeFilePopout(
         setIsLoading(false);
       }
     },
-    [buildUrl]
+    [buildUrl],
   );
 
   return {

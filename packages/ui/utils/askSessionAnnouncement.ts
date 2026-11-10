@@ -12,13 +12,13 @@
  * from "seeded default".
  */
 
-import { isSessionBridgeProvider, type AIProviderOption } from './aiProvider';
-import { storage } from './storage';
-import { needsTerminalToolsAnnouncement } from './terminalToolsAnnouncement';
+import { isSessionBridgeProvider, type AIProviderOption } from "./aiProvider";
+import { storage } from "./storage";
+import { needsTerminalToolsAnnouncement } from "./terminalToolsAnnouncement";
 
-const STORAGE_KEY = 'plannotator-announce-ask-session-seen';
+const STORAGE_KEY = "plannotator-announce-ask-session-seen";
 // Bump to re-announce after a meaningful revision.
-const CURRENT_VERSION = '1';
+const CURRENT_VERSION = "1";
 
 export function needsAskSessionAnnouncement(): boolean {
   return storage.getItem(STORAGE_KEY) !== CURRENT_VERSION;
@@ -40,10 +40,10 @@ export function askSessionAnnouncementPendingThisLoad(): boolean {
 }
 
 /** The hosts whose sessions answer Ask AI through the session bridge. */
-export type AskSessionAgent = 'claude-code' | 'pi' | 'opencode';
+export type AskSessionAgent = "claude-code" | "pi" | "opencode";
 
 function askSessionAgentForHost(host: string | undefined): AskSessionAgent | null {
-  return host === 'claude-code' || host === 'pi' || host === 'opencode' ? host : null;
+  return host === "claude-code" || host === "pi" || host === "opencode" ? host : null;
 }
 
 /**
@@ -54,10 +54,10 @@ function askSessionAgentForHost(host: string | undefined): AskSessionAgent | nul
  * older CLI): the announcement only describes what the reader can use here.
  */
 export function connectedAskSessionAgent(
-  providers: ReadonlyArray<Pick<AIProviderOption, 'name' | 'sessionBridge'>>,
+  providers: ReadonlyArray<Pick<AIProviderOption, "name" | "sessionBridge">>,
 ): AskSessionAgent | null {
   const bridge = providers.find(isSessionBridgeProvider)?.sessionBridge;
-  if (!bridge || bridge.status === 'gone') return null;
+  if (!bridge || bridge.status === "gone") return null;
   return askSessionAgentForHost(bridge.host);
 }
 

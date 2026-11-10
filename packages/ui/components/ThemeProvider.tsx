@@ -1,8 +1,17 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { configStore } from '../config/configStore';
-import { readThemePairCookies, writeThemePairCookies } from '../config/settings';
-import { useConfigValue } from '../config/useConfig';
-import { storage } from '../utils/storage';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { configStore } from "../config/configStore";
+import { readThemePairCookies, writeThemePairCookies } from "../config/settings";
+import { useConfigValue } from "../config/useConfig";
+import { storage } from "../utils/storage";
 import {
   BUILT_IN_THEMES,
   getUnsupportedMode,
@@ -14,13 +23,13 @@ import {
   type ThemeHalf,
   type ThemeInfo,
   type ThemePair,
-} from '../utils/themeRegistry';
-import type { Mode } from './themeModes';
-import { usePrintMedia } from '../hooks/usePrintMedia';
-import { markRootPlatform } from '../utils/platform';
+} from "../utils/themeRegistry";
+import type { Mode } from "./themeModes";
+import { usePrintMedia } from "../hooks/usePrintMedia";
+import { markRootPlatform } from "../utils/platform";
 
 // Kept here because published consumers already import Mode from ThemeProvider.
-export type { Mode } from './themeModes';
+export type { Mode } from "./themeModes";
 
 type ThemeProviderState = {
   // Mode (dark/light/system) — backward-compatible with old "theme" API
@@ -28,8 +37,8 @@ type ThemeProviderState = {
   setTheme: (mode: Mode) => void;
   mode: Mode;
   setMode: (mode: Mode) => void;
-  preferredMode: 'dark' | 'light';
-  resolvedMode: 'dark' | 'light';
+  preferredMode: "dark" | "light";
+  resolvedMode: "dark" | "light";
   // Color theme (the palette the current mode renders — pair[preferredMode])
   colorTheme: string;
   setColorTheme: (theme: string) => void;
@@ -47,16 +56,16 @@ type ThemeProviderState = {
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>({
-  theme: 'dark',
+  theme: "dark",
   setTheme: () => null,
-  mode: 'dark',
+  mode: "dark",
   setMode: () => null,
-  preferredMode: 'dark',
-  resolvedMode: 'dark',
-  colorTheme: 'plannotator',
+  preferredMode: "dark",
+  resolvedMode: "dark",
+  colorTheme: "plannotator",
   setColorTheme: () => null,
-  lightTheme: 'plannotator',
-  darkTheme: 'plannotator',
+  lightTheme: "plannotator",
+  darkTheme: "plannotator",
   setHalfTheme: () => null,
   availableThemes: BUILT_IN_THEMES,
   manageFavicon: false,
@@ -70,7 +79,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>({
  * Only the timing changes: a transition already running (a sheet sliding, a
  * menu fading) keeps going, and hover fades are back when the class goes.
  */
-export const THEME_SWITCHING_CLASS = 'pn-theme-switching';
+export const THEME_SWITCHING_CLASS = "pn-theme-switching";
 
 let themeSwitchHold = 0;
 
@@ -83,14 +92,17 @@ let themeSwitchHold = 0;
  * on <html> itself calls it just before its swap, for the same instant switch.
  */
 export function holdThemeSwitch(): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === "undefined") return;
   const el = document.documentElement;
   el.classList.add(THEME_SWITCHING_CLASS);
   const hold = ++themeSwitchHold;
-  const nextFrame = (cb: () => void) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(cb) : setTimeout(cb, 16));
-  nextFrame(() => nextFrame(() => {
-    if (hold === themeSwitchHold) el.classList.remove(THEME_SWITCHING_CLASS);
-  }));
+  const nextFrame = (cb: () => void) =>
+    typeof requestAnimationFrame === "function" ? requestAnimationFrame(cb) : setTimeout(cb, 16);
+  nextFrame(() =>
+    nextFrame(() => {
+      if (hold === themeSwitchHold) el.classList.remove(THEME_SWITCHING_CLASS);
+    }),
+  );
 }
 
 /**
@@ -101,7 +113,11 @@ export function holdThemeSwitch(): void {
  * so calling it on any other change is harmless.
  */
 export function extendThemeSwitch(): void {
-  if (typeof document === 'undefined' || !document.documentElement.classList.contains(THEME_SWITCHING_CLASS)) return;
+  if (
+    typeof document === "undefined" ||
+    !document.documentElement.classList.contains(THEME_SWITCHING_CLASS)
+  )
+    return;
   holdThemeSwitch();
 }
 
@@ -118,11 +134,12 @@ export function extendThemeSwitch(): void {
  * system following the OS, config.json arriving, printing), so this is where
  * the switch is made instant: see THEME_SWITCHING_CLASS.
  */
-function applyThemeClasses(themeId: string, resolvedMode: 'dark' | 'light'): void {
+function applyThemeClasses(themeId: string, resolvedMode: "dark" | "light"): void {
   const el = document.documentElement;
   const themeClass = `theme-${themeId}`;
-  const wantLight = resolvedMode === 'light';
-  const unchanged = el.classList.contains(themeClass) && el.classList.contains('light') === wantLight;
+  const wantLight = resolvedMode === "light";
+  const unchanged =
+    el.classList.contains(themeClass) && el.classList.contains("light") === wantLight;
   const schemeStale = !!el.style.colorScheme && el.style.colorScheme !== resolvedMode;
   if (unchanged && !schemeStale) return;
 
@@ -133,17 +150,19 @@ function applyThemeClasses(themeId: string, resolvedMode: 'dark' | 'light'): voi
   if (unchanged) return;
 
   for (const cls of Array.from(el.classList)) {
-    if (cls.startsWith('theme-')) el.classList.remove(cls);
+    if (cls.startsWith("theme-")) el.classList.remove(cls);
   }
-  el.classList.remove('light');
+  el.classList.remove("light");
 
   el.classList.add(themeClass);
-  if (wantLight) el.classList.add('light');
+  if (wantLight) el.classList.add("light");
 }
 
 /** Read system preference synchronously */
 function getSystemIsLight(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches;
+  return (
+    typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches
+  );
 }
 
 interface ThemeProviderProps {
@@ -181,10 +200,10 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'dark',
-  defaultColorTheme = 'plannotator',
-  storageKey = 'plannotator-theme',
-  colorThemeStorageKey = 'plannotator-color-theme',
+  defaultTheme = "dark",
+  defaultColorTheme = "plannotator",
+  storageKey = "plannotator-theme",
+  colorThemeStorageKey = "plannotator-color-theme",
   manageFavicon = false,
 }: ThemeProviderProps) {
   const legacyKeys = useMemo(
@@ -197,38 +216,38 @@ export function ThemeProvider({
   // The config store is a singleton that may already have resolved a default of
   // its own, so storage is asked directly rather than trusting that value.
   const [initialPair] = useState<ThemePair>(() => {
-    const resolved = readThemePairCookies(legacyKeys)
-      ?? seedThemePair(defaultColorTheme, defaultTheme);
+    const resolved =
+      readThemePairCookies(legacyKeys) ?? seedThemePair(defaultColorTheme, defaultTheme);
     setDefaultThemePair(resolved);
     return resolved;
   });
   const pendingSeed = useRef<ThemePair | null>(initialPair);
   const [, setSeedApplied] = useState(false);
 
-  const storePair = useConfigValue('themePair');
+  const storePair = useConfigValue("themePair");
   const pair = pendingSeed.current ?? storePair;
   const mode = pair.mode;
-  const faviconStyle = useConfigValue('faviconStyle');
+  const faviconStyle = useConfigValue("faviconStyle");
 
   useEffect(() => {
     if (!manageFavicon) return;
-    if (typeof document === 'undefined') return;
+    if (typeof document === "undefined") return;
     // Loaded only where the app owns the favicon: the icons' bytes stay out of a
     // host's bundle (the guides.show viewer has a size budget). The page's first
     // frame already shows the chosen icon from the server's /favicon.ico. Glass
     // is a data URL of its .ico with its sizes, so the tab keeps the 16 or 32 frame.
     let cancelled = false;
-    void import('@dynotator/core/favicon').then(({ faviconDataUrl, faviconLinkType }) => {
+    void import("@dynotator/core/favicon").then(({ faviconDataUrl, faviconLinkType }) => {
       if (cancelled) return;
       let link = document.head.querySelector<HTMLLinkElement>('link[rel="icon"]');
       if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
+        link = document.createElement("link");
+        link.rel = "icon";
         document.head.appendChild(link);
       }
       const { type, sizes } = faviconLinkType(faviconStyle);
       link.type = type;
-      link.setAttribute('sizes', sizes);
+      link.setAttribute("sizes", sizes);
       link.href = faviconDataUrl(faviconStyle);
     });
     return () => {
@@ -245,7 +264,7 @@ export function ThemeProvider({
     const seed = pendingSeed.current;
     if (!seed) return;
     pendingSeed.current = null;
-    configStore.seed('themePair', seed);
+    configStore.seed("themePair", seed);
     setSeedApplied(true);
   }, []);
 
@@ -257,7 +276,10 @@ export function ThemeProvider({
   // not deliver on its own — a Mermaid label, drawn as HTML inside
   // `<foreignObject>`, took the stylesheet's near-black text onto a near-black
   // node fill and printed illegibly. Light-mode users see no change.
-  const printThemeRef = useRef<{ enter: () => void; exit: () => void }>({ enter: () => {}, exit: () => {} });
+  const printThemeRef = useRef<{ enter: () => void; exit: () => void }>({
+    enter: () => {},
+    exit: () => {},
+  });
   const printing = usePrintMedia({
     // Applied from inside `beforeprint`, because the print snapshot is taken
     // before React would flush the state update below. The re-render then
@@ -267,18 +289,18 @@ export function ThemeProvider({
   });
 
   // Keep the OS-resolved preference separate from the half it selects.
-  const screenPreferredMode: 'dark' | 'light' =
-    mode === 'system' ? (systemIsLight ? 'light' : 'dark') : mode;
-  const preferredMode: 'dark' | 'light' = printing ? 'light' : screenPreferredMode;
+  const screenPreferredMode: "dark" | "light" =
+    mode === "system" ? (systemIsLight ? "light" : "dark") : mode;
+  const preferredMode: "dark" | "light" = printing ? "light" : screenPreferredMode;
   const colorTheme = resolvePairTheme(pair, preferredMode);
   const resolvedMode = resolveThemeMode(colorTheme, preferredMode);
 
   const applyHalf = useCallback((half: ThemeHalf) => {
-    const theme = resolvePairTheme(configStore.get('themePair'), half);
+    const theme = resolvePairTheme(configStore.get("themePair"), half);
     applyThemeClasses(theme, resolveThemeMode(theme, half));
   }, []);
   printThemeRef.current = {
-    enter: () => applyHalf('light'),
+    enter: () => applyHalf("light"),
     exit: () => applyHalf(screenPreferredMode),
   };
 
@@ -290,7 +312,7 @@ export function ThemeProvider({
   // [P3 fix] Apply theme class synchronously during initialization to prevent
   // flash of unstyled content. CSS tokens live under .theme-* selectors, so
   // without this the first frame has no valid --background/--foreground.
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     applyThemeClasses(colorTheme, resolvedMode);
     // theme.css scopes the Linux-only font-feature rule to this class (#1961).
     markRootPlatform();
@@ -315,33 +337,33 @@ export function ThemeProvider({
   // transition rule from firing during initial load.
   useEffect(() => {
     requestAnimationFrame(() => {
-      document.documentElement.classList.add('transitions-ready');
+      document.documentElement.classList.add("transitions-ready");
     });
   }, []);
 
   // [P2 fix] Listen for system theme changes AND re-read current value when
   // entering system mode (OS may have changed while pinned to explicit mode)
   useEffect(() => {
-    if (mode !== 'system') return;
+    if (mode !== "system") return;
 
     // Sync immediately — OS preference may have changed since we last checked
     setSystemIsLight(getSystemIsLight());
 
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
     const handleChange = () => setSystemIsLight(mediaQuery.matches);
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, [mode]);
 
   const setMode = useCallback((newMode: Mode) => {
-    configStore.set('themePair', { ...configStore.get('themePair'), mode: newMode });
+    configStore.set("themePair", { ...configStore.get("themePair"), mode: newMode });
   }, []);
 
   /** Assign one palette to one half of the pair. */
   const setHalfTheme = useCallback((half: ThemeHalf, newTheme: string) => {
     if (!themeSupportsHalf(newTheme, half)) return;
-    configStore.set('themePair', { ...configStore.get('themePair'), [half]: newTheme });
+    configStore.set("themePair", { ...configStore.get("themePair"), [half]: newTheme });
   }, []);
 
   /**
@@ -358,12 +380,14 @@ export function ThemeProvider({
    * transport, matching the side effects this API had before the pair existed.
    */
   const setColorTheme = useCallback((newTheme: string) => {
-    const current = configStore.get('themePair');
+    const current = configStore.get("themePair");
     const unsupported = getUnsupportedMode(newTheme);
     const half: ThemeHalf = unsupported
-      ? (unsupported === 'light' ? 'dark' : 'light')
+      ? unsupported === "light"
+        ? "dark"
+        : "light"
       : preferredModeRef.current;
-    configStore.setLocal('themePair', { ...current, [half]: newTheme });
+    configStore.setLocal("themePair", { ...current, [half]: newTheme });
   }, []);
 
   // Mirror the resolved choice onto the keys older releases read, so a
@@ -378,33 +402,43 @@ export function ThemeProvider({
     }
   }, [pair, colorTheme, colorThemeStorageKey, legacyKeys]);
 
-  const value = useMemo<ThemeProviderState>(() => ({
-    theme: mode,
-    setTheme: setMode,
-    mode,
-    setMode,
-    preferredMode,
-    resolvedMode,
-    colorTheme,
-    setColorTheme,
-    lightTheme: pair.light,
-    darkTheme: pair.dark,
-    setHalfTheme,
-    availableThemes: BUILT_IN_THEMES,
-    manageFavicon,
-  }), [mode, preferredMode, resolvedMode, colorTheme, pair.light, pair.dark, setMode, setColorTheme, setHalfTheme, manageFavicon]);
-
-  return (
-    <ThemeProviderContext.Provider value={value}>
-      {children}
-    </ThemeProviderContext.Provider>
+  const value = useMemo<ThemeProviderState>(
+    () => ({
+      theme: mode,
+      setTheme: setMode,
+      mode,
+      setMode,
+      preferredMode,
+      resolvedMode,
+      colorTheme,
+      setColorTheme,
+      lightTheme: pair.light,
+      darkTheme: pair.dark,
+      setHalfTheme,
+      availableThemes: BUILT_IN_THEMES,
+      manageFavicon,
+    }),
+    [
+      mode,
+      preferredMode,
+      resolvedMode,
+      colorTheme,
+      pair.light,
+      pair.dark,
+      setMode,
+      setColorTheme,
+      setHalfTheme,
+      manageFavicon,
+    ],
   );
+
+  return <ThemeProviderContext.Provider value={value}>{children}</ThemeProviderContext.Provider>;
 }
 
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    throw new Error("useTheme must be used within a ThemeProvider");
   }
   return context;
 };

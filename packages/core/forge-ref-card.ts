@@ -86,12 +86,19 @@ export function webForgeHost(hostname: string): string | null {
 }
 
 function refKindOf(platform: ForgePlatform, part: string): ForgeRef["kind"] | null {
-  if (platform === "github") return part === "issues" ? "issue" : part === "pull" || part === "pulls" ? "pull" : null;
-  return part === "issues" || part === "work_items" ? "issue" : part === "merge_requests" ? "pull" : null;
+  if (platform === "github")
+    return part === "issues" ? "issue" : part === "pull" || part === "pulls" ? "pull" : null;
+  return part === "issues" || part === "work_items"
+    ? "issue"
+    : part === "merge_requests"
+      ? "pull"
+      : null;
 }
 
 /** One cache entry per ref. On GitHub an issue link to a PR is the same item, so the kind is not part of it there. */
-export function forgeRefKey(ref: Pick<ForgeRef, "platform" | "host" | "owner" | "repo" | "number" | "kind">): string {
+export function forgeRefKey(
+  ref: Pick<ForgeRef, "platform" | "host" | "owner" | "repo" | "number" | "kind">,
+): string {
   const kind = ref.platform === "gitlab" ? `:${ref.kind}` : "";
   return `${ref.host}/${ref.owner}/${ref.repo}#${ref.number}${kind}`.toLowerCase();
 }
@@ -189,7 +196,8 @@ export const FORGE_REF_BODY_MAX = 4000;
 export const FORGE_REF_COMMENT_MAX = 600;
 
 const SHORT_GITHUB_PULL = /^([A-Za-z0-9_.-]{1,100})\/([A-Za-z0-9_.-]{1,100})#([1-9]\d{0,9})$/;
-const SHORT_GITLAB_PULL = /^([A-Za-z0-9_.-]{1,100}(?:\/[A-Za-z0-9_.-]{1,100})*)\/([A-Za-z0-9_.-]{1,100})!([1-9]\d{0,9})$/;
+const SHORT_GITLAB_PULL =
+  /^([A-Za-z0-9_.-]{1,100}(?:\/[A-Za-z0-9_.-]{1,100})*)\/([A-Za-z0-9_.-]{1,100})!([1-9]\d{0,9})$/;
 
 /**
  * A pull or merge request as an agent or the person names one for a thread
@@ -204,18 +212,43 @@ export function parseForgePullRef(text: string): ForgeRef | null {
     return ref && ref.kind === "pull" ? ref : null;
   }
   const github = SHORT_GITHUB_PULL.exec(value);
-  if (github && github[1] !== "." && github[1] !== ".." && github[2] !== "." && github[2] !== "..") {
-    return { platform: "github", host: "github.com", owner: github[1]!, repo: github[2]!, number: Number(github[3]), kind: "pull" };
+  if (
+    github &&
+    github[1] !== "." &&
+    github[1] !== ".." &&
+    github[2] !== "." &&
+    github[2] !== ".."
+  ) {
+    return {
+      platform: "github",
+      host: "github.com",
+      owner: github[1]!,
+      repo: github[2]!,
+      number: Number(github[3]),
+      kind: "pull",
+    };
   }
   const gitlab = SHORT_GITLAB_PULL.exec(value);
-  if (gitlab && ![...gitlab[1]!.split("/"), gitlab[2]!].some((part) => part === "." || part === "..")) {
-    return { platform: "gitlab", host: "gitlab.com", owner: gitlab[1]!, repo: gitlab[2]!, number: Number(gitlab[3]), kind: "pull" };
+  if (
+    gitlab &&
+    ![...gitlab[1]!.split("/"), gitlab[2]!].some((part) => part === "." || part === "..")
+  ) {
+    return {
+      platform: "gitlab",
+      host: "gitlab.com",
+      owner: gitlab[1]!,
+      repo: gitlab[2]!,
+      number: Number(gitlab[3]),
+      kind: "pull",
+    };
   }
   return null;
 }
 
 /** A pull or merge request's web address. */
-export function forgePullUrl(ref: Pick<ForgeRef, "platform" | "host" | "owner" | "repo" | "number">): string {
+export function forgePullUrl(
+  ref: Pick<ForgeRef, "platform" | "host" | "owner" | "repo" | "number">,
+): string {
   return `https://${ref.host}/${ref.owner}/${ref.repo}/${ref.platform === "gitlab" ? "-/merge_requests" : "pull"}/${ref.number}`;
 }
 
@@ -224,8 +257,12 @@ export function forgePullUrl(ref: Pick<ForgeRef, "platform" | "host" | "owner" |
  * github.com, `group/project!45` on gitlab.com, the URL on any other host
  * (the short forms name only those two).
  */
-export function forgePullRefText(ref: Pick<ForgeRef, "platform" | "host" | "owner" | "repo" | "number">): string {
-  if (ref.platform === "github" && ref.host === "github.com") return `${ref.owner}/${ref.repo}#${ref.number}`;
-  if (ref.platform === "gitlab" && ref.host === "gitlab.com") return `${ref.owner}/${ref.repo}!${ref.number}`;
+export function forgePullRefText(
+  ref: Pick<ForgeRef, "platform" | "host" | "owner" | "repo" | "number">,
+): string {
+  if (ref.platform === "github" && ref.host === "github.com")
+    return `${ref.owner}/${ref.repo}#${ref.number}`;
+  if (ref.platform === "gitlab" && ref.host === "gitlab.com")
+    return `${ref.owner}/${ref.repo}!${ref.number}`;
   return forgePullUrl(ref);
 }

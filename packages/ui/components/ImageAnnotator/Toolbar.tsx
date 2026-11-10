@@ -1,6 +1,6 @@
-import React from 'react';
-import type { Tool } from './types';
-import { COLORS } from './types';
+import React from "react";
+import type { Tool } from "./types";
+import { COLORS } from "./types";
 
 interface ToolbarProps {
   tool: Tool;
@@ -16,7 +16,7 @@ interface ToolbarProps {
   onClear: () => void;
   onSave: () => void;
   /** The key named in the ✓'s title: Escape by default; Enter where Escape cancels (`escapeCancels`). */
-  saveKey?: 'Escape' | 'Enter';
+  saveKey?: "Escape" | "Enter";
 }
 
 const PenIcon = () => (
@@ -80,20 +80,20 @@ const CheckIcon = () => (
 );
 
 const TOOLS: { id: Tool; icon: React.FC; label: string }[] = [
-  { id: 'pen', icon: PenIcon, label: 'Pen (1)' },
-  { id: 'arrow', icon: ArrowIcon, label: 'Arrow (2)' },
-  { id: 'circle', icon: CircleIcon, label: 'Circle (3)' },
+  { id: "pen", icon: PenIcon, label: "Pen (1)" },
+  { id: "arrow", icon: ArrowIcon, label: "Arrow (2)" },
+  { id: "circle", icon: CircleIcon, label: "Circle (3)" },
 ];
 
 const STROKE_SIZES = [3, 6, 10, 16, 24];
 
 /** The colours' names, for a screen reader (the swatch shows only the colour). */
 const COLOR_NAMES: Record<string, string> = {
-  '#ef4444': 'Red',
-  '#eab308': 'Yellow',
-  '#22c55e': 'Green',
-  '#3b82f6': 'Blue',
-  '#ffffff': 'White',
+  "#ef4444": "Red",
+  "#eab308": "Yellow",
+  "#22c55e": "Green",
+  "#3b82f6": "Blue",
+  "#ffffff": "White",
 };
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -109,7 +109,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onRedo,
   onClear,
   onSave,
-  saveKey = 'Escape',
+  saveKey = "Escape",
 }) => {
   const currentSizeIndex = STROKE_SIZES.indexOf(strokeSize);
   const canDecrease = currentSizeIndex > 0;
@@ -125,140 +125,140 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain"
       >
         <div className="flex w-max items-center gap-2">
-      {/* Tools */}
-      <div className="flex items-center gap-1">
-        {TOOLS.map(({ id, icon: Icon, label }) => (
+          {/* Tools */}
+          <div className="flex items-center gap-1">
+            {TOOLS.map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onToolChange(id)}
+                title={label}
+                aria-label={label}
+                aria-pressed={tool === id}
+                className={`p-1.5 rounded transition-colors ${
+                  tool === id
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon />
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-5 bg-border" />
+
+          {/* Stroke size */}
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => canDecrease && onStrokeSizeChange(STROKE_SIZES[currentSizeIndex - 1])}
+              disabled={!canDecrease}
+              title="Smaller stroke"
+              aria-label="Smaller stroke"
+              className={`p-1 rounded transition-colors ${
+                canDecrease
+                  ? "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground/30 cursor-not-allowed"
+              }`}
+            >
+              <MinusIcon />
+            </button>
+            <div
+              className="w-5 h-5 flex items-center justify-center"
+              title={`Stroke size: ${strokeSize}`}
+              role="img"
+              aria-label={`Stroke size: ${strokeSize}`}
+            >
+              <div
+                className="rounded-full"
+                style={{
+                  width: Math.min(strokeSize + 2, 16),
+                  height: Math.min(strokeSize + 2, 16),
+                  backgroundColor: color,
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => canIncrease && onStrokeSizeChange(STROKE_SIZES[currentSizeIndex + 1])}
+              disabled={!canIncrease}
+              title="Larger stroke"
+              aria-label="Larger stroke"
+              className={`p-1 rounded transition-colors ${
+                canIncrease
+                  ? "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground/30 cursor-not-allowed"
+              }`}
+            >
+              <PlusIcon />
+            </button>
+          </div>
+
+          <div className="w-px h-5 bg-border" />
+
+          {/* Colors */}
+          <div className="flex items-center gap-1">
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => onColorChange(c)}
+                aria-label={`Colour: ${COLOR_NAMES[c] ?? c}`}
+                aria-pressed={color === c}
+                className={`w-5 h-5 rounded-full border-2 transition-transform ${
+                  color === c ? "scale-110 border-foreground" : "border-transparent hover:scale-105"
+                }`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+
+          <div className="w-px h-5 bg-border" />
+
+          {/* Undo */}
           <button
-            key={id}
             type="button"
-            onClick={() => onToolChange(id)}
-            title={label}
-            aria-label={label}
-            aria-pressed={tool === id}
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Undo (Cmd+Z)"
+            aria-label="Undo"
             className={`p-1.5 rounded transition-colors ${
-              tool === id
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+              canUndo
+                ? "hover:bg-muted text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground/30 cursor-not-allowed"
             }`}
           >
-            <Icon />
+            <UndoIcon />
           </button>
-        ))}
-      </div>
 
-      <div className="w-px h-5 bg-border" />
+          {onRedo && (
+            <button
+              type="button"
+              onClick={onRedo}
+              disabled={!canRedo}
+              title="Redo (Cmd+Shift+Z)"
+              aria-label="Redo"
+              className={`p-1.5 rounded transition-colors ${
+                canRedo
+                  ? "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground/30 cursor-not-allowed"
+              }`}
+            >
+              <RedoIcon />
+            </button>
+          )}
 
-      {/* Stroke size */}
-      <div className="flex items-center gap-0.5">
-        <button
-          type="button"
-          onClick={() => canDecrease && onStrokeSizeChange(STROKE_SIZES[currentSizeIndex - 1])}
-          disabled={!canDecrease}
-          title="Smaller stroke"
-          aria-label="Smaller stroke"
-          className={`p-1 rounded transition-colors ${
-            canDecrease
-              ? 'hover:bg-muted text-muted-foreground hover:text-foreground'
-              : 'text-muted-foreground/30 cursor-not-allowed'
-          }`}
-        >
-          <MinusIcon />
-        </button>
-        <div
-          className="w-5 h-5 flex items-center justify-center"
-          title={`Stroke size: ${strokeSize}`}
-          role="img"
-          aria-label={`Stroke size: ${strokeSize}`}
-        >
-          <div
-            className="rounded-full"
-            style={{
-              width: Math.min(strokeSize + 2, 16),
-              height: Math.min(strokeSize + 2, 16),
-              backgroundColor: color,
-            }}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => canIncrease && onStrokeSizeChange(STROKE_SIZES[currentSizeIndex + 1])}
-          disabled={!canIncrease}
-          title="Larger stroke"
-          aria-label="Larger stroke"
-          className={`p-1 rounded transition-colors ${
-            canIncrease
-              ? 'hover:bg-muted text-muted-foreground hover:text-foreground'
-              : 'text-muted-foreground/30 cursor-not-allowed'
-          }`}
-        >
-          <PlusIcon />
-        </button>
-      </div>
-
-      <div className="w-px h-5 bg-border" />
-
-      {/* Colors */}
-      <div className="flex items-center gap-1">
-        {COLORS.map((c) => (
+          {/* Clear all */}
           <button
-            key={c}
             type="button"
-            onClick={() => onColorChange(c)}
-            aria-label={`Colour: ${COLOR_NAMES[c] ?? c}`}
-            aria-pressed={color === c}
-            className={`w-5 h-5 rounded-full border-2 transition-transform ${
-              color === c ? 'scale-110 border-foreground' : 'border-transparent hover:scale-105'
-            }`}
-            style={{ backgroundColor: c }}
-          />
-        ))}
-      </div>
-
-      <div className="w-px h-5 bg-border" />
-
-      {/* Undo */}
-      <button
-        type="button"
-        onClick={onUndo}
-        disabled={!canUndo}
-        title="Undo (Cmd+Z)"
-        aria-label="Undo"
-        className={`p-1.5 rounded transition-colors ${
-          canUndo
-            ? 'hover:bg-muted text-muted-foreground hover:text-foreground'
-            : 'text-muted-foreground/30 cursor-not-allowed'
-        }`}
-      >
-        <UndoIcon />
-      </button>
-
-      {onRedo && (
-        <button
-          type="button"
-          onClick={onRedo}
-          disabled={!canRedo}
-          title="Redo (Cmd+Shift+Z)"
-          aria-label="Redo"
-          className={`p-1.5 rounded transition-colors ${
-            canRedo
-              ? 'hover:bg-muted text-muted-foreground hover:text-foreground'
-              : 'text-muted-foreground/30 cursor-not-allowed'
-          }`}
-        >
-          <RedoIcon />
-        </button>
-      )}
-
-      {/* Clear all */}
-      <button
-        type="button"
-        onClick={onClear}
-        title="Clear all"
-        aria-label="Clear all"
-        className="p-1.5 rounded transition-colors hover:bg-muted text-muted-foreground hover:text-destructive"
-      >
-        <ClearIcon />
-      </button>
+            onClick={onClear}
+            title="Clear all"
+            aria-label="Clear all"
+            className="p-1.5 rounded transition-colors hover:bg-muted text-muted-foreground hover:text-destructive"
+          >
+            <ClearIcon />
+          </button>
         </div>
       </div>
 
@@ -268,7 +268,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <button
         type="button"
         onClick={onSave}
-        title={saveKey === 'Enter' ? 'Save (Enter)' : 'Save (Esc)'}
+        title={saveKey === "Enter" ? "Save (Enter)" : "Save (Esc)"}
         aria-label="Save"
         className="shrink-0 p-1.5 rounded transition-colors bg-success text-success-foreground hover:opacity-90"
       >

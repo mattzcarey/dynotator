@@ -1,4 +1,4 @@
-export type Tool = 'pen' | 'arrow' | 'circle';
+export type Tool = "pen" | "arrow" | "circle";
 
 export interface Point {
   x: number;
@@ -23,15 +23,15 @@ export interface AnnotatorState {
 }
 
 export const COLORS = [
-  '#ef4444', // red
-  '#eab308', // yellow
-  '#22c55e', // green
-  '#3b82f6', // blue
-  '#ffffff', // white
+  "#ef4444", // red
+  "#eab308", // yellow
+  "#22c55e", // green
+  "#3b82f6", // blue
+  "#ffffff", // white
 ] as const;
 
 export const DEFAULT_STATE: AnnotatorState = {
-  tool: 'pen',
+  tool: "pen",
   color: COLORS[0],
   strokeSize: 6,
   strokes: [],

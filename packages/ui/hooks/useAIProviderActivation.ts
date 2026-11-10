@@ -1,5 +1,5 @@
-import { useCallback, useRef } from 'react';
-import type { AIProviderOption } from '../utils/aiProvider';
+import { useCallback, useRef } from "react";
+import type { AIProviderOption } from "../utils/aiProvider";
 
 /**
  * Explicit AI provider activation for lazily-initialized providers.
@@ -31,7 +31,7 @@ export function useAIProviderActivation(options: {
    * discovery even though Ask AI does not offer it (a session-bridge server
    * lists only the bridge). Omitted keeps the old behavior.
    */
-  providers?: ReadonlyArray<Pick<AIProviderOption, 'id'>>;
+  providers?: ReadonlyArray<Pick<AIProviderOption, "id">>;
 }) {
   const activatedRef = useRef<Set<string>>(new Set());
   const onCapabilitiesRef = useRef(options.onCapabilities);
@@ -42,11 +42,11 @@ export function useAIProviderActivation(options: {
   return useCallback((providerId: string | null | undefined) => {
     if (!providerId || activatedRef.current.has(providerId)) return;
     const listed = providersRef.current;
-    if (listed && !listed.some(provider => provider.id === providerId)) return;
+    if (listed && !listed.some((provider) => provider.id === providerId)) return;
     activatedRef.current.add(providerId);
     fetch(`/api/ai/capabilities?activate=${encodeURIComponent(providerId)}`)
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
         if (!data?.available) {
           activatedRef.current.delete(providerId);
           return;

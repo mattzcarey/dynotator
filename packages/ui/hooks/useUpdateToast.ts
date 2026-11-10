@@ -1,7 +1,12 @@
-import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
-import { copyTextToClipboard } from '../utils/clipboard';
-import { claimUpdateToast, describeUpdateToast, requestUpdateNow, type UpdateAdvert } from '../utils/updateNotice';
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { copyTextToClipboard } from "../utils/clipboard";
+import {
+  claimUpdateToast,
+  describeUpdateToast,
+  requestUpdateNow,
+  type UpdateAdvert,
+} from "../utils/updateNotice";
 
 /** First look after the page settles: past the first-run announcements' own 4 s window. */
 export const UPDATE_TOAST_DELAY_MS = 5_000;
@@ -11,10 +16,16 @@ const RETRY_MS = 5_000;
 const GIVE_UP_MS = 120_000;
 
 function isTypingSomewhere(): boolean {
-  const el = typeof document !== 'undefined' ? document.activeElement : null;
+  const el = typeof document !== "undefined" ? document.activeElement : null;
   if (!el || el === document.body) return false;
   const tag = el.tagName;
-  if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT' || (el as HTMLElement).isContentEditable) return true;
+  if (
+    tag === "TEXTAREA" ||
+    tag === "INPUT" ||
+    tag === "SELECT" ||
+    (el as HTMLElement).isContentEditable
+  )
+    return true;
   // An open dialog owns the screen; the toast waits for it.
   return !!el.closest('[role="dialog"], dialog[open]');
 }
@@ -38,7 +49,7 @@ export function useUpdateToast(input: {
   autoUpdateActive: boolean;
   /** A share link or archive: nobody to tell. */
   suppressed?: boolean;
-  position?: 'top-right' | 'bottom-right';
+  position?: "top-right" | "bottom-right";
 }): void {
   const blockedRef = useRef(input.blocked);
   blockedRef.current = input.blocked;
@@ -64,35 +75,45 @@ export function useUpdateToast(input: {
         closeButton: true,
         cancel: {
           label: "What's new",
-          onClick: () => window.open(advert.releaseUrl, '_blank', 'noopener,noreferrer'),
+          onClick: () => window.open(advert.releaseUrl, "_blank", "noopener,noreferrer"),
         },
         action:
-          primary === 'update'
+          primary === "update"
             ? {
-                label: 'Update',
+                label: "Update",
                 onClick: () => {
                   void requestUpdateNow().then((result) => {
                     if (!("error" in result)) {
                       toast(`Updating to ${result.version}…`, {
-                        description: 'The install script runs in the background. This review keeps working.',
+                        description:
+                          "The install script runs in the background. This review keeps working.",
                         duration: 8_000,
                         ...(position && { position }),
                       });
                     } else {
-                      toast("The update didn't start", { description: result.error, duration: 10_000, ...(position && { position }) });
+                      toast("The update didn't start", {
+                        description: result.error,
+                        duration: 10_000,
+                        ...(position && { position }),
+                      });
                     }
                   });
                 },
               }
             : {
-                label: 'Copy command',
+                label: "Copy command",
                 onClick: () => {
                   void copyTextToClipboard(advert.command).then((copied) => {
-                    if (copied) toast('Command copied', { description: advert.command, duration: 4_000, ...(position && { position }) });
+                    if (copied)
+                      toast("Command copied", {
+                        description: advert.command,
+                        duration: 4_000,
+                        ...(position && { position }),
+                      });
                   });
                 },
               },
-        classNames: { toast: '!w-auto', description: '!text-foreground/70 select-text' },
+        classNames: { toast: "!w-auto", description: "!text-foreground/70 select-text" },
       });
     };
     timer = setTimeout(attempt, UPDATE_TOAST_DELAY_MS);

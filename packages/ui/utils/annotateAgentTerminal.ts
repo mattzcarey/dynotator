@@ -1,7 +1,4 @@
-import type {
-  AgentTerminalAgent,
-  AnnotateAgentTerminalSide,
-} from "@dynotator/core/agent-terminal";
+import type { AgentTerminalAgent, AnnotateAgentTerminalSide } from "@dynotator/core/agent-terminal";
 import { configStore } from "../config";
 
 // The side/placement vocabulary lives in @dynotator/core so the settings

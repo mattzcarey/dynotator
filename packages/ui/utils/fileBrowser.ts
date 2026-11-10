@@ -5,10 +5,10 @@
  * Users add directories to browse; settings persist via cookies.
  */
 
-import { storage } from './storage';
+import { storage } from "./storage";
 
-const STORAGE_KEY_ENABLED = 'plannotator-filebrowser-enabled';
-const STORAGE_KEY_DIRS = 'plannotator-filebrowser-dirs';
+const STORAGE_KEY_ENABLED = "plannotator-filebrowser-enabled";
+const STORAGE_KEY_DIRS = "plannotator-filebrowser-dirs";
 
 export interface FileBrowserSettings {
   enabled: boolean;
@@ -21,10 +21,12 @@ export function getFileBrowserSettings(): FileBrowserSettings {
   if (dirsRaw) {
     try {
       directories = JSON.parse(dirsRaw);
-    } catch { /* ignore corrupt cookie */ }
+    } catch {
+      /* ignore corrupt cookie */
+    }
   }
   return {
-    enabled: storage.getItem(STORAGE_KEY_ENABLED) === 'true',
+    enabled: storage.getItem(STORAGE_KEY_ENABLED) === "true",
     directories,
   };
 }

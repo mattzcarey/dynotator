@@ -1,5 +1,5 @@
-import React from 'react';
-import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
+import React from "react";
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 
 /**
  * One tooltip timing for every surface (owner's design-system ruling q4): open
@@ -39,9 +39,15 @@ export const TooltipProvider: React.FC<TooltipProviderProps> = ({
   children,
 }) => {
   // One object per setting, so tooltips behind a memo boundary don't re-render with the provider.
-  const value = React.useMemo(() => ({ disableHoverablePopup: disableHoverableContent }), [disableHoverableContent]);
+  const value = React.useMemo(
+    () => ({ disableHoverablePopup: disableHoverableContent }),
+    [disableHoverableContent],
+  );
   return (
-    <BaseTooltip.Provider delay={delayDuration ?? TOOLTIP_DELAY_MS} timeout={skipDelayDuration ?? TOOLTIP_SKIP_DELAY_MS}>
+    <BaseTooltip.Provider
+      delay={delayDuration ?? TOOLTIP_DELAY_MS}
+      timeout={skipDelayDuration ?? TOOLTIP_SKIP_DELAY_MS}
+    >
       <TooltipProviderContext.Provider value={value}>{children}</TooltipProviderContext.Provider>
     </BaseTooltip.Provider>
   );
@@ -56,8 +62,8 @@ export const TooltipEscapePassesThrough = React.createContext(false);
 interface TooltipProps {
   content: React.ReactNode;
   children: React.ReactElement;
-  side?: 'top' | 'right' | 'bottom' | 'left';
-  align?: 'start' | 'center' | 'end';
+  side?: "top" | "right" | "bottom" | "left";
+  align?: "start" | "center" | "end";
   delayDuration?: number;
   sideOffset?: number;
   /**
@@ -112,8 +118,8 @@ export const Tooltip: React.FC<TooltipProps> = (props) => {
 const ArmedTooltip: React.FC<TooltipProps> = ({
   content,
   children,
-  side = 'top',
-  align = 'center',
+  side = "top",
+  align = "center",
   delayDuration,
   sideOffset = 8,
   wide = false,
@@ -145,7 +151,7 @@ const ArmedTooltip: React.FC<TooltipProps> = ({
                 return;
               }
               if (!controlledMode) return;
-              if (escapePassesThrough && !open && details.reason === 'escape-key') {
+              if (escapePassesThrough && !open && details.reason === "escape-key") {
                 details.cancel();
                 details.allowPropagation();
               }
@@ -157,7 +163,12 @@ const ArmedTooltip: React.FC<TooltipProps> = ({
       <BaseTooltip.Trigger render={children} delay={triggerDelay} />
       <BaseTooltip.Portal container={container ?? undefined}>
         {/* Above the annotation toolbar (z-[100]), so a tooltip that flips toward it is never tucked under it. */}
-        <BaseTooltip.Positioner side={side} align={align} sideOffset={sideOffset} className="isolate z-[110]">
+        <BaseTooltip.Positioner
+          side={side}
+          align={align}
+          sideOffset={sideOffset}
+          className="isolate z-[110]"
+        >
           {/* A borderless float (owner's design-system ruling q4): the shadow (--float-shadow, theme.css) separates
               it from the page. The 1px border stays, transparent, so forced colors (Windows High Contrast), which
               drop shadows and paint borders in the system colour, still draw its edge. */}
@@ -165,8 +176,8 @@ const ArmedTooltip: React.FC<TooltipProps> = ({
             data-pn-tooltip=""
             className={`z-[110] px-2 py-1 text-xs bg-popover text-popover-foreground border border-transparent rounded shadow-[var(--float-shadow)] origin-[var(--transform-origin)] transition-[opacity,scale] duration-150 ease-out data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95 ${
               wide
-                ? 'max-w-[min(260px,calc(100vw-1rem))] leading-snug whitespace-normal [overflow-wrap:anywhere]'
-                : 'whitespace-nowrap'
+                ? "max-w-[min(260px,calc(100vw-1rem))] leading-snug whitespace-normal [overflow-wrap:anywhere]"
+                : "whitespace-nowrap"
             }`}
           >
             {content}

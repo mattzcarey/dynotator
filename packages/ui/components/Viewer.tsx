@@ -1,31 +1,67 @@
-import { generateId } from '../utils/generateId';
-import React, { useRef, useState, useEffect, useLayoutEffect, useMemo, forwardRef, useImperativeHandle, useCallback, lazy, Suspense } from 'react';
-import { createPortal } from 'react-dom';
-import { collectDocumentImages, ImageLightbox, type LightboxImage, type LightboxRegionComments } from './ImageLightbox';
-import { imageReferenceIndex, imageSourceLine, regionOf } from './ImageRegions';
-import { AnnotationType, type Block, type Annotation, type EditorMode, type InputMethod, type ImageAttachment, type ActionsLabelMode, type HostDraft } from '../types';
-import { applyHighlight, codeBlockClassName, onCodeHighlightSwap } from '../utils/codeHighlight';
-import { paintCodeBlockMark } from '../utils/codeBlockMark';
-import { useFenceTheme } from '../hooks/useFenceTheme';
-import { computeListIndices, groupBlocks, selectionSourceLines, type Frontmatter, type FrontmatterValue } from '../utils/parser';
-import { buildHeadingSlugMap } from '../utils/slugify';
-import { copyTextToClipboard } from '../utils/clipboard';
-import { getRichCopyEnabled } from '../utils/richCopyPolicy';
-import { BlockRenderer } from './BlockRenderer';
-import { BELOW_TITLE_SLOT_MARKER } from '../utils/belowTitleSlot';
-import { indexQuestionBlocks, type IndexedQuestion, type ParsedQuestion, type QuestionAnswer } from '@dynotator/core/question-block';
-import { diagramTargetText, type DiagramAnchor } from '@dynotator/core/diagram-anchor';
-import type { QuestionBlockProps } from './blocks/QuestionBlock';
-import { resolveQuestionAnswers } from '../utils/questionAnswers';
-import { CodeBlock } from './blocks/CodeBlock';
-import { TableBlock } from './blocks/TableBlock';
-import { TableToolbar } from './blocks/TableToolbar';
-import { TablePopout } from './blocks/TablePopout';
-import { CodePathValidationContext } from './CodePathValidationContext';
-import { LocalLinkContext, type LocalLinkResolver } from './LocalLinkContext';
-import { useValidatedCodePaths } from '../hooks/useValidatedCodePaths';
-import { AnnotationToolbar } from './AnnotationToolbar';
-import { FloatingQuickLabelPicker } from './FloatingQuickLabelPicker';
+import { generateId } from "../utils/generateId";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+  lazy,
+  Suspense,
+} from "react";
+import { createPortal } from "react-dom";
+import {
+  collectDocumentImages,
+  ImageLightbox,
+  type LightboxImage,
+  type LightboxRegionComments,
+} from "./ImageLightbox";
+import { imageReferenceIndex, imageSourceLine, regionOf } from "./ImageRegions";
+import {
+  AnnotationType,
+  type Block,
+  type Annotation,
+  type EditorMode,
+  type InputMethod,
+  type ImageAttachment,
+  type ActionsLabelMode,
+  type HostDraft,
+} from "../types";
+import { applyHighlight, codeBlockClassName, onCodeHighlightSwap } from "../utils/codeHighlight";
+import { paintCodeBlockMark } from "../utils/codeBlockMark";
+import { useFenceTheme } from "../hooks/useFenceTheme";
+import {
+  computeListIndices,
+  groupBlocks,
+  selectionSourceLines,
+  type Frontmatter,
+  type FrontmatterValue,
+} from "../utils/parser";
+import { buildHeadingSlugMap } from "../utils/slugify";
+import { copyTextToClipboard } from "../utils/clipboard";
+import { getRichCopyEnabled } from "../utils/richCopyPolicy";
+import { BlockRenderer } from "./BlockRenderer";
+import { BELOW_TITLE_SLOT_MARKER } from "../utils/belowTitleSlot";
+import {
+  indexQuestionBlocks,
+  type IndexedQuestion,
+  type ParsedQuestion,
+  type QuestionAnswer,
+} from "@dynotator/core/question-block";
+import { diagramTargetText, type DiagramAnchor } from "@dynotator/core/diagram-anchor";
+import type { QuestionBlockProps } from "./blocks/QuestionBlock";
+import { resolveQuestionAnswers } from "../utils/questionAnswers";
+import { CodeBlock } from "./blocks/CodeBlock";
+import { TableBlock } from "./blocks/TableBlock";
+import { TableToolbar } from "./blocks/TableToolbar";
+import { TablePopout } from "./blocks/TablePopout";
+import { CodePathValidationContext } from "./CodePathValidationContext";
+import { LocalLinkContext, type LocalLinkResolver } from "./LocalLinkContext";
+import { useValidatedCodePaths } from "../hooks/useValidatedCodePaths";
+import { AnnotationToolbar } from "./AnnotationToolbar";
+import { FloatingQuickLabelPicker } from "./FloatingQuickLabelPicker";
 
 /**
  * The diagram engine — the renderer slot, the canvas, the comment overlay,
@@ -38,11 +74,17 @@ import { FloatingQuickLabelPicker } from './FloatingQuickLabelPicker';
  * while its engine loads (`DiagramPending`), inside the same boxes, so the
  * source fence paints once and the two waits read as one.
  */
-const MermaidBlock = lazy(async () => ({ default: (await import('./MermaidBlock')).MermaidBlock }));
-const GraphvizBlock = lazy(async () => ({ default: (await import('./GraphvizBlock')).GraphvizBlock }));
+const MermaidBlock = lazy(async () => ({ default: (await import("./MermaidBlock")).MermaidBlock }));
+const GraphvizBlock = lazy(async () => ({
+  default: (await import("./GraphvizBlock")).GraphvizBlock,
+}));
 /** ```html and ```svg fences drawn, for a host that opts in (`htmlEmbeds`); loaded only then. */
-const HtmlEmbedBlock = lazy(async () => ({ default: (await import('./html-embed/HtmlEmbedBlock')).HtmlEmbedBlock }));
-const SvgFenceBlock = lazy(async () => ({ default: (await import('./html-embed/SvgFenceBlock')).SvgFenceBlock }));
+const HtmlEmbedBlock = lazy(async () => ({
+  default: (await import("./html-embed/HtmlEmbedBlock")).HtmlEmbedBlock,
+}));
+const SvgFenceBlock = lazy(async () => ({
+  default: (await import("./html-embed/SvgFenceBlock")).SvgFenceBlock,
+}));
 /**
  * Each lazy block sits in a `LazyBlockBoundary`: when its chunk cannot load,
  * the block shows its source and a Reload notice, and the document stays.
@@ -60,59 +102,79 @@ class ToolbarErrorBoundary extends React.Component<
   { error: Error | null }
 > {
   state = { error: null as Error | null };
-  static getDerivedStateFromError(error: Error) { return { error }; }
-  componentDidCatch(error: Error) { console.error('AnnotationToolbar crashed:', error); }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error) {
+    console.error("AnnotationToolbar crashed:", error);
+  }
   render() {
     if (this.state.error) {
-      return <div style={{ position: 'fixed', top: 10, left: 10, zIndex: 9999, background: 'red', color: 'white', padding: '8px 12px', borderRadius: 6, fontSize: 12 }}>
-        Toolbar error: {this.state.error.message}
-      </div>;
+      return (
+        <div
+          style={{
+            position: "fixed",
+            top: 10,
+            left: 10,
+            zIndex: 9999,
+            background: "red",
+            color: "white",
+            padding: "8px 12px",
+            borderRadius: 6,
+            fontSize: 12,
+          }}
+        >
+          Toolbar error: {this.state.error.message}
+        </div>
+      );
     }
     return this.props.children;
   }
 }
 
-import { CommentPopover, hasCommentDraft, type CommentAskAIHandler } from './CommentPopover';
-import { TaterSpriteSitting } from './TaterSpriteSitting';
-import { AttachmentsButton } from './AttachmentsButton';
-import { MessagesIcon } from './icons/MessagesIcon';
-import { DiagramAnchorClaims, DiagramAnchorClaimsContext } from './diagram/anchorClaims';
-import { DiagramBlockPending } from './diagram/DiagramPending';
-import type { DiagramReopenRequest } from './diagram/reopen';
-import { LazyBlockBoundary } from './LazyBlockBoundary';
-import { isGraphvizLanguage, isMermaidLanguage } from './diagramLanguages';
-import { isHtmlEmbedLanguage, isSvgFenceLanguage } from './html-embed/languages';
-import type { HtmlEmbedHost } from './html-embed/HtmlEmbedBlock';
-import { getIdentity } from '../utils/identity';
-import { type QuickLabel } from '../utils/quickLabels';
-import type { SelectionAction, SelectionActionContext } from '../utils/selectionActions';
-import type { MentionSource } from '../utils/mentions';
-import { DocBadges, type DocBadgesProps, type LinkedDocBadgeInfo } from './DocBadges';
-import { legacyBadgesMaxWidth } from './docBadgesWidth';
-import { PinpointOverlay } from './PinpointOverlay';
-import { usePinpoint } from '../hooks/usePinpoint';
-import { useClickWord } from '../hooks/useClickWord';
-import { getClickAWord } from '../utils/clickAWordPolicy';
-import { rangeInsideExcluded, useAnnotationHighlighter, type AnnotationRestoreReport, type CommentDraftShelf } from '../hooks/useAnnotationHighlighter';
-import { getVisibleCommentDrafts } from '../utils/commentCardPolicy';
-import { shelveCommentDraft, shelvedCommentDrafts } from '../utils/commentDraftShelf';
-import { CommentDraftBadges } from './CommentDraftBadges';
-import { CommentDraftScopeContext } from '../utils/commentDraftScope';
-import { useVimSelection } from '../hooks/useVimSelection';
+import { CommentPopover, hasCommentDraft, type CommentAskAIHandler } from "./CommentPopover";
+import { TaterSpriteSitting } from "./TaterSpriteSitting";
+import { AttachmentsButton } from "./AttachmentsButton";
+import { MessagesIcon } from "./icons/MessagesIcon";
+import { DiagramAnchorClaims, DiagramAnchorClaimsContext } from "./diagram/anchorClaims";
+import { DiagramBlockPending } from "./diagram/DiagramPending";
+import type { DiagramReopenRequest } from "./diagram/reopen";
+import { LazyBlockBoundary } from "./LazyBlockBoundary";
+import { isGraphvizLanguage, isMermaidLanguage } from "./diagramLanguages";
+import { isHtmlEmbedLanguage, isSvgFenceLanguage } from "./html-embed/languages";
+import type { HtmlEmbedHost } from "./html-embed/HtmlEmbedBlock";
+import { getIdentity } from "../utils/identity";
+import { type QuickLabel } from "../utils/quickLabels";
+import type { SelectionAction, SelectionActionContext } from "../utils/selectionActions";
+import type { MentionSource } from "../utils/mentions";
+import { DocBadges, type DocBadgesProps, type LinkedDocBadgeInfo } from "./DocBadges";
+import { legacyBadgesMaxWidth } from "./docBadgesWidth";
+import { PinpointOverlay } from "./PinpointOverlay";
+import { usePinpoint } from "../hooks/usePinpoint";
+import { useClickWord } from "../hooks/useClickWord";
+import { getClickAWord } from "../utils/clickAWordPolicy";
+import {
+  rangeInsideExcluded,
+  useAnnotationHighlighter,
+  type AnnotationRestoreReport,
+  type CommentDraftShelf,
+} from "../hooks/useAnnotationHighlighter";
+import { getVisibleCommentDrafts } from "../utils/commentCardPolicy";
+import { shelveCommentDraft, shelvedCommentDrafts } from "../utils/commentDraftShelf";
+import { CommentDraftBadges } from "./CommentDraftBadges";
+import { CommentDraftScopeContext } from "../utils/commentDraftScope";
+import { useVimSelection } from "../hooks/useVimSelection";
 import {
   getScrollViewportIntersectionRoot,
   getScrollViewportRect,
   getScrollViewportTop,
   scrollViewportTo,
   useScrollViewport,
-} from '../hooks/useScrollViewport';
-import { decodeAnchorHash } from '../utils/anchors';
-import { VimModeOverlay } from './VimModeOverlay';
-import { AnnotationToolstrip } from './AnnotationToolstrip';
-import {
-  resolveCompactHeaderGeometry,
-  snapCompactHeaderWidth,
-} from './compactHeaderLayout';
+} from "../hooks/useScrollViewport";
+import { decodeAnchorHash } from "../utils/anchors";
+import { VimModeOverlay } from "./VimModeOverlay";
+import { AnnotationToolstrip } from "./AnnotationToolstrip";
+import { resolveCompactHeaderGeometry, snapCompactHeaderWidth } from "./compactHeaderLayout";
 
 /** Typed controls required for Viewer's opt-in, in-flow annotation header. */
 export interface ViewerAnnotationHeaderConfig {
@@ -271,7 +333,11 @@ export interface ViewerProps {
    * callers that don't measure plan-area width.
    */
   actionsLabelMode?: ActionsLabelMode;
-  archiveInfo?: { status: 'approved' | 'denied' | 'unknown'; timestamp: string; title: string } | null;
+  archiveInfo?: {
+    status: "approved" | "denied" | "unknown";
+    timestamp: string;
+    title: string;
+  } | null;
   /** Source attribution for HTML/URL annotations (e.g. URL or filename) */
   sourceInfo?: string;
   /** Absolute path of the annotated source file for the Open-in-app control. */
@@ -313,7 +379,10 @@ export interface ViewerProps {
   /** Host actions at the right of a question card's footer (e.g. "Mark as
    *  decision"), given the indexed question and its saved answer. Rendered in
    *  read-only cards too; return null for none. */
-  renderQuestionFooter?: (question: IndexedQuestion, answer: QuestionAnswer | undefined) => React.ReactNode;
+  renderQuestionFooter?: (
+    question: IndexedQuestion,
+    answer: QuestionAnswer | undefined,
+  ) => React.ReactNode;
   /** Whether answering a question records a decision, per question. On a
    *  `Decision: when answered` question: false draws its "Records a
    *  decision" tag dimmed with a dotted outline and hides the "Answering this
@@ -327,7 +396,7 @@ export interface ViewerProps {
    *  `'when-answered'` (default, the 0.52.0 behaviour): only questions with
    *  `Decision: when answered`. `'any'`: also a question with no decision
    *  line, when `questionDecisionRecording` returns a boolean for it. */
-  questionDecisionScope?: 'when-answered' | 'any';
+  questionDecisionScope?: "when-answered" | "any";
   /** Whether `:::question` cards read `Decision:` lines (default true). False
    *  (a host that records no decisions, such as the Plannotator Inbox): a
    *  `Decision:` line is shown as context and no question carries a decision
@@ -358,7 +427,10 @@ export interface ViewerProps {
   questionPictureChoices?: boolean;
   /** A small label over each picture tile's picture (see `QuestionBlock`
    *  `pictureBadge`); absent: none. */
-  questionPictureBadge?: (choice: { label: string; image: { alt: string; src: string } }) => string | null;
+  questionPictureBadge?: (choice: {
+    label: string;
+    image: { alt: string; src: string };
+  }) => string | null;
   /** A picture tile's zoom, told its question's key and the choice's index (see
    *  `QuestionBlock` `onZoomChoice`). Absent: the zoom opens the picture
    *  through `onImageClick`, as before. */
@@ -392,18 +464,21 @@ export interface ViewerProps {
   /** `'none'` hides each question card's own status tag (Open / Answered /
    *  Settled / Skipped) so the host can draw its own; the decision tags stay.
    *  Default `'card'`. */
-  questionStatusTag?: 'card' | 'none';
+  questionStatusTag?: "card" | "none";
   /** The host's own words for a question's status tag (ui seam, see
    *  `QuestionBlock` `statusLabel`): the Plannotator Inbox says "Not sent" for
    *  a saved, unsent pick. Absent: the card's own tags. */
-  questionStatusLabel?: QuestionBlockProps['statusLabel'];
+  questionStatusLabel?: QuestionBlockProps["statusLabel"];
   /** A host's own card in place of a question's (ui seam for a question the
    *  host no longer lets anyone answer, such as the Plannotator Inbox's
    *  replaced questions). Called per question; a returned node is drawn
    *  instead of the answer card, inside a wrapper carrying the block's
    *  `data-block-id`; `undefined` keeps the answer card. Absent: every
    *  question draws its answer card (today's behaviour). */
-  renderQuestionCard?: (question: IndexedQuestion, answer: QuestionAnswer | undefined) => React.ReactNode | undefined;
+  renderQuestionCard?: (
+    question: IndexedQuestion,
+    answer: QuestionAnswer | undefined,
+  ) => React.ReactNode | undefined;
   /** Host content right under a question card's prompt, per question (e.g.
    *  "Replaces <an earlier question>"); null for none. Absent: nothing there. */
   renderQuestionBelowPrompt?: (question: IndexedQuestion) => React.ReactNode;
@@ -523,7 +598,7 @@ export interface ViewerHandle {
   /** `HtmlViewer` only: move a pinned draft to the element around it
    *  (`'parent'`) or back in (`'child'`), for a host that composes
    *  (`onHostDraft`). The markdown `Viewer` does not implement it. */
-  stepPin?: (direction: 'parent' | 'child') => void;
+  stepPin?: (direction: "parent" | "child") => void;
   /** `HtmlViewer` only: scroll the pinned draft into the middle of the
    *  frame, for a host whose panel covers part of it. `clearBottom`: the
    *  panel floats over the frame's last pixels instead of shrinking it, so the
@@ -565,12 +640,12 @@ export interface ViewerHandle {
 interface CodeBlockToolbarTarget {
   readonly block: Block;
   readonly element: HTMLElement;
-  readonly activation: 'pointer' | 'keyboard';
+  readonly activation: "pointer" | "keyboard";
 }
 
 // Named type guard so both taken and fallthrough branches narrow.
 function isFrontmatterMap(value: FrontmatterValue): value is { [key: string]: FrontmatterValue } {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -592,7 +667,7 @@ const FrontmatterRow: React.FC<{ field: string; value: FrontmatterValue }> = ({ 
   }
 
   if (Array.isArray(value)) {
-    const isArrayOfMaps = value.some((v) => typeof v === 'object' && v !== null);
+    const isArrayOfMaps = value.some((v) => typeof v === "object" && v !== null);
     if (isArrayOfMaps) {
       return (
         <div className="flex flex-col gap-1.5">
@@ -605,7 +680,9 @@ const FrontmatterRow: React.FC<{ field: string; value: FrontmatterValue }> = ({ 
                     <FrontmatterRow key={k} field={k} value={v} />
                   ))
                 ) : (
-                  <span className="text-foreground">{typeof item === 'string' ? item : String(item)}</span>
+                  <span className="text-foreground">
+                    {typeof item === "string" ? item : String(item)}
+                  </span>
                 )}
               </div>
             ))}
@@ -621,7 +698,7 @@ const FrontmatterRow: React.FC<{ field: string; value: FrontmatterValue }> = ({ 
           <span className="flex flex-wrap gap-1">
             {value.map((v, i) => (
               <span key={i} className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs">
-                {typeof v === 'string' ? v : String(v)}
+                {typeof v === "string" ? v : String(v)}
               </span>
             ))}
           </span>
@@ -677,7 +754,10 @@ interface StickyActionsBox {
  * copy the cluster's measured box and margins, so host CSS that restyles
  * `[data-sticky-actions]` keeps its effect.
  */
-const StickyActionsLane: React.FC<{ className: string; children: React.ReactNode }> = ({ className, children }) => {
+const StickyActionsLane: React.FC<{ className: string; children: React.ReactNode }> = ({
+  className,
+  children,
+}) => {
   const actionsRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState<StickyActionsBox | null>(null);
 
@@ -693,22 +773,23 @@ const StickyActionsLane: React.FC<{ className: string; children: React.ReactNode
         marginRight: Number.parseFloat(style.marginRight) || 0,
       };
       setBox((prev) =>
-        prev
-        && prev.width === next.width
-        && prev.height === next.height
-        && prev.marginTop === next.marginTop
-        && prev.marginRight === next.marginRight
+        prev &&
+        prev.width === next.width &&
+        prev.height === next.height &&
+        prev.marginTop === next.marginTop &&
+        prev.marginRight === next.marginRight
           ? prev
-          : next);
+          : next,
+      );
     };
     measure();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
     observer?.observe(el);
     // Breakpoint-only margin changes (lg/xl) don't resize the cluster.
-    window.addEventListener('resize', measure);
+    window.addEventListener("resize", measure);
     return () => {
       observer?.disconnect();
-      window.removeEventListener('resize', measure);
+      window.removeEventListener("resize", measure);
     };
   }, []);
 
@@ -732,7 +813,16 @@ const StickyActionsLane: React.FC<{ className: string; children: React.ReactNode
         data-sticky-actions-spacer
         aria-hidden="true"
         className="float-right"
-        style={box ? { width: box.width, height: box.height, marginTop: box.marginTop, marginRight: box.marginRight } : undefined}
+        style={
+          box
+            ? {
+                width: box.width,
+                height: box.height,
+                marginTop: box.marginTop,
+                marginRight: box.marginRight,
+              }
+            : undefined
+        }
       />
     </>
   );
@@ -746,7 +836,7 @@ interface ViewerDocumentHeaderProps {
   readonly sticky: boolean;
   readonly stuck: boolean;
   readonly sentinelRef: React.RefObject<HTMLDivElement | null>;
-  readonly badges: Omit<DocBadgesProps, 'layout'>;
+  readonly badges: Omit<DocBadgesProps, "layout">;
   readonly actions: React.ReactNode;
 }
 
@@ -772,7 +862,7 @@ const ViewerDocumentHeader: React.FC<ViewerDocumentHeaderProps> = ({
     if (!header) return;
     const observer = new ResizeObserver(([entry]) => {
       const next = snapCompactHeaderWidth(entry.contentRect.width);
-      setHeaderWidth((current) => current === next ? current : next);
+      setHeaderWidth((current) => (current === next ? current : next));
     });
     observer.observe(header);
     return () => observer.disconnect();
@@ -783,7 +873,7 @@ const ViewerDocumentHeader: React.FC<ViewerDocumentHeaderProps> = ({
     if (!actionCluster) return;
     const observer = new ResizeObserver(([entry]) => {
       const next = snapCompactHeaderWidth(entry.contentRect.width);
-      setActionsWidth((current) => current === next ? current : next);
+      setActionsWidth((current) => (current === next ? current : next));
     });
     observer.observe(actionCluster);
     return () => observer.disconnect();
@@ -794,8 +884,8 @@ const ViewerDocumentHeader: React.FC<ViewerDocumentHeaderProps> = ({
     trailingWidth: actionsWidth,
     leadingInset: 0,
   });
-  const narrow = geometry.layout === 'narrow';
-  const iconOnly = geometry.layout !== 'wide';
+  const narrow = geometry.layout === "narrow";
+  const iconOnly = geometry.layout !== "wide";
 
   return (
     <>
@@ -806,19 +896,19 @@ const ViewerDocumentHeader: React.FC<ViewerDocumentHeaderProps> = ({
         data-print-hide
         data-viewer-document-header
         data-header-layout={geometry.layout}
-        className={`annotation-exclude ${sticky ? 'sticky top-3' : 'relative'} z-40 mb-3 md:mb-4 rounded-lg transition-colors duration-150 ${
-          stuck ? 'bg-card/95 backdrop-blur-sm shadow-sm' : ''
+        className={`annotation-exclude ${sticky ? "sticky top-3" : "relative"} z-40 mb-3 md:mb-4 rounded-lg transition-colors duration-150 ${
+          stuck ? "bg-card/95 backdrop-blur-sm shadow-sm" : ""
         }`}
       >
-        <div className={`flex min-w-0 ${
-          narrow
-            ? 'flex-col items-stretch gap-2'
-            : 'flex-row items-start justify-between gap-4'
-        }`}>
+        <div
+          className={`flex min-w-0 ${
+            narrow ? "flex-col items-stretch gap-2" : "flex-row items-start justify-between gap-4"
+          }`}
+        >
           <div
             data-viewer-annotation-controls
             className={`inline-flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 py-1 md:py-2 ${
-              narrow ? 'w-full' : 'flex-1'
+              narrow ? "w-full" : "flex-1"
             }`}
           >
             <div className="flex-shrink-0">
@@ -839,7 +929,7 @@ const ViewerDocumentHeader: React.FC<ViewerDocumentHeaderProps> = ({
             ref={actionsRef}
             data-sticky-actions
             className={`flex flex-shrink-0 items-start gap-1 rounded-lg p-1 md:gap-2 md:p-2 ${
-              narrow ? 'self-end' : ''
+              narrow ? "self-end" : ""
             }`}
           >
             {actions}
@@ -856,1641 +946,2003 @@ const ViewerDocumentHeader: React.FC<ViewerDocumentHeaderProps> = ({
  * Pointer and opt-in keyboard annotations share the same highlight callbacks;
  * the imperative handle mutates only highlights owned by this viewer.
  */
-export const Viewer = forwardRef<ViewerHandle, ViewerProps>(({
-  blocks,
-  markdown,
-  frontmatter,
-  annotations,
-  onAddAnnotation,
-  onSelectAnnotation,
-  selectedAnnotationId,
-  mode,
-  inputMethod = 'drag',
-  clickAWord: clickAWordProp,
-  taterMode,
-  selectionActions,
-  selectionActionsIcon,
-  onSide,
-  sideButton,
-  quickLabels,
-  mentionSource,
-  globalAttachments = [],
-  onAddGlobalAttachment,
-  onRemoveGlobalAttachment,
-  repoInfo,
-  refRepo,
-  stickyActions = true,
-  annotationHeader,
-  gridEnabled = false,
-  fillHeight = false,
-  planDiffStats,
-  isPlanDiffActive,
-  onPlanDiffToggle,
-  hasPreviousVersion,
-  planDiffBaselineLabel,
-  planDiffBaselineTooltip,
-  showDemoBadge,
-  maxWidth,
-  onOpenLinkedDoc,
-  onOpenCodeFile,
-  resolveLocalLink,
-  linkedDocInfo,
-  imageBaseDir,
-  onImageClick: hostImageClick,
-  imageLightboxStepping = false,
-  imageRegionComments = false,
-  onDeleteAnnotation,
-  onEditAnnotation,
-  codePathBaseDir,
-  disableCodePathValidation,
-  onRestoreReport,
-  copyLabel,
-  actionsLabelMode = 'full',
-  archiveInfo,
-  sourceInfo,
-  openInAppPath,
-  messagePickerInfo,
-  onToggleCheckbox,
-  checkboxOverrides,
-  onAnswerQuestion,
-  questionAnswers: hostQuestionAnswers,
-  onSaveQuestionAnswer,
-  saveQuestionAnswerLabel,
-  renderQuestionFooter,
-  questionDecisionRecording,
-  questionDecisionScope,
-  questionDecisionLines = true,
-  questionContractLines = false,
-  questionOptionLines = false,
-  renderQuestionAfterChoices,
-  questionPictureChoices = true,
-  questionPictureBadge,
-  onQuestionPictureZoom,
-  questionPictureSize,
-  onToggleQuestionDecisionRecording,
-  onOpenQuestionDecision,
-  questionDecisionLocked,
-  questionReadOnly,
-  questionStatusTag,
-  questionStatusLabel,
-  renderQuestionCard,
-  renderDirectiveBlock,
-  renderQuestionBelowPrompt,
-  onAskAI,
-  allowImages = true,
-  readOnly = false,
-  answerOnly = false,
-  htmlEmbeds,
-  textComments = false,
-  textDeletions = false,
-  suggestComment,
-  vimModeEnabled = false,
-  vimHudEnabled = false,
-  vimHudKeyPanelEnabled = true,
-  onVimHudKeyPanelChange,
-  onHostDraft,
-  belowTitle,
-}, ref) => {
-  // Annotation authoring is off when read-only, and when the host only wants
-  // answers (`answerOnly`); question cards and checkboxes follow `readOnly`.
-  const authoringOff = readOnly || answerOnly;
-  // `textComments`: an answer-only document whose words still take comments
-  // (the selection toolbar, comment-only, and its composer); everything else
-  // of authoring stays off. Without it this is exactly `!authoringOff`.
-  const textCommentsOnly = answerOnly && textComments && !readOnly;
-  const selectionCommentsOn = !authoringOff || textCommentsOnly;
-  const hostComposes = onHostDraft !== undefined && !authoringOff;
-  const viewerAnnotationHeader = authoringOff ? undefined : annotationHeader;
-  const hasViewerAnnotationHeader = viewerAnnotationHeader !== undefined;
-  // Where `#123` / `@user` link: `refRepo` when the host gave one, else `repoInfo`.
-  const linkRepo = refRepo ?? repoInfo;
-  const [copied, setCopied] = useState(false);
-  const [lightbox, setLightboxState] = useState<{ src: string; alt: string; images?: LightboxImage[]; focusId?: string | null } | null>(null);
-  // The document's images for the lightbox: with region comments each knows
-  // its src as written, block and line.
-  const documentImages = (): LightboxImage[] =>
-    collectDocumentImages(containerRef.current).map((image) => {
-      if (!imageRegionComments || !image.writtenSrc || !image.blockId) return image;
-      const block = blocks.find((b) => b.id === image.blockId);
-      return { ...image, line: block ? imageSourceLine(block, image.writtenSrc) : null };
-    });
-  // A host that handles image clicks (the Inbox) gets them; otherwise the lightbox opens, stepping through
-  // the document's images when the host asked for it (and with region comments, always with the list).
-  const setLightbox = (image: { src: string; alt: string }) => {
-    if (hostImageClick) {
-      hostImageClick(image.src, image.alt);
-      return;
-    }
-    setLightboxState(imageLightboxStepping || imageRegionComments ? { ...image, images: documentImages() } : image);
-  };
-  // Region comments made in the lightbox are selected by the host as they are
-  // added; that selection must not reopen or refocus the lightbox.
-  const regionCreatedHere = useRef(new Set<string>());
-  const [locationHash, setLocationHash] = useState(() => window.location.hash);
-  const globalCommentButtonRef = useRef<HTMLButtonElement>(null);
-  // Read through a ref: only the imperative removeHighlight path below needs
-  // it, and CodeBlock re-highlights itself on palette change.
-  const fenceTheme = useFenceTheme();
-  const fenceThemeRef = useRef(fenceTheme);
-  fenceThemeRef.current = fenceTheme;
-
-  const handleCopyPlan = async () => {
-    if (await copyTextToClipboard(markdown)) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } else {
-      console.error('Failed to copy');
-    }
-  };
-  const containerRef = useRef<HTMLDivElement>(null);
-  // The element that actually scrolls; shared by the Vim scroll math, the
-  // sticky-header observer, and the reticle geometry.
-  const scrollViewport = useScrollViewport();
-  // The badge cluster (repo chips / diff badge) is absolutely positioned in the
-  // card's top padding. One row fits; a second row (diff badge) or mobile
-  // wrapping outgrows the padding and lands on the document's first heading.
-  // Measure the cluster and insert exactly the clearance it needs (0 when it fits).
-  // The cluster also stops where the action cluster starts on the same row, so
-  // a long file name truncates at the buttons instead of running under them;
-  // with no buttons on its row (the phone layout) it stops inside the card.
-  const docBadgesRef = useRef<HTMLDivElement | null>(null);
-  const [badgeClearance, setBadgeClearance] = useState(0);
-  const [badgeMaxWidth, setBadgeMaxWidth] = useState<number | null>(null);
-  useEffect(() => {
-    if (hasViewerAnnotationHeader) {
-      setBadgeClearance(0);
-      setBadgeMaxWidth(null);
-      return;
-    }
-    const el = docBadgesRef.current;
-    const article = containerRef.current;
-    if (!el || !article) { setBadgeClearance(0); setBadgeMaxWidth(null); return; }
-    // The static float that holds the actions' place: the sticky lane's spacer
-    // (the lane itself moves while stuck), or the plain float without one.
-    const actions = article.querySelector<HTMLElement>('[data-sticky-actions-spacer]')
-      ?? article.querySelector<HTMLElement>('[data-sticky-actions]');
-    const measure = () => {
-      const pad = parseFloat(getComputedStyle(article).paddingTop) || 0;
-      const overflow = el.offsetTop + el.offsetHeight - pad;
-      setBadgeClearance(overflow > 1 ? overflow + 4 : 0);
-      setBadgeMaxWidth(legacyBadgesMaxWidth(el.getBoundingClientRect(), actions?.getBoundingClientRect() ?? null, article.getBoundingClientRect()));
+export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
+  (
+    {
+      blocks,
+      markdown,
+      frontmatter,
+      annotations,
+      onAddAnnotation,
+      onSelectAnnotation,
+      selectedAnnotationId,
+      mode,
+      inputMethod = "drag",
+      clickAWord: clickAWordProp,
+      taterMode,
+      selectionActions,
+      selectionActionsIcon,
+      onSide,
+      sideButton,
+      quickLabels,
+      mentionSource,
+      globalAttachments = [],
+      onAddGlobalAttachment,
+      onRemoveGlobalAttachment,
+      repoInfo,
+      refRepo,
+      stickyActions = true,
+      annotationHeader,
+      gridEnabled = false,
+      fillHeight = false,
+      planDiffStats,
+      isPlanDiffActive,
+      onPlanDiffToggle,
+      hasPreviousVersion,
+      planDiffBaselineLabel,
+      planDiffBaselineTooltip,
+      showDemoBadge,
+      maxWidth,
+      onOpenLinkedDoc,
+      onOpenCodeFile,
+      resolveLocalLink,
+      linkedDocInfo,
+      imageBaseDir,
+      onImageClick: hostImageClick,
+      imageLightboxStepping = false,
+      imageRegionComments = false,
+      onDeleteAnnotation,
+      onEditAnnotation,
+      codePathBaseDir,
+      disableCodePathValidation,
+      onRestoreReport,
+      copyLabel,
+      actionsLabelMode = "full",
+      archiveInfo,
+      sourceInfo,
+      openInAppPath,
+      messagePickerInfo,
+      onToggleCheckbox,
+      checkboxOverrides,
+      onAnswerQuestion,
+      questionAnswers: hostQuestionAnswers,
+      onSaveQuestionAnswer,
+      saveQuestionAnswerLabel,
+      renderQuestionFooter,
+      questionDecisionRecording,
+      questionDecisionScope,
+      questionDecisionLines = true,
+      questionContractLines = false,
+      questionOptionLines = false,
+      renderQuestionAfterChoices,
+      questionPictureChoices = true,
+      questionPictureBadge,
+      onQuestionPictureZoom,
+      questionPictureSize,
+      onToggleQuestionDecisionRecording,
+      onOpenQuestionDecision,
+      questionDecisionLocked,
+      questionReadOnly,
+      questionStatusTag,
+      questionStatusLabel,
+      renderQuestionCard,
+      renderDirectiveBlock,
+      renderQuestionBelowPrompt,
+      onAskAI,
+      allowImages = true,
+      readOnly = false,
+      answerOnly = false,
+      htmlEmbeds,
+      textComments = false,
+      textDeletions = false,
+      suggestComment,
+      vimModeEnabled = false,
+      vimHudEnabled = false,
+      vimHudKeyPanelEnabled = true,
+      onVimHudKeyPanelChange,
+      onHostDraft,
+      belowTitle,
+    },
+    ref,
+  ) => {
+    // Annotation authoring is off when read-only, and when the host only wants
+    // answers (`answerOnly`); question cards and checkboxes follow `readOnly`.
+    const authoringOff = readOnly || answerOnly;
+    // `textComments`: an answer-only document whose words still take comments
+    // (the selection toolbar, comment-only, and its composer); everything else
+    // of authoring stays off. Without it this is exactly `!authoringOff`.
+    const textCommentsOnly = answerOnly && textComments && !readOnly;
+    const selectionCommentsOn = !authoringOff || textCommentsOnly;
+    const hostComposes = onHostDraft !== undefined && !authoringOff;
+    const viewerAnnotationHeader = authoringOff ? undefined : annotationHeader;
+    const hasViewerAnnotationHeader = viewerAnnotationHeader !== undefined;
+    // Where `#123` / `@user` link: `refRepo` when the host gave one, else `repoInfo`.
+    const linkRepo = refRepo ?? repoInfo;
+    const [copied, setCopied] = useState(false);
+    const [lightbox, setLightboxState] = useState<{
+      src: string;
+      alt: string;
+      images?: LightboxImage[];
+      focusId?: string | null;
+    } | null>(null);
+    // The document's images for the lightbox: with region comments each knows
+    // its src as written, block and line.
+    const documentImages = (): LightboxImage[] =>
+      collectDocumentImages(containerRef.current).map((image) => {
+        if (!imageRegionComments || !image.writtenSrc || !image.blockId) return image;
+        const block = blocks.find((b) => b.id === image.blockId);
+        return { ...image, line: block ? imageSourceLine(block, image.writtenSrc) : null };
+      });
+    // A host that handles image clicks (the Inbox) gets them; otherwise the lightbox opens, stepping through
+    // the document's images when the host asked for it (and with region comments, always with the list).
+    const setLightbox = (image: { src: string; alt: string }) => {
+      if (hostImageClick) {
+        hostImageClick(image.src, image.alt);
+        return;
+      }
+      setLightboxState(
+        imageLightboxStepping || imageRegionComments
+          ? { ...image, images: documentImages() }
+          : image,
+      );
     };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    // The card too: when it narrows (the sidebar opens, the layout settles after
-    // first paint) the actions float moves without changing size.
-    ro.observe(article);
-    if (actions) ro.observe(actions);
-    window.addEventListener('resize', measure);
-    return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
-  }, [hasViewerAnnotationHeader, stickyActions, repoInfo, hasPreviousVersion, showDemoBadge, linkedDocInfo, archiveInfo, sourceInfo, planDiffStats, openInAppPath]);
+    // Region comments made in the lightbox are selected by the host as they are
+    // added; that selection must not reopen or refocus the lightbox.
+    const regionCreatedHere = useRef(new Set<string>());
+    const [locationHash, setLocationHash] = useState(() => window.location.hash);
+    const globalCommentButtonRef = useRef<HTMLButtonElement>(null);
+    // Read through a ref: only the imperative removeHighlight path below needs
+    // it, and CodeBlock re-highlights itself on palette change.
+    const fenceTheme = useFenceTheme();
+    const fenceThemeRef = useRef(fenceTheme);
+    fenceThemeRef.current = fenceTheme;
 
-  // Per-doc heading slug map with dedup — computed once per blocks array so
-  // anchor ids stay stable across re-renders and duplicate heading texts get
-  // `-1`/`-2`/... suffixes rather than colliding on the same id.
-  const headingSlugMap = useMemo(() => buildHeadingSlugMap(blocks), [blocks]);
-  // `:::question` blocks: numbered in document order, answers drawn from the
-  // annotations that carry `questionAnswer` (matched by question key, so an
-  // answer follows its question across re-parses).
-  const questionIndex = useMemo(() => {
-    const list = indexQuestionBlocks(blocks, { decisionLines: questionDecisionLines, contractLines: questionContractLines, ...(questionOptionLines ? { optionLines: true } : {}) });
-    return { byBlock: new Map(list.map((q) => [q.blockId, q])), total: list.length };
-  }, [blocks, questionDecisionLines, questionContractLines, questionOptionLines]);
-  // A host that keeps answers itself (`questionAnswers`) replaces the
-  // annotation-derived map; each entry is validated like any other reader.
-  const answersByKey = useMemo(
-    () => resolveQuestionAnswers(annotations, hostQuestionAnswers),
-    [annotations, hostQuestionAnswers],
-  );
-  const isTouchDevice = useMemo(() => window.matchMedia('(pointer: coarse)').matches, []);
-  const [codeBlockToolbar, setCodeBlockToolbar] =
-    useState<CodeBlockToolbarTarget | null>(null);
-  const [isCodeBlockToolbarExiting, setIsCodeBlockToolbarExiting] = useState(false);
-  const [hoveredTable, setHoveredTable] = useState<{ block: Block; element: HTMLElement } | null>(null);
-  const [isTableToolbarExiting, setIsTableToolbarExiting] = useState(false);
-  const tableHoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [popoutTable, setPopoutTable] = useState<Block | null>(null);
-  // Viewer-specific comment popover state (global comments + code blocks)
-  const [viewerCommentPopover, setViewerCommentPopover] = useState<{
-    anchorEl: HTMLElement;
-    contextText: string;
-    selectedText?: string;
-    initialText?: string;
-    isGlobal: boolean;
-    codeBlock?: { block: Block; element: HTMLElement };
-  } | null>(null);
-  const viewerCommentPopoverRef = useRef(viewerCommentPopover);
-  viewerCommentPopoverRef.current = viewerCommentPopover;
-  /** The part each diagram's composer is on while it is open (DiagramBlock's onComposerAnchor), for `peekComment`. */
-  const diagramComposers = useRef(new Map<string, { blockId: string; anchor: DiagramAnchor }>());
-  const onDiagramComposer = useCallback((blockId: string, where: 'inline' | 'popout', anchor: DiagramAnchor | null) => {
-    const key = `${blockId}:${where}`;
-    if (anchor) diagramComposers.current.set(key, { blockId, anchor });
-    else diagramComposers.current.delete(key);
-  }, []);
-  // Viewer-specific quick label state (code blocks)
-  const [codeBlockQuickLabelPicker, setCodeBlockQuickLabelPicker] = useState<{
-    anchorEl: HTMLElement;
-    codeBlock: { block: Block; element: HTMLElement };
-  } | null>(null);
-  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const readOnlyRef = useRef(authoringOff);
-  readOnlyRef.current = authoringOff;
-  const stickySentinelRef = useRef<HTMLDivElement>(null);
-  const lastAutoScrolledHashRef = useRef<string | null>(null);
-  const [isStuck, setIsStuck] = useState(false);
+    const handleCopyPlan = async () => {
+      if (await copyTextToClipboard(markdown)) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        console.error("Failed to copy");
+      }
+    };
+    const containerRef = useRef<HTMLDivElement>(null);
+    // The element that actually scrolls; shared by the Vim scroll math, the
+    // sticky-header observer, and the reticle geometry.
+    const scrollViewport = useScrollViewport();
+    // The badge cluster (repo chips / diff badge) is absolutely positioned in the
+    // card's top padding. One row fits; a second row (diff badge) or mobile
+    // wrapping outgrows the padding and lands on the document's first heading.
+    // Measure the cluster and insert exactly the clearance it needs (0 when it fits).
+    // The cluster also stops where the action cluster starts on the same row, so
+    // a long file name truncates at the buttons instead of running under them;
+    // with no buttons on its row (the phone layout) it stops inside the card.
+    const docBadgesRef = useRef<HTMLDivElement | null>(null);
+    const [badgeClearance, setBadgeClearance] = useState(0);
+    const [badgeMaxWidth, setBadgeMaxWidth] = useState<number | null>(null);
+    useEffect(() => {
+      if (hasViewerAnnotationHeader) {
+        setBadgeClearance(0);
+        setBadgeMaxWidth(null);
+        return;
+      }
+      const el = docBadgesRef.current;
+      const article = containerRef.current;
+      if (!el || !article) {
+        setBadgeClearance(0);
+        setBadgeMaxWidth(null);
+        return;
+      }
+      // The static float that holds the actions' place: the sticky lane's spacer
+      // (the lane itself moves while stuck), or the plain float without one.
+      const actions =
+        article.querySelector<HTMLElement>("[data-sticky-actions-spacer]") ??
+        article.querySelector<HTMLElement>("[data-sticky-actions]");
+      const measure = () => {
+        const pad = parseFloat(getComputedStyle(article).paddingTop) || 0;
+        const overflow = el.offsetTop + el.offsetHeight - pad;
+        setBadgeClearance(overflow > 1 ? overflow + 4 : 0);
+        setBadgeMaxWidth(
+          legacyBadgesMaxWidth(
+            el.getBoundingClientRect(),
+            actions?.getBoundingClientRect() ?? null,
+            article.getBoundingClientRect(),
+          ),
+        );
+      };
+      measure();
+      const ro = new ResizeObserver(measure);
+      ro.observe(el);
+      // The card too: when it narrows (the sidebar opens, the layout settles after
+      // first paint) the actions float moves without changing size.
+      ro.observe(article);
+      if (actions) ro.observe(actions);
+      window.addEventListener("resize", measure);
+      return () => {
+        ro.disconnect();
+        window.removeEventListener("resize", measure);
+      };
+    }, [
+      hasViewerAnnotationHeader,
+      stickyActions,
+      repoInfo,
+      hasPreviousVersion,
+      showDemoBadge,
+      linkedDocInfo,
+      archiveInfo,
+      sourceInfo,
+      planDiffStats,
+      openInAppPath,
+    ]);
 
-  // Reported only when the text-search rescue could not re-anchor either, so
-  // the annotation is listed in the panel with no highlight in the document.
-  const handleRestoreMismatch = useCallback((annotation: Annotation, restoredText: string) => {
-    console.warn(
-      `Annotation ${annotation.id} could not be re-anchored: stored positions resolved onto ` +
-      `"${restoredText.slice(0, 50)}" and its text "${annotation.originalText.slice(0, 50)}" is no longer in the document.`,
+    // Per-doc heading slug map with dedup — computed once per blocks array so
+    // anchor ids stay stable across re-renders and duplicate heading texts get
+    // `-1`/`-2`/... suffixes rather than colliding on the same id.
+    const headingSlugMap = useMemo(() => buildHeadingSlugMap(blocks), [blocks]);
+    // `:::question` blocks: numbered in document order, answers drawn from the
+    // annotations that carry `questionAnswer` (matched by question key, so an
+    // answer follows its question across re-parses).
+    const questionIndex = useMemo(() => {
+      const list = indexQuestionBlocks(blocks, {
+        decisionLines: questionDecisionLines,
+        contractLines: questionContractLines,
+        ...(questionOptionLines ? { optionLines: true } : {}),
+      });
+      return { byBlock: new Map(list.map((q) => [q.blockId, q])), total: list.length };
+    }, [blocks, questionDecisionLines, questionContractLines, questionOptionLines]);
+    // A host that keeps answers itself (`questionAnswers`) replaces the
+    // annotation-derived map; each entry is validated like any other reader.
+    const answersByKey = useMemo(
+      () => resolveQuestionAnswers(annotations, hostQuestionAnswers),
+      [annotations, hostQuestionAnswers],
     );
-  }, []);
+    const isTouchDevice = useMemo(() => window.matchMedia("(pointer: coarse)").matches, []);
+    const [codeBlockToolbar, setCodeBlockToolbar] = useState<CodeBlockToolbarTarget | null>(null);
+    const [isCodeBlockToolbarExiting, setIsCodeBlockToolbarExiting] = useState(false);
+    const [hoveredTable, setHoveredTable] = useState<{ block: Block; element: HTMLElement } | null>(
+      null,
+    );
+    const [isTableToolbarExiting, setIsTableToolbarExiting] = useState(false);
+    const tableHoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [popoutTable, setPopoutTable] = useState<Block | null>(null);
+    // Viewer-specific comment popover state (global comments + code blocks)
+    const [viewerCommentPopover, setViewerCommentPopover] = useState<{
+      anchorEl: HTMLElement;
+      contextText: string;
+      selectedText?: string;
+      initialText?: string;
+      isGlobal: boolean;
+      codeBlock?: { block: Block; element: HTMLElement };
+    } | null>(null);
+    const viewerCommentPopoverRef = useRef(viewerCommentPopover);
+    viewerCommentPopoverRef.current = viewerCommentPopover;
+    /** The part each diagram's composer is on while it is open (DiagramBlock's onComposerAnchor), for `peekComment`. */
+    const diagramComposers = useRef(new Map<string, { blockId: string; anchor: DiagramAnchor }>());
+    const onDiagramComposer = useCallback(
+      (blockId: string, where: "inline" | "popout", anchor: DiagramAnchor | null) => {
+        const key = `${blockId}:${where}`;
+        if (anchor) diagramComposers.current.set(key, { blockId, anchor });
+        else diagramComposers.current.delete(key);
+      },
+      [],
+    );
+    // Viewer-specific quick label state (code blocks)
+    const [codeBlockQuickLabelPicker, setCodeBlockQuickLabelPicker] = useState<{
+      anchorEl: HTMLElement;
+      codeBlock: { block: Block; element: HTMLElement };
+    } | null>(null);
+    const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const readOnlyRef = useRef(authoringOff);
+    readOnlyRef.current = authoringOff;
+    const stickySentinelRef = useRef<HTMLDivElement>(null);
+    const lastAutoScrolledHashRef = useRef<string | null>(null);
+    const [isStuck, setIsStuck] = useState(false);
 
-  // Visible comment drafts (opt-in, `configurePlannotatorUI({ visibleCommentDrafts })`): a selection's comment closed
-  // with words keeps its highlight and a "Draft" badge (CommentDraftBadges). The draft's key is the popover's below;
-  // the shelf (utils/commentDraftShelf) keeps what each is on, per document, so they come back on the next mount.
-  const [visibleDrafts] = useState(getVisibleCommentDrafts);
-  const draftScopeRef = useRef('');
-  const commentDraftShelf = useMemo<CommentDraftShelf>(() => {
-    const waits = (draftKey: string) => hasCommentDraft(`plan:${draftScopeRef.current}:${draftKey}`);
-    return {
-      keeps: (popover) => waits(popover.draftKey),
-      put: (draft) => shelveCommentDraft(draftScopeRef.current, draft),
-      list: () => shelvedCommentDrafts(draftScopeRef.current, waits),
-    };
-  }, []);
+    // Reported only when the text-search rescue could not re-anchor either, so
+    // the annotation is listed in the panel with no highlight in the document.
+    const handleRestoreMismatch = useCallback((annotation: Annotation, restoredText: string) => {
+      console.warn(
+        `Annotation ${annotation.id} could not be re-anchored: stored positions resolved onto ` +
+          `"${restoredText.slice(0, 50)}" and its text "${annotation.originalText.slice(0, 50)}" is no longer in the document.`,
+      );
+    }, []);
 
-  // Shared annotation infrastructure via hook
-  const {
-    toolbarState,
-    commentPopover: hookCommentPopover,
-    quickLabelPicker: hookQuickLabelPicker,
-    handleAnnotate,
-    handleQuickLabel,
-    handleToolbarClose,
-    handleRequestComment,
-    handleCommentSubmit: hookCommentSubmit,
-    handleCommentClose: hookCommentClose,
-    handleFloatingQuickLabel: hookFloatingQuickLabel,
-    handleQuickLabelPickerDismiss: hookQuickLabelPickerDismiss,
-    highlightRange,
-    highlightMathElement,
-    removeHighlight: hookRemoveHighlight,
-    clearAllHighlights,
-    applyAnnotations,
-    takeSelection,
-    highlighterRef,
-    commentDrafts,
-    reopenCommentDraft,
-    reopenComment: hookReopenComment,
-    peekComment: peekSelectionComment,
-  } = useAnnotationHighlighter({
-    containerRef,
-    annotations,
-    onAddAnnotation,
-    onSelectAnnotation,
-    selectedAnnotationId,
-    mode,
-    enabled: selectionCommentsOn,
-    // Markdown documents drift between the moment a draft/share is written and
-    // the moment it is restored (a plan revision, a re-rendered block, a
-    // renderer change that adds or drops elements — #1509 hoisted an alert's
-    // bold first line onto the icon row, which renumbers every later
-    // `parentIndex`). web-highlighter's stored metas are positional, so a
-    // drifted anchor resolves onto the WRONG text and paints silently. Verify
-    // the painted text against the annotation's own quote so a bad resolve is
-    // dropped and the text-search rescue runs instead of a wrong highlight.
-    verifyRestoredContent: true,
-    onRestoreMismatch: handleRestoreMismatch,
-    onRestoreReport,
-    onHostDraft: hostComposes ? onHostDraft : undefined,
-    commentDraftShelf: visibleDrafts && !hostComposes ? commentDraftShelf : undefined,
-  });
+    // Visible comment drafts (opt-in, `configurePlannotatorUI({ visibleCommentDrafts })`): a selection's comment closed
+    // with words keeps its highlight and a "Draft" badge (CommentDraftBadges). The draft's key is the popover's below;
+    // the shelf (utils/commentDraftShelf) keeps what each is on, per document, so they come back on the next mount.
+    const [visibleDrafts] = useState(getVisibleCommentDrafts);
+    const draftScopeRef = useRef("");
+    const commentDraftShelf = useMemo<CommentDraftShelf>(() => {
+      const waits = (draftKey: string) =>
+        hasCommentDraft(`plan:${draftScopeRef.current}:${draftKey}`);
+      return {
+        keeps: (popover) => waits(popover.draftKey),
+        put: (draft) => shelveCommentDraft(draftScopeRef.current, draft),
+        list: () => shelvedCommentDrafts(draftScopeRef.current, waits),
+      };
+    }, []);
 
-  // Refs for code block annotation path
-  const onAddAnnotationRef = useRef(onAddAnnotation);
-  useEffect(() => { onAddAnnotationRef.current = onAddAnnotation; }, [onAddAnnotation]);
-  const modeRef = useRef<EditorMode>(mode);
-  useEffect(() => { modeRef.current = mode; }, [mode]);
+    // Shared annotation infrastructure via hook
+    const {
+      toolbarState,
+      commentPopover: hookCommentPopover,
+      quickLabelPicker: hookQuickLabelPicker,
+      handleAnnotate,
+      handleQuickLabel,
+      handleToolbarClose,
+      handleRequestComment,
+      handleCommentSubmit: hookCommentSubmit,
+      handleCommentClose: hookCommentClose,
+      handleFloatingQuickLabel: hookFloatingQuickLabel,
+      handleQuickLabelPickerDismiss: hookQuickLabelPickerDismiss,
+      highlightRange,
+      highlightMathElement,
+      removeHighlight: hookRemoveHighlight,
+      clearAllHighlights,
+      applyAnnotations,
+      takeSelection,
+      highlighterRef,
+      commentDrafts,
+      reopenCommentDraft,
+      reopenComment: hookReopenComment,
+      peekComment: peekSelectionComment,
+    } = useAnnotationHighlighter({
+      containerRef,
+      annotations,
+      onAddAnnotation,
+      onSelectAnnotation,
+      selectedAnnotationId,
+      mode,
+      enabled: selectionCommentsOn,
+      // Markdown documents drift between the moment a draft/share is written and
+      // the moment it is restored (a plan revision, a re-rendered block, a
+      // renderer change that adds or drops elements — #1509 hoisted an alert's
+      // bold first line onto the icon row, which renumbers every later
+      // `parentIndex`). web-highlighter's stored metas are positional, so a
+      // drifted anchor resolves onto the WRONG text and paints silently. Verify
+      // the painted text against the annotation's own quote so a bad resolve is
+      // dropped and the text-search rescue runs instead of a wrong highlight.
+      verifyRestoredContent: true,
+      onRestoreMismatch: handleRestoreMismatch,
+      onRestoreReport,
+      onHostDraft: hostComposes ? onHostDraft : undefined,
+      commentDraftShelf: visibleDrafts && !hostComposes ? commentDraftShelf : undefined,
+    });
 
-  const applyCodeBlockAnnotation = useCallback((
-    blockId: string,
-    codeEl: Element,
-    type: AnnotationType,
-    text?: string,
-    images?: ImageAttachment[],
-    isQuickLabel?: boolean,
-    quickLabelTip?: string,
-    mentions?: readonly string[],
-  ) => {
-    if (readOnlyRef.current) return;
+    // Refs for code block annotation path
+    const onAddAnnotationRef = useRef(onAddAnnotation);
+    useEffect(() => {
+      onAddAnnotationRef.current = onAddAnnotation;
+    }, [onAddAnnotation]);
+    const modeRef = useRef<EditorMode>(mode);
+    useEffect(() => {
+      modeRef.current = mode;
+    }, [mode]);
 
-    const id = `codeblock-${Date.now()}`;
-    const codeText = codeEl.textContent || '';
+    const applyCodeBlockAnnotation = useCallback(
+      (
+        blockId: string,
+        codeEl: Element,
+        type: AnnotationType,
+        text?: string,
+        images?: ImageAttachment[],
+        isQuickLabel?: boolean,
+        quickLabelTip?: string,
+        mentions?: readonly string[],
+      ) => {
+        if (readOnlyRef.current) return;
 
-    paintCodeBlockMark(codeEl, id, type);
+        const id = `codeblock-${Date.now()}`;
+        const codeText = codeEl.textContent || "";
 
-    const newAnnotation: Annotation = {
-      id,
-      blockId,
-      startOffset: 0,
-      endOffset: codeText.length,
-      type,
-      text,
-      originalText: codeText,
-      createdA: Date.now(),
-      author: getIdentity(),
-      images,
-      // Host capability: present only when a mentionSource was supplied AND a
-      // token survived, so a code-block comment without one is unchanged.
-      ...(mentions && mentions.length > 0 ? { mentions } : {}),
-      ...(isQuickLabel ? { isQuickLabel: true } : {}),
-      ...(quickLabelTip ? { quickLabelTip } : {}),
-    };
+        paintCodeBlockMark(codeEl, id, type);
 
-    onAddAnnotationRef.current(newAnnotation);
-    window.getSelection()?.removeAllRanges();
-  }, []);
+        const newAnnotation: Annotation = {
+          id,
+          blockId,
+          startOffset: 0,
+          endOffset: codeText.length,
+          type,
+          text,
+          originalText: codeText,
+          createdA: Date.now(),
+          author: getIdentity(),
+          images,
+          // Host capability: present only when a mentionSource was supplied AND a
+          // token survived, so a code-block comment without one is unchanged.
+          ...(mentions && mentions.length > 0 ? { mentions } : {}),
+          ...(isQuickLabel ? { isQuickLabel: true } : {}),
+          ...(quickLabelTip ? { quickLabelTip } : {}),
+        };
 
-  // Live annotation list for the imperative DOM paths below, which run outside
-  // React's render (highlight swaps, the imperative handle).
-  const annotationsRef = useRef(annotations);
-  annotationsRef.current = annotations;
+        onAddAnnotationRef.current(newAnnotation);
+        window.getSelection()?.removeAllRanges();
+      },
+      [],
+    );
 
-  // `removeHighlight` runs BEFORE the host drops the annotation from state and
-  // re-highlights the block on the way out, so for one tick `annotationsRef`
-  // still lists an annotation whose mark is deliberately gone. Remember those
-  // ids so the swap listener below never paints a removed annotation back in,
-  // whichever tick that block's re-highlight lands in.
-  const removedAnnotationIdsRef = useRef<Set<string>>(new Set());
-  // Retire a tombstone as soon as the host's list agrees the annotation is
-  // gone: the window it guards is only the tick between removeHighlight and
-  // the state update, and keeping it would block a later restore that brings
-  // the same annotation (same id) back from a draft.
-  for (const id of removedAnnotationIdsRef.current) {
-    if (!annotations.some((a) => a.id === id)) removedAnnotationIdsRef.current.delete(id);
-  }
+    // Live annotation list for the imperative DOM paths below, which run outside
+    // React's render (highlight swaps, the imperative handle).
+    const annotationsRef = useRef(annotations);
+    annotationsRef.current = annotations;
 
-  // A highlight swap replaces a `<code>` element's children — that is how the
-  // palette/mode change repaints tokens, and how the first async grammar
-  // attach lands after load. It also destroys any annotation mark inside the
-  // fence. Re-paint it here, SYNCHRONOUSLY after the write, so the block ends
-  // up with both the new theme's tokens and its mark.
-  //
-  // Being driven by the swap is also what makes the restore race safe without
-  // timing: a share/draft restore that painted before the swap is
-  // re-established in the same task the swap ran in, and one that runs after
-  // it finds the mark already present and leaves it alone.
-  useEffect(() => onCodeHighlightSwap((codeEl) => {
-    const container = containerRef.current;
-    if (!container || !container.contains(codeEl)) return;
-    // The swap always clears the element, so a surviving mark means this write
-    // was not the one that owns this block's contents.
-    if (codeEl.querySelector('[data-bind-id]')) return;
-
-    const codeText = codeEl.textContent ?? '';
-    if (!codeText) return;
-    const blockId = codeEl.closest('[data-block-id]')?.getAttribute('data-block-id') ?? '';
-
-    // Fenced code is annotated all-or-nothing, so this block's annotations are
-    // exactly the ones whose originalText is its full text. Share-restored
-    // annotations arrive with an empty blockId (it is filled in during restore),
-    // so an unset blockId still counts. The last one wins, matching what
-    // annotating the same block twice does.
-    const owner = annotationsRef.current.filter((a) =>
-      a.type !== AnnotationType.GLOBAL_COMMENT
-      && !a.diffContext
-      && a.originalText === codeText
-      && (a.blockId === blockId || !a.blockId)
-      && !removedAnnotationIdsRef.current.has(a.id)
-      && !container.querySelector(`[data-bind-id="${a.id}"], [data-highlight-id="${a.id}"]`)
-    ).at(-1);
-
-    if (owner) paintCodeBlockMark(codeEl, owner.id, owner.type);
-  }), []);
-
-  // Pinpoint mode: hover + click to select elements
-  const handlePinpointCodeBlockClick = useCallback((blockId: string, element: HTMLElement) => {
-    if (readOnlyRef.current) return;
-
-    const block = blocks.find((candidate) => candidate.id === blockId);
-    const codeEl = element.querySelector('code');
-    if (!block || !codeEl) return;
-    // In pinpoint mode, apply code block annotation based on current editor mode
-    if (modeRef.current === 'redline') {
-      applyCodeBlockAnnotation(blockId, codeEl, AnnotationType.DELETION);
-    } else if (modeRef.current === 'quickLabel') {
-      setCodeBlockQuickLabelPicker({
-        anchorEl: element,
-        codeBlock: { block, element },
-      });
-    } else {
-      // Show comment popover anchored to the code block
-      setViewerCommentPopover({
-        anchorEl: element,
-        contextText: (codeEl.textContent || '').slice(0, 80),
-        selectedText: codeEl.textContent || '',
-        isGlobal: false,
-        codeBlock: { block, element },
-      });
+    // `removeHighlight` runs BEFORE the host drops the annotation from state and
+    // re-highlights the block on the way out, so for one tick `annotationsRef`
+    // still lists an annotation whose mark is deliberately gone. Remember those
+    // ids so the swap listener below never paints a removed annotation back in,
+    // whichever tick that block's re-highlight lands in.
+    const removedAnnotationIdsRef = useRef<Set<string>>(new Set());
+    // Retire a tombstone as soon as the host's list agrees the annotation is
+    // gone: the window it guards is only the tick between removeHighlight and
+    // the state update, and keeping it would block a later restore that brings
+    // the same annotation (same id) back from a draft.
+    for (const id of removedAnnotationIdsRef.current) {
+      if (!annotations.some((a) => a.id === id)) removedAnnotationIdsRef.current.delete(id);
     }
-  }, [applyCodeBlockAnnotation, blocks]);
 
-  const handleKeyboardCodeBlockAction = useCallback((
-    blockId: string,
-    element: HTMLElement,
-    modeOverride?: EditorMode,
-  ) => {
-    if (readOnlyRef.current) return;
+    // A highlight swap replaces a `<code>` element's children — that is how the
+    // palette/mode change repaints tokens, and how the first async grammar
+    // attach lands after load. It also destroys any annotation mark inside the
+    // fence. Re-paint it here, SYNCHRONOUSLY after the write, so the block ends
+    // up with both the new theme's tokens and its mark.
+    //
+    // Being driven by the swap is also what makes the restore race safe without
+    // timing: a share/draft restore that painted before the swap is
+    // re-established in the same task the swap ran in, and one that runs after
+    // it finds the mark already present and leaves it alone.
+    useEffect(
+      () =>
+        onCodeHighlightSwap((codeEl) => {
+          const container = containerRef.current;
+          if (!container || !container.contains(codeEl)) return;
+          // The swap always clears the element, so a surviving mark means this write
+          // was not the one that owns this block's contents.
+          if (codeEl.querySelector("[data-bind-id]")) return;
 
-    const block = blocks.find((candidate) => candidate.id === blockId);
-    const codeEl = element.querySelector('code');
-    if (!block || !codeEl) return;
+          const codeText = codeEl.textContent ?? "";
+          if (!codeText) return;
+          const blockId = codeEl.closest("[data-block-id]")?.getAttribute("data-block-id") ?? "";
 
-    const effectiveMode = modeOverride ?? modeRef.current;
-    if (effectiveMode === 'redline') {
-      applyCodeBlockAnnotation(blockId, codeEl, AnnotationType.DELETION);
-      return;
-    }
-    if (effectiveMode === 'quickLabel') {
-      setCodeBlockQuickLabelPicker({
-        anchorEl: element,
-        codeBlock: { block, element },
-      });
-      return;
-    }
-    if (effectiveMode === 'selection') {
+          // Fenced code is annotated all-or-nothing, so this block's annotations are
+          // exactly the ones whose originalText is its full text. Share-restored
+          // annotations arrive with an empty blockId (it is filled in during restore),
+          // so an unset blockId still counts. The last one wins, matching what
+          // annotating the same block twice does.
+          const owner = annotationsRef.current
+            .filter(
+              (a) =>
+                a.type !== AnnotationType.GLOBAL_COMMENT &&
+                !a.diffContext &&
+                a.originalText === codeText &&
+                (a.blockId === blockId || !a.blockId) &&
+                !removedAnnotationIdsRef.current.has(a.id) &&
+                !container.querySelector(`[data-bind-id="${a.id}"], [data-highlight-id="${a.id}"]`),
+            )
+            .at(-1);
+
+          if (owner) paintCodeBlockMark(codeEl, owner.id, owner.type);
+        }),
+      [],
+    );
+
+    // Pinpoint mode: hover + click to select elements
+    const handlePinpointCodeBlockClick = useCallback(
+      (blockId: string, element: HTMLElement) => {
+        if (readOnlyRef.current) return;
+
+        const block = blocks.find((candidate) => candidate.id === blockId);
+        const codeEl = element.querySelector("code");
+        if (!block || !codeEl) return;
+        // In pinpoint mode, apply code block annotation based on current editor mode
+        if (modeRef.current === "redline") {
+          applyCodeBlockAnnotation(blockId, codeEl, AnnotationType.DELETION);
+        } else if (modeRef.current === "quickLabel") {
+          setCodeBlockQuickLabelPicker({
+            anchorEl: element,
+            codeBlock: { block, element },
+          });
+        } else {
+          // Show comment popover anchored to the code block
+          setViewerCommentPopover({
+            anchorEl: element,
+            contextText: (codeEl.textContent || "").slice(0, 80),
+            selectedText: codeEl.textContent || "",
+            isGlobal: false,
+            codeBlock: { block, element },
+          });
+        }
+      },
+      [applyCodeBlockAnnotation, blocks],
+    );
+
+    const handleKeyboardCodeBlockAction = useCallback(
+      (blockId: string, element: HTMLElement, modeOverride?: EditorMode) => {
+        if (readOnlyRef.current) return;
+
+        const block = blocks.find((candidate) => candidate.id === blockId);
+        const codeEl = element.querySelector("code");
+        if (!block || !codeEl) return;
+
+        const effectiveMode = modeOverride ?? modeRef.current;
+        if (effectiveMode === "redline") {
+          applyCodeBlockAnnotation(blockId, codeEl, AnnotationType.DELETION);
+          return;
+        }
+        if (effectiveMode === "quickLabel") {
+          setCodeBlockQuickLabelPicker({
+            anchorEl: element,
+            codeBlock: { block, element },
+          });
+          return;
+        }
+        if (effectiveMode === "selection") {
+          if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+          }
+          setCodeBlockToolbar({ block, element, activation: "keyboard" });
+          return;
+        }
+        setViewerCommentPopover({
+          anchorEl: element,
+          contextText: (codeEl.textContent || "").slice(0, 80),
+          selectedText: codeEl.textContent || "",
+          isGlobal: false,
+          codeBlock: { block, element },
+        });
+      },
+      [applyCodeBlockAnnotation, blocks],
+    );
+
+    const vimModeActive = vimModeEnabled && !authoringOff;
+    const keyboardCodeBlockToolbarOpen = codeBlockToolbar?.activation === "keyboard";
+    const vimBlocked =
+      !!toolbarState ||
+      !!hookCommentPopover ||
+      !!viewerCommentPopover ||
+      !!hookQuickLabelPicker ||
+      !!codeBlockQuickLabelPicker ||
+      keyboardCodeBlockToolbarOpen ||
+      !!isPlanDiffActive ||
+      !!popoutTable ||
+      !!lightbox;
+    const clearPinpointHoverRef = useRef<() => void>(() => {});
+    const handleVimCommand = useCallback(() => {
+      clearPinpointHoverRef.current();
+    }, []);
+    const vim = useVimSelection({
+      containerRef,
+      scrollViewport,
+      enabled: vimModeActive,
+      hudEnabled: vimHudEnabled,
+      blocked: vimBlocked,
+      activeMode: mode,
+      contentVersion: blocks,
+      onHighlightRange: highlightRange,
+      onCodeBlockAction: handleKeyboardCodeBlockAction,
+      onMathAction: highlightMathElement,
+      onHandledCommand: handleVimCommand,
+    });
+
+    // With the composer handed to the host, a pinpoint tap opens it at once.
+    const hostPinpointRange = useCallback(
+      (range: Range) => highlightRange(range, "comment"),
+      [highlightRange],
+    );
+    const noHostCodeBlockClick = useCallback(() => {}, []);
+    const { hoverTarget, clearHover: clearPinpointHover } = usePinpoint({
+      containerRef,
+      inputMethod,
+      // A host composer's draft stays open while the host composes; the next tap replaces it.
+      enabled:
+        !authoringOff &&
+        (hostComposes || (!toolbarState && !hookCommentPopover)) &&
+        !viewerCommentPopover &&
+        !hookQuickLabelPicker &&
+        !codeBlockQuickLabelPicker &&
+        !(isPlanDiffActive ?? false) &&
+        !vim.helpOpen,
+      onSelectRange: hostComposes ? hostPinpointRange : highlightRange,
+      onCodeBlockClick: hostComposes ? noHostCodeBlockClick : handlePinpointCodeBlockClick,
+    });
+    clearPinpointHoverRef.current = clearPinpointHover;
+    // Click a word, part of Select: one click on a word highlights it; a drag is the browser's own
+    // selection, as always. Off with the `clickAWord` prop, else `configurePlannotatorUI({ clickAWord })`.
+    // Redline makes nothing of a click: a stray click must not delete a word. Pinpoint owns its
+    // clicks; off under read-only, a plan diff and vim focus.
+    const [clickAWordDefault] = useState(getClickAWord);
+    useClickWord({
+      containerRef,
+      enabled:
+        (clickAWordProp ?? clickAWordDefault) &&
+        inputMethod !== "pinpoint" &&
+        selectionCommentsOn &&
+        !(isPlanDiffActive ?? false) &&
+        !(vimModeActive && vim.focused),
+      clicksEnabled: mode !== "redline",
+      snapDrags: false,
+      annotationUiOpen: !!(
+        toolbarState ||
+        hookCommentPopover ||
+        viewerCommentPopover ||
+        hookQuickLabelPicker ||
+        codeBlockQuickLabelPicker
+      ),
+      onSelectRange: hostComposes ? hostPinpointRange : highlightRange,
+    });
+    const vimOwnsHudTarget =
+      vimHudEnabled &&
+      vim.state.phase !== "inactive" &&
+      (vim.focused || vim.state.phase === "action");
+    const vimOwnsDocumentNavigation =
+      vimModeActive &&
+      vim.focused &&
+      vim.state.phase !== "inactive" &&
+      vim.state.phase !== "action";
+    const legacyVimTarget =
+      !vimHudEnabled && (vim.focused || vim.state.phase === "action") ? vim.activeTarget : null;
+    const pinpointOverlayTarget = vimOwnsHudTarget
+      ? null
+      : ((inputMethod === "pinpoint" ? hoverTarget : null) ?? legacyVimTarget);
+
+    useEffect(() => {
+      if (!authoringOff) return;
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
         hoverTimeoutRef.current = null;
       }
-      setCodeBlockToolbar({ block, element, activation: 'keyboard' });
-      return;
-    }
-    setViewerCommentPopover({
-      anchorEl: element,
-      contextText: (codeEl.textContent || '').slice(0, 80),
-      selectedText: codeEl.textContent || '',
-      isGlobal: false,
-      codeBlock: { block, element },
-    });
-  }, [applyCodeBlockAnnotation, blocks]);
+      setCodeBlockToolbar(null);
+      setIsCodeBlockToolbarExiting(false);
+      setViewerCommentPopover(null);
+      setCodeBlockQuickLabelPicker(null);
+    }, [authoringOff]);
 
-  const vimModeActive = vimModeEnabled && !authoringOff;
-  const keyboardCodeBlockToolbarOpen = codeBlockToolbar?.activation === 'keyboard';
-  const vimBlocked = !!toolbarState
-    || !!hookCommentPopover
-    || !!viewerCommentPopover
-    || !!hookQuickLabelPicker
-    || !!codeBlockQuickLabelPicker
-    || keyboardCodeBlockToolbarOpen
-    || !!isPlanDiffActive
-    || !!popoutTable
-    || !!lightbox;
-  const clearPinpointHoverRef = useRef<() => void>(() => {});
-  const handleVimCommand = useCallback(() => {
-    clearPinpointHoverRef.current();
-  }, []);
-  const vim = useVimSelection({
-    containerRef,
-    scrollViewport,
-    enabled: vimModeActive,
-    hudEnabled: vimHudEnabled,
-    blocked: vimBlocked,
-    activeMode: mode,
-    contentVersion: blocks,
-    onHighlightRange: highlightRange,
-    onCodeBlockAction: handleKeyboardCodeBlockAction,
-    onMathAction: highlightMathElement,
-    onHandledCommand: handleVimCommand,
-  });
-
-  // With the composer handed to the host, a pinpoint tap opens it at once.
-  const hostPinpointRange = useCallback((range: Range) => highlightRange(range, 'comment'), [highlightRange]);
-  const noHostCodeBlockClick = useCallback(() => {}, []);
-  const { hoverTarget, clearHover: clearPinpointHover } = usePinpoint({
-    containerRef,
-    inputMethod,
-    // A host composer's draft stays open while the host composes; the next tap replaces it.
-    enabled: !authoringOff && (hostComposes || (!toolbarState && !hookCommentPopover)) && !viewerCommentPopover && !hookQuickLabelPicker && !codeBlockQuickLabelPicker && !(isPlanDiffActive ?? false) && !vim.helpOpen,
-    onSelectRange: hostComposes ? hostPinpointRange : highlightRange,
-    onCodeBlockClick: hostComposes ? noHostCodeBlockClick : handlePinpointCodeBlockClick,
-  });
-  clearPinpointHoverRef.current = clearPinpointHover;
-  // Click a word, part of Select: one click on a word highlights it; a drag is the browser's own
-  // selection, as always. Off with the `clickAWord` prop, else `configurePlannotatorUI({ clickAWord })`.
-  // Redline makes nothing of a click: a stray click must not delete a word. Pinpoint owns its
-  // clicks; off under read-only, a plan diff and vim focus.
-  const [clickAWordDefault] = useState(getClickAWord);
-  useClickWord({
-    containerRef,
-    enabled: (clickAWordProp ?? clickAWordDefault) && inputMethod !== 'pinpoint' && selectionCommentsOn && !(isPlanDiffActive ?? false) && !(vimModeActive && vim.focused),
-    clicksEnabled: mode !== 'redline',
-    snapDrags: false,
-    annotationUiOpen: !!(toolbarState || hookCommentPopover || viewerCommentPopover || hookQuickLabelPicker || codeBlockQuickLabelPicker),
-    onSelectRange: hostComposes ? hostPinpointRange : highlightRange,
-  });
-  const vimOwnsHudTarget = vimHudEnabled
-    && vim.state.phase !== 'inactive'
-    && (vim.focused || vim.state.phase === 'action');
-  const vimOwnsDocumentNavigation = vimModeActive
-    && vim.focused
-    && vim.state.phase !== 'inactive'
-    && vim.state.phase !== 'action';
-  const legacyVimTarget = !vimHudEnabled
-    && (vim.focused || vim.state.phase === 'action')
-    ? vim.activeTarget
-    : null;
-  const pinpointOverlayTarget = vimOwnsHudTarget
-    ? null
-    : (inputMethod === 'pinpoint' ? hoverTarget : null) ?? legacyVimTarget;
-
-  useEffect(() => {
-    if (!authoringOff) return;
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    setCodeBlockToolbar(null);
-    setIsCodeBlockToolbarExiting(false);
-    setViewerCommentPopover(null);
-    setCodeBlockQuickLabelPicker(null);
-  }, [authoringOff]);
-
-  useEffect(() => {
-    if (!vimOwnsDocumentNavigation) return;
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    setCodeBlockToolbar((current) => (
-      current?.activation === 'pointer' ? null : current
-    ));
-    setIsCodeBlockToolbarExiting(false);
-  }, [vimOwnsDocumentNavigation]);
-
-  // Suppress native context menu on touch devices (prevents cut/copy/paste overlay on mobile)
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !isTouchDevice) return;
-
-    const handleContextMenu = (e: Event) => {
-      e.preventDefault();
-    };
-
-    container.addEventListener('contextmenu', handleContextMenu);
-    return () => container.removeEventListener('contextmenu', handleContextMenu);
-  }, []);
-
-  // Detect when sticky action bar is "stuck" to show card background.
-  // The IntersectionObserver root must be the actual scroll element — the
-  // OverlayScrollArea viewport — not the <main> host, which doesn't scroll.
-  useEffect(() => {
-    if (!stickyActions) {
-      setIsStuck(false);
-      return;
-    }
-    if (!stickySentinelRef.current || !scrollViewport) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsStuck(!entry.isIntersecting),
-      { root: getScrollViewportIntersectionRoot(scrollViewport), threshold: 0 }
-    );
-    observer.observe(stickySentinelRef.current);
-    return () => observer.disconnect();
-  }, [hasViewerAnnotationHeader, stickyActions, scrollViewport]);
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      lastAutoScrolledHashRef.current = null;
-      setLocationHash(window.location.hash);
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  const scrollToAnchor = useCallback((hash: string) => {
-    const anchor = decodeAnchorHash(hash);
-    if (!anchor) return false;
-
-    const container = containerRef.current;
-    if (!container || !scrollViewport) return false;
-
-    const target = container.querySelector<HTMLElement>(`#${CSS.escape(anchor)}`);
-    if (!target) return false;
-
-    const documentHeader = stickyActions
-      ? container.querySelector<HTMLElement>('[data-viewer-document-header]')
-        ?? container.querySelector<HTMLElement>('[data-sticky-actions]')
-      : null;
-    // The legacy cluster sticks via its lane, so its own `top` is `auto`.
-    const stickyTop = documentHeader
-      ? documentHeader.hasAttribute('data-viewer-document-header')
-        ? Number.parseFloat(window.getComputedStyle(documentHeader).top || '0') || 0
-        : STICKY_ACTIONS_TOP_PX
-      : 0;
-    const headerOffset = documentHeader
-      ? documentHeader.getBoundingClientRect().height + stickyTop
-      : 0;
-    const containerRect = getScrollViewportRect(scrollViewport);
-    const targetRect = target.getBoundingClientRect();
-    const relativeTop = targetRect.top - containerRect.top;
-    const offsetPosition = getScrollViewportTop(scrollViewport) + relativeTop - headerOffset;
-
-    scrollViewportTo(scrollViewport, {
-      top: Math.max(0, offsetPosition),
-      behavior: 'smooth',
-    });
-    return true;
-  }, [scrollViewport, stickyActions]);
-
-  useEffect(() => {
-    if (!scrollViewport || !locationHash || lastAutoScrolledHashRef.current === locationHash) return;
-    const timer = window.setTimeout(() => {
-      if (scrollToAnchor(locationHash)) {
-        lastAutoScrolledHashRef.current = locationHash;
+    useEffect(() => {
+      if (!vimOwnsDocumentNavigation) return;
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
       }
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [blocks, locationHash, scrollToAnchor, scrollViewport]);
+      setCodeBlockToolbar((current) => (current?.activation === "pointer" ? null : current));
+      setIsCodeBlockToolbarExiting(false);
+    }, [vimOwnsDocumentNavigation]);
 
-  // Use the native copy event so clipboard writes are synchronous (Safari
-  // rejects the async navigator.clipboard API outside the user-gesture window).
-  // web-highlighter clears the DOM selection on mouseup, so the browser has
-  // nothing to copy by the time Cmd+C fires — we inject the captured text here.
-  useEffect(() => {
-    const handleCopy = (e: ClipboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      // A live selection where nothing is annotated (an Inbox action item's text) is
-      // the person's own: the browser copies it, never an older toolbar's text.
-      const live = window.getSelection();
-      if (live && !live.isCollapsed && live.rangeCount > 0 && containerRef.current && rangeInsideExcluded(containerRef.current, live.getRangeAt(0))) return;
+    // Suppress native context menu on touch devices (prevents cut/copy/paste overlay on mobile)
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container || !isTouchDevice) return;
 
-      if (toolbarState?.selectionText) {
+      const handleContextMenu = (e: Event) => {
         e.preventDefault();
-        e.clipboardData?.setData('text/plain', toolbarState.selectionText);
-      }
-    };
+      };
 
-    document.addEventListener('copy', handleCopy);
-    return () => document.removeEventListener('copy', handleCopy);
-  }, [toolbarState]);
+      container.addEventListener("contextmenu", handleContextMenu);
+      return () => container.removeEventListener("contextmenu", handleContextMenu);
+    }, []);
 
-  // `ViewerHandle.reopenComment`: a comment being written that the host kept
-  // when its file closed, back in its composer. A global comment opens the
-  // global composer (anchored on its button), a fenced code block's opens on
-  // that block, a diagram part's in its diagram (once drawn), a text
-  // selection's through the highlighter. Kinds with no composer here say no.
-  const [diagramReopen, setDiagramReopen] = useState<{ blockId: string; request: DiagramReopenRequest } | null>(null);
-  const reopenComment = useCallback((annotation: Annotation, onMissing?: () => void): boolean => {
-    const words = annotation.text ?? '';
-    if (annotation.imageRegion != null || annotation.questionAnswer || annotation.mathTargets?.length) return false;
-    if (annotation.type !== AnnotationType.COMMENT && annotation.type !== AnnotationType.GLOBAL_COMMENT) return false;
-    let missed = false;
-    const missing = () => {
-      if (missed) return;
-      missed = true;
-      onMissing?.();
-    };
-    if (annotation.type === AnnotationType.GLOBAL_COMMENT) {
-      if (readOnlyRef.current) return false;
-      const anchorEl = globalCommentButtonRef.current;
-      if (!anchorEl) return false;
-      setViewerCommentPopover({ anchorEl, contextText: '', isGlobal: true, initialText: words });
-      return true;
-    }
-    if (annotation.diagramAnchor != null) {
-      if (!selectionCommentsOn) return false;
-      const block = blocks.find((candidate) => candidate.id === annotation.blockId);
-      if (!block || block.type !== 'code') {
-        missing();
-        return true;
+    // Detect when sticky action bar is "stuck" to show card background.
+    // The IntersectionObserver root must be the actual scroll element — the
+    // OverlayScrollArea viewport — not the <main> host, which doesn't scroll.
+    useEffect(() => {
+      if (!stickyActions) {
+        setIsStuck(false);
+        return;
       }
-      setDiagramReopen({ blockId: block.id, request: { anchor: annotation.diagramAnchor, text: words, onMissing: missing } });
-      return true;
-    }
-    if (!annotation.startMeta && annotation.blockId && annotation.id.startsWith('codeblock-')) {
-      if (readOnlyRef.current) return false;
-      const block = blocks.find((candidate) => candidate.id === annotation.blockId);
-      const element = containerRef.current?.querySelector<HTMLElement>(`[data-block-id="${CSS.escape(annotation.blockId)}"]`);
-      const codeText = element?.querySelector('code')?.textContent ?? null;
-      if (!block || !element || codeText === null || codeText !== annotation.originalText) {
-        missing();
-        return true;
-      }
-      setViewerCommentPopover({
-        anchorEl: element,
-        contextText: codeText.slice(0, 80),
-        selectedText: codeText,
-        initialText: words,
-        isGlobal: false,
-        codeBlock: { block, element },
+      if (!stickySentinelRef.current || !scrollViewport) return;
+      const observer = new IntersectionObserver(([entry]) => setIsStuck(!entry.isIntersecting), {
+        root: getScrollViewportIntersectionRoot(scrollViewport),
+        threshold: 0,
       });
-      return true;
-    }
-    if (!annotation.originalText) return false;
-    return hookReopenComment(annotation, missing);
-  }, [blocks, hookReopenComment, selectionCommentsOn]);
+      observer.observe(stickySentinelRef.current);
+      return () => observer.disconnect();
+    }, [hasViewerAnnotationHeader, stickyActions, scrollViewport]);
 
-  // `ViewerHandle.peekComment`: the comment being written, as its submit would add it, with empty words. Reads only.
-  const peekComment = useCallback((): Annotation | null => {
-    const selection = peekSelectionComment();
-    if (selection) return selection;
-    const base = { startOffset: 0, endOffset: 0, text: '', createdA: Date.now(), author: getIdentity() };
-    const open = viewerCommentPopoverRef.current;
-    if (open?.isGlobal) return { ...base, id: 'global-kept', blockId: '', type: AnnotationType.GLOBAL_COMMENT, originalText: '' };
-    if (open?.codeBlock) {
-      const codeText = open.codeBlock.element.querySelector('code')?.textContent ?? '';
-      return { ...base, id: 'codeblock-kept', blockId: open.codeBlock.block.id, endOffset: codeText.length, type: AnnotationType.COMMENT, originalText: codeText };
-    }
-    const part = [...diagramComposers.current.values()].at(-1);
-    if (part) return { ...base, id: 'diagram-kept', blockId: part.blockId, type: AnnotationType.COMMENT, originalText: diagramTargetText(part.anchor), diagramAnchor: part.anchor };
-    return null;
-  }, [peekSelectionComment]);
+    useEffect(() => {
+      const handleHashChange = () => {
+        lastAutoScrolledHashRef.current = null;
+        setLocationHash(window.location.hash);
+      };
 
-  // Imperative handle — delegates to hook, extends removeHighlight for code blocks
-  useImperativeHandle(ref, () => ({
-    scrollToAnchor,
-    removeHighlight: (id: string) => {
-      // The re-highlight below notifies the swap listener, which would happily
-      // paint this annotation's mark straight back in — the host has not
-      // dropped it from state yet. Tombstone the id first.
-      removedAnnotationIdsRef.current.add(id);
-      // Code block annotations need syntax re-highlighting after removal.
-      // Must run BEFORE hookRemoveHighlight, which removes the <mark> elements.
-      const manualHighlights = containerRef.current?.querySelectorAll(`[data-bind-id="${id}"]`);
-      manualHighlights?.forEach(el => {
-        const parent = el.parentNode;
-        if (parent && parent.nodeName === 'CODE') {
-          const codeEl = parent as HTMLElement;
-          const plainText = el.textContent || '';
-          el.remove();
-          codeEl.textContent = plainText;
-          const block = blocks.find(b => b.id === codeEl.closest('[data-block-id]')?.getAttribute('data-block-id'));
-          codeEl.className = codeBlockClassName(block?.language);
-          // Language-less fences stay plain (#1212) — applyHighlight never guesses.
-          applyHighlight(codeEl, plainText, block?.language, fenceThemeRef.current);
-        }
-      });
+      window.addEventListener("hashchange", handleHashChange);
+      return () => window.removeEventListener("hashchange", handleHashChange);
+    }, []);
 
-      hookRemoveHighlight(id);
-    },
-    clearAllHighlights,
-    applySharedAnnotations: applyAnnotations,
-    takeSelection,
-    reopenComment,
-    peekComment,
-  }), [hookRemoveHighlight, clearAllHighlights, applyAnnotations, blocks, takeSelection, scrollToAnchor, reopenComment, peekComment]);
+    const scrollToAnchor = useCallback(
+      (hash: string) => {
+        const anchor = decodeAnchorHash(hash);
+        if (!anchor) return false;
 
-  // --- Viewer-specific: code block annotation ---
+        const container = containerRef.current;
+        if (!container || !scrollViewport) return false;
 
-  const handleCodeBlockAnnotate = (type: AnnotationType) => {
-    if (readOnlyRef.current || !codeBlockToolbar) return;
-    const codeEl = codeBlockToolbar.element.querySelector('code');
-    if (!codeEl) return;
-    applyCodeBlockAnnotation(codeBlockToolbar.block.id, codeEl, type);
-    setCodeBlockToolbar(null);
-  };
+        const target = container.querySelector<HTMLElement>(`#${CSS.escape(anchor)}`);
+        if (!target) return false;
 
-  const handleCodeBlockQuickLabel = (label: QuickLabel) => {
-    if (readOnlyRef.current || !codeBlockToolbar) return;
-    const codeEl = codeBlockToolbar.element.querySelector('code');
-    if (!codeEl) return;
-    applyCodeBlockAnnotation(
-      codeBlockToolbar.block.id, codeEl, AnnotationType.COMMENT,
-      `${label.emoji} ${label.text}`, undefined, true, label.tip
+        const documentHeader = stickyActions
+          ? (container.querySelector<HTMLElement>("[data-viewer-document-header]") ??
+            container.querySelector<HTMLElement>("[data-sticky-actions]"))
+          : null;
+        // The legacy cluster sticks via its lane, so its own `top` is `auto`.
+        const stickyTop = documentHeader
+          ? documentHeader.hasAttribute("data-viewer-document-header")
+            ? Number.parseFloat(window.getComputedStyle(documentHeader).top || "0") || 0
+            : STICKY_ACTIONS_TOP_PX
+          : 0;
+        const headerOffset = documentHeader
+          ? documentHeader.getBoundingClientRect().height + stickyTop
+          : 0;
+        const containerRect = getScrollViewportRect(scrollViewport);
+        const targetRect = target.getBoundingClientRect();
+        const relativeTop = targetRect.top - containerRect.top;
+        const offsetPosition = getScrollViewportTop(scrollViewport) + relativeTop - headerOffset;
+
+        scrollViewportTo(scrollViewport, {
+          top: Math.max(0, offsetPosition),
+          behavior: "smooth",
+        });
+        return true;
+      },
+      [scrollViewport, stickyActions],
     );
-    setCodeBlockToolbar(null);
-  };
 
-  const handleCodeBlockToolbarClose = () => {
-    setCodeBlockToolbar(null);
-  };
+    useEffect(() => {
+      if (!scrollViewport || !locationHash || lastAutoScrolledHashRef.current === locationHash)
+        return;
+      const timer = window.setTimeout(() => {
+        if (scrollToAnchor(locationHash)) {
+          lastAutoScrolledHashRef.current = locationHash;
+        }
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }, [blocks, locationHash, scrollToAnchor, scrollViewport]);
 
-  // Viewer-specific comment popover handlers (code blocks + global comments)
+    // Use the native copy event so clipboard writes are synchronous (Safari
+    // rejects the async navigator.clipboard API outside the user-gesture window).
+    // web-highlighter clears the DOM selection on mouseup, so the browser has
+    // nothing to copy by the time Cmd+C fires — we inject the captured text here.
+    useEffect(() => {
+      const handleCopy = (e: ClipboardEvent) => {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        // A live selection where nothing is annotated (an Inbox action item's text) is
+        // the person's own: the browser copies it, never an older toolbar's text.
+        const live = window.getSelection();
+        if (
+          live &&
+          !live.isCollapsed &&
+          live.rangeCount > 0 &&
+          containerRef.current &&
+          rangeInsideExcluded(containerRef.current, live.getRangeAt(0))
+        )
+          return;
 
-  const handleCodeBlockRequestComment = (initialChar?: string) => {
-    if (readOnlyRef.current || !codeBlockToolbar) return;
-    const codeText = codeBlockToolbar.element.querySelector('code')?.textContent || '';
-    setViewerCommentPopover({
-      anchorEl: codeBlockToolbar.element,
-      contextText: codeText.slice(0, 80),
-      selectedText: codeText,
-      initialText: initialChar,
-      isGlobal: false,
-      codeBlock: codeBlockToolbar,
-    });
-    setCodeBlockToolbar(null);
-  };
+        if (toolbarState?.selectionText) {
+          e.preventDefault();
+          e.clipboardData?.setData("text/plain", toolbarState.selectionText);
+        }
+      };
 
-  const handleViewerCommentSubmit = (
-    text: string,
-    images?: ImageAttachment[],
-    mentions?: readonly string[],
-  ) => {
-    if (readOnlyRef.current || !viewerCommentPopover) return;
+      document.addEventListener("copy", handleCopy);
+      return () => document.removeEventListener("copy", handleCopy);
+    }, [toolbarState]);
 
-    if (viewerCommentPopover.isGlobal) {
-      const newAnnotation: Annotation = {
-        // randomUUID, not Date.now(): two comments minted in the same
-        // millisecond (paste + submit, or a concurrent external write)
-        // would collide on a timestamp id.
-        id: generateId('global'),
-        blockId: '',
+    // `ViewerHandle.reopenComment`: a comment being written that the host kept
+    // when its file closed, back in its composer. A global comment opens the
+    // global composer (anchored on its button), a fenced code block's opens on
+    // that block, a diagram part's in its diagram (once drawn), a text
+    // selection's through the highlighter. Kinds with no composer here say no.
+    const [diagramReopen, setDiagramReopen] = useState<{
+      blockId: string;
+      request: DiagramReopenRequest;
+    } | null>(null);
+    const reopenComment = useCallback(
+      (annotation: Annotation, onMissing?: () => void): boolean => {
+        const words = annotation.text ?? "";
+        if (
+          annotation.imageRegion != null ||
+          annotation.questionAnswer ||
+          annotation.mathTargets?.length
+        )
+          return false;
+        if (
+          annotation.type !== AnnotationType.COMMENT &&
+          annotation.type !== AnnotationType.GLOBAL_COMMENT
+        )
+          return false;
+        let missed = false;
+        const missing = () => {
+          if (missed) return;
+          missed = true;
+          onMissing?.();
+        };
+        if (annotation.type === AnnotationType.GLOBAL_COMMENT) {
+          if (readOnlyRef.current) return false;
+          const anchorEl = globalCommentButtonRef.current;
+          if (!anchorEl) return false;
+          setViewerCommentPopover({
+            anchorEl,
+            contextText: "",
+            isGlobal: true,
+            initialText: words,
+          });
+          return true;
+        }
+        if (annotation.diagramAnchor != null) {
+          if (!selectionCommentsOn) return false;
+          const block = blocks.find((candidate) => candidate.id === annotation.blockId);
+          if (!block || block.type !== "code") {
+            missing();
+            return true;
+          }
+          setDiagramReopen({
+            blockId: block.id,
+            request: { anchor: annotation.diagramAnchor, text: words, onMissing: missing },
+          });
+          return true;
+        }
+        if (!annotation.startMeta && annotation.blockId && annotation.id.startsWith("codeblock-")) {
+          if (readOnlyRef.current) return false;
+          const block = blocks.find((candidate) => candidate.id === annotation.blockId);
+          const element = containerRef.current?.querySelector<HTMLElement>(
+            `[data-block-id="${CSS.escape(annotation.blockId)}"]`,
+          );
+          const codeText = element?.querySelector("code")?.textContent ?? null;
+          if (!block || !element || codeText === null || codeText !== annotation.originalText) {
+            missing();
+            return true;
+          }
+          setViewerCommentPopover({
+            anchorEl: element,
+            contextText: codeText.slice(0, 80),
+            selectedText: codeText,
+            initialText: words,
+            isGlobal: false,
+            codeBlock: { block, element },
+          });
+          return true;
+        }
+        if (!annotation.originalText) return false;
+        return hookReopenComment(annotation, missing);
+      },
+      [blocks, hookReopenComment, selectionCommentsOn],
+    );
+
+    // `ViewerHandle.peekComment`: the comment being written, as its submit would add it, with empty words. Reads only.
+    const peekComment = useCallback((): Annotation | null => {
+      const selection = peekSelectionComment();
+      if (selection) return selection;
+      const base = {
         startOffset: 0,
         endOffset: 0,
-        type: AnnotationType.GLOBAL_COMMENT,
-        text: text.trim(),
-        originalText: '',
+        text: "",
         createdA: Date.now(),
         author: getIdentity(),
-        images,
-        ...(mentions && mentions.length > 0 ? { mentions } : {}),
       };
-      onAddAnnotation(newAnnotation);
-    } else if (viewerCommentPopover.codeBlock) {
-      const codeEl = viewerCommentPopover.codeBlock.element.querySelector('code');
-      if (codeEl) {
-        applyCodeBlockAnnotation(
-          viewerCommentPopover.codeBlock.block.id,
-          codeEl,
-          AnnotationType.COMMENT,
-          text,
-          images,
-          undefined,
-          undefined,
-          mentions,
-        );
+      const open = viewerCommentPopoverRef.current;
+      if (open?.isGlobal)
+        return {
+          ...base,
+          id: "global-kept",
+          blockId: "",
+          type: AnnotationType.GLOBAL_COMMENT,
+          originalText: "",
+        };
+      if (open?.codeBlock) {
+        const codeText = open.codeBlock.element.querySelector("code")?.textContent ?? "";
+        return {
+          ...base,
+          id: "codeblock-kept",
+          blockId: open.codeBlock.block.id,
+          endOffset: codeText.length,
+          type: AnnotationType.COMMENT,
+          originalText: codeText,
+        };
       }
-    }
+      const part = [...diagramComposers.current.values()].at(-1);
+      if (part)
+        return {
+          ...base,
+          id: "diagram-kept",
+          blockId: part.blockId,
+          type: AnnotationType.COMMENT,
+          originalText: diagramTargetText(part.anchor),
+          diagramAnchor: part.anchor,
+        };
+      return null;
+    }, [peekSelectionComment]);
 
-    setViewerCommentPopover(null);
-  };
+    // Imperative handle — delegates to hook, extends removeHighlight for code blocks
+    useImperativeHandle(
+      ref,
+      () => ({
+        scrollToAnchor,
+        removeHighlight: (id: string) => {
+          // The re-highlight below notifies the swap listener, which would happily
+          // paint this annotation's mark straight back in — the host has not
+          // dropped it from state yet. Tombstone the id first.
+          removedAnnotationIdsRef.current.add(id);
+          // Code block annotations need syntax re-highlighting after removal.
+          // Must run BEFORE hookRemoveHighlight, which removes the <mark> elements.
+          const manualHighlights = containerRef.current?.querySelectorAll(`[data-bind-id="${id}"]`);
+          manualHighlights?.forEach((el) => {
+            const parent = el.parentNode;
+            if (parent && parent.nodeName === "CODE") {
+              const codeEl = parent as HTMLElement;
+              const plainText = el.textContent || "";
+              el.remove();
+              codeEl.textContent = plainText;
+              const block = blocks.find(
+                (b) => b.id === codeEl.closest("[data-block-id]")?.getAttribute("data-block-id"),
+              );
+              codeEl.className = codeBlockClassName(block?.language);
+              // Language-less fences stay plain (#1212) — applyHighlight never guesses.
+              applyHighlight(codeEl, plainText, block?.language, fenceThemeRef.current);
+            }
+          });
 
-  const handleViewerCommentClose = useCallback(() => {
-    setViewerCommentPopover(null);
-  }, []);
-
-  const commentDraftScope = linkedDocInfo?.filepath ?? sourceInfo ?? markdown.slice(0, 120);
-  draftScopeRef.current = commentDraftScope;
-
-  const codePathValidation = useValidatedCodePaths(markdown, codePathBaseDir, disableCodePathValidation);
-
-  const documentActions = (
-    <>
-      {messagePickerInfo && (
-        <button
-          onClick={messagePickerInfo.onOpen}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
-          title="Pick a different message to annotate"
-        >
-          <MessagesIcon />
-          {actionsLabelMode === 'full' && (
-            <span>Message {messagePickerInfo.current} of {messagePickerInfo.total}</span>
-          )}
-          {actionsLabelMode === 'short' && (
-            <span>{messagePickerInfo.current}/{messagePickerInfo.total}</span>
-          )}
-        </button>
-      )}
-
-      {!authoringOff && onAddGlobalAttachment && onRemoveGlobalAttachment && (
-        <AttachmentsButton
-          images={globalAttachments}
-          onAdd={onAddGlobalAttachment}
-          onRemove={onRemoveGlobalAttachment}
-          variant="toolbar"
-          hideLabel={actionsLabelMode === 'icon'}
-        />
-      )}
-
-      {!authoringOff && (
-        <button
-          ref={globalCommentButtonRef}
-          onClick={() => {
-            const anchorEl = globalCommentButtonRef.current;
-            if (!anchorEl) return;
-            setViewerCommentPopover({
-              anchorEl,
-              contextText: '',
-              isGlobal: true,
-            });
-          }}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
-          title="Add global comment"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-          </svg>
-          {actionsLabelMode === 'full' && <span>Global comment</span>}
-          {actionsLabelMode === 'short' && <span>Comment</span>}
-        </button>
-      )}
-
-      <button
-        onClick={handleCopyPlan}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
-        title={copied ? 'Copied!' : copyLabel || (linkedDocInfo ? 'Copy file' : 'Copy plan')}
-      >
-        {copied ? (
-          <>
-            <svg className="w-3.5 h-3.5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            Copied!
-          </>
-        ) : (
-          <>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            {actionsLabelMode === 'full' && <span>{copyLabel || (linkedDocInfo ? 'Copy file' : 'Copy plan')}</span>}
-            {actionsLabelMode === 'short' && <span>Copy</span>}
-          </>
-        )}
-      </button>
-    </>
-  );
-
-  // --- Comments on part of an image (#2100) ---------------------------------
-  const regionHost = useMemo<LightboxRegionComments | undefined>(() => {
-    if (!imageRegionComments) return undefined;
-    return {
-      annotations,
-      canCreate: !authoringOff,
-      onAdd: (annotation) => {
-        regionCreatedHere.current.add(annotation.id);
-        onAddAnnotation(annotation);
-      },
-      onDelete: authoringOff ? undefined : onDeleteAnnotation,
-      onEdit: authoringOff ? undefined : onEditAnnotation,
-      focusId: lightbox?.focusId ?? null,
-      onAskAI: authoringOff ? undefined : onAskAI,
-      mentionSource,
-    };
-  }, [annotations, authoringOff, imageRegionComments, lightbox?.focusId, mentionSource, onAddAnnotation, onAskAI, onDeleteAnnotation, onEditAnnotation]);
-
-  const closeLightbox = () => {
-    // Closing the viewer lets go of the region comment selected while it was
-    // open (one it was opened on, or one just made in it), so the same card
-    // in the panel opens it again.
-    const selected = selectedAnnotationId ? annotations.find((a) => a.id === selectedAnnotationId) : undefined;
-    if (selected && regionOf(selected)) onSelectAnnotation(null);
-    regionCreatedHere.current.clear();
-    setLightboxState(null);
-  };
-
-  // A region comment selected from outside (its card in the annotations
-  // panel) opens the lightbox on its image, zoomed to its box.
-  useEffect(() => {
-    if (!imageRegionComments || !selectedAnnotationId || hostImageClick) return;
-    // The host selects what the viewer just added: skip that one selection.
-    if (regionCreatedHere.current.delete(selectedAnnotationId)) return;
-    const ann = annotations.find((a) => a.id === selectedAnnotationId);
-    const region = ann ? regionOf(ann) : null;
-    if (!region) return;
-    if (lightbox) {
-      setLightboxState((lb) => (lb ? { ...lb, focusId: selectedAnnotationId } : lb));
-      return;
-    }
-    const images = documentImages();
-    const target = images.find((image) => image.writtenSrc === region.src);
-    if (!target) return;
-    setLightboxState({ src: target.src, alt: target.alt, images, focusId: selectedAnnotationId });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAnnotationId]);
-
-  // The highlighter skips region comments; one whose image is no longer in
-  // the document (or whose region is malformed) is unanchored, and says so.
-  useEffect(() => {
-    if (onRestoreReport === undefined) return;
-    const rows = annotations.filter((ann) => ann.imageRegion != null);
-    if (rows.length === 0) return;
-    const text = blocks.map((b) => b.content).join('\n');
-    const unanchored = rows
-      .filter((ann) => {
-        const region = regionOf(ann);
-        return region === null || imageReferenceIndex(text, region.src) < 0;
-      })
-      .map((ann) => ann.id);
-    onRestoreReport({ attempted: rows.map((ann) => ann.id), unanchored });
-  }, [annotations, blocks, onRestoreReport]);
-
-  // The document's diagram blocks, in order: a diagram comment that names
-  // none of them (an external POST, a deleted fence) is resolved by anchor
-  // against each, first resolver wins (see diagram/anchorClaims).
-  const diagramBlockKey = blocks
-    .filter((b) => b.type === 'code' && (isMermaidLanguage(b.language) || isGraphvizLanguage(b.language)))
-    .map((b) => b.id)
-    .join('\n');
-  const diagramClaims = useMemo(
-    () => new DiagramAnchorClaims(diagramBlockKey === '' ? [] : diagramBlockKey.split('\n')),
-    [diagramBlockKey],
-  );
-  // With no diagram in the document nobody can resolve a diagram comment:
-  // it is unanchored, and the highlighter (which skips it) will not say so.
-  useEffect(() => {
-    if (diagramBlockKey !== '' || onRestoreReport === undefined) return;
-    // `!= null`, not `!== undefined`: a nullish anchor is no anchor at all —
-    // the highlighter restores such a row by text, so it must not be counted
-    // here as a diagram comment nothing could resolve.
-    const ids = annotations.filter((ann) => ann.diagramAnchor != null).map((ann) => ann.id);
-    if (ids.length > 0) onRestoreReport({ attempted: ids, unanchored: ids });
-  }, [annotations, diagramBlockKey, onRestoreReport]);
-
-  // The host's `belowTitle` slot (see the prop). Absent → the block list is
-  // returned as is, so the DOM is the one without the prop. The wrapper's
-  // attribute carries utils/belowTitleSlot's per-load marker, which is how
-  // the highlighter tells it from raw HTML an author wrote, to keep stored
-  // positions slot-free.
-  const belowTitleSlot = belowTitle == null || typeof belowTitle === 'boolean' ? null : belowTitle;
-  const titleLeads = blocks[0]?.type === 'heading' && blocks[0].level === 1;
-  const withBelowTitle = (rendered: React.ReactNode[]): React.ReactNode[] => {
-    if (belowTitleSlot === null) return rendered;
-    const slot = (
-      <div
-        key="viewer-below-title"
-        data-viewer-below-title={BELOW_TITLE_SLOT_MARKER}
-        data-placement={titleLeads ? 'below-title' : 'top'}
-        data-pinpoint-ignore=""
-        data-print-hide=""
-        className="annotation-exclude"
-      >
-        {belowTitleSlot}
-      </div>
+          hookRemoveHighlight(id);
+        },
+        clearAllHighlights,
+        applySharedAnnotations: applyAnnotations,
+        takeSelection,
+        reopenComment,
+        peekComment,
+      }),
+      [
+        hookRemoveHighlight,
+        clearAllHighlights,
+        applyAnnotations,
+        blocks,
+        takeSelection,
+        scrollToAnchor,
+        reopenComment,
+        peekComment,
+      ],
     );
-    return titleLeads ? [rendered[0], slot, ...rendered.slice(1)] : [slot, ...rendered];
-  };
 
-  return (
-    <CodePathValidationContext.Provider value={codePathValidation}>
-    <LocalLinkContext.Provider value={resolveLocalLink ?? null}>
-    <DiagramAnchorClaimsContext.Provider value={diagramClaims}>
-    <CommentDraftScopeContext.Provider value={commentDraftScope}>
-    <div
-      className={`relative z-50 w-full${fillHeight ? ' flex flex-col print:block' : ''}`}
-      data-viewer-fill-height={fillHeight ? '' : undefined}
-      style={maxWidth === null ? undefined : { maxWidth: maxWidth ?? 832 }}
-    >
-      {taterMode && <TaterSpriteSitting />}
-      <article
-        ref={containerRef}
-        data-print-region="article"
-        data-doc-text-root=""
-        data-vim-mode={vimModeActive ? 'enabled' : undefined}
-        data-vim-phase={vimModeActive ? vim.state.phase : undefined}
-        data-vim-focused={vimModeActive ? String(vim.focused) : undefined}
-        data-vim-blocked={vimModeActive ? String(vimBlocked) : undefined}
-        data-vim-target-key={vimModeActive ? vim.activeTarget?.key : undefined}
-        tabIndex={vimModeActive ? 0 : undefined}
-        onFocus={vim.onFocus}
-        onBlur={vim.onBlur}
-        onMouseDown={vim.onMouseDown}
-        className={`w-full bg-card rounded-xl py-5 md:py-8 lg:py-10 xl:py-12 relative ${fillHeight ? 'flex-1 ' : ''}${gridEnabled ? 'px-5 md:px-8 lg:px-10 xl:px-12 shadow-xl border border-border/50' : ''} ${inputMethod === 'pinpoint' ? 'cursor-pointer' : ''}`}
-        style={{
-          WebkitTouchCallout: 'none',
-          ...(vimModeActive ? { outline: 'none' } : {}),
-        } as React.CSSProperties}
-      >
-        {!viewerAnnotationHeader && (repoInfo || hasPreviousVersion || showDemoBadge || linkedDocInfo || archiveInfo || sourceInfo || openInAppPath) && (
-          <div
-            ref={docBadgesRef}
-            data-print-hide
-            className={`absolute top-3 md:top-4 ${gridEnabled ? 'left-3 md:left-5' : 'left-0'}`}
-            style={badgeMaxWidth !== null ? { maxWidth: badgeMaxWidth } : undefined}
+    // --- Viewer-specific: code block annotation ---
+
+    const handleCodeBlockAnnotate = (type: AnnotationType) => {
+      if (readOnlyRef.current || !codeBlockToolbar) return;
+      const codeEl = codeBlockToolbar.element.querySelector("code");
+      if (!codeEl) return;
+      applyCodeBlockAnnotation(codeBlockToolbar.block.id, codeEl, type);
+      setCodeBlockToolbar(null);
+    };
+
+    const handleCodeBlockQuickLabel = (label: QuickLabel) => {
+      if (readOnlyRef.current || !codeBlockToolbar) return;
+      const codeEl = codeBlockToolbar.element.querySelector("code");
+      if (!codeEl) return;
+      applyCodeBlockAnnotation(
+        codeBlockToolbar.block.id,
+        codeEl,
+        AnnotationType.COMMENT,
+        `${label.emoji} ${label.text}`,
+        undefined,
+        true,
+        label.tip,
+      );
+      setCodeBlockToolbar(null);
+    };
+
+    const handleCodeBlockToolbarClose = () => {
+      setCodeBlockToolbar(null);
+    };
+
+    // Viewer-specific comment popover handlers (code blocks + global comments)
+
+    const handleCodeBlockRequestComment = (initialChar?: string) => {
+      if (readOnlyRef.current || !codeBlockToolbar) return;
+      const codeText = codeBlockToolbar.element.querySelector("code")?.textContent || "";
+      setViewerCommentPopover({
+        anchorEl: codeBlockToolbar.element,
+        contextText: codeText.slice(0, 80),
+        selectedText: codeText,
+        initialText: initialChar,
+        isGlobal: false,
+        codeBlock: codeBlockToolbar,
+      });
+      setCodeBlockToolbar(null);
+    };
+
+    const handleViewerCommentSubmit = (
+      text: string,
+      images?: ImageAttachment[],
+      mentions?: readonly string[],
+    ) => {
+      if (readOnlyRef.current || !viewerCommentPopover) return;
+
+      if (viewerCommentPopover.isGlobal) {
+        const newAnnotation: Annotation = {
+          // randomUUID, not Date.now(): two comments minted in the same
+          // millisecond (paste + submit, or a concurrent external write)
+          // would collide on a timestamp id.
+          id: generateId("global"),
+          blockId: "",
+          startOffset: 0,
+          endOffset: 0,
+          type: AnnotationType.GLOBAL_COMMENT,
+          text: text.trim(),
+          originalText: "",
+          createdA: Date.now(),
+          author: getIdentity(),
+          images,
+          ...(mentions && mentions.length > 0 ? { mentions } : {}),
+        };
+        onAddAnnotation(newAnnotation);
+      } else if (viewerCommentPopover.codeBlock) {
+        const codeEl = viewerCommentPopover.codeBlock.element.querySelector("code");
+        if (codeEl) {
+          applyCodeBlockAnnotation(
+            viewerCommentPopover.codeBlock.block.id,
+            codeEl,
+            AnnotationType.COMMENT,
+            text,
+            images,
+            undefined,
+            undefined,
+            mentions,
+          );
+        }
+      }
+
+      setViewerCommentPopover(null);
+    };
+
+    const handleViewerCommentClose = useCallback(() => {
+      setViewerCommentPopover(null);
+    }, []);
+
+    const commentDraftScope = linkedDocInfo?.filepath ?? sourceInfo ?? markdown.slice(0, 120);
+    draftScopeRef.current = commentDraftScope;
+
+    const codePathValidation = useValidatedCodePaths(
+      markdown,
+      codePathBaseDir,
+      disableCodePathValidation,
+    );
+
+    const documentActions = (
+      <>
+        {messagePickerInfo && (
+          <button
+            onClick={messagePickerInfo.onOpen}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
+            title="Pick a different message to annotate"
           >
-            <DocBadges
-              layout="column"
-              repoInfo={repoInfo}
-              planDiffStats={planDiffStats}
-              isPlanDiffActive={isPlanDiffActive}
-              hasPreviousVersion={hasPreviousVersion}
-              onPlanDiffToggle={onPlanDiffToggle}
-              planDiffBaselineLabel={planDiffBaselineLabel}
-              planDiffBaselineTooltip={planDiffBaselineTooltip}
-              showDemoBadge={showDemoBadge}
-              archiveInfo={archiveInfo}
-              linkedDocInfo={linkedDocInfo}
-              sourceInfo={sourceInfo}
-              openInAppPath={openInAppPath}
-            />
-          </div>
+            <MessagesIcon />
+            {actionsLabelMode === "full" && (
+              <span>
+                Message {messagePickerInfo.current} of {messagePickerInfo.total}
+              </span>
+            )}
+            {actionsLabelMode === "short" && (
+              <span>
+                {messagePickerInfo.current}/{messagePickerInfo.total}
+              </span>
+            )}
+          </button>
         )}
 
-        {viewerAnnotationHeader ? (
-          <ViewerDocumentHeader
-            config={viewerAnnotationHeader}
-            inputMethod={inputMethod}
-            mode={mode}
-            taterMode={taterMode}
-            sticky={stickyActions}
-            stuck={isStuck}
-            sentinelRef={stickySentinelRef}
-            badges={{
-              repoInfo,
-              planDiffStats,
-              isPlanDiffActive,
-              hasPreviousVersion,
-              onPlanDiffToggle,
-              planDiffBaselineLabel,
-              planDiffBaselineTooltip,
-              showDemoBadge,
-              archiveInfo,
-              linkedDocInfo,
-              sourceInfo,
-              openInAppPath,
-            }}
-            actions={documentActions}
+        {!authoringOff && onAddGlobalAttachment && onRemoveGlobalAttachment && (
+          <AttachmentsButton
+            images={globalAttachments}
+            onAdd={onAddGlobalAttachment}
+            onRemove={onRemoveGlobalAttachment}
+            variant="toolbar"
+            hideLabel={actionsLabelMode === "icon"}
           />
-        ) : (
-          <>
-            {badgeClearance > 0 && <div data-print-hide style={{ height: badgeClearance }} aria-hidden="true" />}
-            {stickyActions && <div ref={stickySentinelRef} className="h-0 w-0 float-right" aria-hidden="true" />}
-            {answerOnly || hostComposes ? null : stickyActions ? (
-              <StickyActionsLane className={`flex items-start gap-1 md:gap-2 rounded-lg p-1 md:p-2 transition-colors duration-150 ${isStuck ? 'bg-card/95 backdrop-blur-sm shadow-sm' : ''} ${gridEnabled ? '-mr-3 md:-mr-5 lg:-mr-7 xl:-mr-9' : '-mr-1 md:-mr-2'} mt-6 md:-mt-5 lg:-mt-7 xl:-mt-9`}>
-                {documentActions}
-              </StickyActionsLane>
-            ) : (
-              <div data-print-hide data-sticky-actions className={`z-30 float-right flex items-start gap-1 md:gap-2 rounded-lg p-1 md:p-2 transition-colors duration-150 ${gridEnabled ? '-mr-3 md:-mr-5 lg:-mr-7 xl:-mr-9' : '-mr-1 md:-mr-2'} mt-6 md:-mt-5 lg:-mt-7 xl:-mt-9`}>
-                {documentActions}
-              </div>
-            )}
-          </>
         )}
-        {frontmatter && <><div className="clear-right md:hidden" /><FrontmatterCard frontmatter={frontmatter} /></>}
-        {!frontmatter && blocks.length > 0 && blocks[0].type !== 'heading' && <div className="mt-4" />}
-        {withBelowTitle(groupBlocks(blocks).map(group =>
-          group.type === 'list-group' ? (
-            (() => {
-              const indices = computeListIndices(group.blocks);
-              return (
-                <div key={group.key} data-pinpoint-group="list" className="py-1 -mx-2 px-2">
-                  {group.blocks.map((block, i) => (
-                    <BlockRenderer
+
+        {!authoringOff && (
+          <button
+            ref={globalCommentButtonRef}
+            onClick={() => {
+              const anchorEl = globalCommentButtonRef.current;
+              if (!anchorEl) return;
+              setViewerCommentPopover({
+                anchorEl,
+                contextText: "",
+                isGlobal: true,
+              });
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
+            title="Add global comment"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"
+              />
+            </svg>
+            {actionsLabelMode === "full" && <span>Global comment</span>}
+            {actionsLabelMode === "short" && <span>Comment</span>}
+          </button>
+        )}
+
+        <button
+          onClick={handleCopyPlan}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
+          title={copied ? "Copied!" : copyLabel || (linkedDocInfo ? "Copy file" : "Copy plan")}
+        >
+          {copied ? (
+            <>
+              <svg
+                className="w-3.5 h-3.5 text-success"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+              {actionsLabelMode === "full" && (
+                <span>{copyLabel || (linkedDocInfo ? "Copy file" : "Copy plan")}</span>
+              )}
+              {actionsLabelMode === "short" && <span>Copy</span>}
+            </>
+          )}
+        </button>
+      </>
+    );
+
+    // --- Comments on part of an image (#2100) ---------------------------------
+    const regionHost = useMemo<LightboxRegionComments | undefined>(() => {
+      if (!imageRegionComments) return undefined;
+      return {
+        annotations,
+        canCreate: !authoringOff,
+        onAdd: (annotation) => {
+          regionCreatedHere.current.add(annotation.id);
+          onAddAnnotation(annotation);
+        },
+        onDelete: authoringOff ? undefined : onDeleteAnnotation,
+        onEdit: authoringOff ? undefined : onEditAnnotation,
+        focusId: lightbox?.focusId ?? null,
+        onAskAI: authoringOff ? undefined : onAskAI,
+        mentionSource,
+      };
+    }, [
+      annotations,
+      authoringOff,
+      imageRegionComments,
+      lightbox?.focusId,
+      mentionSource,
+      onAddAnnotation,
+      onAskAI,
+      onDeleteAnnotation,
+      onEditAnnotation,
+    ]);
+
+    const closeLightbox = () => {
+      // Closing the viewer lets go of the region comment selected while it was
+      // open (one it was opened on, or one just made in it), so the same card
+      // in the panel opens it again.
+      const selected = selectedAnnotationId
+        ? annotations.find((a) => a.id === selectedAnnotationId)
+        : undefined;
+      if (selected && regionOf(selected)) onSelectAnnotation(null);
+      regionCreatedHere.current.clear();
+      setLightboxState(null);
+    };
+
+    // A region comment selected from outside (its card in the annotations
+    // panel) opens the lightbox on its image, zoomed to its box.
+    useEffect(() => {
+      if (!imageRegionComments || !selectedAnnotationId || hostImageClick) return;
+      // The host selects what the viewer just added: skip that one selection.
+      if (regionCreatedHere.current.delete(selectedAnnotationId)) return;
+      const ann = annotations.find((a) => a.id === selectedAnnotationId);
+      const region = ann ? regionOf(ann) : null;
+      if (!region) return;
+      if (lightbox) {
+        setLightboxState((lb) => (lb ? { ...lb, focusId: selectedAnnotationId } : lb));
+        return;
+      }
+      const images = documentImages();
+      const target = images.find((image) => image.writtenSrc === region.src);
+      if (!target) return;
+      setLightboxState({ src: target.src, alt: target.alt, images, focusId: selectedAnnotationId });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedAnnotationId]);
+
+    // The highlighter skips region comments; one whose image is no longer in
+    // the document (or whose region is malformed) is unanchored, and says so.
+    useEffect(() => {
+      if (onRestoreReport === undefined) return;
+      const rows = annotations.filter((ann) => ann.imageRegion != null);
+      if (rows.length === 0) return;
+      const text = blocks.map((b) => b.content).join("\n");
+      const unanchored = rows
+        .filter((ann) => {
+          const region = regionOf(ann);
+          return region === null || imageReferenceIndex(text, region.src) < 0;
+        })
+        .map((ann) => ann.id);
+      onRestoreReport({ attempted: rows.map((ann) => ann.id), unanchored });
+    }, [annotations, blocks, onRestoreReport]);
+
+    // The document's diagram blocks, in order: a diagram comment that names
+    // none of them (an external POST, a deleted fence) is resolved by anchor
+    // against each, first resolver wins (see diagram/anchorClaims).
+    const diagramBlockKey = blocks
+      .filter(
+        (b) =>
+          b.type === "code" && (isMermaidLanguage(b.language) || isGraphvizLanguage(b.language)),
+      )
+      .map((b) => b.id)
+      .join("\n");
+    const diagramClaims = useMemo(
+      () => new DiagramAnchorClaims(diagramBlockKey === "" ? [] : diagramBlockKey.split("\n")),
+      [diagramBlockKey],
+    );
+    // With no diagram in the document nobody can resolve a diagram comment:
+    // it is unanchored, and the highlighter (which skips it) will not say so.
+    useEffect(() => {
+      if (diagramBlockKey !== "" || onRestoreReport === undefined) return;
+      // `!= null`, not `!== undefined`: a nullish anchor is no anchor at all —
+      // the highlighter restores such a row by text, so it must not be counted
+      // here as a diagram comment nothing could resolve.
+      const ids = annotations.filter((ann) => ann.diagramAnchor != null).map((ann) => ann.id);
+      if (ids.length > 0) onRestoreReport({ attempted: ids, unanchored: ids });
+    }, [annotations, diagramBlockKey, onRestoreReport]);
+
+    // The host's `belowTitle` slot (see the prop). Absent → the block list is
+    // returned as is, so the DOM is the one without the prop. The wrapper's
+    // attribute carries utils/belowTitleSlot's per-load marker, which is how
+    // the highlighter tells it from raw HTML an author wrote, to keep stored
+    // positions slot-free.
+    const belowTitleSlot =
+      belowTitle == null || typeof belowTitle === "boolean" ? null : belowTitle;
+    const titleLeads = blocks[0]?.type === "heading" && blocks[0].level === 1;
+    const withBelowTitle = (rendered: React.ReactNode[]): React.ReactNode[] => {
+      if (belowTitleSlot === null) return rendered;
+      const slot = (
+        <div
+          key="viewer-below-title"
+          data-viewer-below-title={BELOW_TITLE_SLOT_MARKER}
+          data-placement={titleLeads ? "below-title" : "top"}
+          data-pinpoint-ignore=""
+          data-print-hide=""
+          className="annotation-exclude"
+        >
+          {belowTitleSlot}
+        </div>
+      );
+      return titleLeads ? [rendered[0], slot, ...rendered.slice(1)] : [slot, ...rendered];
+    };
+
+    return (
+      <CodePathValidationContext.Provider value={codePathValidation}>
+        <LocalLinkContext.Provider value={resolveLocalLink ?? null}>
+          <DiagramAnchorClaimsContext.Provider value={diagramClaims}>
+            <CommentDraftScopeContext.Provider value={commentDraftScope}>
+              <div
+                className={`relative z-50 w-full${fillHeight ? " flex flex-col print:block" : ""}`}
+                data-viewer-fill-height={fillHeight ? "" : undefined}
+                style={maxWidth === null ? undefined : { maxWidth: maxWidth ?? 832 }}
+              >
+                {taterMode && <TaterSpriteSitting />}
+                <article
+                  ref={containerRef}
+                  data-print-region="article"
+                  data-doc-text-root=""
+                  data-vim-mode={vimModeActive ? "enabled" : undefined}
+                  data-vim-phase={vimModeActive ? vim.state.phase : undefined}
+                  data-vim-focused={vimModeActive ? String(vim.focused) : undefined}
+                  data-vim-blocked={vimModeActive ? String(vimBlocked) : undefined}
+                  data-vim-target-key={vimModeActive ? vim.activeTarget?.key : undefined}
+                  tabIndex={vimModeActive ? 0 : undefined}
+                  onFocus={vim.onFocus}
+                  onBlur={vim.onBlur}
+                  onMouseDown={vim.onMouseDown}
+                  className={`w-full bg-card rounded-xl py-5 md:py-8 lg:py-10 xl:py-12 relative ${fillHeight ? "flex-1 " : ""}${gridEnabled ? "px-5 md:px-8 lg:px-10 xl:px-12 shadow-xl border border-border/50" : ""} ${inputMethod === "pinpoint" ? "cursor-pointer" : ""}`}
+                  style={
+                    {
+                      WebkitTouchCallout: "none",
+                      ...(vimModeActive ? { outline: "none" } : {}),
+                    } as React.CSSProperties
+                  }
+                >
+                  {!viewerAnnotationHeader &&
+                    (repoInfo ||
+                      hasPreviousVersion ||
+                      showDemoBadge ||
+                      linkedDocInfo ||
+                      archiveInfo ||
+                      sourceInfo ||
+                      openInAppPath) && (
+                      <div
+                        ref={docBadgesRef}
+                        data-print-hide
+                        className={`absolute top-3 md:top-4 ${gridEnabled ? "left-3 md:left-5" : "left-0"}`}
+                        style={badgeMaxWidth !== null ? { maxWidth: badgeMaxWidth } : undefined}
+                      >
+                        <DocBadges
+                          layout="column"
+                          repoInfo={repoInfo}
+                          planDiffStats={planDiffStats}
+                          isPlanDiffActive={isPlanDiffActive}
+                          hasPreviousVersion={hasPreviousVersion}
+                          onPlanDiffToggle={onPlanDiffToggle}
+                          planDiffBaselineLabel={planDiffBaselineLabel}
+                          planDiffBaselineTooltip={planDiffBaselineTooltip}
+                          showDemoBadge={showDemoBadge}
+                          archiveInfo={archiveInfo}
+                          linkedDocInfo={linkedDocInfo}
+                          sourceInfo={sourceInfo}
+                          openInAppPath={openInAppPath}
+                        />
+                      </div>
+                    )}
+
+                  {viewerAnnotationHeader ? (
+                    <ViewerDocumentHeader
+                      config={viewerAnnotationHeader}
+                      inputMethod={inputMethod}
+                      mode={mode}
+                      taterMode={taterMode}
+                      sticky={stickyActions}
+                      stuck={isStuck}
+                      sentinelRef={stickySentinelRef}
+                      badges={{
+                        repoInfo,
+                        planDiffStats,
+                        isPlanDiffActive,
+                        hasPreviousVersion,
+                        onPlanDiffToggle,
+                        planDiffBaselineLabel,
+                        planDiffBaselineTooltip,
+                        showDemoBadge,
+                        archiveInfo,
+                        linkedDocInfo,
+                        sourceInfo,
+                        openInAppPath,
+                      }}
+                      actions={documentActions}
+                    />
+                  ) : (
+                    <>
+                      {badgeClearance > 0 && (
+                        <div
+                          data-print-hide
+                          style={{ height: badgeClearance }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      {stickyActions && (
+                        <div
+                          ref={stickySentinelRef}
+                          className="h-0 w-0 float-right"
+                          aria-hidden="true"
+                        />
+                      )}
+                      {answerOnly || hostComposes ? null : stickyActions ? (
+                        <StickyActionsLane
+                          className={`flex items-start gap-1 md:gap-2 rounded-lg p-1 md:p-2 transition-colors duration-150 ${isStuck ? "bg-card/95 backdrop-blur-sm shadow-sm" : ""} ${gridEnabled ? "-mr-3 md:-mr-5 lg:-mr-7 xl:-mr-9" : "-mr-1 md:-mr-2"} mt-6 md:-mt-5 lg:-mt-7 xl:-mt-9`}
+                        >
+                          {documentActions}
+                        </StickyActionsLane>
+                      ) : (
+                        <div
+                          data-print-hide
+                          data-sticky-actions
+                          className={`z-30 float-right flex items-start gap-1 md:gap-2 rounded-lg p-1 md:p-2 transition-colors duration-150 ${gridEnabled ? "-mr-3 md:-mr-5 lg:-mr-7 xl:-mr-9" : "-mr-1 md:-mr-2"} mt-6 md:-mt-5 lg:-mt-7 xl:-mt-9`}
+                        >
+                          {documentActions}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {frontmatter && (
+                    <>
+                      <div className="clear-right md:hidden" />
+                      <FrontmatterCard frontmatter={frontmatter} />
+                    </>
+                  )}
+                  {!frontmatter && blocks.length > 0 && blocks[0].type !== "heading" && (
+                    <div className="mt-4" />
+                  )}
+                  {withBelowTitle(
+                    groupBlocks(blocks).map((group) =>
+                      group.type === "list-group" ? (
+                        (() => {
+                          const indices = computeListIndices(group.blocks);
+                          return (
+                            <div
+                              key={group.key}
+                              data-pinpoint-group="list"
+                              className="py-1 -mx-2 px-2"
+                            >
+                              {group.blocks.map((block, i) => (
+                                <BlockRenderer
+                                  imageBaseDir={imageBaseDir}
+                                  onImageClick={(src, alt) => setLightbox({ src, alt })}
+                                  key={block.id}
+                                  block={block}
+                                  orderedIndex={indices[i]}
+                                  onOpenLinkedDoc={onOpenLinkedDoc}
+                                  onOpenCodeFile={onOpenCodeFile}
+                                  onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
+                                  checkboxOverrides={checkboxOverrides}
+                                  githubRepo={linkRepo?.display}
+                                  repoHost={linkRepo?.host}
+                                  headingAnchorId={headingSlugMap.get(block.id)}
+                                  onNavigateAnchor={scrollToAnchor}
+                                />
+                              ))}
+                            </div>
+                          );
+                        })()
+                      ) : htmlEmbeds &&
+                        group.block.type === "code" &&
+                        isHtmlEmbedLanguage(group.block.language) ? (
+                        <LazyBlockBoundary
+                          key={group.block.id}
+                          fallback={embedFallback(group.block)}
+                        >
+                          <Suspense fallback={<CodeBlock block={group.block} isHovered={false} />}>
+                            <HtmlEmbedBlock block={group.block} host={htmlEmbeds} />
+                          </Suspense>
+                        </LazyBlockBoundary>
+                      ) : htmlEmbeds &&
+                        group.block.type === "code" &&
+                        isSvgFenceLanguage(group.block.language) ? (
+                        <LazyBlockBoundary
+                          key={group.block.id}
+                          fallback={embedFallback(group.block)}
+                        >
+                          <Suspense fallback={<CodeBlock block={group.block} isHovered={false} />}>
+                            <SvgFenceBlock block={group.block} />
+                          </Suspense>
+                        </LazyBlockBoundary>
+                      ) : group.block.type === "code" && isMermaidLanguage(group.block.language) ? (
+                        <LazyBlockBoundary
+                          key={group.block.id}
+                          fallback={(notice) => (
+                            <DiagramBlockPending
+                              block={group.block}
+                              kind="mermaid"
+                              notice={notice}
+                            />
+                          )}
+                        >
+                          <Suspense
+                            fallback={<DiagramBlockPending block={group.block} kind="mermaid" />}
+                          >
+                            <MermaidBlock
+                              block={group.block}
+                              annotations={annotations}
+                              reopenComment={
+                                diagramReopen?.blockId === group.block.id
+                                  ? diagramReopen.request
+                                  : undefined
+                              }
+                              onComposerAnchor={onDiagramComposer}
+                              selectedAnnotationId={selectedAnnotationId}
+                              onSelectAnnotation={onSelectAnnotation}
+                              onAddAnnotation={selectionCommentsOn ? onAddAnnotation : undefined}
+                              readOnly={!selectionCommentsOn}
+                              onRestoreReport={onRestoreReport}
+                              onAskAI={selectionCommentsOn ? onAskAI : undefined}
+                              askAISourcePath={linkedDocInfo?.filepath ?? sourceInfo}
+                            />
+                          </Suspense>
+                        </LazyBlockBoundary>
+                      ) : group.block.type === "code" &&
+                        isGraphvizLanguage(group.block.language) ? (
+                        <LazyBlockBoundary
+                          key={group.block.id}
+                          fallback={(notice) => (
+                            <DiagramBlockPending
+                              block={group.block}
+                              kind="graphviz"
+                              notice={notice}
+                            />
+                          )}
+                        >
+                          <Suspense
+                            fallback={<DiagramBlockPending block={group.block} kind="graphviz" />}
+                          >
+                            <GraphvizBlock
+                              block={group.block}
+                              annotations={annotations}
+                              reopenComment={
+                                diagramReopen?.blockId === group.block.id
+                                  ? diagramReopen.request
+                                  : undefined
+                              }
+                              onComposerAnchor={onDiagramComposer}
+                              selectedAnnotationId={selectedAnnotationId}
+                              onSelectAnnotation={onSelectAnnotation}
+                              onAddAnnotation={selectionCommentsOn ? onAddAnnotation : undefined}
+                              readOnly={!selectionCommentsOn}
+                              onRestoreReport={onRestoreReport}
+                              onAskAI={selectionCommentsOn ? onAskAI : undefined}
+                              askAISourcePath={linkedDocInfo?.filepath ?? sourceInfo}
+                            />
+                          </Suspense>
+                        </LazyBlockBoundary>
+                      ) : group.block.type === "table" ? (
+                        <TableBlock
+                          key={group.block.id}
+                          block={group.block}
+                          imageBaseDir={imageBaseDir}
+                          onImageClick={(src, alt) => setLightbox({ src, alt })}
+                          onOpenLinkedDoc={onOpenLinkedDoc}
+                          onOpenCodeFile={onOpenCodeFile}
+                          githubRepo={linkRepo?.display}
+                          repoHost={linkRepo?.host}
+                          onNavigateAnchor={scrollToAnchor}
+                          onHover={(element) => {
+                            if (tableHoverTimeoutRef.current) {
+                              clearTimeout(tableHoverTimeoutRef.current);
+                              tableHoverTimeoutRef.current = null;
+                            }
+                            setIsTableToolbarExiting(false);
+                            if (!toolbarState && !hostComposes) {
+                              setHoveredTable({ block: group.block, element });
+                            }
+                          }}
+                          onLeave={() => {
+                            tableHoverTimeoutRef.current = setTimeout(() => {
+                              setIsTableToolbarExiting(true);
+                              setTimeout(() => {
+                                setHoveredTable(null);
+                                setIsTableToolbarExiting(false);
+                              }, 150);
+                            }, 100);
+                          }}
+                        />
+                      ) : group.block.type === "code" ? (
+                        <CodeBlock
+                          key={group.block.id}
+                          block={group.block}
+                          onHover={
+                            authoringOff || hostComposes || inputMethod === "pinpoint"
+                              ? undefined
+                              : (element) => {
+                                  // Clear any pending leave timeout
+                                  if (hoverTimeoutRef.current) {
+                                    clearTimeout(hoverTimeoutRef.current);
+                                    hoverTimeoutRef.current = null;
+                                  }
+                                  // Cancel exit animation if re-entering
+                                  setIsCodeBlockToolbarExiting(false);
+                                  // Only show hover toolbar if no selection toolbar is active
+                                  if (
+                                    !toolbarState &&
+                                    !vimOwnsDocumentNavigation &&
+                                    !keyboardCodeBlockToolbarOpen
+                                  ) {
+                                    setCodeBlockToolbar({
+                                      block: group.block,
+                                      element,
+                                      activation: "pointer",
+                                    });
+                                  }
+                                }
+                          }
+                          onLeave={
+                            authoringOff || hostComposes || inputMethod === "pinpoint"
+                              ? undefined
+                              : () => {
+                                  if (keyboardCodeBlockToolbarOpen) return;
+                                  // Delay then start exit animation
+                                  hoverTimeoutRef.current = setTimeout(() => {
+                                    setIsCodeBlockToolbarExiting(true);
+                                    // After exit animation, unmount
+                                    setTimeout(() => {
+                                      setCodeBlockToolbar(null);
+                                      setIsCodeBlockToolbarExiting(false);
+                                    }, 150);
+                                  }, 100);
+                                }
+                          }
+                          isHovered={
+                            !authoringOff &&
+                            inputMethod !== "pinpoint" &&
+                            !vimOwnsDocumentNavigation &&
+                            codeBlockToolbar?.block.id === group.block.id
+                          }
+                        />
+                      ) : (
+                        (() => {
+                          const question = questionIndex.byBlock.get(group.block.id);
+                          const hostCard =
+                            question && renderQuestionCard
+                              ? renderQuestionCard(
+                                  question,
+                                  answersByKey.get(question.question.key),
+                                )
+                              : !question &&
+                                  group.block.type === "directive" &&
+                                  renderDirectiveBlock
+                                ? renderDirectiveBlock(group.block)
+                                : undefined;
+                          if (hostCard !== undefined) {
+                            return (
+                              <div
+                                key={group.block.id}
+                                data-block-id={group.block.id}
+                                data-block-type="directive"
+                                className={textCommentsOnly ? "annotation-exclude" : undefined}
+                              >
+                                {hostCard}
+                              </div>
+                            );
+                          }
+                          const rendered = (
+                            <BlockRenderer
+                              imageBaseDir={imageBaseDir}
+                              onImageClick={(src, alt) => setLightbox({ src, alt })}
+                              key={group.block.id}
+                              block={group.block}
+                              onOpenLinkedDoc={onOpenLinkedDoc}
+                              onOpenCodeFile={onOpenCodeFile}
+                              onNavigateAnchor={scrollToAnchor}
+                              onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
+                              checkboxOverrides={checkboxOverrides}
+                              githubRepo={linkRepo?.display}
+                              repoHost={linkRepo?.host}
+                              headingAnchorId={headingSlugMap.get(group.block.id)}
+                              question={question}
+                              questionTotal={questionIndex.total}
+                              questionAnswer={
+                                question ? answersByKey.get(question.question.key) : undefined
+                              }
+                              onAnswerQuestion={
+                                readOnly || (question && questionReadOnly?.(question))
+                                  ? undefined
+                                  : onAnswerQuestion
+                              }
+                              onSaveQuestionAnswer={
+                                readOnly || (question && questionReadOnly?.(question))
+                                  ? undefined
+                                  : onSaveQuestionAnswer
+                              }
+                              saveQuestionAnswerLabel={saveQuestionAnswerLabel}
+                              renderQuestionFooter={renderQuestionFooter}
+                              questionDecisionRecording={
+                                question ? questionDecisionRecording?.(question) : undefined
+                              }
+                              questionDecisionScope={questionDecisionScope}
+                              onToggleQuestionDecisionRecording={
+                                readOnly ||
+                                (question &&
+                                  (questionDecisionLocked?.(question) ||
+                                    questionReadOnly?.(question)))
+                                  ? undefined
+                                  : onToggleQuestionDecisionRecording
+                              }
+                              onOpenQuestionDecision={
+                                readOnly ||
+                                (question &&
+                                  (questionDecisionLocked?.(question) ||
+                                    questionReadOnly?.(question)))
+                                  ? undefined
+                                  : onOpenQuestionDecision
+                              }
+                              questionStatusTag={questionStatusTag}
+                              questionStatusLabel={questionStatusLabel}
+                              renderQuestionBelowPrompt={renderQuestionBelowPrompt}
+                              renderQuestionAfterChoices={renderQuestionAfterChoices}
+                              questionContractLines={questionContractLines}
+                              questionPictureChoices={questionPictureChoices}
+                              questionPictureBadge={questionPictureBadge}
+                              onQuestionPictureZoom={onQuestionPictureZoom}
+                              questionPictureSize={questionPictureSize}
+                            />
+                          );
+                          // `textComments`: a question card's words are not commented on
+                          // (its own controls already are excluded); a box-less wrapper
+                          // keeps its layout.
+                          if (question && textCommentsOnly) {
+                            return (
+                              <div
+                                key={group.block.id}
+                                className="annotation-exclude"
+                                style={{ display: "contents" }}
+                              >
+                                {rendered}
+                              </div>
+                            );
+                          }
+                          return rendered;
+                        })()
+                      ),
+                    ),
+                  )}
+
+                  {/* Text selection toolbar */}
+                  {selectionCommentsOn && !hostComposes && toolbarState && (
+                    <ToolbarErrorBoundary>
+                      <AnnotationToolbar
+                        element={toolbarState.element}
+                        positionMode="center-above"
+                        commentOnly={textCommentsOnly || undefined}
+                        showDelete={textCommentsOnly && textDeletions ? true : undefined}
+                        onAnnotate={handleAnnotate}
+                        onClose={handleToolbarClose}
+                        onRequestComment={handleRequestComment}
+                        onQuickLabel={handleQuickLabel}
+                        selectionActions={selectionActions}
+                        selectionActionsIcon={selectionActionsIcon}
+                        onSide={onSide}
+                        sideButton={sideButton}
+                        quickLabels={quickLabels}
+                        copyText={toolbarState.selectionText}
+                        getRichCopy={getRichCopyEnabled() ? toolbarState.getRichCopy : undefined}
+                        touchAnchorRect={toolbarState.getAnchorRect}
+                        hideCopyButton={!isTouchDevice}
+                        closeOnScrollOut
+                      />
+                    </ToolbarErrorBoundary>
+                  )}
+
+                  {/* Table hover toolbar */}
+                  {hoveredTable && !toolbarState && (
+                    <TableToolbar
+                      element={hoveredTable.element}
+                      markdown={hoveredTable.block.content}
+                      isExiting={isTableToolbarExiting}
+                      onExpand={() => {
+                        setPopoutTable(hoveredTable.block);
+                        setHoveredTable(null);
+                        setIsTableToolbarExiting(false);
+                        if (tableHoverTimeoutRef.current) {
+                          clearTimeout(tableHoverTimeoutRef.current);
+                          tableHoverTimeoutRef.current = null;
+                        }
+                      }}
+                      onMouseEnter={() => {
+                        if (tableHoverTimeoutRef.current) {
+                          clearTimeout(tableHoverTimeoutRef.current);
+                          tableHoverTimeoutRef.current = null;
+                        }
+                        setIsTableToolbarExiting(false);
+                      }}
+                      onMouseLeave={() => {
+                        tableHoverTimeoutRef.current = setTimeout(() => {
+                          setIsTableToolbarExiting(true);
+                          setTimeout(() => {
+                            setHoveredTable(null);
+                            setIsTableToolbarExiting(false);
+                          }, 150);
+                        }, 100);
+                      }}
+                    />
+                  )}
+
+                  {/* Code block hover toolbar */}
+                  {!authoringOff &&
+                    codeBlockToolbar &&
+                    !toolbarState &&
+                    !(vimOwnsDocumentNavigation && codeBlockToolbar.activation === "pointer") && (
+                      <ToolbarErrorBoundary>
+                        <AnnotationToolbar
+                          element={codeBlockToolbar.element}
+                          positionMode="top-right"
+                          onAnnotate={handleCodeBlockAnnotate}
+                          onClose={handleCodeBlockToolbarClose}
+                          onRequestComment={handleCodeBlockRequestComment}
+                          onQuickLabel={handleCodeBlockQuickLabel}
+                          selectionActions={selectionActions}
+                          selectionActionsIcon={selectionActionsIcon}
+                          quickLabels={quickLabels}
+                          isExiting={isCodeBlockToolbarExiting}
+                          onMouseEnter={() => {
+                            if (hoverTimeoutRef.current) {
+                              clearTimeout(hoverTimeoutRef.current);
+                              hoverTimeoutRef.current = null;
+                            }
+                            setIsCodeBlockToolbarExiting(false);
+                          }}
+                          onMouseLeave={() => {
+                            if (codeBlockToolbar.activation === "keyboard") return;
+                            hoverTimeoutRef.current = setTimeout(() => {
+                              setIsCodeBlockToolbarExiting(true);
+                              setTimeout(() => {
+                                setCodeBlockToolbar(null);
+                                setIsCodeBlockToolbarExiting(false);
+                              }, 150);
+                            }, 100);
+                          }}
+                        />
+                      </ToolbarErrorBoundary>
+                    )}
+
+                  {/* Table popout dialog — portaled into containerRef so annotations */}
+                  {/* can walk into its text nodes the same way they do the inline table. */}
+                  {popoutTable && (
+                    <TablePopout
+                      block={popoutTable}
+                      open={!!popoutTable}
+                      onClose={() => setPopoutTable(null)}
+                      container={containerRef.current}
                       imageBaseDir={imageBaseDir}
                       onImageClick={(src, alt) => setLightbox({ src, alt })}
-                      key={block.id}
-                      block={block}
-                      orderedIndex={indices[i]}
                       onOpenLinkedDoc={onOpenLinkedDoc}
                       onOpenCodeFile={onOpenCodeFile}
-                      onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
-                      checkboxOverrides={checkboxOverrides}
                       githubRepo={linkRepo?.display}
                       repoHost={linkRepo?.host}
-                      headingAnchorId={headingSlugMap.get(block.id)}
                       onNavigateAnchor={scrollToAnchor}
                     />
-                  ))}
-                </div>
-              );
-            })()
-          ) : htmlEmbeds && group.block.type === 'code' && isHtmlEmbedLanguage(group.block.language) ? (
-            <LazyBlockBoundary key={group.block.id} fallback={embedFallback(group.block)}>
-              <Suspense fallback={<CodeBlock block={group.block} isHovered={false} />}>
-                <HtmlEmbedBlock block={group.block} host={htmlEmbeds} />
-              </Suspense>
-            </LazyBlockBoundary>
-          ) : htmlEmbeds && group.block.type === 'code' && isSvgFenceLanguage(group.block.language) ? (
-            <LazyBlockBoundary key={group.block.id} fallback={embedFallback(group.block)}>
-              <Suspense fallback={<CodeBlock block={group.block} isHovered={false} />}>
-                <SvgFenceBlock block={group.block} />
-              </Suspense>
-            </LazyBlockBoundary>
-          ) : group.block.type === 'code' && isMermaidLanguage(group.block.language) ? (
-            <LazyBlockBoundary key={group.block.id} fallback={(notice) => <DiagramBlockPending block={group.block} kind="mermaid" notice={notice} />}>
-              <Suspense fallback={<DiagramBlockPending block={group.block} kind="mermaid" />}>
-                <MermaidBlock
-                  block={group.block}
-                  annotations={annotations}
-                  reopenComment={diagramReopen?.blockId === group.block.id ? diagramReopen.request : undefined}
-                  onComposerAnchor={onDiagramComposer}
-                  selectedAnnotationId={selectedAnnotationId}
-                  onSelectAnnotation={onSelectAnnotation}
-                  onAddAnnotation={selectionCommentsOn ? onAddAnnotation : undefined}
-                  readOnly={!selectionCommentsOn}
-                  onRestoreReport={onRestoreReport}
-                  onAskAI={selectionCommentsOn ? onAskAI : undefined}
-                  askAISourcePath={linkedDocInfo?.filepath ?? sourceInfo}
-                />
-              </Suspense>
-            </LazyBlockBoundary>
-          ) : group.block.type === 'code' && isGraphvizLanguage(group.block.language) ? (
-            <LazyBlockBoundary key={group.block.id} fallback={(notice) => <DiagramBlockPending block={group.block} kind="graphviz" notice={notice} />}>
-              <Suspense fallback={<DiagramBlockPending block={group.block} kind="graphviz" />}>
-                <GraphvizBlock
-                  block={group.block}
-                  annotations={annotations}
-                  reopenComment={diagramReopen?.blockId === group.block.id ? diagramReopen.request : undefined}
-                  onComposerAnchor={onDiagramComposer}
-                  selectedAnnotationId={selectedAnnotationId}
-                  onSelectAnnotation={onSelectAnnotation}
-                  onAddAnnotation={selectionCommentsOn ? onAddAnnotation : undefined}
-                  readOnly={!selectionCommentsOn}
-                  onRestoreReport={onRestoreReport}
-                  onAskAI={selectionCommentsOn ? onAskAI : undefined}
-                  askAISourcePath={linkedDocInfo?.filepath ?? sourceInfo}
-                />
-              </Suspense>
-            </LazyBlockBoundary>
-          ) : group.block.type === 'table' ? (
-            <TableBlock
-              key={group.block.id}
-              block={group.block}
-              imageBaseDir={imageBaseDir}
-              onImageClick={(src, alt) => setLightbox({ src, alt })}
-              onOpenLinkedDoc={onOpenLinkedDoc}
-              onOpenCodeFile={onOpenCodeFile}
-              githubRepo={linkRepo?.display}
-              repoHost={linkRepo?.host}
-              onNavigateAnchor={scrollToAnchor}
-              onHover={(element) => {
-                if (tableHoverTimeoutRef.current) {
-                  clearTimeout(tableHoverTimeoutRef.current);
-                  tableHoverTimeoutRef.current = null;
-                }
-                setIsTableToolbarExiting(false);
-                if (!toolbarState && !hostComposes) {
-                  setHoveredTable({ block: group.block, element });
-                }
-              }}
-              onLeave={() => {
-                tableHoverTimeoutRef.current = setTimeout(() => {
-                  setIsTableToolbarExiting(true);
-                  setTimeout(() => {
-                    setHoveredTable(null);
-                    setIsTableToolbarExiting(false);
-                  }, 150);
-                }, 100);
-              }}
-            />
-          ) : group.block.type === 'code' ? (
-            <CodeBlock
-              key={group.block.id}
-              block={group.block}
-              onHover={authoringOff || hostComposes || inputMethod === 'pinpoint' ? undefined : (element) => {
-                // Clear any pending leave timeout
-                if (hoverTimeoutRef.current) {
-                  clearTimeout(hoverTimeoutRef.current);
-                  hoverTimeoutRef.current = null;
-                }
-                // Cancel exit animation if re-entering
-                setIsCodeBlockToolbarExiting(false);
-                // Only show hover toolbar if no selection toolbar is active
-                if (
-                  !toolbarState
-                  && !vimOwnsDocumentNavigation
-                  && !keyboardCodeBlockToolbarOpen
-                ) {
-                  setCodeBlockToolbar({
-                    block: group.block,
-                    element,
-                    activation: 'pointer',
-                  });
-                }
-              }}
-              onLeave={authoringOff || hostComposes || inputMethod === 'pinpoint' ? undefined : () => {
-                if (keyboardCodeBlockToolbarOpen) return;
-                // Delay then start exit animation
-                hoverTimeoutRef.current = setTimeout(() => {
-                  setIsCodeBlockToolbarExiting(true);
-                  // After exit animation, unmount
-                  setTimeout(() => {
-                    setCodeBlockToolbar(null);
-                    setIsCodeBlockToolbarExiting(false);
-                  }, 150);
-                }, 100);
-              }}
-              isHovered={
-                !authoringOff
-                && inputMethod !== 'pinpoint'
-                && !vimOwnsDocumentNavigation
-                && codeBlockToolbar?.block.id === group.block.id
-              }
-            />
-          ) : (
-            (() => {
-              const question = questionIndex.byBlock.get(group.block.id);
-              const hostCard = question && renderQuestionCard
-                ? renderQuestionCard(question, answersByKey.get(question.question.key))
-                : !question && group.block.type === 'directive' && renderDirectiveBlock
-                  ? renderDirectiveBlock(group.block)
-                  : undefined;
-              if (hostCard !== undefined) {
-                return (
-                  <div key={group.block.id} data-block-id={group.block.id} data-block-type="directive" className={textCommentsOnly ? 'annotation-exclude' : undefined}>
-                    {hostCard}
-                  </div>
-                );
-              }
-              const rendered = (
-                <BlockRenderer
-                  imageBaseDir={imageBaseDir}
-                  onImageClick={(src, alt) => setLightbox({ src, alt })}
-                  key={group.block.id}
-                  block={group.block}
-                  onOpenLinkedDoc={onOpenLinkedDoc}
-                  onOpenCodeFile={onOpenCodeFile}
-                  onNavigateAnchor={scrollToAnchor}
-                  onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
-                  checkboxOverrides={checkboxOverrides}
-                  githubRepo={linkRepo?.display}
-                  repoHost={linkRepo?.host}
-                  headingAnchorId={headingSlugMap.get(group.block.id)}
-                  question={question}
-                  questionTotal={questionIndex.total}
-                  questionAnswer={question ? answersByKey.get(question.question.key) : undefined}
-                  onAnswerQuestion={readOnly || (question && questionReadOnly?.(question)) ? undefined : onAnswerQuestion}
-                  onSaveQuestionAnswer={readOnly || (question && questionReadOnly?.(question)) ? undefined : onSaveQuestionAnswer}
-                  saveQuestionAnswerLabel={saveQuestionAnswerLabel}
-                  renderQuestionFooter={renderQuestionFooter}
-                  questionDecisionRecording={question ? questionDecisionRecording?.(question) : undefined}
-                  questionDecisionScope={questionDecisionScope}
-                  onToggleQuestionDecisionRecording={readOnly || (question && (questionDecisionLocked?.(question) || questionReadOnly?.(question))) ? undefined : onToggleQuestionDecisionRecording}
-                  onOpenQuestionDecision={readOnly || (question && (questionDecisionLocked?.(question) || questionReadOnly?.(question))) ? undefined : onOpenQuestionDecision}
-                  questionStatusTag={questionStatusTag}
-                  questionStatusLabel={questionStatusLabel}
-                  renderQuestionBelowPrompt={renderQuestionBelowPrompt}
-                  renderQuestionAfterChoices={renderQuestionAfterChoices}
-                  questionContractLines={questionContractLines}
-                  questionPictureChoices={questionPictureChoices}
-                  questionPictureBadge={questionPictureBadge}
-                  onQuestionPictureZoom={onQuestionPictureZoom}
-                  questionPictureSize={questionPictureSize}
-                />
-              );
-              // `textComments`: a question card's words are not commented on
-              // (its own controls already are excluded); a box-less wrapper
-              // keeps its layout.
-              if (question && textCommentsOnly) {
-                return (
-                  <div key={group.block.id} className="annotation-exclude" style={{ display: 'contents' }}>
-                    {rendered}
-                  </div>
-                );
-              }
-              return rendered;
-            })()
-          )
-        ))}
+                  )}
 
-        {/* Text selection toolbar */}
-        {selectionCommentsOn && !hostComposes && toolbarState && (
-          <ToolbarErrorBoundary>
-            <AnnotationToolbar
-              element={toolbarState.element}
-              positionMode="center-above"
-              commentOnly={textCommentsOnly || undefined}
-              showDelete={textCommentsOnly && textDeletions ? true : undefined}
-              onAnnotate={handleAnnotate}
-              onClose={handleToolbarClose}
-              onRequestComment={handleRequestComment}
-              onQuickLabel={handleQuickLabel}
-              selectionActions={selectionActions}
-              selectionActionsIcon={selectionActionsIcon}
-              onSide={onSide}
-              sideButton={sideButton}
-              quickLabels={quickLabels}
-              copyText={toolbarState.selectionText}
-              getRichCopy={getRichCopyEnabled() ? toolbarState.getRichCopy : undefined}
-              touchAnchorRect={toolbarState.getAnchorRect}
-              hideCopyButton={!isTouchDevice}
-              closeOnScrollOut
-            />
-          </ToolbarErrorBoundary>
-        )}
+                  {/* Pinpoint hover overlay */}
+                  {(inputMethod === "pinpoint" || vim.activeTarget) && (
+                    <PinpointOverlay target={pinpointOverlayTarget} containerRef={containerRef} />
+                  )}
+                  {vimModeActive && (
+                    <VimModeOverlay
+                      containerRef={containerRef}
+                      inputMethod={inputMethod}
+                      state={vim.state}
+                      focused={vim.focused}
+                      hudEnabled={vimHudEnabled}
+                      keyPanelEnabled={vimHudKeyPanelEnabled}
+                      hudCommand={vim.hudCommand}
+                      activeTarget={vim.activeTarget}
+                      helpOpen={vim.helpOpen}
+                      onHelpOpenChange={vim.onHelpOpenChange}
+                      onKeyPanelHide={
+                        onVimHudKeyPanelChange ? () => onVimHudKeyPanelChange(false) : undefined
+                      }
+                      onHudFocusLeave={vim.onHudFocusLeave}
+                    />
+                  )}
 
-        {/* Table hover toolbar */}
-        {hoveredTable && !toolbarState && (
-          <TableToolbar
-            element={hoveredTable.element}
-            markdown={hoveredTable.block.content}
-            isExiting={isTableToolbarExiting}
-            onExpand={() => {
-              setPopoutTable(hoveredTable.block);
-              setHoveredTable(null);
-              setIsTableToolbarExiting(false);
-              if (tableHoverTimeoutRef.current) {
-                clearTimeout(tableHoverTimeoutRef.current);
-                tableHoverTimeoutRef.current = null;
-              }
-            }}
-            onMouseEnter={() => {
-              if (tableHoverTimeoutRef.current) {
-                clearTimeout(tableHoverTimeoutRef.current);
-                tableHoverTimeoutRef.current = null;
-              }
-              setIsTableToolbarExiting(false);
-            }}
-            onMouseLeave={() => {
-              tableHoverTimeoutRef.current = setTimeout(() => {
-                setIsTableToolbarExiting(true);
-                setTimeout(() => {
-                  setHoveredTable(null);
-                  setIsTableToolbarExiting(false);
-                }, 150);
-              }, 100);
-            }}
-          />
-        )}
+                  {/* Comment popover — hook handles text selection, Viewer handles global + code block */}
+                  {selectionCommentsOn && !hostComposes && hookCommentPopover && (
+                    <CommentPopover
+                      anchorEl={hookCommentPopover.anchorEl}
+                      contextText={hookCommentPopover.contextText}
+                      isGlobal={false}
+                      initialText={
+                        hookCommentPopover.initialText ||
+                        suggestComment?.(
+                          hookCommentPopover.selectedText ?? hookCommentPopover.contextText,
+                        ) ||
+                        undefined
+                      }
+                      draftKey={`plan:${commentDraftScope}:${hookCommentPopover.draftKey}`}
+                      onSubmit={hookCommentSubmit}
+                      onClose={hookCommentClose}
+                      mentionSource={mentionSource}
+                      allowImages={allowImages}
+                      skillReferences
+                      onAskAI={onAskAI}
+                      askAIContext={{
+                        kind: "selection",
+                        label: "Selected text",
+                        text: hookCommentPopover.selectedText ?? hookCommentPopover.contextText,
+                        sourcePath: linkedDocInfo?.filepath ?? sourceInfo,
+                        ...selectionSourceLines(
+                          blocks,
+                          hookCommentPopover.blockIds ?? [],
+                          hookCommentPopover.selectedText,
+                          hookCommentPopover.startOffset,
+                        ),
+                      }}
+                    />
+                  )}
+                  {!authoringOff && viewerCommentPopover && (
+                    <CommentPopover
+                      anchorEl={viewerCommentPopover.anchorEl}
+                      contextText={viewerCommentPopover.contextText}
+                      isGlobal={viewerCommentPopover.isGlobal}
+                      initialText={viewerCommentPopover.initialText}
+                      draftKey={`plan:${commentDraftScope}:${
+                        viewerCommentPopover.isGlobal
+                          ? "global"
+                          : `code-block:${viewerCommentPopover.codeBlock?.block.id ?? viewerCommentPopover.contextText}`
+                      }`}
+                      onSubmit={handleViewerCommentSubmit}
+                      onClose={handleViewerCommentClose}
+                      mentionSource={mentionSource}
+                      allowImages={allowImages}
+                      skillReferences
+                      onAskAI={onAskAI}
+                      askAIContext={{
+                        kind: viewerCommentPopover.isGlobal ? "general" : "selection",
+                        label: viewerCommentPopover.isGlobal ? "Document" : "Code block",
+                        text: viewerCommentPopover.selectedText,
+                        sourcePath: linkedDocInfo?.filepath ?? sourceInfo,
+                        ...(!viewerCommentPopover.isGlobal && viewerCommentPopover.codeBlock
+                          ? selectionSourceLines(blocks, [viewerCommentPopover.codeBlock.block.id])
+                          : null),
+                      }}
+                    />
+                  )}
 
-        {/* Code block hover toolbar */}
-        {!authoringOff
-          && codeBlockToolbar
-          && !toolbarState
-          && !(vimOwnsDocumentNavigation && codeBlockToolbar.activation === 'pointer')
-          && (
-            <ToolbarErrorBoundary>
-              <AnnotationToolbar
-                element={codeBlockToolbar.element}
-                positionMode="top-right"
-                onAnnotate={handleCodeBlockAnnotate}
-                onClose={handleCodeBlockToolbarClose}
-                onRequestComment={handleCodeBlockRequestComment}
-                onQuickLabel={handleCodeBlockQuickLabel}
-                selectionActions={selectionActions}
-                selectionActionsIcon={selectionActionsIcon}
-                quickLabels={quickLabels}
-                isExiting={isCodeBlockToolbarExiting}
-                onMouseEnter={() => {
-                  if (hoverTimeoutRef.current) {
-                    clearTimeout(hoverTimeoutRef.current);
-                    hoverTimeoutRef.current = null;
-                  }
-                  setIsCodeBlockToolbarExiting(false);
-                }}
-                onMouseLeave={() => {
-                  if (codeBlockToolbar.activation === 'keyboard') return;
-                  hoverTimeoutRef.current = setTimeout(() => {
-                    setIsCodeBlockToolbarExiting(true);
-                    setTimeout(() => {
-                      setCodeBlockToolbar(null);
-                      setIsCodeBlockToolbarExiting(false);
-                    }, 150);
-                  }, 100);
-                }}
-              />
-            </ToolbarErrorBoundary>
-          )}
+                  {/* Quick Label floating picker — hook handles text selection, Viewer handles code blocks */}
+                  {selectionCommentsOn && !hostComposes && hookQuickLabelPicker && (
+                    <FloatingQuickLabelPicker
+                      anchorEl={hookQuickLabelPicker.anchorEl}
+                      cursorHint={hookQuickLabelPicker.cursorHint}
+                      onSelect={hookFloatingQuickLabel}
+                      onDismiss={hookQuickLabelPickerDismiss}
+                    />
+                  )}
+                  {!authoringOff && codeBlockQuickLabelPicker && (
+                    <FloatingQuickLabelPicker
+                      anchorEl={codeBlockQuickLabelPicker.anchorEl}
+                      onSelect={(label: QuickLabel) => {
+                        const codeEl =
+                          codeBlockQuickLabelPicker.codeBlock.element.querySelector("code");
+                        if (codeEl) {
+                          applyCodeBlockAnnotation(
+                            codeBlockQuickLabelPicker.codeBlock.block.id,
+                            codeEl,
+                            AnnotationType.COMMENT,
+                            `${label.emoji} ${label.text}`,
+                            undefined,
+                            true,
+                            label.tip,
+                          );
+                        }
+                        setCodeBlockQuickLabelPicker(null);
+                        window.getSelection()?.removeAllRanges();
+                      }}
+                      onDismiss={() => {
+                        setCodeBlockQuickLabelPicker(null);
+                        window.getSelection()?.removeAllRanges();
+                      }}
+                    />
+                  )}
+                  {/* Mounted while drafts are on, so a badge that opened its comment gets focus back as it closes. */}
+                  {visibleDrafts && (
+                    <CommentDraftBadges
+                      drafts={commentDrafts}
+                      highlighterRef={highlighterRef}
+                      containerRef={containerRef}
+                      onOpen={reopenCommentDraft}
+                    />
+                  )}
+                </article>
 
-        {/* Table popout dialog — portaled into containerRef so annotations */}
-        {/* can walk into its text nodes the same way they do the inline table. */}
-        {popoutTable && (
-          <TablePopout
-            block={popoutTable}
-            open={!!popoutTable}
-            onClose={() => setPopoutTable(null)}
-            container={containerRef.current}
-            imageBaseDir={imageBaseDir}
-            onImageClick={(src, alt) => setLightbox({ src, alt })}
-            onOpenLinkedDoc={onOpenLinkedDoc}
-            onOpenCodeFile={onOpenCodeFile}
-            githubRepo={linkRepo?.display}
-            repoHost={linkRepo?.host}
-            onNavigateAnchor={scrollToAnchor}
-          />
-        )}
-
-        {/* Pinpoint hover overlay */}
-        {(inputMethod === 'pinpoint' || vim.activeTarget) && (
-          <PinpointOverlay
-            target={pinpointOverlayTarget}
-            containerRef={containerRef}
-          />
-        )}
-        {vimModeActive && (
-          <VimModeOverlay
-            containerRef={containerRef}
-            inputMethod={inputMethod}
-            state={vim.state}
-            focused={vim.focused}
-            hudEnabled={vimHudEnabled}
-            keyPanelEnabled={vimHudKeyPanelEnabled}
-            hudCommand={vim.hudCommand}
-            activeTarget={vim.activeTarget}
-            helpOpen={vim.helpOpen}
-            onHelpOpenChange={vim.onHelpOpenChange}
-            onKeyPanelHide={
-              onVimHudKeyPanelChange
-                ? () => onVimHudKeyPanelChange(false)
-                : undefined
-            }
-            onHudFocusLeave={vim.onHudFocusLeave}
-          />
-        )}
-
-        {/* Comment popover — hook handles text selection, Viewer handles global + code block */}
-        {selectionCommentsOn && !hostComposes && hookCommentPopover && (
-            <CommentPopover
-              anchorEl={hookCommentPopover.anchorEl}
-              contextText={hookCommentPopover.contextText}
-              isGlobal={false}
-              initialText={hookCommentPopover.initialText || suggestComment?.(hookCommentPopover.selectedText ?? hookCommentPopover.contextText) || undefined}
-              draftKey={`plan:${commentDraftScope}:${hookCommentPopover.draftKey}`}
-              onSubmit={hookCommentSubmit}
-              onClose={hookCommentClose}
-              mentionSource={mentionSource}
-              allowImages={allowImages}
-              skillReferences
-              onAskAI={onAskAI}
-              askAIContext={{
-                kind: 'selection',
-                label: 'Selected text',
-                text: hookCommentPopover.selectedText ?? hookCommentPopover.contextText,
-                sourcePath: linkedDocInfo?.filepath ?? sourceInfo,
-                ...selectionSourceLines(
-                  blocks,
-                  hookCommentPopover.blockIds ?? [],
-                  hookCommentPopover.selectedText,
-                  hookCommentPopover.startOffset,
-                ),
-              }}
-            />
-          )}
-        {!authoringOff && viewerCommentPopover && (
-          <CommentPopover
-            anchorEl={viewerCommentPopover.anchorEl}
-            contextText={viewerCommentPopover.contextText}
-            isGlobal={viewerCommentPopover.isGlobal}
-            initialText={viewerCommentPopover.initialText}
-            draftKey={`plan:${commentDraftScope}:${
-              viewerCommentPopover.isGlobal
-                ? 'global'
-                : `code-block:${viewerCommentPopover.codeBlock?.block.id ?? viewerCommentPopover.contextText}`
-            }`}
-            onSubmit={handleViewerCommentSubmit}
-            onClose={handleViewerCommentClose}
-            mentionSource={mentionSource}
-            allowImages={allowImages}
-            skillReferences
-            onAskAI={onAskAI}
-            askAIContext={{
-              kind: viewerCommentPopover.isGlobal ? 'general' : 'selection',
-              label: viewerCommentPopover.isGlobal ? 'Document' : 'Code block',
-              text: viewerCommentPopover.selectedText,
-              sourcePath: linkedDocInfo?.filepath ?? sourceInfo,
-              ...(!viewerCommentPopover.isGlobal && viewerCommentPopover.codeBlock
-                ? selectionSourceLines(blocks, [viewerCommentPopover.codeBlock.block.id])
-                : null),
-            }}
-          />
-        )}
-
-        {/* Quick Label floating picker — hook handles text selection, Viewer handles code blocks */}
-        {selectionCommentsOn && !hostComposes && hookQuickLabelPicker && (
-          <FloatingQuickLabelPicker
-            anchorEl={hookQuickLabelPicker.anchorEl}
-            cursorHint={hookQuickLabelPicker.cursorHint}
-            onSelect={hookFloatingQuickLabel}
-            onDismiss={hookQuickLabelPickerDismiss}
-          />
-        )}
-        {!authoringOff && codeBlockQuickLabelPicker && (
-          <FloatingQuickLabelPicker
-            anchorEl={codeBlockQuickLabelPicker.anchorEl}
-            onSelect={(label: QuickLabel) => {
-              const codeEl = codeBlockQuickLabelPicker.codeBlock.element.querySelector('code');
-              if (codeEl) {
-                applyCodeBlockAnnotation(
-                  codeBlockQuickLabelPicker.codeBlock.block.id, codeEl, AnnotationType.COMMENT,
-                  `${label.emoji} ${label.text}`, undefined, true, label.tip
-                );
-              }
-              setCodeBlockQuickLabelPicker(null);
-              window.getSelection()?.removeAllRanges();
-            }}
-            onDismiss={() => {
-              setCodeBlockQuickLabelPicker(null);
-              window.getSelection()?.removeAllRanges();
-            }}
-          />
-        )}
-        {/* Mounted while drafts are on, so a badge that opened its comment gets focus back as it closes. */}
-        {visibleDrafts && (
-          <CommentDraftBadges drafts={commentDrafts} highlighterRef={highlighterRef} containerRef={containerRef} onOpen={reopenCommentDraft} />
-        )}
-      </article>
-
-      {/* Image lightbox */}
-      {lightbox && createPortal(
-        <ImageLightbox
-          src={lightbox.src}
-          alt={lightbox.alt}
-          images={lightbox.images}
-          regions={regionHost}
-          onClose={closeLightbox}
-        />,
-        document.body
-      )}
-    </div>
-    </CommentDraftScopeContext.Provider>
-    </DiagramAnchorClaimsContext.Provider>
-    </LocalLinkContext.Provider>
-    </CodePathValidationContext.Provider>
-  );
-});
+                {/* Image lightbox */}
+                {lightbox &&
+                  createPortal(
+                    <ImageLightbox
+                      src={lightbox.src}
+                      alt={lightbox.alt}
+                      images={lightbox.images}
+                      regions={regionHost}
+                      onClose={closeLightbox}
+                    />,
+                    document.body,
+                  )}
+              </div>
+            </CommentDraftScopeContext.Provider>
+          </DiagramAnchorClaimsContext.Provider>
+        </LocalLinkContext.Provider>
+      </CodePathValidationContext.Provider>
+    );
+  },
+);

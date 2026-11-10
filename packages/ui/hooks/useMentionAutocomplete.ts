@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type React from "react";
 import {
   applyMentionPick,
   mentionMatches,
@@ -8,8 +8,8 @@ import {
   type MentionPerson,
   type MentionSource,
   type MentionTrigger,
-} from '../utils/mentions';
-import { mentionAnchorOf, type MentionAnchor } from '../components/MentionPicker';
+} from "../utils/mentions";
+import { mentionAnchorOf, type MentionAnchor } from "../components/MentionPicker";
 
 export interface MentionMenuState {
   items: readonly MentionPerson[];
@@ -102,7 +102,7 @@ export function useMentionAutocomplete(options: {
   const mentions = enabled ? survivors : NO_PEOPLE;
 
   const onMentionsChange = source?.onMentionsChange;
-  const mentionsKey = mentionIds.join('\u0000');
+  const mentionsKey = mentionIds.join("\u0000");
   const lastReported = useRef<string | null>(null);
   useEffect(() => {
     if (!onMentionsChange) return;
@@ -115,16 +115,23 @@ export function useMentionAutocomplete(options: {
   }, [mentionsKey, onMentionsChange]);
 
   const items = useMemo(
-    () => (source && trigger ? mentionMatches(source.people, trigger, taggedIds, source.kinds, source.matchDetail ?? true) : []),
+    () =>
+      source && trigger
+        ? mentionMatches(
+            source.people,
+            trigger,
+            taggedIds,
+            source.kinds,
+            source.matchDetail ?? true,
+          )
+        : [],
     [source, trigger, taggedIds],
   );
 
   const emptyNotice = source?.emptyNotice ?? null;
   const heading = source?.heading ?? null;
   const open =
-    trigger !== null
-    && trigger.from !== dismissedStart
-    && (items.length > 0 || !!emptyNotice);
+    trigger !== null && trigger.from !== dismissedStart && (items.length > 0 || !!emptyNotice);
 
   // A new trigger start clears the dismissal memory.
   const triggerStart = trigger?.from ?? null;
@@ -152,11 +159,11 @@ export function useMentionAutocomplete(options: {
     }
     const measure = () => setAnchor(mentionAnchorOf(textareaRef.current));
     measure();
-    window.addEventListener('scroll', measure, true);
-    window.addEventListener('resize', measure);
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
     return () => {
-      window.removeEventListener('scroll', measure, true);
-      window.removeEventListener('resize', measure);
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
     };
   }, [open, textareaRef, triggerStart, triggerQuery]);
 
@@ -208,11 +215,11 @@ export function useMentionAutocomplete(options: {
       if (e.nativeEvent.isComposing) return false;
       if (e.metaKey || e.ctrlKey || e.altKey) return false;
       switch (e.key) {
-        case 'ArrowDown':
-        case 'ArrowUp':
+        case "ArrowDown":
+        case "ArrowUp":
           if (items.length === 0) return false; // the empty-notice row is not navigable
           e.preventDefault();
-          if (e.key === 'ArrowDown') {
+          if (e.key === "ArrowDown") {
             setActiveIndex(boundedActive === null ? 0 : (boundedActive + 1) % items.length);
           } else {
             setActiveIndex(
@@ -222,15 +229,15 @@ export function useMentionAutocomplete(options: {
             );
           }
           return true;
-        case 'Enter':
-        case 'Tab':
+        case "Enter":
+        case "Tab":
           // NO row active means these keys were NOT aimed at the menu: Enter
           // stays a newline, Tab still leaves the field.
           if (boundedActive === null) return false;
           e.preventDefault();
           select(boundedActive);
           return true;
-        case 'Escape':
+        case "Escape":
           e.preventDefault();
           e.stopPropagation();
           setActiveIndex(null);
@@ -244,9 +251,10 @@ export function useMentionAutocomplete(options: {
   );
 
   return {
-    menu: open && trigger
-      ? { items, emptyNotice, heading, activeIndex: boundedActive, anchor, query: trigger.query }
-      : null,
+    menu:
+      open && trigger
+        ? { items, emptyNotice, heading, activeIndex: boundedActive, anchor, query: trigger.query }
+        : null,
     onKeyDown,
     onSelect: readCaret,
     select,

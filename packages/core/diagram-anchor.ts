@@ -29,24 +29,24 @@
  */
 
 export type DiagramFamily =
-  | 'flowchart'
-  | 'state'
-  | 'class'
-  | 'er'
-  | 'requirement'
+  | "flowchart"
+  | "state"
+  | "class"
+  | "er"
+  | "requirement"
   // A sequence diagram. Mermaid gives its parts classes, not ids, so the
   // ids are ours: an actor is its `name`, a message is `msg-<n>`, a note
   // `note-<n>`, a loop/alt/opt frame `frame-<n>`, each by document order.
-  | 'sequence'
-  | 'other'
+  | "sequence"
+  | "other"
   // A Graphviz graph: the id is the DOT node name.
-  | 'graphviz';
+  | "graphviz";
 
 /** `diagram` is the WHOLE diagram: no id, the label is the diagram's first
  * source line and `sourceLine` is the fence's full range. It is what a click
  * that resolves no part anchors to, so a click never does nothing (gitGraph,
  * pie, anything a family does not address). Additive within `v: 1`. */
-export type DiagramTargetKind = 'node' | 'edge' | 'cluster' | 'diagram';
+export type DiagramTargetKind = "node" | "edge" | "cluster" | "diagram";
 
 /** One addressable part of a rendered diagram. `id` names a node, cluster,
  * class, entity or state; edges carry `from` and `to` where the family
@@ -70,19 +70,24 @@ export interface DiagramAnchor extends DiagramTarget {
 }
 
 /** The diagram kinds the renderer slot knows. */
-export type DiagramKind = 'mermaid' | 'graphviz';
+export type DiagramKind = "mermaid" | "graphviz";
 
 const FAMILIES: ReadonlySet<string> = new Set<DiagramFamily>([
-  'flowchart',
-  'state',
-  'class',
-  'er',
-  'requirement',
-  'sequence',
-  'other',
-  'graphviz',
+  "flowchart",
+  "state",
+  "class",
+  "er",
+  "requirement",
+  "sequence",
+  "other",
+  "graphviz",
 ]);
-const KINDS: ReadonlySet<string> = new Set<DiagramTargetKind>(['node', 'edge', 'cluster', 'diagram']);
+const KINDS: ReadonlySet<string> = new Set<DiagramTargetKind>([
+  "node",
+  "edge",
+  "cluster",
+  "diagram",
+]);
 
 /** Longest id, from, to or label the parser keeps; a rendered svg never
  * produces more, and the anchor is persisted (drafts, the archive). */
@@ -91,35 +96,35 @@ export const MAX_DIAGRAM_ANCHOR_STRING_LENGTH = 400;
 /** The wire keys a host that stores anchors as an opaque JSON blob uses
  * (Workspaces' `anchor_json`); Plannotator carries the anchor on the
  * annotation itself under `diagramAnchor`. */
-export const DIAGRAM_ANCHOR_KEY = 'diagram';
-export const DIAGRAM_ADDITIONAL_TARGETS_KEY = 'diagramAdditionalTargets';
+export const DIAGRAM_ANCHOR_KEY = "diagram";
+export const DIAGRAM_ADDITIONAL_TARGETS_KEY = "diagramAdditionalTargets";
 
 /** Two targets name the same part: same kind and the same id, or the same
  * from and to. The family is not compared: a foreign family with the same
  * id grammar would match by construction, and the render decides. */
 export function sameTarget(a: DiagramTarget, b: DiagramTarget): boolean {
   if (a.kind !== b.kind) return false;
-  if (a.kind === 'diagram') return true;
+  if (a.kind === "diagram") return true;
   if (a.id !== undefined || b.id !== undefined) return a.id === b.id;
   return a.from === b.from && a.to === b.to;
 }
 
 /** The comment's context line: the node label, else the edge's ends. */
 export function diagramTargetText(target: DiagramTarget): string {
-  if (target.label !== '') return target.label;
+  if (target.label !== "") return target.label;
   if (target.from !== undefined && target.to !== undefined) return `${target.from} → ${target.to}`;
-  return target.id ?? '';
+  return target.id ?? "";
 }
 
 /** The short part name for chips and the composer ("node C", "edge B → C"). */
 export function diagramTargetName(target: DiagramTarget): string {
-  if (target.kind === 'diagram') return 'whole diagram';
-  if (target.kind === 'edge') {
+  if (target.kind === "diagram") return "whole diagram";
+  if (target.kind === "edge") {
     return target.from !== undefined && target.to !== undefined
       ? `edge ${target.from} → ${target.to}`
-      : `edge ${target.id ?? ''}`;
+      : `edge ${target.id ?? ""}`;
   }
-  return `${target.kind} ${target.id ?? ''}`;
+  return `${target.kind} ${target.id ?? ""}`;
 }
 
 /**
@@ -128,7 +133,7 @@ export function diagramTargetName(target: DiagramTarget): string {
  * label falls back to its id, and a null `sourceLine` prints no line.
  */
 export function diagramAnchorLocationLine(anchor: DiagramAnchor): string {
-  if (anchor.kind === 'diagram') {
+  if (anchor.kind === "diagram") {
     // The whole diagram: `Diagram (flowchart), lines 7–12`.
     let whole = `Diagram (${anchor.family})`;
     if (anchor.sourceLine !== null) {
@@ -142,10 +147,10 @@ export function diagramAnchorLocationLine(anchor: DiagramAnchor): string {
       ? anchor.id
       : anchor.from !== undefined && anchor.to !== undefined
         ? `${anchor.from} → ${anchor.to}`
-        : '';
-  const label = anchor.label !== '' ? anchor.label : ref;
+        : "";
+  const label = anchor.label !== "" ? anchor.label : ref;
   let line = `Diagram ${anchor.kind} ${label}`;
-  if (ref !== '' && ref !== label) line += ` (${ref})`;
+  if (ref !== "" && ref !== label) line += ` (${ref})`;
   if (anchor.sourceLine !== null) {
     const [first, last] = anchor.sourceLine;
     line += last > first ? `, lines ${first}–${last}` : `, line ${first}`;
@@ -160,10 +165,7 @@ export function diagramAnchorLocationLine(anchor: DiagramAnchor): string {
 function isWordChar(ch: string | undefined): boolean {
   if (ch === undefined) return false;
   return (
-    (ch >= 'a' && ch <= 'z') ||
-    (ch >= 'A' && ch <= 'Z') ||
-    (ch >= '0' && ch <= '9') ||
-    ch === '_'
+    (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_"
   );
 }
 
@@ -174,7 +176,7 @@ function isWordChar(ch: string | undefined): boolean {
  * pattern.
  */
 export function lineMentions(line: string, token: string): boolean {
-  if (token === '') return false;
+  if (token === "") return false;
   for (let at = line.indexOf(token); at !== -1; at = line.indexOf(token, at + 1)) {
     const before = at === 0 ? undefined : line[at - 1];
     const after = line[at + token.length];
@@ -199,10 +201,14 @@ const SEQUENCE_NOTE = /^\s*note\s+(?:left\s+of|right\s+of|over)\b/iu;
 const SEQUENCE_FRAME = /^\s*(?:loop|alt|opt|par|critical|break|rect)\b/iu;
 
 /** The n-th (1-based) line that matches, as a line range. */
-function nthMatchingLine(lines: readonly string[], pattern: RegExp, n: number): readonly [number, number] | null {
+function nthMatchingLine(
+  lines: readonly string[],
+  pattern: RegExp,
+  n: number,
+): readonly [number, number] | null {
   let seen = 0;
   for (let i = 0; i < lines.length; i += 1) {
-    if (!pattern.test(lines[i] ?? '')) continue;
+    if (!pattern.test(lines[i] ?? "")) continue;
     seen += 1;
     if (seen === n) return [i + 1, i + 1];
   }
@@ -212,47 +218,52 @@ function nthMatchingLine(lines: readonly string[], pattern: RegExp, n: number): 
 /** The whole source as a line range (leading and trailing blank lines
  * excluded); null for an empty source. */
 export function diagramWholeSourceLines(source: string): readonly [number, number] | null {
-  const lines = source.split('\n');
+  const lines = source.split("\n");
   let last = lines.length;
-  while (last > 0 && (lines[last - 1] ?? '').trim() === '') last -= 1;
+  while (last > 0 && (lines[last - 1] ?? "").trim() === "") last -= 1;
   let first = 1;
-  while (first <= last && (lines[first - 1] ?? '').trim() === '') first += 1;
+  while (first <= last && (lines[first - 1] ?? "").trim() === "") first += 1;
   return last === 0 || first > last ? null : [first, last];
 }
 
 /** The diagram's first non-blank source line: the whole-diagram label. */
 export function diagramFirstSourceLine(source: string): string {
-  for (const line of source.split('\n')) {
+  for (const line of source.split("\n")) {
     const trimmed = line.trim();
-    if (trimmed !== '') return trimmed.length > 120 ? `${trimmed.slice(0, 120)}…` : trimmed;
+    if (trimmed !== "") return trimmed.length > 120 ? `${trimmed.slice(0, 120)}…` : trimmed;
   }
-  return '';
+  return "";
 }
 
 export function diagramSourceLine(
   source: string,
   target: DiagramTarget,
 ): readonly [number, number] | null {
-  if (target.kind === 'diagram') return diagramWholeSourceLines(source);
-  const lines = source.split('\n');
-  if (target.family === 'sequence' && target.id !== undefined) {
+  if (target.kind === "diagram") return diagramWholeSourceLines(source);
+  const lines = source.split("\n");
+  if (target.family === "sequence" && target.id !== undefined) {
     // Sequence ids are ordinals by document order, and the statements of a
     // sequence diagram sit in that same order in the text.
     const ordinal = /^(msg|note|frame)-(\d+)$/u.exec(target.id);
     if (ordinal !== null) {
-      const pattern = ordinal[1] === 'msg' ? SEQUENCE_MESSAGE : ordinal[1] === 'note' ? SEQUENCE_NOTE : SEQUENCE_FRAME;
+      const pattern =
+        ordinal[1] === "msg"
+          ? SEQUENCE_MESSAGE
+          : ordinal[1] === "note"
+            ? SEQUENCE_NOTE
+            : SEQUENCE_FRAME;
       return nthMatchingLine(lines, pattern, Number(ordinal[2]));
     }
   }
   const matches = (line: string): boolean => {
-    if (target.kind === 'edge') {
+    if (target.kind === "edge") {
       if (target.from !== undefined && target.to !== undefined) {
         return lineMentions(line, target.from) && lineMentions(line, target.to);
       }
       return false;
     }
     if (target.id === undefined) return false;
-    if (target.kind === 'cluster') {
+    if (target.kind === "cluster") {
       return /^\s*subgraph\b/u.test(line) && lineMentions(line, target.id);
     }
     return lineMentions(line, target.id);
@@ -311,7 +322,7 @@ export function buildDiagramAnchor(
 }
 
 function boundedString(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined;
+  if (typeof value !== "string") return undefined;
   return value.length > MAX_DIAGRAM_ANCHOR_STRING_LENGTH
     ? value.slice(0, MAX_DIAGRAM_ANCHOR_STRING_LENGTH)
     : value;
@@ -319,17 +330,18 @@ function boundedString(value: unknown): string | undefined {
 
 /** Read one target tolerantly: a foreign or partial value is null. */
 export function parseDiagramTarget(value: unknown): DiagramTarget | null {
-  if (typeof value !== 'object' || value === null) return null;
+  if (typeof value !== "object" || value === null) return null;
   const raw = value as Record<string, unknown>;
-  const family = raw['family'];
-  const kind = raw['kind'];
-  if (typeof family !== 'string' || !FAMILIES.has(family)) return null;
-  if (typeof kind !== 'string' || !KINDS.has(kind)) return null;
-  const id = boundedString(raw['id']);
-  const from = boundedString(raw['from']);
-  const to = boundedString(raw['to']);
-  if (kind !== 'diagram' && id === undefined && (from === undefined || to === undefined)) return null;
-  const label = boundedString(raw['label']) ?? '';
+  const family = raw["family"];
+  const kind = raw["kind"];
+  if (typeof family !== "string" || !FAMILIES.has(family)) return null;
+  if (typeof kind !== "string" || !KINDS.has(kind)) return null;
+  const id = boundedString(raw["id"]);
+  const from = boundedString(raw["from"]);
+  const to = boundedString(raw["to"]);
+  if (kind !== "diagram" && id === undefined && (from === undefined || to === undefined))
+    return null;
+  const label = boundedString(raw["label"]) ?? "";
   return {
     family: family as DiagramFamily,
     kind: kind as DiagramTargetKind,
@@ -347,12 +359,12 @@ export function parseDiagramAnchor(value: unknown): DiagramAnchor | null {
   const target = parseDiagramTarget(value);
   if (target === null) return null;
   const raw = value as Record<string, unknown>;
-  if (raw['v'] !== 1) return null;
-  const line = raw['sourceLine'];
+  if (raw["v"] !== 1) return null;
+  const line = raw["sourceLine"];
   const sourceLine =
     Array.isArray(line) &&
     line.length === 2 &&
-    line.every((n) => typeof n === 'number' && Number.isInteger(n) && n > 0)
+    line.every((n) => typeof n === "number" && Number.isInteger(n) && n > 0)
       ? ([line[0] as number, line[1] as number] as const)
       : null;
   return { ...target, v: 1, sourceLine };

@@ -15,7 +15,7 @@ export function findCodeLineElement(root: ParentNode, line: number): HTMLElement
   const selector = lineSelector(line);
   const direct = root.querySelector<HTMLElement>(selector);
   if (direct) return direct;
-  for (const container of root.querySelectorAll('diffs-container')) {
+  for (const container of root.querySelectorAll("diffs-container")) {
     const inShadow = container.shadowRoot?.querySelector<HTMLElement>(selector);
     if (inShadow) return inShadow;
   }
@@ -39,7 +39,11 @@ export function whenCodeLineRendered(
   onFound: (element: HTMLElement) => void,
   options: { lineCount?: number; timeoutMs?: number } = {},
 ): () => void {
-  if (!Number.isInteger(line) || line < 1 || (options.lineCount != null && line > options.lineCount)) {
+  if (
+    !Number.isInteger(line) ||
+    line < 1 ||
+    (options.lineCount != null && line > options.lineCount)
+  ) {
     return () => {};
   }
   let stopped = false;
@@ -80,7 +84,7 @@ export function whenCodeLineRendered(
       });
       return;
     }
-    for (const container of root.querySelectorAll('diffs-container')) {
+    for (const container of root.querySelectorAll("diffs-container")) {
       if (container.shadowRoot) watch(container.shadowRoot);
     }
   }

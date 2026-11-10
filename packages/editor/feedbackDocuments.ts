@@ -9,8 +9,8 @@
  * (which also carries the active document) printed the open document twice.
  * This module decides the split once, for every export path.
  */
-import type { Annotation, Block, DocumentRenderAs, ImageAttachment } from '@dynotator/ui/types';
-import type { FeedbackDocuments } from '@dynotator/ui/hooks/useLinkedDoc';
+import type { Annotation, Block, DocumentRenderAs, ImageAttachment } from "@dynotator/ui/types";
+import type { FeedbackDocuments } from "@dynotator/ui/hooks/useLinkedDoc";
 import {
   codeDocumentBlocks,
   diagramDocumentBlocks,
@@ -21,9 +21,14 @@ import {
   type LinkedDocAnnotationEntry,
   type LinkedDocExportHeading,
   type MessageAnnotationEntry,
-} from '@dynotator/ui/utils/parser';
-import { parseAsciidocToBlocks } from '@dynotator/ui/utils/asciidocParser';
-import { codeDocumentLanguage, documentRenderKindForPath, isDiagramRenderKind, shouldStripFrontmatter } from '@dynotator/shared/annotatable';
+} from "@dynotator/ui/utils/parser";
+import { parseAsciidocToBlocks } from "@dynotator/ui/utils/asciidocParser";
+import {
+  codeDocumentLanguage,
+  documentRenderKindForPath,
+  isDiagramRenderKind,
+  shouldStripFrontmatter,
+} from "@dynotator/shared/annotatable";
 
 /**
  * Blocks for a document body rendered as `renderAs`: a diagram source
@@ -38,28 +43,35 @@ export const blocksForRenderAs = (
   path?: string | null,
 ): Block[] => {
   if (isDiagramRenderKind(renderAs)) return diagramDocumentBlocks(text, renderAs);
-  if (renderAs === 'asciidoc') return parseAsciidocToBlocks(text);
-  if (renderAs === 'code') return codeDocumentBlocks(text, codeDocumentLanguage(path));
+  if (renderAs === "asciidoc") return parseAsciidocToBlocks(text);
+  if (renderAs === "code") return codeDocumentBlocks(text, codeDocumentLanguage(path));
   return parseMarkdownToBlocks(text, { frontmatter });
 };
 
 /** Blocks for a document identified by path, with that path's frontmatter rule. */
 export const blocksForDocument = (filepath: string, text: string): Block[] =>
-  blocksForRenderAs(text, documentRenderKindForPath(filepath) ?? 'markdown', shouldStripFrontmatter(filepath), filepath);
+  blocksForRenderAs(
+    text,
+    documentRenderKindForPath(filepath) ?? "markdown",
+    shouldStripFrontmatter(filepath),
+    filepath,
+  );
 
 /**
  * Merge local annotations with SSE-delivered external ones, dropping
  * draft-restored copies of externals that SSE re-delivered (same source,
  * type and quote). The SSE version wins.
  */
-export function mergeExternalAnnotations(local: Annotation[], external: Annotation[]): Annotation[] {
+export function mergeExternalAnnotations(
+  local: Annotation[],
+  external: Annotation[],
+): Annotation[] {
   if (external.length === 0) return local;
   const kept = local.filter((a) => {
     if (!a.source) return true;
-    return !external.some((ext) =>
-      ext.source === a.source &&
-      ext.type === a.type &&
-      ext.originalText === a.originalText
+    return !external.some(
+      (ext) =>
+        ext.source === a.source && ext.type === a.type && ext.originalText === a.originalText,
     );
   });
   return [...kept, ...external];
@@ -76,7 +88,7 @@ export interface FeedbackSectionsInput {
   /** The root document's path (annotate file sessions); drives its parse. */
   sourceFilePath?: string;
   sourceConverted: boolean;
-  annotateSource: 'file' | 'message' | 'folder' | null;
+  annotateSource: "file" | "message" | "folder" | null;
   /**
    * A review of several files: the files in review order. Documents are
    * exported in this order (anything else, such as a linked document, after
@@ -107,8 +119,13 @@ export function resolveFeedbackSections(input: FeedbackSectionsInput): FeedbackS
     // `documents`); the primary section is the stashed root.
     annotations = mergeExternalAnnotations(root.annotations, input.externalAnnotations);
     globalAttachments = root.globalAttachments;
-    const markdown = root.markdown ?? '';
-    blocks = blocksForRenderAs(markdown, root.renderAs, shouldStripFrontmatter(input.sourceFilePath), input.sourceFilePath);
+    const markdown = root.markdown ?? "";
+    blocks = blocksForRenderAs(
+      markdown,
+      root.renderAs,
+      shouldStripFrontmatter(input.sourceFilePath),
+      input.sourceFilePath,
+    );
   }
 
   const order = input.bundleOrder ?? null;
@@ -118,14 +135,13 @@ export function resolveFeedbackSections(input: FeedbackSectionsInput): FeedbackS
     return index === -1 ? order.length : index;
   };
   // Stable sort: unlisted documents keep their opening order after the files.
-  const entries = order
-    ? [...documents].sort(([a], [b]) => rank(a) - rank(b))
-    : [...documents];
+  const entries = order ? [...documents].sort(([a], [b]) => rank(a) - rank(b)) : [...documents];
   const linkedDocuments = new Map<string, LinkedDocAnnotationEntry>();
   for (const [filepath, entry] of entries) {
-    linkedDocuments.set(filepath, entry.markdown
-      ? { ...entry, blocks: blocksForDocument(filepath, entry.markdown) }
-      : entry);
+    linkedDocuments.set(
+      filepath,
+      entry.markdown ? { ...entry, blocks: blocksForDocument(filepath, entry.markdown) } : entry,
+    );
   }
 
   return {
@@ -136,7 +152,7 @@ export function resolveFeedbackSections(input: FeedbackSectionsInput): FeedbackS
     linkedDocuments,
     linkedDocumentsHeading: order
       ? BUNDLE_DOC_EXPORT_HEADING
-      : input.annotateSource === 'folder'
+      : input.annotateSource === "folder"
         ? FOLDER_DOC_EXPORT_HEADING
         : LINKED_DOC_EXPORT_HEADING,
   };
@@ -158,9 +174,11 @@ export function mergeExternalsIntoMessageEntries(
   if (externalAnnotations.length === 0 || entries.length === 0) return entries;
   const found = entries.findIndex((entry) => entry.messageId === currentMessageId);
   const index = found === -1 ? 0 : found;
-  return entries.map((entry, i) => i === index
-    ? { ...entry, annotations: mergeExternalAnnotations(entry.annotations, externalAnnotations) }
-    : entry);
+  return entries.map((entry, i) =>
+    i === index
+      ? { ...entry, annotations: mergeExternalAnnotations(entry.annotations, externalAnnotations) }
+      : entry,
+  );
 }
 
 /**
@@ -179,7 +197,7 @@ export type SubmittedAnnotation = Annotation & { documentPath?: string };
  * "1 comment".
  */
 export function collectSubmittedAnnotations(
-  sections: Pick<FeedbackSections, 'annotations' | 'linkedDocuments'>,
+  sections: Pick<FeedbackSections, "annotations" | "linkedDocuments">,
   messageEntries?: readonly MessageAnnotationEntry[],
 ): SubmittedAnnotation[] {
   const out: SubmittedAnnotation[] = [];

@@ -6,7 +6,7 @@
   --card-foreground: #cccccc;
   --popover: #303030;
   --popover-foreground: #cccccc;
-  --primary: #3584E4;
+  --primary: #3584e4;
   --primary-foreground: #ffffff;
   --secondary: #3a3a3a;
   --secondary-foreground: #cccccc;
@@ -18,18 +18,18 @@
   --destructive-foreground: #ffffff;
   --border: #454545;
   --input: #3a3a3a;
-  --ring: #3584E4;
+  --ring: #3584e4;
   --success: #26a269;
   --success-foreground: #ffffff;
   --warning: #e5a50a;
   --warning-foreground: #1d1d1d;
 
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'Source Code Pro', ui-monospace, monospace;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "Source Code Pro", ui-monospace, monospace;
   --radius: 0.625rem;
 
   --code-bg: #2a2a2a;
-  --focus-highlight: #3584E4;
+  --focus-highlight: #3584e4;
 }
 
 .theme-adwaita.light {
@@ -39,7 +39,7 @@
   --card-foreground: #323232;
   --popover: #ffffff;
   --popover-foreground: #323232;
-  --primary: #3584E4;
+  --primary: #3584e4;
   --primary-foreground: #ffffff;
   --secondary: #e6e6e6;
   --secondary-foreground: #323232;
@@ -51,12 +51,12 @@
   --destructive-foreground: #ffffff;
   --border: #cfcfcf;
   --input: #e6e6e6;
-  --ring: #3584E4;
+  --ring: #3584e4;
   --success: #26a269;
   --success-foreground: #ffffff;
   --warning: #e5a50a;
   --warning-foreground: #323232;
 
   --code-bg: #ebebeb;
-  --focus-highlight: #3584E4;
+  --focus-highlight: #3584e4;
 }

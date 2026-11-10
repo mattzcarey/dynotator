@@ -17,19 +17,35 @@ type AgentConfigEntry = {
 };
 
 export const AGENT_CONFIG = {
-  'claude-code': { name: 'Claude Code', badge: 'bg-orange-500/15 text-orange-400', aiProviderTypes: ['claude-agent-sdk'] },
-  'amp':         { name: 'Amp',         badge: 'bg-lime-500/15 text-lime-400' },
-  'droid':       { name: 'Droid',       badge: 'bg-cyan-500/15 text-cyan-400' },
-  'kiro-cli':    { name: 'Kiro CLI',    badge: 'bg-amber-500/15 text-amber-400' },
-  'opencode':    { name: 'OpenCode',    badge: 'bg-emerald-500/15 text-emerald-400', aiProviderTypes: ['opencode-sdk'] },
-  'copilot-cli': { name: 'GitHub Copilot', badge: 'bg-blue-500/15 text-blue-400' },
-  'pi':          { name: 'Pi',          badge: 'bg-violet-500/15 text-violet-400', aiProviderTypes: ['pi-sdk'] },
-  'codex':       { name: 'Codex',       badge: 'bg-purple-500/15 text-purple-400', aiProviderTypes: ['codex-sdk'] },
-  'gemini-cli':  { name: 'Gemini CLI', badge: 'bg-sky-500/15 text-sky-400' },
-  'oh-my-pi':    { name: 'Oh My Pi',    badge: 'bg-fuchsia-500/15 text-fuchsia-400' },
-  'mistral-vibe': { name: 'Mistral Vibe', badge: 'bg-rose-500/15 text-rose-400' },
-  'qwen-code':   { name: 'Qwen Code',   badge: 'bg-indigo-500/15 text-indigo-400', aiProviderTypes: ['qwen-sdk'] },
-  'dsh':         { name: 'DeepSeek Harness', badge: 'bg-teal-500/15 text-teal-400' },
+  "claude-code": {
+    name: "Claude Code",
+    badge: "bg-orange-500/15 text-orange-400",
+    aiProviderTypes: ["claude-agent-sdk"],
+  },
+  amp: { name: "Amp", badge: "bg-lime-500/15 text-lime-400" },
+  droid: { name: "Droid", badge: "bg-cyan-500/15 text-cyan-400" },
+  "kiro-cli": { name: "Kiro CLI", badge: "bg-amber-500/15 text-amber-400" },
+  opencode: {
+    name: "OpenCode",
+    badge: "bg-emerald-500/15 text-emerald-400",
+    aiProviderTypes: ["opencode-sdk"],
+  },
+  "copilot-cli": { name: "GitHub Copilot", badge: "bg-blue-500/15 text-blue-400" },
+  pi: { name: "Pi", badge: "bg-violet-500/15 text-violet-400", aiProviderTypes: ["pi-sdk"] },
+  codex: {
+    name: "Codex",
+    badge: "bg-purple-500/15 text-purple-400",
+    aiProviderTypes: ["codex-sdk"],
+  },
+  "gemini-cli": { name: "Gemini CLI", badge: "bg-sky-500/15 text-sky-400" },
+  "oh-my-pi": { name: "Oh My Pi", badge: "bg-fuchsia-500/15 text-fuchsia-400" },
+  "mistral-vibe": { name: "Mistral Vibe", badge: "bg-rose-500/15 text-rose-400" },
+  "qwen-code": {
+    name: "Qwen Code",
+    badge: "bg-indigo-500/15 text-indigo-400",
+    aiProviderTypes: ["qwen-sdk"],
+  },
+  dsh: { name: "DeepSeek Harness", badge: "bg-teal-500/15 text-teal-400" },
 } as const satisfies Record<string, AgentConfigEntry>;
 
 /** All recognized origin values. */
@@ -38,20 +54,20 @@ export type Origin = keyof typeof AGENT_CONFIG;
 /** Resolve an origin to a human-readable agent name. */
 export function getAgentName(origin: Origin | null | undefined): string {
   if (origin && origin in AGENT_CONFIG) return AGENT_CONFIG[origin as Origin].name;
-  return 'Coding Agent';
+  return "Coding Agent";
 }
 
 /** Resolve an origin to Tailwind badge classes. */
 export function getAgentBadge(origin: Origin | null | undefined): string {
   if (origin && origin in AGENT_CONFIG) return AGENT_CONFIG[origin as Origin].badge;
-  return 'bg-zinc-500/20 text-zinc-400';
+  return "bg-zinc-500/20 text-zinc-400";
 }
 
 /** Resolve an origin to matching AI provider types, in preference order. */
 export function getAgentAIProviderTypes(origin: Origin | null | undefined): readonly string[] {
   if (origin && origin in AGENT_CONFIG) {
     const config = AGENT_CONFIG[origin as Origin];
-    return 'aiProviderTypes' in config ? config.aiProviderTypes : [];
+    return "aiProviderTypes" in config ? config.aiProviderTypes : [];
   }
   return [];
 }

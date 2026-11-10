@@ -1,5 +1,5 @@
-import { getScrollViewportRect } from '../hooks/useScrollViewport';
-import { createTextRange } from './domSelection';
+import { getScrollViewportRect } from "../hooks/useScrollViewport";
+import { createTextRange } from "./domSelection";
 
 /**
  * Semantic document targeting shared by pointer Pinpoint and Vim navigation.
@@ -9,30 +9,30 @@ import { createTextRange } from './domSelection';
  */
 /** Elements that never participate in document targeting. */
 const SKIP_SELECTORS = [
-  '.annotation-toolbar',
-  '.annotation-highlight',
-  'mark[data-bind-id]',
-  'button',
-  '[data-pinpoint-ignore]',
-].join(',');
+  ".annotation-toolbar",
+  ".annotation-highlight",
+  "mark[data-bind-id]",
+  "button",
+  "[data-pinpoint-ignore]",
+].join(",");
 
-const INLINE_TARGET_SELECTOR = 'strong,em,a,code:not(.pn-code)';
+const INLINE_TARGET_SELECTOR = "strong,em,a,code:not(.pn-code)";
 /** A `:::question` card (`QuestionBlock`): one block whose text is in parts. */
-const QUESTION_CARD_SELECTOR = 'fieldset.question-block';
+const QUESTION_CARD_SELECTOR = "fieldset.question-block";
 /** The card's text parts: the prompt, the context, and each choice's text. */
-const QUESTION_PART_SELECTOR = '[data-question-part]';
+const QUESTION_PART_SELECTOR = "[data-question-part]";
 const TABLE_EDGE_ZONE = 22;
 
 /** The semantic kind of a document target. */
 export type SemanticTargetKind =
-  | 'group'
-  | 'block'
-  | 'inline'
-  | 'table'
-  | 'row'
-  | 'cell'
-  | 'code'
-  | 'math';
+  | "group"
+  | "block"
+  | "inline"
+  | "table"
+  | "row"
+  | "cell"
+  | "code"
+  | "math";
 
 /** A stable semantic target resolved to its current live DOM element. */
 export interface SemanticTarget {
@@ -61,14 +61,14 @@ export interface SemanticTargetGraph {
 
 /** Motions available while navigating the semantic target graph. */
 export type SemanticTargetMotion =
-  | 'previous-block'
-  | 'next-block'
-  | 'previous-sibling'
-  | 'next-sibling'
-  | 'parent'
-  | 'child'
-  | 'first-block'
-  | 'last-block';
+  | "previous-block"
+  | "next-block"
+  | "previous-sibling"
+  | "next-sibling"
+  | "parent"
+  | "child"
+  | "first-block"
+  | "last-block";
 
 /** Pointer coordinates used for table edge-zone targeting. */
 export interface SemanticPointerPosition {
@@ -80,9 +80,9 @@ function getBlockElements(container: HTMLElement): HTMLElement[] {
   const seen = new Set<string>();
   const result: HTMLElement[] = [];
 
-  container.querySelectorAll<HTMLElement>('[data-block-id]').forEach((element) => {
+  container.querySelectorAll<HTMLElement>("[data-block-id]").forEach((element) => {
     const blockId = element.dataset.blockId;
-    if (!blockId || seen.has(blockId) || element.tagName === 'HR') return;
+    if (!blockId || seen.has(blockId) || element.tagName === "HR") return;
     seen.add(blockId);
     result.push(element);
   });
@@ -95,45 +95,45 @@ function truncate(text: string, max: number): string {
 }
 
 function inlineLabel(element: HTMLElement): string {
-  const text = element.textContent?.trim() ?? '';
+  const text = element.textContent?.trim() ?? "";
   const excerpt = truncate(text, 30);
-  if (element.tagName === 'STRONG') return `bold: "${excerpt}"`;
-  if (element.tagName === 'EM') return `italic: "${excerpt}"`;
-  if (element.tagName === 'A') return `link: "${truncate(text, 25)}"`;
-  return element.tagName === 'CODE' ? `code: \`${excerpt}\`` : excerpt;
+  if (element.tagName === "STRONG") return `bold: "${excerpt}"`;
+  if (element.tagName === "EM") return `italic: "${excerpt}"`;
+  if (element.tagName === "A") return `link: "${truncate(text, 25)}"`;
+  return element.tagName === "CODE" ? `code: \`${excerpt}\`` : excerpt;
 }
 
 function blockLabel(element: HTMLElement, listItem: boolean): string {
-  const text = element.textContent?.trim() ?? '';
+  const text = element.textContent?.trim() ?? "";
   const tag = element.tagName.toLowerCase();
   if (listItem) {
-    return text ? `list item: "${truncate(text, 30)}"` : 'list item';
+    return text ? `list item: "${truncate(text, 30)}"` : "list item";
   }
-  if (element.dataset.blockType === 'heading' || /^h[1-6]$/.test(tag)) {
+  if (element.dataset.blockType === "heading" || /^h[1-6]$/.test(tag)) {
     return `heading: "${truncate(text, 35)}"`;
   }
-  if (tag === 'blockquote') return `blockquote: "${truncate(text, 30)}"`;
+  if (tag === "blockquote") return `blockquote: "${truncate(text, 30)}"`;
   return text ? `paragraph: "${truncate(text, 35)}"` : tag;
 }
 
 function codeBlockLabel(block: HTMLElement): string {
-  const code = block.querySelector('code');
+  const code = block.querySelector("code");
   const language = code?.className.match(/language-(\S+)/)?.[1];
-  return language ? `code block (${language})` : 'code block';
+  return language ? `code block (${language})` : "code block";
 }
 
 function groupKey(group: HTMLElement): string {
-  const type = group.dataset.pinpointGroup ?? 'group';
-  const ids = Array.from(group.querySelectorAll<HTMLElement>('[data-block-id]'))
+  const type = group.dataset.pinpointGroup ?? "group";
+  const ids = Array.from(group.querySelectorAll<HTMLElement>("[data-block-id]"))
     .map((element) => element.dataset.blockId)
     .filter((id): id is string => Boolean(id));
-  return `group:${type}:${ids[0] ?? 'empty'}:${ids.at(-1) ?? 'empty'}`;
+  return `group:${type}:${ids[0] ?? "empty"}:${ids.at(-1) ?? "empty"}`;
 }
 
 function groupLabel(group: HTMLElement): string {
-  if (group.dataset.pinpointGroup === 'list') return 'list';
-  if (group.dataset.pinpointGroup === 'blockquote') return 'blockquote group';
-  return 'group';
+  if (group.dataset.pinpointGroup === "list") return "list";
+  if (group.dataset.pinpointGroup === "blockquote") return "blockquote group";
+  return "group";
 }
 
 function listContentElement(block: HTMLElement): HTMLElement | null {
@@ -141,15 +141,15 @@ function listContentElement(block: HTMLElement): HTMLElement | null {
   // without this its second child, the prompt, stood in for the whole card:
   // every pinpoint hover or click inside it resolved to the prompt.
   if (block.matches(QUESTION_CARD_SELECTOR)) return null;
-  if (!block.querySelector('.select-none')) return null;
+  if (!block.querySelector(".select-none")) return null;
   return block.children[1] instanceof HTMLElement ? block.children[1] : null;
 }
 
 function questionPartLabel(part: HTMLElement): string {
-  const text = truncate(part.textContent?.trim() ?? '', 30);
+  const text = truncate(part.textContent?.trim() ?? "", 30);
   const kind = part.dataset.questionPart;
-  if (kind === 'choice') return `choice: "${text}"`;
-  if (kind === 'context') return `context: "${text}"`;
+  if (kind === "choice") return `choice: "${text}"`;
+  if (kind === "context") return `context: "${text}"`;
   return `question: "${text}"`;
 }
 
@@ -161,20 +161,22 @@ function addInlineTargets(
   root: HTMLElement,
   keyPrefix: string,
 ): void {
-  const elements = Array.from(root.querySelectorAll<HTMLElement>(INLINE_TARGET_SELECTOR))
-    .filter((element) => element.textContent?.trim() && !element.closest(SKIP_SELECTORS));
+  const elements = Array.from(root.querySelectorAll<HTMLElement>(INLINE_TARGET_SELECTOR)).filter(
+    (element) => element.textContent?.trim() && !element.closest(SKIP_SELECTORS),
+  );
 
   elements.forEach((element, index) => {
     const ancestorElement = element.parentElement?.closest<HTMLElement>(INLINE_TARGET_SELECTOR);
-    const semanticParent = ancestorElement && root.contains(ancestorElement)
-      ? byElement.get(ancestorElement) ?? parent
-      : parent;
+    const semanticParent =
+      ancestorElement && root.contains(ancestorElement)
+        ? (byElement.get(ancestorElement) ?? parent)
+        : parent;
     const target: SemanticTarget = {
       key: `${keyPrefix}:inline:${index}`,
       blockId,
       element,
       label: inlineLabel(element),
-      kind: 'inline',
+      kind: "inline",
       parentKey: semanticParent.key,
     };
     targets.push(target);
@@ -194,14 +196,14 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
   const blockKeys: string[] = [];
   const groupTargets = new Map<HTMLElement, SemanticTarget>();
 
-  container.querySelectorAll<HTMLElement>('[data-pinpoint-group]').forEach((group) => {
-    const firstBlockId = group.querySelector<HTMLElement>('[data-block-id]')?.dataset.blockId;
+  container.querySelectorAll<HTMLElement>("[data-pinpoint-group]").forEach((group) => {
+    const firstBlockId = group.querySelector<HTMLElement>("[data-block-id]")?.dataset.blockId;
     const target: SemanticTarget = {
       key: groupKey(group),
-      blockId: firstBlockId ?? '',
+      blockId: firstBlockId ?? "",
       element: group,
       label: groupLabel(group),
-      kind: 'group',
+      kind: "group",
       parentKey: null,
     };
     targets.push(target);
@@ -213,8 +215,8 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
     const blockId = block.dataset.blockId;
     if (!blockId) continue;
 
-    const group = block.closest<HTMLElement>('[data-pinpoint-group]');
-    const parentKey = group ? groupTargets.get(group)?.key ?? null : null;
+    const group = block.closest<HTMLElement>("[data-pinpoint-group]");
+    const parentKey = group ? (groupTargets.get(group)?.key ?? null) : null;
 
     // First: a card's context can hold a table, a code fence or a formula,
     // and the card is still one question block made of its parts.
@@ -224,8 +226,8 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
         key: `${blockId}:block`,
         blockId,
         element: block,
-        label: prompt ? questionPartLabel(prompt) : 'question',
-        kind: 'block',
+        label: prompt ? questionPartLabel(prompt) : "question",
+        kind: "block",
         parentKey,
       };
       targets.push(cardTarget);
@@ -237,7 +239,7 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
           blockId,
           element: part,
           label: questionPartLabel(part),
-          kind: 'inline',
+          kind: "inline",
           parentKey: cardTarget.key,
         };
         targets.push(partTarget);
@@ -250,19 +252,19 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
     // A quote is one text block even when it holds a code fence or a table:
     // its fence is not a code-block target (whose click would annotate only
     // the fence), and its table rows are not cells of the quote.
-    const isQuote = block.tagName === 'BLOCKQUOTE';
-    const codeElement = isQuote ? null : block.querySelector<HTMLElement>('pre > code.pn-code');
+    const isQuote = block.tagName === "BLOCKQUOTE";
+    const codeElement = isQuote ? null : block.querySelector<HTMLElement>("pre > code.pn-code");
     // Inline math in a quote keeps the paragraph rule (the quote targets the
     // formula, as a paragraph with inline math does); a display-math block
     // inside a quote is not the quote.
-    const mathElement = block.matches('.math-annotatable,[data-math-tex]')
+    const mathElement = block.matches(".math-annotatable,[data-math-tex]")
       ? block
       : block.querySelector<HTMLElement>(
           isQuote
             ? '.math-annotatable:not([data-math-display="true"]),[data-math-tex]:not([data-math-display="true"])'
-            : '.math-annotatable,[data-math-tex]',
+            : ".math-annotatable,[data-math-tex]",
         );
-    const table = isQuote ? null : block.querySelector<HTMLTableElement>('table');
+    const table = isQuote ? null : block.querySelector<HTMLTableElement>("table");
 
     if (codeElement) {
       const target: SemanticTarget = {
@@ -270,7 +272,7 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
         blockId,
         element: block,
         label: codeBlockLabel(block),
-        kind: 'code',
+        kind: "code",
         parentKey,
       };
       targets.push(target);
@@ -284,8 +286,8 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
         key: `${blockId}:math`,
         blockId,
         element: mathElement,
-        label: 'formula',
-        kind: 'math',
+        label: "formula",
+        kind: "math",
         parentKey,
       };
       targets.push(target);
@@ -299,8 +301,8 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
         key: `${blockId}:table`,
         blockId,
         element: block,
-        label: 'table',
-        kind: 'table',
+        label: "table",
+        kind: "table",
         parentKey,
       };
       targets.push(tableTarget);
@@ -312,8 +314,8 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
           key: `${blockId}:row:${rowIndex}`,
           blockId,
           element: row,
-          label: rowIndex === 0 ? 'table header row' : `table row ${rowIndex}`,
-          kind: 'row',
+          label: rowIndex === 0 ? "table header row" : `table row ${rowIndex}`,
+          kind: "row",
           parentKey: tableTarget.key,
           rowIndex,
         };
@@ -326,21 +328,14 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
             blockId,
             element: cell,
             label: `table cell ${rowIndex + 1}, ${columnIndex + 1}`,
-            kind: 'cell',
+            kind: "cell",
             parentKey: rowTarget.key,
             rowIndex,
             columnIndex,
           };
           targets.push(cellTarget);
           byElement.set(cell, cellTarget);
-          addInlineTargets(
-            targets,
-            byElement,
-            blockId,
-            cellTarget,
-            cell,
-            cellTarget.key,
-          );
+          addInlineTargets(targets, byElement, blockId, cellTarget, cell, cellTarget.key);
         });
       });
       continue;
@@ -353,7 +348,7 @@ export function buildSemanticTargetGraph(container: HTMLElement): SemanticTarget
       blockId,
       element: primaryElement,
       label: blockLabel(primaryElement, listContent !== null),
-      kind: 'block',
+      kind: "block",
       parentKey,
     };
     targets.push(blockTarget);
@@ -376,7 +371,7 @@ export function resolveSemanticTarget(
   graph: SemanticTargetGraph,
   key: string | null,
 ): SemanticTarget | null {
-  return key ? graph.byKey.get(key) ?? null : null;
+  return key ? (graph.byKey.get(key) ?? null) : null;
 }
 
 /**
@@ -386,9 +381,7 @@ export function resolveSemanticTarget(
  * every text-bearing graph node resolves through this one range seam.
  */
 export function createSemanticTargetRange(target: SemanticTarget): Range | null {
-  return target.kind === 'code' || target.kind === 'math'
-    ? null
-    : createTextRange(target.element);
+  return target.kind === "code" || target.kind === "math" ? null : createTextRange(target.element);
 }
 
 /** Return the direct semantic children of a target in document order. */
@@ -411,10 +404,11 @@ export function getOwningBlockTarget(
     current = parent;
   }
   if (graph.blockKeys.includes(current.key)) return current;
-  return graph.blockKeys
-    .map((key) => resolveSemanticTarget(graph, key))
-    .find((candidate) => candidate?.blockId === target.blockId)
-    ?? target;
+  return (
+    graph.blockKeys
+      .map((key) => resolveSemanticTarget(graph, key))
+      .find((candidate) => candidate?.blockId === target.blockId) ?? target
+  );
 }
 
 /** Pick the block nearest the visible center of the document viewport. */
@@ -426,15 +420,19 @@ export function findInitialSemanticTarget(
     ? getScrollViewportRect(scrollViewport)
     : graph.container.getBoundingClientRect();
   const centerY = viewportRect.top + viewportRect.height / 2;
-  return graph.blockKeys
-    .map((key) => resolveSemanticTarget(graph, key))
-    .filter((target): target is SemanticTarget => target !== null)
-    .sort((left, right) => {
-      const leftRect = left.element.getBoundingClientRect();
-      const rightRect = right.element.getBoundingClientRect();
-      return Math.abs((leftRect.top + leftRect.bottom) / 2 - centerY)
-        - Math.abs((rightRect.top + rightRect.bottom) / 2 - centerY);
-    })[0] ?? null;
+  return (
+    graph.blockKeys
+      .map((key) => resolveSemanticTarget(graph, key))
+      .filter((target): target is SemanticTarget => target !== null)
+      .sort((left, right) => {
+        const leftRect = left.element.getBoundingClientRect();
+        const rightRect = right.element.getBoundingClientRect();
+        return (
+          Math.abs((leftRect.top + leftRect.bottom) / 2 - centerY) -
+          Math.abs((rightRect.top + rightRect.bottom) / 2 - centerY)
+        );
+      })[0] ?? null
+  );
 }
 
 /**
@@ -445,31 +443,31 @@ export function moveSemanticTarget(
   current: SemanticTarget,
   motion: SemanticTargetMotion,
 ): SemanticTarget {
-  if (motion === 'parent') {
+  if (motion === "parent") {
     return resolveSemanticTarget(graph, current.parentKey) ?? current;
   }
-  if (motion === 'child') {
+  if (motion === "child") {
     return getSemanticTargetChildren(graph, current)[0] ?? current;
   }
-  if (motion === 'first-block') {
+  if (motion === "first-block") {
     return resolveSemanticTarget(graph, graph.blockKeys[0] ?? null) ?? current;
   }
-  if (motion === 'last-block') {
+  if (motion === "last-block") {
     return resolveSemanticTarget(graph, graph.blockKeys.at(-1) ?? null) ?? current;
   }
-  if (motion === 'previous-sibling' || motion === 'next-sibling') {
+  if (motion === "previous-sibling" || motion === "next-sibling") {
     if (!current.parentKey) return current;
     const parent = resolveSemanticTarget(graph, current.parentKey);
     if (!parent) return current;
     const siblings = getSemanticTargetChildren(graph, parent);
     const index = siblings.findIndex((candidate) => candidate.key === current.key);
     if (index < 0) return current;
-    const delta = motion === 'previous-sibling' ? -1 : 1;
+    const delta = motion === "previous-sibling" ? -1 : 1;
     const nextIndex = Math.max(0, Math.min(siblings.length - 1, index + delta));
     return siblings[nextIndex] ?? current;
   }
 
-  const delta: -1 | 1 = motion === 'previous-block' ? -1 : 1;
+  const delta: -1 | 1 = motion === "previous-block" ? -1 : 1;
   const block = getOwningBlockTarget(graph, current);
   const index = graph.blockKeys.indexOf(block.key);
   if (index < 0) return current;
@@ -480,17 +478,20 @@ export function moveSemanticTarget(
 function targetForBlock(graph: SemanticTargetGraph, block: HTMLElement): SemanticTarget | null {
   const blockId = block.dataset.blockId;
   if (!blockId) return null;
-  return graph.blockKeys
-    .map((key) => resolveSemanticTarget(graph, key))
-    .find((target) => target?.blockId === blockId)
-    ?? null;
+  return (
+    graph.blockKeys
+      .map((key) => resolveSemanticTarget(graph, key))
+      .find((target) => target?.blockId === blockId) ?? null
+  );
 }
 
 function rowAtY(table: HTMLTableElement, clientY: number): HTMLTableRowElement | null {
-  return Array.from(table.rows).find((row) => {
-    const rect = row.getBoundingClientRect();
-    return clientY >= rect.top && clientY <= rect.bottom;
-  }) ?? null;
+  return (
+    Array.from(table.rows).find((row) => {
+      const rect = row.getBoundingClientRect();
+      return clientY >= rect.top && clientY <= rect.bottom;
+    }) ?? null
+  );
 }
 
 /**
@@ -505,38 +506,40 @@ export function resolveSemanticTargetAtPoint(
   if (pointerTarget.closest(SKIP_SELECTORS)) return null;
   if (!graph.container.contains(pointerTarget)) return null;
 
-  const group = pointerTarget.closest<HTMLElement>('[data-pinpoint-group]');
-  if (group && !pointerTarget.closest('[data-block-id]')) {
+  const group = pointerTarget.closest<HTMLElement>("[data-pinpoint-group]");
+  if (group && !pointerTarget.closest("[data-block-id]")) {
     return graph.byElement.get(group) ?? null;
   }
 
-  const block = pointerTarget.closest<HTMLElement>('[data-block-id]');
-  if (!block || !graph.container.contains(block) || block.tagName === 'HR') return null;
+  const block = pointerTarget.closest<HTMLElement>("[data-block-id]");
+  if (!block || !graph.container.contains(block) || block.tagName === "HR") return null;
   const blockTarget = targetForBlock(graph, block);
   if (!blockTarget) return null;
   // A question card's code fences and tables live in its context part; the
   // part lookup below resolves them.
   const card = block.matches(QUESTION_CARD_SELECTOR);
 
-  const code = card ? null : block.querySelector<HTMLElement>('pre > code.pn-code');
+  const code = card ? null : block.querySelector<HTMLElement>("pre > code.pn-code");
   if (
-    code
-    && (pointerTarget === code || code.contains(pointerTarget) || pointerTarget.closest('pre'))
+    code &&
+    (pointerTarget === code || code.contains(pointerTarget) || pointerTarget.closest("pre"))
   ) {
     return blockTarget;
   }
 
-  const table = card ? null : block.querySelector<HTMLTableElement>('table');
+  const table = card ? null : block.querySelector<HTMLTableElement>("table");
   if (table && pointer) {
     const rect = table.getBoundingClientRect();
-    const nearHorizontalEdge = pointer.clientX - rect.left < TABLE_EDGE_ZONE
-      || rect.right - pointer.clientX < TABLE_EDGE_ZONE;
-    const nearVerticalEdge = pointer.clientY - rect.top < TABLE_EDGE_ZONE
-      || rect.bottom - pointer.clientY < TABLE_EDGE_ZONE;
+    const nearHorizontalEdge =
+      pointer.clientX - rect.left < TABLE_EDGE_ZONE ||
+      rect.right - pointer.clientX < TABLE_EDGE_ZONE;
+    const nearVerticalEdge =
+      pointer.clientY - rect.top < TABLE_EDGE_ZONE ||
+      rect.bottom - pointer.clientY < TABLE_EDGE_ZONE;
     if (nearVerticalEdge) return blockTarget;
     if (nearHorizontalEdge) {
       const row = rowAtY(table, pointer.clientY);
-      return row ? graph.byElement.get(row) ?? blockTarget : blockTarget;
+      return row ? (graph.byElement.get(row) ?? blockTarget) : blockTarget;
     }
   }
 
@@ -548,13 +551,16 @@ export function resolveSemanticTargetAtPoint(
 
   // Inside a question card: the part under the pointer. A choice row's
   // padding and marker belong to that choice's text.
-  const part = pointerTarget.closest<HTMLElement>(QUESTION_PART_SELECTOR)
-    ?? pointerTarget.closest<HTMLElement>('[data-question-option]')?.querySelector<HTMLElement>(QUESTION_PART_SELECTOR);
+  const part =
+    pointerTarget.closest<HTMLElement>(QUESTION_PART_SELECTOR) ??
+    pointerTarget
+      .closest<HTMLElement>("[data-question-option]")
+      ?.querySelector<HTMLElement>(QUESTION_PART_SELECTOR);
   if (part && block.contains(part)) {
     return graph.byElement.get(part) ?? blockTarget;
   }
 
-  const cell = pointerTarget.closest<HTMLTableCellElement>('td,th');
+  const cell = pointerTarget.closest<HTMLTableCellElement>("td,th");
   if (cell && block.contains(cell)) {
     return graph.byElement.get(cell) ?? blockTarget;
   }
@@ -591,7 +597,7 @@ export function resolvePinpointTarget(
         element: semantic.element,
         blockId: semantic.blockId,
         label: semantic.label,
-        isCodeBlock: semantic.kind === 'code',
+        isCodeBlock: semantic.kind === "code",
       }
     : null;
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * Shared theme-mode icons (Sun / Moon / System).
@@ -16,7 +16,7 @@ export interface IconProps {
   className?: string;
 }
 
-export const SunIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
+export const SunIcon: React.FC<IconProps> = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path
       strokeLinecap="round"
@@ -26,7 +26,7 @@ export const SunIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
   </svg>
 );
 
-export const MoonIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
+export const MoonIcon: React.FC<IconProps> = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path
       strokeLinecap="round"
@@ -36,7 +36,7 @@ export const MoonIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => 
   </svg>
 );
 
-export const SystemIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => (
+export const SystemIcon: React.FC<IconProps> = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path
       strokeLinecap="round"

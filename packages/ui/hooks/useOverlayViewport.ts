@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from "react";
 
 /**
  * Bridges a scroll element (delivered by `OverlayScrollArea`'s `onViewportReady`,

@@ -1,11 +1,11 @@
-import type { Origin } from '@dynotator/core/agents';
-import { isSessionBridgeProvider, type AIProviderOption } from './aiProvider';
+import type { Origin } from "@dynotator/core/agents";
+import { isSessionBridgeProvider, type AIProviderOption } from "./aiProvider";
 
 /**
  * The command that installs the Plannotator extension into Oh My Pi. OMP loads
  * Pi extensions as OMP plugins; this is the one place the UI names it.
  */
-export const OMP_EXTENSION_INSTALL_COMMAND = 'omp plugin install @plannotator/pi-extension';
+export const OMP_EXTENSION_INSTALL_COMMAND = "omp plugin install @plannotator/pi-extension";
 
 /**
  * A one-line note for Ask AI when the agent that opened Plannotator COULD
@@ -19,9 +19,9 @@ export const OMP_EXTENSION_INSTALL_COMMAND = 'omp plugin install @plannotator/pi
  */
 export function askSessionSetupHint(
   origin: Origin | null | undefined,
-  providers: ReadonlyArray<Pick<AIProviderOption, 'name' | 'sessionBridge'>>,
+  providers: ReadonlyArray<Pick<AIProviderOption, "name" | "sessionBridge">>,
 ): string | null {
-  if (origin !== 'oh-my-pi') return null;
+  if (origin !== "oh-my-pi") return null;
   if (providers.some(isSessionBridgeProvider)) return null;
   return `To ask your Oh My Pi session instead, install the Plannotator extension (${OMP_EXTENSION_INSTALL_COMMAND}) and open reviews with its /plannotator-* commands.`;
 }

@@ -19,14 +19,14 @@ import {
   skillInstructionsIncludedNote,
   skillsReferencedHeading,
   type SkillBlockAudience,
-} from '@dynotator/core/skill-reference-block';
+} from "@dynotator/core/skill-reference-block";
 
 /**
  * Where a skill came from. `plannotator`: one of Plannotator's own skills a
  * host serves itself (the Inbox's review skills, while Code review is on):
  * human-only, with no folder on disk; its instructions are the host's text.
  */
-export type SkillRootId = 'claude' | 'codex' | 'universal' | 'plannotator';
+export type SkillRootId = "claude" | "codex" | "universal" | "plannotator";
 
 export interface SkillCatalogEntry {
   name: string;
@@ -38,7 +38,7 @@ export interface SkillCatalogEntry {
   dir?: string;
 }
 
-export const SKILL_TRIGGER_CHARS = ['/', '$'] as const;
+export const SKILL_TRIGGER_CHARS = ["/", "$"] as const;
 export type SkillTriggerChar = (typeof SKILL_TRIGGER_CHARS)[number];
 
 /** Longest query the composer keeps treating as a skill lookup. */
@@ -85,8 +85,8 @@ export function findSkillTrigger(text: string, caret: number): SkillTriggerConte
   if (start < 0) return null;
 
   const trigger = text[start] as SkillTriggerChar;
-  const before = start === 0 ? '' : text[start - 1];
-  if (before !== '' && !/[\s(]/.test(before)) return null;
+  const before = start === 0 ? "" : text[start - 1];
+  if (before !== "" && !/[\s(]/.test(before)) return null;
 
   const query = text.slice(start + 1, caret);
   if (query.length > MAX_SKILL_QUERY_LEN) return null;
@@ -129,8 +129,25 @@ export function filterSkillCatalog(
  * for them so an inserted reference always survives extraction.
  */
 const RESERVED_PATH_SEGMENTS = new Set([
-  'bin', 'boot', 'dev', 'etc', 'home', 'lib', 'lib64', 'media', 'mnt', 'opt',
-  'proc', 'root', 'run', 'sbin', 'srv', 'sys', 'tmp', 'usr', 'var',
+  "bin",
+  "boot",
+  "dev",
+  "etc",
+  "home",
+  "lib",
+  "lib64",
+  "media",
+  "mnt",
+  "opt",
+  "proc",
+  "root",
+  "run",
+  "sbin",
+  "srv",
+  "sys",
+  "tmp",
+  "usr",
+  "var",
 ]);
 
 /**
@@ -152,9 +169,23 @@ const RESERVED_PATH_SEGMENTS = new Set([
  */
 const SLASH_PROSE_PRECEDING_WORDS = new Set([
   // HTTP method verbs
-  'get', 'head', 'post', 'put', 'delete', 'options', 'patch',
+  "get",
+  "head",
+  "post",
+  "put",
+  "delete",
+  "options",
+  "patch",
   // Modal auxiliaries
-  'can', 'could', 'may', 'might', 'must', 'shall', 'should', 'will', 'would',
+  "can",
+  "could",
+  "may",
+  "might",
+  "must",
+  "shall",
+  "should",
+  "will",
+  "would",
 ]);
 
 /**
@@ -188,10 +219,10 @@ export function insertSkillReference(
   skill: SkillCatalogEntry,
 ): { text: string; caret: number } {
   const triggerChar =
-    trigger.trigger === '/' &&
+    trigger.trigger === "/" &&
     (RESERVED_PATH_SEGMENTS.has(skill.name.toLowerCase()) ||
       slashTokenReadsAsProse(text, trigger.start))
-      ? '$'
+      ? "$"
       : trigger.trigger;
   const inserted = `${triggerChar}${skill.name} `;
   return {
@@ -256,19 +287,22 @@ export function findSkillReferenceTokens(
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     const after = text[m.index + m[0].length];
-    if (after === '/' || after === '\\') continue;
+    if (after === "/" || after === "\\") continue;
     // Markdown link destination: `[label](/name)` is a URL, not a reference.
-    if (m[1] === '(' && text[m.index - 1] === ']') continue;
+    if (m[1] === "(" && text[m.index - 1] === "]") continue;
     // Sentence-final dots are punctuation, not part of the name ("use $humanizer.").
     const name = m[3].toLowerCase();
-    const trimmed = m[3].replace(/\.+$/, '');
+    const trimmed = m[3].replace(/\.+$/, "");
     const trimmedName = trimmed.toLowerCase();
     // `/run`-style well-known absolute paths never count (only for `/`).
-    if (m[2] === '/' && (RESERVED_PATH_SEGMENTS.has(name) || RESERVED_PATH_SEGMENTS.has(trimmedName)))
+    if (
+      m[2] === "/" &&
+      (RESERVED_PATH_SEGMENTS.has(name) || RESERVED_PATH_SEGMENTS.has(trimmedName))
+    )
       continue;
     // Prose guard (only for `/`): "GET /show" is a route, "could /simplify"
     // is an emphasized verb — never a skill reference.
-    if (m[2] === '/' && slashTokenReadsAsProse(text, m.index + m[1].length)) continue;
+    if (m[2] === "/" && slashTokenReadsAsProse(text, m.index + m[1].length)) continue;
     const exact = lookup(m[3]);
     const entry = exact ?? lookup(trimmed);
     if (!entry) continue;
@@ -379,7 +413,7 @@ const MARKER_LOOKALIKE_RE =
 const INVISIBLE_FORMAT_CHARS_RE = /\p{Cf}/gu;
 
 const NEUTRALIZED_LINE_PREFIX =
-  '[plannotator: the following skill-body line matched an injection marker and was neutralized] ';
+  "[plannotator: the following skill-body line matched an injection marker and was neutralized] ";
 
 /**
  * Neutralize body lines that match our own structural markers, visibly: each
@@ -390,13 +424,13 @@ const NEUTRALIZED_LINE_PREFIX =
  */
 export function neutralizeSkillMarkerLines(body: string): string {
   return body
-    .split('\n')
+    .split("\n")
     .map((line) =>
-      MARKER_LOOKALIKE_RE.test(line.replace(INVISIBLE_FORMAT_CHARS_RE, ''))
+      MARKER_LOOKALIKE_RE.test(line.replace(INVISIBLE_FORMAT_CHARS_RE, ""))
         ? NEUTRALIZED_LINE_PREFIX + line
         : line,
     )
-    .join('\n');
+    .join("\n");
 }
 
 /** Instruction block for one injected human-only skill. Unmistakably delimited
@@ -404,7 +438,12 @@ export function neutralizeSkillMarkerLines(body: string): string {
  *  and labeled so it can never read as the reviewer's own words. Body lines
  *  that imitate the markers are neutralized (see neutralizeSkillMarkerLines)
  *  so the body cannot close the block early or forge a sibling block. */
-function injectedSkillSection(name: string, body: SkillExportContent, audience: SkillBlockAudience, builtin = false): string {
+function injectedSkillSection(
+  name: string,
+  body: SkillExportContent,
+  audience: SkillBlockAudience,
+  builtin = false,
+): string {
   let out = `--- BEGIN SKILL INSTRUCTIONS: ${name} ---\n`;
   if (builtin) {
     // One of Plannotator's own skills (root `plannotator`): no folder to name, nothing truncated.
@@ -455,7 +494,7 @@ export function skillReferenceExportBlock(
   injectedNames?: Set<string>,
   options?: { external?: boolean },
 ): string {
-  if (!text) return '';
+  if (!text) return "";
   const refs = extractSkillReferences(text, exportCatalog);
   return renderSkillReferencesBlock(refs, {
     contentOf: (name) => exportContents.get(name),
@@ -486,14 +525,14 @@ export function renderSkillReferencesBlock(
   refs: readonly SkillCatalogEntry[],
   options: SkillReferencesBlockOptions = {},
 ): string {
-  if (refs.length === 0) return '';
+  if (refs.length === 0) return "";
   const { injectedNames } = options;
   const audience = options.audience ?? REVIEWER_SKILL_AUDIENCE;
   const external = options.external === true;
   const toInject: Array<{ name: string; body: SkillExportContent; builtin?: boolean }> = [];
   let out = `${skillsReferencedHeading(audience)}\n`;
   for (const ref of refs) {
-    if (ref.root === 'plannotator') {
+    if (ref.root === "plannotator") {
       // Plannotator's own skill: the host supplies its text; never from an external tool.
       const body = external ? undefined : options.contentOf?.(ref.name);
       if (body) {

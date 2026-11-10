@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { noteServerSessionMismatch, withServerSession } from '@dynotator/ui/utils/serverSession';
-import type { VersionInfo } from '@dynotator/ui/hooks/usePlanDiff';
+import { useCallback, useEffect, useRef } from "react";
+import { noteServerSessionMismatch, withServerSession } from "@dynotator/ui/utils/serverSession";
+import type { VersionInfo } from "@dynotator/ui/hooks/usePlanDiff";
 
 /**
  * How long the open file must stay unchanged before its new text is saved as
@@ -64,9 +64,9 @@ export function useLiveAnnotateVersion({
     const doFetch = fetchRef.current ?? fetch;
     let res: Response;
     try {
-      res = await doFetch('/api/plan/versions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      res = await doFetch("/api/plan/versions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(withServerSession({ hash })),
       });
     } catch {
@@ -82,18 +82,24 @@ export function useLiveAnnotateVersion({
     }
     if (seq !== seqRef.current || !enabledRef.current) return;
     if (answer.ok !== true || answer.saved !== true || !answer.versionInfo) return;
-    onSavedRef.current({ previousPlan: answer.previousPlan ?? null, versionInfo: answer.versionInfo });
+    onSavedRef.current({
+      previousPlan: answer.previousPlan ?? null,
+      versionInfo: answer.versionInfo,
+    });
   }, []);
 
-  const schedule = useCallback((hash: string) => {
-    if (!enabledRef.current || !hash) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    const seq = ++seqRef.current;
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null;
-      void save(hash, seq);
-    }, settleMs);
-  }, [save, settleMs]);
+  const schedule = useCallback(
+    (hash: string) => {
+      if (!enabledRef.current || !hash) return;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      const seq = ++seqRef.current;
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        void save(hash, seq);
+      }, settleMs);
+    },
+    [save, settleMs],
+  );
 
   useEffect(() => cancel, [cancel]);
   useEffect(() => {

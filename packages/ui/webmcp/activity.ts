@@ -7,7 +7,7 @@
  * Module-level and dependency-free; a browser without WebMCP never records a
  * call, so subscribers render nothing and the store never changes.
  */
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from "react";
 
 export interface WebMcpActivity {
   /** Successful tool calls in this page load. */

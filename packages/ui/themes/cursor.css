@@ -1,27 +1,27 @@
 /* Code Fork — dark + light, based on Cursor's default themes */
 .theme-cursor {
   --background: #181818;
-  --foreground: #E4E4E4;
+  --foreground: #e4e4e4;
   --card: #1e1e1e;
-  --card-foreground: #E4E4E4;
+  --card-foreground: #e4e4e4;
   --popover: #141414;
-  --popover-foreground: #E4E4E4;
-  --primary: #81A1C1;
+  --popover-foreground: #e4e4e4;
+  --primary: #81a1c1;
   --primary-foreground: #141414;
   --secondary: #2a2a2a;
-  --secondary-foreground: #E4E4E4;
+  --secondary-foreground: #e4e4e4;
   --muted: #252525;
   --muted-foreground: #a0a0a0;
-  --accent: #88C0D0;
+  --accent: #88c0d0;
   --accent-foreground: #141414;
-  --destructive: #E34671;
-  --destructive-foreground: #E4E4E4;
+  --destructive: #e34671;
+  --destructive-foreground: #e4e4e4;
   --border: #333333;
   --input: #252525;
-  --ring: #81A1C1;
-  --success: #3FA266;
+  --ring: #81a1c1;
+  --success: #3fa266;
   --success-foreground: #141414;
-  --warning: #D2943E;
+  --warning: #d2943e;
   --warning-foreground: #141414;
 
   --font-sans: system-ui, sans-serif;
@@ -29,34 +29,34 @@
   --radius: 0.625rem;
 
   --code-bg: #141414;
-  --focus-highlight: #88C0D0;
+  --focus-highlight: #88c0d0;
 }
 
 .theme-cursor.light {
-  --background: #FCFCFC;
+  --background: #fcfcfc;
   --foreground: #141414;
-  --card: #F3F3F3;
+  --card: #f3f3f3;
   --card-foreground: #141414;
-  --popover: #F3F3F3;
+  --popover: #f3f3f3;
   --popover-foreground: #141414;
-  --primary: #3C7CAB;
-  --primary-foreground: #FCFCFC;
-  --secondary: #E8E8E8;
+  --primary: #3c7cab;
+  --primary-foreground: #fcfcfc;
+  --secondary: #e8e8e8;
   --secondary-foreground: #141414;
-  --muted: #EDEDED;
+  --muted: #ededed;
   --muted-foreground: #6a6a6a;
-  --accent: #4C7F8C;
-  --accent-foreground: #FCFCFC;
-  --destructive: #CF2D56;
-  --destructive-foreground: #FCFCFC;
-  --border: #DDDDDD;
-  --input: #EDEDED;
-  --ring: #3C7CAB;
-  --success: #1F8A65;
-  --success-foreground: #FCFCFC;
-  --warning: #C08532;
+  --accent: #4c7f8c;
+  --accent-foreground: #fcfcfc;
+  --destructive: #cf2d56;
+  --destructive-foreground: #fcfcfc;
+  --border: #dddddd;
+  --input: #ededed;
+  --ring: #3c7cab;
+  --success: #1f8a65;
+  --success-foreground: #fcfcfc;
+  --warning: #c08532;
   --warning-foreground: #141414;
 
-  --code-bg: #F3F3F3;
-  --focus-highlight: #3C7CAB;
+  --code-bg: #f3f3f3;
+  --focus-highlight: #3c7cab;
 }

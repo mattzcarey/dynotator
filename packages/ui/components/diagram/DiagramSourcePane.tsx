@@ -1,10 +1,10 @@
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { Compartment, EditorState, type Extension } from '@codemirror/state';
-import { Decoration, EditorView, keymap, lineNumbers, type DecorationSet } from '@codemirror/view';
-import React, { useEffect, useRef } from 'react';
-import { cn } from '../../lib/utils';
-import { Button } from '../ui/button';
-import type { DiagramSourceDraft } from './useDiagramSourceDraft';
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { Compartment, EditorState, type Extension } from "@codemirror/state";
+import { Decoration, EditorView, keymap, lineNumbers, type DecorationSet } from "@codemirror/view";
+import React, { useEffect, useRef } from "react";
+import { cn } from "../../lib/utils";
+import { Button } from "../ui/button";
+import type { DiagramSourceDraft } from "./useDiagramSourceDraft";
 
 /**
  * The Source pane beside the canvas (owner ruling: source and diagram are
@@ -20,26 +20,28 @@ import type { DiagramSourceDraft } from './useDiagramSourceDraft';
  * the draft is local until Save.
  */
 
-const LINE_MARK_CLASS = 'cm-diagram-comment-line';
+const LINE_MARK_CLASS = "cm-diagram-comment-line";
 
 const paneTheme = EditorView.theme({
-  '&': {
-    height: '100%',
-    backgroundColor: 'var(--card)',
-    color: 'var(--card-foreground)',
-    fontFamily: 'var(--font-mono)',
+  "&": {
+    height: "100%",
+    backgroundColor: "var(--card)",
+    color: "var(--card-foreground)",
+    fontFamily: "var(--font-mono)",
   },
-  '&.cm-focused': { outline: 'none' },
-  '.cm-scroller': { fontFamily: 'var(--font-mono)' },
-  '.cm-gutters': {
-    backgroundColor: 'var(--card)',
-    color: 'var(--muted-foreground)',
-    borderRight: '1px solid var(--border)',
+  "&.cm-focused": { outline: "none" },
+  ".cm-scroller": { fontFamily: "var(--font-mono)" },
+  ".cm-gutters": {
+    backgroundColor: "var(--card)",
+    color: "var(--muted-foreground)",
+    borderRight: "1px solid var(--border)",
   },
-  '.cm-activeLineGutter': { backgroundColor: 'transparent' },
-  '.cm-content': { padding: '8px 0' },
-  '.cm-line': { padding: '0 12px' },
-  [`.${LINE_MARK_CLASS}`]: { backgroundColor: 'color-mix(in oklab, var(--primary) 18%, transparent)' },
+  ".cm-activeLineGutter": { backgroundColor: "transparent" },
+  ".cm-content": { padding: "8px 0" },
+  ".cm-line": { padding: "0 12px" },
+  [`.${LINE_MARK_CLASS}`]: {
+    backgroundColor: "color-mix(in oklab, var(--primary) 18%, transparent)",
+  },
 });
 
 function lineMarks(state: EditorState, range: readonly [number, number] | null): DecorationSet {
@@ -60,7 +62,7 @@ function Strip({
   action,
   dataAttr,
 }: {
-  tone: 'accent' | 'destructive';
+  tone: "accent" | "destructive";
   title: string;
   children?: React.ReactNode;
   action?: React.ReactNode;
@@ -68,11 +70,13 @@ function Strip({
 }) {
   return (
     <div
-      {...{ [dataAttr]: '' }}
-      role={tone === 'destructive' ? 'alert' : 'status'}
+      {...{ [dataAttr]: "" }}
+      role={tone === "destructive" ? "alert" : "status"}
       className={cn(
-        'flex items-start gap-2 rounded-md border px-2.5 py-2 text-xs',
-        tone === 'destructive' ? 'border-destructive/40 bg-destructive/5 text-destructive' : 'border-primary/30 bg-primary/5 text-foreground',
+        "flex items-start gap-2 rounded-md border px-2.5 py-2 text-xs",
+        tone === "destructive"
+          ? "border-destructive/40 bg-destructive/5 text-destructive"
+          : "border-primary/30 bg-primary/5 text-foreground",
       )}
     >
       <div className="min-w-0 flex-1">
@@ -107,7 +111,10 @@ export function DiagramSourcePane({
   useEffect(() => {
     const host = hostRef.current;
     if (host === null) return;
-    const editableExtensions = (on: boolean): Extension => [EditorView.editable.of(on), EditorState.readOnly.of(!on)];
+    const editableExtensions = (on: boolean): Extension => [
+      EditorView.editable.of(on),
+      EditorState.readOnly.of(!on),
+    ];
     const view = new EditorView({
       parent: host,
       state: EditorState.create({
@@ -119,7 +126,7 @@ export function DiagramSourcePane({
           paneTheme,
           keymap.of([
             {
-              key: 'Mod-s',
+              key: "Mod-s",
               run: () => {
                 void draftRef.current.save();
                 return true;
@@ -148,7 +155,10 @@ export function DiagramSourcePane({
 
   useEffect(() => {
     viewRef.current?.dispatch({
-      effects: editableCompartment.current.reconfigure([EditorView.editable.of(editable), EditorState.readOnly.of(!editable)]),
+      effects: editableCompartment.current.reconfigure([
+        EditorView.editable.of(editable),
+        EditorState.readOnly.of(!editable),
+      ]),
     });
   }, [editable]);
 
@@ -168,11 +178,15 @@ export function DiagramSourcePane({
     const view = viewRef.current;
     if (view === null) return;
     view.dispatch({
-      effects: marksCompartment.current.reconfigure(EditorView.decorations.of(lineMarks(view.state, markedLines))),
+      effects: marksCompartment.current.reconfigure(
+        EditorView.decorations.of(lineMarks(view.state, markedLines)),
+      ),
     });
     if (markedLines !== null && markedLines[0] <= view.state.doc.lines) {
       view.dispatch({
-        effects: EditorView.scrollIntoView(view.state.doc.line(markedLines[0]).from, { y: 'center' }),
+        effects: EditorView.scrollIntoView(view.state.doc.line(markedLines[0]).from, {
+          y: "center",
+        }),
       });
     }
   }, [markedLines]);
@@ -181,13 +195,13 @@ export function DiagramSourcePane({
     <section
       data-diagram-source-pane=""
       aria-label="Diagram source"
-      className={cn('flex min-h-0 flex-col bg-card', className)}
+      className={cn("flex min-h-0 flex-col bg-card", className)}
       // Escape LEAVES the buffer; it never reaches whatever is behind
       // the pane. In a popout that outer handler closes it, and one
       // keystroke mid-draft would take the pane, the preview and the
       // person's place with it.
       onKeyDown={(event) => {
-        if (event.key !== 'Escape' || event.defaultPrevented) return;
+        if (event.key !== "Escape" || event.defaultPrevented) return;
         event.preventDefault();
         event.stopPropagation();
         viewRef.current?.contentDOM.blur();
@@ -204,11 +218,22 @@ export function DiagramSourcePane({
         <span className="flex-1" />
         {editable && (
           <>
-            <Button type="button" variant="ghost" size="xs" disabled={!draft.dirty || draft.saving} onClick={draft.discard}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              disabled={!draft.dirty || draft.saving}
+              onClick={draft.discard}
+            >
               Discard
             </Button>
-            <Button type="button" size="xs" disabled={!draft.dirty || draft.saving || draft.stale} onClick={() => void draft.save()}>
-              {draft.saving ? 'Saving…' : 'Save'}
+            <Button
+              type="button"
+              size="xs"
+              disabled={!draft.dirty || draft.saving || draft.stale}
+              onClick={() => void draft.save()}
+            >
+              {draft.saving ? "Saving…" : "Save"}
             </Button>
           </>
         )}
@@ -226,19 +251,27 @@ export function DiagramSourcePane({
             }
           >
             {draft.dirty
-              ? 'Someone saved a newer version. Reload to see it; your draft stays in the pane and Save is held until you do.'
-              : 'Someone saved a newer version. Reload to see it.'}
+              ? "Someone saved a newer version. Reload to see it; your draft stays in the pane and Save is held until you do."
+              : "Someone saved a newer version. Reload to see it."}
           </Strip>
         </div>
       )}
       {draft.saveError !== null && (
         <div className="shrink-0 border-b border-border p-2">
-          <Strip tone="destructive" dataAttr="data-diagram-save-error" title="The diagram was not saved">
+          <Strip
+            tone="destructive"
+            dataAttr="data-diagram-save-error"
+            title="The diagram was not saved"
+          >
             {draft.saveError}
           </Strip>
         </div>
       )}
-      <div ref={hostRef} data-diagram-source-editor="" className="min-h-0 flex-1 overflow-hidden text-xs" />
+      <div
+        ref={hostRef}
+        data-diagram-source-editor=""
+        className="min-h-0 flex-1 overflow-hidden text-xs"
+      />
     </section>
   );
 }

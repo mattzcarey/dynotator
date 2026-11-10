@@ -12,13 +12,13 @@
  * "never seen" from "seeded default".
  */
 
-import type { AgentToolSetting } from './agentToolSetting';
-import { storage } from './storage';
-import { needsTerminalToolsAnnouncement } from './terminalToolsAnnouncement';
+import type { AgentToolSetting } from "./agentToolSetting";
+import { storage } from "./storage";
+import { needsTerminalToolsAnnouncement } from "./terminalToolsAnnouncement";
 
-const STORAGE_KEY = 'plannotator-announce-agent-tool-seen';
+const STORAGE_KEY = "plannotator-announce-agent-tool-seen";
 // Bump to re-offer after a meaningful revision.
-const CURRENT_VERSION = '1';
+const CURRENT_VERSION = "1";
 
 export function needsAgentToolAnnouncement(): boolean {
   return storage.getItem(STORAGE_KEY) !== CURRENT_VERSION;
@@ -47,10 +47,12 @@ export function agentToolAnnouncementPendingThisLoad(): boolean {
  * is not asked again), and not decided by PLANNOTATOR_AGENT_TOOL (a toggle
  * cannot change that).
  */
-export function agentToolOfferApplies(setting: AgentToolSetting | undefined): setting is AgentToolSetting {
+export function agentToolOfferApplies(
+  setting: AgentToolSetting | undefined,
+): setting is AgentToolSetting {
   return (
     setting !== undefined &&
-    (setting.host === 'pi' || setting.host === 'opencode') &&
+    (setting.host === "pi" || setting.host === "opencode") &&
     !setting.enabled &&
     !setting.configured &&
     setting.env === undefined
@@ -62,8 +64,10 @@ export function agentToolOfferApplies(setting: AgentToolSetting | undefined): se
  * from the host alone: after "Turn it on" succeeds the setting is on, and the
  * open dialog must stay to say so.
  */
-export function agentToolOfferHostOf(setting: AgentToolSetting | undefined): 'pi' | 'opencode' | null {
-  return setting?.host === 'pi' || setting?.host === 'opencode' ? setting.host : null;
+export function agentToolOfferHostOf(
+  setting: AgentToolSetting | undefined,
+): "pi" | "opencode" | null {
+  return setting?.host === "pi" || setting?.host === "opencode" ? setting.host : null;
 }
 
 export interface AgentToolAnnouncementGateState {

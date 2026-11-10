@@ -1,4 +1,4 @@
-import type { ContentSize } from './useDiagramViewport';
+import type { ContentSize } from "./useDiagramViewport";
 
 /**
  * The rendered diagram's intrinsic size — a pure read of two svg attributes.
@@ -21,7 +21,7 @@ function svgLength(value: string | null): number {
  * write one), else its `width` / `height` attributes (a `pt` or `px` suffix
  * is accepted, as Graphviz writes them). */
 export function svgContentSize(svg: SVGSVGElement): ContentSize | null {
-  const viewBox = svg.getAttribute('viewBox');
+  const viewBox = svg.getAttribute("viewBox");
   if (viewBox !== null) {
     const parts = viewBox
       .trim()
@@ -41,7 +41,9 @@ export function svgContentSize(svg: SVGSVGElement): ContentSize | null {
       return { width, height };
     }
   }
-  const width = svgLength(svg.getAttribute('width'));
-  const height = svgLength(svg.getAttribute('height'));
-  return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0 ? { width, height } : null;
+  const width = svgLength(svg.getAttribute("width"));
+  const height = svgLength(svg.getAttribute("height"));
+  return Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0
+    ? { width, height }
+    : null;
 }

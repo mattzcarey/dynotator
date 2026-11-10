@@ -7,7 +7,7 @@
  * the composer does not flicker at its boundary.
  */
 
-export type ComposerYieldState = 'none' | 'near' | 'over';
+export type ComposerYieldState = "none" | "near" | "over";
 
 /** Distance (px from the composer rect) at which the composer starts fading. */
 export const COMPOSER_YIELD_NEAR_ENTER_PX = 80;
@@ -33,13 +33,13 @@ export function computeComposerYield(
   previous: ComposerYieldState,
   distance: number,
 ): ComposerYieldState {
-  if (distance <= 0) return 'over';
-  if (previous === 'over') {
-    if (distance <= COMPOSER_YIELD_OVER_EXIT_PX) return 'over';
-    return distance <= COMPOSER_YIELD_NEAR_EXIT_PX ? 'near' : 'none';
+  if (distance <= 0) return "over";
+  if (previous === "over") {
+    if (distance <= COMPOSER_YIELD_OVER_EXIT_PX) return "over";
+    return distance <= COMPOSER_YIELD_NEAR_EXIT_PX ? "near" : "none";
   }
-  if (previous === 'near') {
-    return distance <= COMPOSER_YIELD_NEAR_EXIT_PX ? 'near' : 'none';
+  if (previous === "near") {
+    return distance <= COMPOSER_YIELD_NEAR_EXIT_PX ? "near" : "none";
   }
-  return distance <= COMPOSER_YIELD_NEAR_ENTER_PX ? 'near' : 'none';
+  return distance <= COMPOSER_YIELD_NEAR_ENTER_PX ? "near" : "none";
 }

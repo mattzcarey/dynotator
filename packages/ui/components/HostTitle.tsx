@@ -1,6 +1,6 @@
-import React from 'react';
-import { Tooltip } from './Tooltip';
-import { isTextCut, noHover } from '../utils/textCut';
+import React from "react";
+import { Tooltip } from "./Tooltip";
+import { isTextCut, noHover } from "../utils/textCut";
 
 /**
  * Hover text for a ui control or label, drawn the way the host chooses.
@@ -40,7 +40,7 @@ export function getComponentTooltips(): boolean {
  * tokens then reach the popup), else the body.
  */
 export function tooltipContainerOf(trigger: Element): HTMLElement | null {
-  return trigger.closest<HTMLElement>('dialog[open], [data-pn-tooltip-root]');
+  return trigger.closest<HTMLElement>("dialog[open], [data-pn-tooltip-root]");
 }
 
 export function HostTitle({
@@ -48,33 +48,40 @@ export function HostTitle({
   children,
   name = false,
   cut = false,
-  side = 'top',
+  side = "top",
 }: {
   title: string | undefined | null;
   children: React.ReactElement;
   name?: boolean;
   cut?: boolean;
-  side?: 'top' | 'right' | 'bottom' | 'left';
+  side?: "top" | "right" | "bottom" | "left";
 }) {
   const descriptionId = React.useId();
   const [container, setContainer] = React.useState<HTMLElement | null>(null);
   if (title === undefined || title === null) return children;
   // Off: the native title, byte for byte as before (an empty title included).
-  if (!componentTooltips) return React.cloneElement(children as React.ReactElement<{ title?: string }>, { title });
+  if (!componentTooltips)
+    return React.cloneElement(children as React.ReactElement<{ title?: string }>, { title });
   if (!title) return children;
-  const props = children.props as { 'aria-label'?: string; 'aria-describedby'?: string };
-  const labelled = props['aria-label'] != null;
+  const props = children.props as { "aria-label"?: string; "aria-describedby"?: string };
+  const labelled = props["aria-label"] != null;
   // A title that was the control's only name becomes its aria-label. Any other
   // title was its description (a native title is read as one), and a tooltip
   // tags nothing for a screen reader: the text stays in a hidden element the
   // child names with aria-describedby. Not for a cut label (the text is on
   // screen) or a title equal to the control's own label.
   const asName = name && !labelled;
-  const describe = !asName && !cut && props['aria-label'] !== title;
+  const describe = !asName && !cut && props["aria-label"] !== title;
   const extra: Record<string, string> = {};
-  if (asName) extra['aria-label'] = title;
-  if (describe) extra['aria-describedby'] = [props['aria-describedby'], descriptionId].filter(Boolean).join(' ');
-  const child = Object.keys(extra).length > 0 ? React.cloneElement(children as React.ReactElement<Record<string, string>>, extra) : children;
+  if (asName) extra["aria-label"] = title;
+  if (describe)
+    extra["aria-describedby"] = [props["aria-describedby"], descriptionId]
+      .filter(Boolean)
+      .join(" ");
+  const child =
+    Object.keys(extra).length > 0
+      ? React.cloneElement(children as React.ReactElement<Record<string, string>>, extra)
+      : children;
   const tooltip = (
     <Tooltip
       content={title}

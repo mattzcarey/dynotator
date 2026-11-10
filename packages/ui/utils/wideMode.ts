@@ -1,6 +1,6 @@
-import type { SidebarTab } from '@dynotator/ui/hooks/useSidebar';
-import type { WideModeType } from '@dynotator/ui/types';
-export type { WideModeType } from '@dynotator/ui/types';
+import type { SidebarTab } from "@dynotator/ui/hooks/useSidebar";
+import type { WideModeType } from "@dynotator/ui/types";
+export type { WideModeType } from "@dynotator/ui/types";
 
 export type WideModeLayoutSnapshot = {
   sidebarIsOpen: boolean;
@@ -28,7 +28,7 @@ export function canUseAnnotateWideMode(options: {
 }
 
 /** What the focus-mode keyboard shortcut should do on this press. */
-export type FocusShortcutAction = 'enter-focus' | 'exit' | 'none';
+export type FocusShortcutAction = "enter-focus" | "exit" | "none";
 
 /**
  * Decide the next step for the focus-mode keyboard shortcut.
@@ -42,8 +42,8 @@ export function resolveFocusShortcutAction(state: {
   canUseWideMode: boolean;
   wideModeType: WideModeType | null;
 }): FocusShortcutAction {
-  if (state.wideModeType !== null) return 'exit';
-  return state.canUseWideMode ? 'enter-focus' : 'none';
+  if (state.wideModeType !== null) return "exit";
+  return state.canUseWideMode ? "enter-focus" : "none";
 }
 
 export function resolveWideModeExitLayout(

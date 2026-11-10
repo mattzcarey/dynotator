@@ -1,17 +1,12 @@
-import { createContext, useContext, createElement, type ReactNode } from 'react';
+import { createContext, useContext, createElement, type ReactNode } from "react";
 
 /** Return whether this element is the browser's page-scrolling element. */
-export function isDocumentScrollViewport(
-  viewport: HTMLElement | null,
-): boolean {
-  return viewport !== null
-    && viewport.ownerDocument.scrollingElement === viewport;
+export function isDocumentScrollViewport(viewport: HTMLElement | null): boolean {
+  return viewport !== null && viewport.ownerDocument.scrollingElement === viewport;
 }
 
 /** Resolve the document scroller without assuming whether WebKit chose html or body. */
-export function getDocumentScrollViewport(
-  targetDocument: Document = document,
-): HTMLElement | null {
+export function getDocumentScrollViewport(targetDocument: Document = document): HTMLElement | null {
   return targetDocument.scrollingElement as HTMLElement | null;
 }
 
@@ -37,10 +32,7 @@ export function getScrollViewportTop(viewport: HTMLElement): number {
   return viewport.ownerDocument.defaultView?.scrollY ?? viewport.scrollTop;
 }
 
-export function scrollViewportTo(
-  viewport: HTMLElement,
-  options: ScrollToOptions,
-): void {
+export function scrollViewportTo(viewport: HTMLElement, options: ScrollToOptions): void {
   if (!isDocumentScrollViewport(viewport)) {
     viewport.scrollTo(options);
     return;
@@ -53,7 +45,7 @@ export function offsetScrollViewport(viewport: HTMLElement, delta: number): void
     viewport.scrollTop += delta;
     return;
   }
-  viewport.ownerDocument.defaultView?.scrollBy({ top: delta, behavior: 'auto' });
+  viewport.ownerDocument.defaultView?.scrollBy({ top: delta, behavior: "auto" });
 }
 
 export function addScrollViewportListener(
@@ -61,16 +53,14 @@ export function addScrollViewportListener(
   listener: EventListener,
 ): () => void {
   const target: EventTarget = isDocumentScrollViewport(viewport)
-    ? viewport.ownerDocument.defaultView ?? viewport
+    ? (viewport.ownerDocument.defaultView ?? viewport)
     : viewport;
-  target.addEventListener('scroll', listener, { passive: true });
-  return () => target.removeEventListener('scroll', listener);
+  target.addEventListener("scroll", listener, { passive: true });
+  return () => target.removeEventListener("scroll", listener);
 }
 
 /** A document scroll uses the browser viewport as its IntersectionObserver root. */
-export function getScrollViewportIntersectionRoot(
-  viewport: HTMLElement,
-): Element | null {
+export function getScrollViewportIntersectionRoot(viewport: HTMLElement): Element | null {
   return isDocumentScrollViewport(viewport) ? null : viewport;
 }
 

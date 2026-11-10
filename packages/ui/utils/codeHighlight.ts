@@ -24,9 +24,9 @@
  * There is no auto-detection anywhere in this module.
  */
 
-import { themedLinesToHtml, tokenStyle, type ThemedTokenish } from './codeHighlightHtml';
+import { themedLinesToHtml, tokenStyle, type ThemedTokenish } from "./codeHighlightHtml";
 
-type PierreModule = typeof import('@pierre/diffs');
+type PierreModule = typeof import("@pierre/diffs");
 
 /**
  * Structural class on every fenced-code `<code>` element.
@@ -37,10 +37,10 @@ type PierreModule = typeof import('@pierre/diffs');
  * only the name is. The `language-*` class alongside it is still how
  * `blockTargeting` reads a block's language back out of the DOM.
  */
-export const CODE_BLOCK_CLASS = 'pn-code';
+export const CODE_BLOCK_CLASS = "pn-code";
 
 export function codeBlockClassName(language?: string): string {
-  return `${CODE_BLOCK_CLASS} font-mono${language ? ` language-${language}` : ''}`;
+  return `${CODE_BLOCK_CLASS} font-mono${language ? ` language-${language}` : ""}`;
 }
 
 /**
@@ -73,7 +73,7 @@ const inflight = new Map<string, Promise<boolean>>();
 const pairKey = (lang: string, theme: string) => `${lang} ${theme}`;
 
 function loadPierre(): Promise<PierreModule | undefined> {
-  pierreLoad ??= import('@pierre/diffs').then(
+  pierreLoad ??= import("@pierre/diffs").then(
     (mod) => {
       pierre = mod;
       return mod;
@@ -127,7 +127,11 @@ function themedLines(code: string, lang: string, theme: string): ThemedTokenish[
     let tokens: ThemedTokenish[][] = [];
     for (let pass = 0; pass < TOKENIZE_PASSES; pass++) {
       const started = performance.now();
-      tokens = highlighter.codeToTokens(code, { lang, theme, tokenizeTimeLimit: TOKENIZE_TIME_LIMIT_MS }).tokens as ThemedTokenish[][];
+      tokens = highlighter.codeToTokens(code, {
+        lang,
+        theme,
+        tokenizeTimeLimit: TOKENIZE_TIME_LIMIT_MS,
+      }).tokens as ThemedTokenish[][];
       if (performance.now() - started < TOKENIZE_TIME_LIMIT_MS - 10) break;
     }
     return tokens;
@@ -155,11 +159,11 @@ export function highlightToRuns(code: string, lang: string, theme: string): High
   if (!lines) return null;
   const runs: HighlightRun[] = [];
   let at = 0;
-  let plain = '';
+  let plain = "";
   for (let i = 0; i < lines.length; i++) {
     if (i > 0) {
       at += 1;
-      plain += '\n';
+      plain += "\n";
     }
     for (const token of lines[i]!) {
       const style = tokenStyle(token);
@@ -190,7 +194,7 @@ export function ensureHighlight(lang: string, theme: string): Promise<boolean> {
       await mod.getSharedHighlighter({
         themes: [theme],
         langs: [lang],
-        preferredHighlighter: 'shiki-js',
+        preferredHighlighter: "shiki-js",
       });
       ready.add(key);
       return true;
@@ -344,7 +348,7 @@ const BACKLOG_TIMEOUT_MS = 1000;
 const BACKLOG_GAP_MS = 32;
 
 function canDefer(): boolean {
-  return deferOffscreen && typeof window !== 'undefined' && typeof ResizeObserver === 'function';
+  return deferOffscreen && typeof window !== "undefined" && typeof ResizeObserver === "function";
 }
 
 function viewHeight(): number {
@@ -368,7 +372,8 @@ function forgetPending(el: HTMLElement): void {
 function highlightPending(el: HTMLElement, job: PendingHighlight): void {
   forgetPending(el);
   if (renderSeq.get(el) !== job.seq || !el.isConnected) return;
-  const html = typeof job.html === 'string' ? job.html : highlightToHtml(job.code, job.lang, job.theme);
+  const html =
+    typeof job.html === "string" ? job.html : highlightToHtml(job.code, job.lang, job.theme);
   if (html === null) return;
   el.innerHTML = html;
   notifyHighlightSwap(el);
@@ -431,9 +436,12 @@ function scheduleBacklog(): void {
     if (drainBacklog()) scheduleBacklog();
     settle();
   };
-  const idle = (globalThis as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
-  const cancelIdle = (globalThis as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
-  if (typeof idle === 'function') {
+  const idle = (
+    globalThis as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }
+  ).requestIdleCallback;
+  const cancelIdle = (globalThis as { cancelIdleCallback?: (id: number) => void })
+    .cancelIdleCallback;
+  if (typeof idle === "function") {
     const id = idle(run, { timeout: BACKLOG_TIMEOUT_MS });
     backlog = { cancel: () => cancelIdle?.(id) };
   } else {
@@ -449,17 +457,17 @@ const onBeforePrint = () => flushPendingHighlights();
 function settle(): void {
   if (pending.size > 0 && !watching) {
     watching = true;
-    document.addEventListener('scroll', onViewMoved, { capture: true, passive: true });
-    window.addEventListener('resize', onViewMoved);
-    window.addEventListener('beforeprint', onBeforePrint);
+    document.addEventListener("scroll", onViewMoved, { capture: true, passive: true });
+    window.addEventListener("resize", onViewMoved);
+    window.addEventListener("beforeprint", onBeforePrint);
   } else if (pending.size === 0) {
     backlog?.cancel();
     backlog = null;
     if (watching) {
       watching = false;
-      document.removeEventListener('scroll', onViewMoved, { capture: true });
-      window.removeEventListener('resize', onViewMoved);
-      window.removeEventListener('beforeprint', onBeforePrint);
+      document.removeEventListener("scroll", onViewMoved, { capture: true });
+      window.removeEventListener("resize", onViewMoved);
+      window.removeEventListener("beforeprint", onBeforePrint);
     }
   }
 }
@@ -491,7 +499,7 @@ export function flushPendingHighlights(root?: Node): void {
     if (root && !root.contains(el)) continue;
     highlightPending(el, job);
   }
-  if (typeof window !== 'undefined') settle();
+  if (typeof window !== "undefined") settle();
 }
 
 /** Whether `el` waits for the view (tests). */
@@ -564,7 +572,7 @@ export function __resetCodeHighlightCacheForTests(): void {
   for (const el of [...pending.keys()]) forgetPending(el);
   backlog?.cancel();
   backlog = null;
-  if (watching && typeof window !== 'undefined') settle();
+  if (watching && typeof window !== "undefined") settle();
   ready.clear();
   rejected.clear();
   inflight.clear();

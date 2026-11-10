@@ -1,21 +1,21 @@
-import { defineShortcutScope } from './core';
-import { createShortcutScopeHook } from './runtime';
+import { defineShortcutScope } from "./core";
+import { createShortcutScopeHook } from "./runtime";
 
 export const historyShortcuts = defineShortcutScope({
-  id: 'history',
-  title: 'History',
+  id: "history",
+  title: "History",
   shortcuts: {
     undo: {
-      description: 'Undo annotation change',
-      bindings: ['Mod+Z'],
-      section: 'History',
+      description: "Undo annotation change",
+      bindings: ["Mod+Z"],
+      section: "History",
       preventDefault: true,
       displayOrder: 10,
     },
     redo: {
-      description: 'Redo annotation change',
-      bindings: ['Mod+Shift+Z', 'Mod+Y'],
-      section: 'History',
+      description: "Redo annotation change",
+      bindings: ["Mod+Shift+Z", "Mod+Y"],
+      section: "History",
       preventDefault: true,
       displayOrder: 20,
     },

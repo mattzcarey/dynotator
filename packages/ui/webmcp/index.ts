@@ -8,7 +8,7 @@ export {
   type ModelContextToolDescriptor,
   type ModelContextRegisteredTool,
   type ModelContextExecuteContext,
-} from './modelContext';
+} from "./modelContext";
 export {
   DEFAULT_WEBMCP_NAME_PREFIX,
   getWebMcpPolicy,
@@ -16,8 +16,8 @@ export {
   setWebMcpPolicy,
   type WebMcpPolicy,
   type ResolvedWebMcpPolicy,
-} from './policy';
-export { validateAgainstSchema, type JsonSchema } from './schema';
+} from "./policy";
+export { validateAgainstSchema, type JsonSchema } from "./schema";
 export {
   TOOL_DESCRIPTION_MAX_CHARS,
   TOOL_PARAM_DESCRIPTION_MAX_CHARS,
@@ -36,7 +36,7 @@ export {
   type ToolResult,
   type ToolSpec,
   type ToolsetHooks,
-} from './toolset';
+} from "./toolset";
 export {
   AnnotationChangeTracker,
   BROWSER_AGENT_SOURCE,
@@ -46,14 +46,14 @@ export {
   type ObserveDelta,
   type Tombstone,
   type TrackedAnnotation,
-} from './changes';
+} from "./changes";
 export {
   MAX_OTHER_DOCUMENT_NUDGES,
   buildNudges,
   type DocumentSurface,
   type NudgeSnapshot,
   type OtherDocumentActivity,
-} from './nudges';
+} from "./nudges";
 export {
   getWebMcpActivity,
   recordToolCall,
@@ -61,12 +61,12 @@ export {
   subscribeWebMcpActivity,
   useWebMcpActivity,
   type WebMcpActivity,
-} from './activity';
-export { useToolset, type UseToolsetOptions, type UseToolsetResult } from './useToolset';
+} from "./activity";
+export { useToolset, type UseToolsetOptions, type UseToolsetResult } from "./useToolset";
 export {
   WEBMCP_TOOLS_COOKIE,
   getWebMcpToolsEnabled,
   setWebMcpToolsEnabled,
   subscribeWebMcpToolsEnabled,
   useWebMcpToolsEnabled,
-} from './preference';
+} from "./preference";

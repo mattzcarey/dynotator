@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useTheme } from '../components/ThemeProvider';
-import { themesForHalf, type ThemeHalf, type ThemeInfo } from '../utils/themeRegistry';
+import { useEffect, useState } from "react";
+import { useTheme } from "../components/ThemeProvider";
+import { themesForHalf, type ThemeHalf, type ThemeInfo } from "../utils/themeRegistry";
 
 export interface ThemePaletteHalves {
   /** Which half the picker assigns to. */
@@ -31,7 +31,7 @@ export function useThemePaletteHalves(): ThemePaletteHalves {
     setHalf,
     pair: { light: lightTheme, dark: darkTheme },
     themes: themesForHalf(availableThemes, half),
-    nameOf: (id: string) => availableThemes.find(theme => theme.id === id)?.name ?? id,
+    nameOf: (id: string) => availableThemes.find((theme) => theme.id === id)?.name ?? id,
     choose: setHalfTheme,
   };
 }

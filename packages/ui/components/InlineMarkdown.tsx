@@ -1,14 +1,32 @@
 import React, { createContext, useContext, useState, useMemo, useSyncExternalStore } from "react";
-import { isCodeFilePath, isCodeFilePathStrict, CODE_PATH_BARE_REGEX, parseCodePath } from "@dynotator/core/code-file";
-import { findCrossRepoRef, forgeRefLinks, matchCrossRepoRef, type CrossRepoRef } from "@dynotator/core/forge-refs";
+import {
+  isCodeFilePath,
+  isCodeFilePathStrict,
+  CODE_PATH_BARE_REGEX,
+  parseCodePath,
+} from "@dynotator/core/code-file";
+import {
+  findCrossRepoRef,
+  forgeRefLinks,
+  matchCrossRepoRef,
+  type CrossRepoRef,
+} from "@dynotator/core/forge-refs";
 import { CodeSnippetPreview } from "./CodeSnippetPreview";
 import { useHoverPreview } from "../hooks/useHoverPreview";
 import { transformPlainText } from "../utils/inlineTransforms";
 import { hasLinkedDocExtension } from "../utils/markdownExtensions";
 import { getImageSrc } from "./ImageThumbnail";
 import { UNAVAILABLE_IMAGE_CLASS, useImageResolver } from "./ImageResolverContext";
-import { useCodePathValidation, type CodePathValidationContextValue } from "./CodePathValidationContext";
-import { CodeSpan, isLocalLinkTarget, isNewTabClick, useLocalLinkResolver } from "./LocalLinkContext";
+import {
+  useCodePathValidation,
+  type CodePathValidationContextValue,
+} from "./CodePathValidationContext";
+import {
+  CodeSpan,
+  isLocalLinkTarget,
+  isNewTabClick,
+  useLocalLinkResolver,
+} from "./LocalLinkContext";
 import type { ValidationEntry } from "../hooks/useValidatedCodePaths";
 import { CodeFilePicker } from "./CodeFilePicker";
 import { normalizeMathTex, renderMathToHtml } from "../utils/math";
@@ -26,7 +44,7 @@ export type DocPreviewFetcher = (path: string, base?: string) => Promise<DocPrev
  */
 const defaultDocPreviewFetcher: DocPreviewFetcher = async (path, base) => {
   const params = new URLSearchParams({ path });
-  if (base) params.set('base', base);
+  if (base) params.set("base", base);
   const res = await fetch(`/api/doc?${params}`);
   return await res.json();
 };
@@ -60,19 +78,33 @@ export const getDocPreviewFetcher = (): DocPreviewFetcher => docPreviewFetcher;
 function gateCodePath(
   candidate: string,
   validation: CodePathValidationContextValue | null,
-): { render: 'link'; resolved?: string } | { render: 'ambiguous-link'; matches: string[] } | { render: 'plain' } {
-  if (!validation || !validation.ready) return { render: 'link' };
+):
+  | { render: "link"; resolved?: string }
+  | { render: "ambiguous-link"; matches: string[] }
+  | { render: "plain" } {
+  if (!validation || !validation.ready) return { render: "link" };
   const entry = validation.validated.get(candidate);
   // If the validator is ready but has no entry for this candidate, the
   // extractor intentionally excluded it (e.g., inside an HTML comment or
   // fenced code block). Demote rather than optimistically linking.
-  if (!entry) return { render: 'plain' };
+  if (!entry) return { render: "plain" };
   switch ((entry as ValidationEntry).status) {
-    case 'found':       return { render: 'link', resolved: (entry as Extract<ValidationEntry, { status: 'found' }>).resolved };
-    case 'ambiguous':   return { render: 'ambiguous-link', matches: (entry as Extract<ValidationEntry, { status: 'ambiguous' }>).matches };
-    case 'unavailable': return { render: 'link' };
-    case 'missing':     return { render: 'plain' };
-    default:            return { render: 'link' }; // unknown status — degrade to optimistic
+    case "found":
+      return {
+        render: "link",
+        resolved: (entry as Extract<ValidationEntry, { status: "found" }>).resolved,
+      };
+    case "ambiguous":
+      return {
+        render: "ambiguous-link",
+        matches: (entry as Extract<ValidationEntry, { status: "ambiguous" }>).matches,
+      };
+    case "unavailable":
+      return { render: "link" };
+    case "missing":
+      return { render: "plain" };
+    default:
+      return { render: "link" }; // unknown status — degrade to optimistic
   }
 }
 
@@ -87,44 +119,55 @@ const CodeFileLink: React.FC<{
   const [pickerOpen, setPickerOpen] = useState(false);
   const parsed = parseCodePath(candidate);
   const hasLineRef = parsed.line != null;
-  const hover = useHoverPreview<{ contents: string; filepath: string }>(async () => {
-    const data = await docPreviewFetcher(candidate, baseDir);
-    return data?.contents ? { contents: data.contents, filepath: data.filepath ?? candidate } : null;
-  }, hasLineRef && gate.render !== 'plain');
+  const hover = useHoverPreview<{ contents: string; filepath: string }>(
+    async () => {
+      const data = await docPreviewFetcher(candidate, baseDir);
+      return data?.contents
+        ? { contents: data.contents, filepath: data.filepath ?? candidate }
+        : null;
+    },
+    hasLineRef && gate.render !== "plain",
+  );
   const hoverPreview = hover.preview;
   const anchorRef = hover.anchorRef;
   const handleMouseEnter = hover.onEnter;
   const handleMouseLeave = hover.onLeave;
 
-  if (gate.render === 'plain') {
-    return (
-      <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">
-        {display}
-      </code>
-    );
+  if (gate.render === "plain") {
+    return <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">{display}</code>;
   }
 
-  const isAmbiguous = gate.render === 'ambiguous-link';
-  const lineSuffix = parsed.line != null ? `:${parsed.line}${parsed.lineEnd != null ? `-${parsed.lineEnd}` : ''}` : '';
+  const isAmbiguous = gate.render === "ambiguous-link";
+  const lineSuffix =
+    parsed.line != null
+      ? `:${parsed.line}${parsed.lineEnd != null ? `-${parsed.lineEnd}` : ""}`
+      : "";
   const handleClick = () => {
     handleMouseLeave();
     if (isAmbiguous) {
       setPickerOpen(true);
       return;
     }
-    const resolvedPath = gate.render === 'link' && gate.resolved ? gate.resolved : candidate;
-    onOpenCodeFile(gate.render === 'link' && gate.resolved ? resolvedPath + lineSuffix : candidate);
+    const resolvedPath = gate.render === "link" && gate.resolved ? gate.resolved : candidate;
+    onOpenCodeFile(gate.render === "link" && gate.resolved ? resolvedPath + lineSuffix : candidate);
   };
 
   return (
     <>
       <code
-        ref={(el) => { anchorRef.current = el; }}
+        ref={(el) => {
+          anchorRef.current = el;
+        }}
         role="button"
         tabIndex={0}
         data-ambiguous={isAmbiguous ? "true" : undefined}
         onClick={handleClick}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className="code-file-link px-1.5 py-0.5 rounded bg-muted text-sm font-mono cursor-pointer hover:text-primary inline-flex items-center gap-1 transition-colors"
@@ -133,7 +176,9 @@ const CodeFileLink: React.FC<{
         {display}
         <CodeFileIcon />
         {isAmbiguous && (
-          <sup className="text-[0.6rem] opacity-70 -ml-0.5">{(gate as { matches: string[] }).matches.length}</sup>
+          <sup className="text-[0.6rem] opacity-70 -ml-0.5">
+            {(gate as { matches: string[] }).matches.length}
+          </sup>
         )}
       </code>
       {hoverPreview && hasLineRef && (
@@ -150,7 +195,10 @@ const CodeFileLink: React.FC<{
         <CodeFilePicker
           anchorEl={anchorRef.current}
           matches={(gate as { matches: string[] }).matches}
-          onPick={(path) => { setPickerOpen(false); onOpenCodeFile(path + lineSuffix); }}
+          onPick={(path) => {
+            setPickerOpen(false);
+            onOpenCodeFile(path + lineSuffix);
+          }}
           onDismiss={() => setPickerOpen(false)}
         />
       )}
@@ -175,7 +223,12 @@ export function matchCodeSpan(text: string): { content: string; length: number }
   for (let run = runs.exec(text); run; run = runs.exec(text)) {
     if (run[0].length !== width) continue;
     let content = text.slice(width, run.index);
-    if (content.length > 1 && content[0] === ' ' && content[content.length - 1] === ' ' && content.trim() !== '') {
+    if (
+      content.length > 1 &&
+      content[0] === " " &&
+      content[content.length - 1] === " " &&
+      content.trim() !== ""
+    ) {
       content = content.slice(1, -1);
     }
     return content ? { content, length: run.index + width } : null;
@@ -204,7 +257,10 @@ const CodeFileIcon = () => (
 const InlineMath: React.FC<{ tex: string }> = ({ tex }) => {
   const normalizedTex = normalizeMathTex(tex);
   const renderer = useMathRenderer();
-  const html = useMemo(() => renderMathToHtml(normalizedTex, false, renderer), [normalizedTex, renderer]);
+  const html = useMemo(
+    () => renderMathToHtml(normalizedTex, false, renderer),
+    [normalizedTex, renderer],
+  );
 
   // Same wrapper in both branches (see MathBlock): the placeholder carries the
   // attributes annotation restore keys on, with the TeX as a text child.
@@ -240,9 +296,7 @@ function canRenderSpacedDollarMath(tex: string): boolean {
   // the closing `$` is really the opener of the next `$skill` token.
   if (/^\s/.test(tex) !== /\s$/.test(tex)) return false;
   return (
-    /\\[a-zA-Z]+/.test(trimmed) ||
-    /[=^_{}+\-*/<>|]/.test(trimmed) ||
-    /^[a-zA-Z]$/.test(trimmed)
+    /\\[a-zA-Z]+/.test(trimmed) || /[=^_{}+\-*/<>|]/.test(trimmed) || /^[a-zA-Z]$/.test(trimmed)
   );
 }
 
@@ -251,7 +305,8 @@ function canRenderSpacedDollarMath(tex: string): boolean {
 // https://…/Function_(mathematics) should keep its closing paren).
 export function trimUrlTail(url: string): string {
   const balanced = (u: string, close: string, open: string): boolean => {
-    let opens = 0, closes = 0;
+    let opens = 0,
+      closes = 0;
     for (const c of u) {
       if (c === open) opens++;
       else if (c === close) closes++;
@@ -261,9 +316,9 @@ export function trimUrlTail(url: string): string {
   while (url.length > 0) {
     const last = url[url.length - 1];
     if (!/[.,;:!?)\]}>"']/.test(last)) break;
-    if (last === ')' && balanced(url, ')', '(')) break;
-    if (last === ']' && balanced(url, ']', '[')) break;
-    if (last === '}' && balanced(url, '}', '{')) break;
+    if (last === ")" && balanced(url, ")", "(")) break;
+    if (last === "]" && balanced(url, "]", "[")) break;
+    if (last === "}" && balanced(url, "}", "{")) break;
     url = url.slice(0, -1);
   }
   return url;
@@ -311,8 +366,9 @@ function emitPlainTextWithBareUrls(
 ): void {
   if (text.length === 0) return;
 
-  type Span = { start: number; end: number; kind: 'url'; value: string }
-    | { start: number; end: number; kind: 'path'; value: string };
+  type Span =
+    | { start: number; end: number; kind: "url"; value: string }
+    | { start: number; end: number; kind: "path"; value: string };
   const spans: Span[] = [];
 
   // Collect bare URLs
@@ -324,21 +380,26 @@ function emitPlainTextWithBareUrls(
     const url = trimUrlTail(m[0]);
     const safe = url.length > 0 ? sanitizeLinkUrl(url) : null;
     if (!safe) continue;
-    spans.push({ start: m.index, end: m.index + url.length, kind: 'url', value: url });
+    spans.push({ start: m.index, end: m.index + url.length, kind: "url", value: url });
     urlRe.lastIndex = m.index + url.length;
   }
 
   // Collect bare code file paths (require /)
   if (onOpenCodeFile) {
-    const pathRe = new RegExp(CODE_PATH_BARE_REGEX.source, 'g');
+    const pathRe = new RegExp(CODE_PATH_BARE_REGEX.source, "g");
     while ((m = pathRe.exec(text)) !== null) {
       const before = m.index === 0 ? previousChar : text[m.index - 1];
       if (/\w/.test(before)) continue;
       const candidate = m[0];
       if (!isCodeFilePathStrict(candidate)) continue;
-      const overlaps = spans.some(s => m!.index < s.end && m!.index + candidate.length > s.start);
+      const overlaps = spans.some((s) => m!.index < s.end && m!.index + candidate.length > s.start);
       if (overlaps) continue;
-      spans.push({ start: m.index, end: m.index + candidate.length, kind: 'path', value: candidate });
+      spans.push({
+        start: m.index,
+        end: m.index + candidate.length,
+        kind: "path",
+        value: candidate,
+      });
     }
   }
 
@@ -354,7 +415,7 @@ function emitPlainTextWithBareUrls(
     if (span.start > last) {
       parts.push(transformPlainText(text.slice(last, span.start)));
     }
-    if (span.kind === 'url') {
+    if (span.kind === "url") {
       parts.push(
         <a
           key={nextKey()}
@@ -367,9 +428,9 @@ function emitPlainTextWithBareUrls(
         </a>,
       );
     } else {
-      const cleanPath = span.value.replace(/#.*$/, '');
+      const cleanPath = span.value.replace(/#.*$/, "");
       const gate = gateCodePath(cleanPath, validation ?? null);
-      if (gate.render === 'plain') {
+      if (gate.render === "plain") {
         // Bare prose, file doesn't exist — emit as plain text, no link styling.
         parts.push(transformPlainText(span.value));
       } else {
@@ -416,23 +477,28 @@ const HostResolvedImage: React.FC<{
   return (
     <>
       {failed && (
-        <span key="unavailable" className={`${UNAVAILABLE_IMAGE_CLASS} annotation-exclude`} title="Image could not be loaded" data-image-unavailable="">
-          {alt || 'Image'}
+        <span
+          key="unavailable"
+          className={`${UNAVAILABLE_IMAGE_CLASS} annotation-exclude`}
+          title="Image could not be loaded"
+          data-image-unavailable=""
+        >
+          {alt || "Image"}
         </span>
       )}
       <img
         key="image"
         src={src}
-        alt={failed ? '' : alt}
+        alt={failed ? "" : alt}
         width={width}
         data-image-src={writtenSrc}
-        data-image-failed={failed ? '' : undefined}
+        data-image-failed={failed ? "" : undefined}
         hidden={failed || undefined}
         aria-hidden={failed || undefined}
-        className={failed ? undefined : 'max-w-full rounded my-2 cursor-zoom-in'}
+        className={failed ? undefined : "max-w-full rounded my-2 cursor-zoom-in"}
         loading="lazy"
         // Only for a host's smaller copy (`width`): the default stays as it was for every other host.
-        decoding={width ? 'async' : undefined}
+        decoding={width ? "async" : undefined}
         onError={() => setFailedSrc(src)}
         onClick={(e) => {
           e.stopPropagation();
@@ -489,7 +555,8 @@ const crossRepoListeners = new Set<() => void>();
 
 export function setCrossRepoRefsWithoutRepo(on: CrossRepoRefsWithoutRepo): void {
   const next = on === false ? null : on === true ? {} : { host: on.host };
-  if (next?.host === crossRepoDefault?.host && (next === null) === (crossRepoDefault === null)) return;
+  if (next?.host === crossRepoDefault?.host && (next === null) === (crossRepoDefault === null))
+    return;
   crossRepoDefault = next;
   for (const listener of crossRepoListeners) listener();
 }
@@ -535,7 +602,7 @@ export const InlineMarkdown: React.FC<{
    * Deliberately sync-only: no async variant, no loading states. Back it
    * with a cache you keep hydrated.
    */
-  resolveLinkedDoc?: (target: string) => { label?: string; status?: 'active' | 'deleted' } | null;
+  resolveLinkedDoc?: (target: string) => { label?: string; status?: "active" | "deleted" } | null;
   onOpenCodeFile?: (path: string) => void;
   onNavigateAnchor?: (hash: string) => void;
   imageBaseDir?: string;
@@ -550,7 +617,18 @@ export const InlineMarkdown: React.FC<{
    * cannot hold another.
    */
   linkLabel?: boolean;
-}> = ({ text, onOpenLinkedDoc, resolveLinkedDoc, onOpenCodeFile, onNavigateAnchor, imageBaseDir, onImageClick, githubRepo, repoHost, linkLabel = false }) => {
+}> = ({
+  text,
+  onOpenLinkedDoc,
+  resolveLinkedDoc,
+  onOpenCodeFile,
+  onNavigateAnchor,
+  imageBaseDir,
+  onImageClick,
+  githubRepo,
+  repoHost,
+  linkLabel = false,
+}) => {
   const validation = useCodePathValidation();
   const resolveLocalLink = useLocalLinkResolver();
   const softLineBreaks = useContext(SoftLineBreaksContext);
@@ -561,10 +639,18 @@ export const InlineMarkdown: React.FC<{
   // host opted in (`crossRepoRefsWithoutRepo`: the host it names, else
   // github.com). With a code-file handler, an `owner/repo`
   // that is a code path not known to be missing stays the file (`src/app.js#12`).
-  const crossRepoFallback = useSyncExternalStore(subscribeCrossRepoDefault, crossRepoDefaultSnapshot, crossRepoDefaultSnapshot);
+  const crossRepoFallback = useSyncExternalStore(
+    subscribeCrossRepoDefault,
+    crossRepoDefaultSnapshot,
+    crossRepoDefaultSnapshot,
+  );
   const crossRepoProject = githubRepo ? { host: repoHost } : crossRepoFallback;
   const crossRepoAccept = (ref: CrossRepoRef): boolean =>
-    !(onOpenCodeFile && isCodeFilePathStrict(ref.path) && gateCodePath(ref.path, validation ?? null).render !== 'plain');
+    !(
+      onOpenCodeFile &&
+      isCodeFilePathStrict(ref.path) &&
+      gateCodePath(ref.path, validation ?? null).render !== "plain"
+    );
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
@@ -584,11 +670,11 @@ export const InlineMarkdown: React.FC<{
 
     // Inline math: \( ... \) or $...$ — require non-space content and avoid
     // display fences.
-    if (remaining.startsWith('\\(')) {
+    if (remaining.startsWith("\\(")) {
       let end = -1;
       for (let i = 2; i < remaining.length - 1; i++) {
-        if (remaining[i] === '\\' && remaining[i + 1] === ')') {
-          if (i > 0 && remaining[i - 1] === '\\') continue;
+        if (remaining[i] === "\\" && remaining[i + 1] === ")") {
+          if (i > 0 && remaining[i - 1] === "\\") continue;
           end = i;
           break;
         }
@@ -598,7 +684,7 @@ export const InlineMarkdown: React.FC<{
         if (tex.trim()) {
           parts.push(<InlineMath key={key++} tex={tex} />);
           remaining = remaining.slice(end + 2);
-          previousChar = ')';
+          previousChar = ")";
           continue;
         }
       }
@@ -614,14 +700,14 @@ export const InlineMarkdown: React.FC<{
     }
 
     // Inline math: $...$ — require non-space content and avoid $$ display fences.
-    if (remaining.startsWith('$') && previousChar !== '$' && !remaining.startsWith('$$')) {
+    if (remaining.startsWith("$") && previousChar !== "$" && !remaining.startsWith("$$")) {
       let end = -1;
       for (let i = 1; i < remaining.length; i++) {
-        if (remaining[i] === '\\') {
+        if (remaining[i] === "\\") {
           i++;
           continue;
         }
-        if (remaining[i] === '$') {
+        if (remaining[i] === "$") {
           end = i;
           break;
         }
@@ -633,11 +719,12 @@ export const InlineMarkdown: React.FC<{
         // "$5/mo and tier B is $10/mo"), not inline math — real inline math never
         // abuts a digit across the closing delimiter. Leave such text literal.
         const afterClose = remaining[end + 1];
-        const looksLikeMoney = /^\s*\d/.test(tex) && afterClose !== undefined && /\d/.test(afterClose);
+        const looksLikeMoney =
+          /^\s*\d/.test(tex) && afterClose !== undefined && /\d/.test(afterClose);
         if (!looksLikeMoney && canRenderSpacedDollarMath(tex)) {
           parts.push(<InlineMath key={key++} tex={tex} />);
           remaining = remaining.slice(end + 1);
-          previousChar = '$';
+          previousChar = "$";
           continue;
         }
       }
@@ -676,7 +763,10 @@ export const InlineMarkdown: React.FC<{
     // project's forge host. Read before file-path detection, so
     // `vercel/next.js#1` is a ref, not a path (unless the viewer knows that
     // file, see crossRepoAccept); `docs/guide.md#2` stays a path.
-    const crossRepoRef = crossRepoProject && !linkLabel ? matchCrossRepoRef(remaining, previousChar, crossRepoProject) : null;
+    const crossRepoRef =
+      crossRepoProject && !linkLabel
+        ? matchCrossRepoRef(remaining, previousChar, crossRepoProject)
+        : null;
     if (crossRepoRef && crossRepoAccept(crossRepoRef)) {
       parts.push(
         crossRepoRef.href ? (
@@ -864,20 +954,20 @@ export const InlineMarkdown: React.FC<{
     }
 
     // Inline code: `code` — when the content is a code file path, render as clickable
-    const codeSpan = remaining[0] === '`' ? matchCodeSpan(remaining) : null;
-    if (remaining[0] === '`' && !codeSpan) {
+    const codeSpan = remaining[0] === "`" ? matchCodeSpan(remaining) : null;
+    if (remaining[0] === "`" && !codeSpan) {
       // A run with no closing run of the same length is literal, all of it: its
       // tail must not open a shorter span with a later backtick.
       const run = remaining.match(/^`+/)![0];
       parts.push(run);
       remaining = remaining.slice(run.length);
-      previousChar = '`';
+      previousChar = "`";
       continue;
     }
     if (codeSpan) {
       const codeContent = codeSpan.content;
       if (isCodeFilePath(codeContent) && onOpenCodeFile) {
-        const cleanPath = codeContent.replace(/#.*$/, '');
+        const cleanPath = codeContent.replace(/#.*$/, "");
         parts.push(
           <CodeFileLink
             key={key++}
@@ -890,14 +980,12 @@ export const InlineMarkdown: React.FC<{
       } else {
         parts.push(
           <CodeSpan key={key++} text={codeContent}>
-            <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">
-              {codeContent}
-            </code>
+            <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">{codeContent}</code>
           </CodeSpan>,
         );
       }
       remaining = remaining.slice(codeSpan.length);
-      previousChar = '`';
+      previousChar = "`";
       continue;
     }
 
@@ -912,24 +1000,25 @@ export const InlineMarkdown: React.FC<{
     match = remaining.match(
       /^(#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|(?=[0-9a-fA-F]*[a-fA-F])[0-9a-fA-F]{4}|(?=[0-9a-fA-F]*[a-fA-F])[0-9a-fA-F]{3}))(?![0-9a-fA-F\w])/,
     );
-    if (match && digitHexIssueRefs && refLinks && /^#[1-9]\d*$/.test(match[1]) && !/\w/.test(previousChar)) {
+    if (
+      match &&
+      digitHexIssueRefs &&
+      refLinks &&
+      /^#[1-9]\d*$/.test(match[1]) &&
+      !/\w/.test(previousChar)
+    ) {
       match = null;
     }
     if (match) {
       const hex = match[1];
       parts.push(
-        <span
-          key={key++}
-          className="inline-flex items-center gap-1 align-middle"
-        >
+        <span key={key++} className="inline-flex items-center gap-1 align-middle">
           <span
             className="inline-block w-3.5 h-3.5 rounded-sm border border-black/20 dark:border-white/20 flex-shrink-0"
             style={{ backgroundColor: hex }}
             title={hex}
           />
-          <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">
-            {hex}
-          </code>
+          <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">{hex}</code>
         </span>,
       );
       remaining = remaining.slice(match[0].length);
@@ -958,7 +1047,9 @@ export const InlineMarkdown: React.FC<{
               {label}
             </a>
           ) : (
-            <span key={key++} className="text-primary font-medium">{label}</span>
+            <span key={key++} className="text-primary font-medium">
+              {label}
+            </span>
           ),
         );
         remaining = remaining.slice(match[0].length);
@@ -986,7 +1077,9 @@ export const InlineMarkdown: React.FC<{
               {label}
             </a>
           ) : (
-            <span key={key++} className="text-primary font-medium">{label}</span>
+            <span key={key++} className="text-primary font-medium">
+              {label}
+            </span>
           ),
         );
         remaining = remaining.slice(match[0].length);
@@ -1004,11 +1097,9 @@ export const InlineMarkdown: React.FC<{
       // targets are opaque doc ids, not paths. null → today's rendering.
       const resolution = resolveLinkedDoc?.(target) ?? null;
       const display = resolution?.label || storedLabel || target;
-      const targetPath = hasLinkedDocExtension(target)
-        ? target
-        : `${target}.md`;
+      const targetPath = hasLinkedDocExtension(target) ? target : `${target}.md`;
 
-      if (resolution?.status === 'deleted') {
+      if (resolution?.status === "deleted") {
         // Deleted doc: muted NON-link — no anchor, no pointer, no link icon —
         // even when onOpenLinkedDoc is present.
         parts.push(
@@ -1069,7 +1160,7 @@ export const InlineMarkdown: React.FC<{
       // A host's resolver (RenderedMarkdown `resolveImage`) decides first;
       // null from it, or no resolver, keeps the default resolution.
       const resolvedImage = resolveImage ? resolveImage(src) : null;
-      if (resolvedImage?.kind === 'unavailable') {
+      if (resolvedImage?.kind === "unavailable") {
         parts.push(
           <span
             key={key++}
@@ -1077,23 +1168,31 @@ export const InlineMarkdown: React.FC<{
             title={resolvedImage.title}
             data-image-unavailable=""
           >
-            {alt || 'Image'}
+            {alt || "Image"}
           </span>,
         );
         remaining = remaining.slice(match[0].length);
         previousChar = match[0][match[0].length - 1] || previousChar;
         continue;
       }
-      const imgSrc = resolvedImage?.kind === 'src'
-        ? resolvedImage.src
-        : /^(https?:\/\/|data:|blob:)/i.test(src)
-          ? src
-          : getImageSrc(src, imageBaseDir);
+      const imgSrc =
+        resolvedImage?.kind === "src"
+          ? resolvedImage.src
+          : /^(https?:\/\/|data:|blob:)/i.test(src)
+            ? src
+            : getImageSrc(src, imageBaseDir);
       parts.push(
         resolveImage ? (
           // With a host resolver, an image that fails to load becomes the
           // same placeholder instead of a broken-image icon.
-          <HostResolvedImage key={key++} src={imgSrc} alt={alt} width={resolvedImage?.kind === 'src' ? resolvedImage.width : undefined} writtenSrc={src} onImageClick={onImageClick} />
+          <HostResolvedImage
+            key={key++}
+            src={imgSrc}
+            alt={alt}
+            width={resolvedImage?.kind === "src" ? resolvedImage.width : undefined}
+            writtenSrc={src}
+            onImageClick={onImageClick}
+          />
         ) : (
           <img
             key={key++}
@@ -1118,27 +1217,35 @@ export const InlineMarkdown: React.FC<{
     // /Function_(mathematics)). Plain `[^)]+` would truncate at the first
     // inner close-paren, so we scan the destination manually tracking depth.
     const linkParsed = (() => {
-      if (linkLabel || remaining[0] !== '[') return null;
+      if (linkLabel || remaining[0] !== "[") return null;
       let i = 1;
       let depth = 1;
       while (i < remaining.length && depth > 0) {
         const ch = remaining[i];
-        if (ch === '\\' && i + 1 < remaining.length) { i += 2; continue; }
-        if (ch === '[') depth++;
-        else if (ch === ']') depth--;
+        if (ch === "\\" && i + 1 < remaining.length) {
+          i += 2;
+          continue;
+        }
+        if (ch === "[") depth++;
+        else if (ch === "]") depth--;
         if (depth === 0) break;
         i++;
       }
-      if (depth !== 0 || remaining[i + 1] !== '(') return null;
+      if (depth !== 0 || remaining[i + 1] !== "(") return null;
       const textEnd = i;
       let j = i + 2;
       let parenDepth = 1;
       while (j < remaining.length && parenDepth > 0) {
         const ch = remaining[j];
-        if (ch === '\\' && j + 1 < remaining.length) { j += 2; continue; }
-        if (ch === '(') parenDepth++;
-        else if (ch === ')') { parenDepth--; if (parenDepth === 0) break; }
-        else if (ch === '\n') return null;
+        if (ch === "\\" && j + 1 < remaining.length) {
+          j += 2;
+          continue;
+        }
+        if (ch === "(") parenDepth++;
+        else if (ch === ")") {
+          parenDepth--;
+          if (parenDepth === 0) break;
+        } else if (ch === "\n") return null;
         j++;
       }
       if (parenDepth !== 0) return null;
@@ -1150,14 +1257,22 @@ export const InlineMarkdown: React.FC<{
     if (linkParsed) {
       const { linkText, linkUrl, consumed } = linkParsed;
       // Its label is markdown too (`` [`README.md`](…) ``), drawn without links.
-      const label = <InlineMarkdown text={linkText} linkLabel imageBaseDir={imageBaseDir} githubRepo={githubRepo} repoHost={repoHost} />;
+      const label = (
+        <InlineMarkdown
+          text={linkText}
+          linkLabel
+          imageBaseDir={imageBaseDir}
+          githubRepo={githubRepo}
+          repoHost={repoHost}
+        />
+      );
       const safeLinkUrl = sanitizeLinkUrl(linkUrl);
 
       // Dangerous protocol stripped — render as plain text, not a dead link
       if (safeLinkUrl === null) {
         parts.push(<span key={key++}>{label}</span>);
         remaining = remaining.slice(consumed);
-        previousChar = ')';
+        previousChar = ")";
         continue;
       }
 
@@ -1169,71 +1284,84 @@ export const InlineMarkdown: React.FC<{
         !linkUrl.startsWith("http://") &&
         !linkUrl.startsWith("https://");
       const isCodeFile = !isLocalDoc && isCodeFilePath(linkUrl);
-      const linkedDocPath = isLocalDoc ? linkUrl.replace(/#.*$/, '') : linkUrl;
-      const codeFilePath = isCodeFile ? linkUrl.replace(/#.*$/, '') : linkUrl;
-      const isInPageAnchor = safeLinkUrl.startsWith('#');
+      const linkedDocPath = isLocalDoc ? linkUrl.replace(/#.*$/, "") : linkUrl;
+      const codeFilePath = isCodeFile ? linkUrl.replace(/#.*$/, "") : linkUrl;
+      const isInPageAnchor = safeLinkUrl.startsWith("#");
       // A host's resolver (Viewer `resolveLocalLink`) decides local paths
       // first; null from it, or no resolver, keeps the branches below.
-      const localLink = resolveLocalLink && isLocalLinkTarget(linkUrl) ? resolveLocalLink(linkUrl) : null;
+      const localLink =
+        resolveLocalLink && isLocalLinkTarget(linkUrl) ? resolveLocalLink(linkUrl) : null;
 
-      if (localLink?.kind === 'open') {
+      if (localLink?.kind === "open") {
         const openLink = localLink.open;
         const hostHref = localLink.href;
         parts.push(
           <HostTitle key={key++} title={localLink.title}>
-          <a
-            href={hostHref ?? safeLinkUrl}
-            onClick={(e) => {
-              // With the host's own address, a new-tab click goes there.
-              if (hostHref && isNewTabClick(e)) return;
-              e.preventDefault();
-              e.stopPropagation();
-              openLink();
-            }}
-            // Without it, a middle click would open the path on the host's own origin.
-            onAuxClick={hostHref ? undefined : (e) => e.preventDefault()}
-            className="text-primary underline underline-offset-2 hover:text-primary/80 inline-flex items-center gap-1 cursor-pointer"
-            data-local-link="open"
-          >
-            {label}
-            <svg
-              className="w-3 h-3 opacity-50 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
+            <a
+              href={hostHref ?? safeLinkUrl}
+              onClick={(e) => {
+                // With the host's own address, a new-tab click goes there.
+                if (hostHref && isNewTabClick(e)) return;
+                e.preventDefault();
+                e.stopPropagation();
+                openLink();
+              }}
+              // Without it, a middle click would open the path on the host's own origin.
+              onAuxClick={hostHref ? undefined : (e) => e.preventDefault()}
+              className="text-primary underline underline-offset-2 hover:text-primary/80 inline-flex items-center gap-1 cursor-pointer"
+              data-local-link="open"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-              />
-            </svg>
-          </a>
+              {label}
+              <svg
+                className="w-3 h-3 opacity-50 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                />
+              </svg>
+            </a>
           </HostTitle>,
         );
-      } else if (localLink?.kind === 'unavailable') {
+      } else if (localLink?.kind === "unavailable") {
         const inert = (
-          <span className="text-muted-foreground underline decoration-dotted underline-offset-2" data-local-link="unavailable">
+          <span
+            className="text-muted-foreground underline decoration-dotted underline-offset-2"
+            data-local-link="unavailable"
+          >
             {label}
           </span>
         );
         parts.push(
-          localLink.wrap
-            ? <React.Fragment key={key++}>{localLink.wrap(inert)}</React.Fragment>
-            : <HostTitle key={key++} title={localLink.title}>{inert}</HostTitle>,
+          localLink.wrap ? (
+            <React.Fragment key={key++}>{localLink.wrap(inert)}</React.Fragment>
+          ) : (
+            <HostTitle key={key++} title={localLink.title}>
+              {inert}
+            </HostTitle>
+          ),
         );
-        if (localLink.after) parts.push(<React.Fragment key={key++}>{localLink.after}</React.Fragment>);
+        if (localLink.after)
+          parts.push(<React.Fragment key={key++}>{localLink.after}</React.Fragment>);
       } else if (isInPageAnchor) {
         parts.push(
           <a
             key={key++}
             href={safeLinkUrl}
-            onClick={onNavigateAnchor ? (e) => {
-              e.preventDefault();
-              onNavigateAnchor(safeLinkUrl);
-            } : undefined}
+            onClick={
+              onNavigateAnchor
+                ? (e) => {
+                    e.preventDefault();
+                    onNavigateAnchor(safeLinkUrl);
+                  }
+                : undefined
+            }
             className="text-primary underline underline-offset-2 hover:text-primary/80"
           >
             {label}
@@ -1309,7 +1437,7 @@ export const InlineMarkdown: React.FC<{
         );
       }
       remaining = remaining.slice(consumed);
-      previousChar = ')';
+      previousChar = ")";
       continue;
     }
 
@@ -1352,7 +1480,9 @@ export const InlineMarkdown: React.FC<{
     // `h` mid-word (e.g. ":heart:", "hello"), and splitting on it breaks
     // multi-char patterns like emoji shortcodes. Bare URLs are instead
     // detected inline via emitPlainTextWithBareUrls() below.
-    const nextSpecial = remaining.slice(1).search(softLineBreaks ? /[\*_`\[!~\\<#@$\n]/ : /[\*_`\[!~\\<#@$]/);
+    const nextSpecial = remaining
+      .slice(1)
+      .search(softLineBreaks ? /[\*_`\[!~\\<#@$\n]/ : /[\*_`\[!~\\<#@$]/);
     // A bare URL that starts inside this plain-text chunk and runs past its
     // end would be cut there, and `_`, `~`, `#`, `@`, `$` and `!` all end a
     // chunk (`…/w/ws_01…` rendered a link to `…/w/ws`). Stop the chunk where
@@ -1362,19 +1492,45 @@ export const InlineMarkdown: React.FC<{
     // stop before the ref and let the cross-repo branch above take it whole.
     // A ref inside a URL never splits it: the URL starts first and wins.
     const urlAt = linkLabel ? -1 : bareUrlRunningPast(remaining, chunkEnd);
-    const refAt = crossRepoProject && !linkLabel ? findCrossRepoRef(remaining, urlAt === -1 ? chunkEnd : urlAt, crossRepoProject, crossRepoAccept) : -1;
+    const refAt =
+      crossRepoProject && !linkLabel
+        ? findCrossRepoRef(
+            remaining,
+            urlAt === -1 ? chunkEnd : urlAt,
+            crossRepoProject,
+            crossRepoAccept,
+          )
+        : -1;
     const splitAt = refAt !== -1 ? refAt : urlAt;
     if (splitAt !== -1) {
       const before = remaining.slice(0, splitAt);
       if (linkLabel) parts.push(transformPlainText(before));
-      else emitPlainTextWithBareUrls(before, previousChar, parts, () => key++, onOpenCodeFile, validation, imageBaseDir);
+      else
+        emitPlainTextWithBareUrls(
+          before,
+          previousChar,
+          parts,
+          () => key++,
+          onOpenCodeFile,
+          validation,
+          imageBaseDir,
+        );
       previousChar = before[before.length - 1] || previousChar;
       remaining = remaining.slice(splitAt);
       continue;
     }
     const plainText = nextSpecial === -1 ? remaining : remaining.slice(0, nextSpecial + 1);
     if (linkLabel) parts.push(transformPlainText(plainText));
-    else emitPlainTextWithBareUrls(plainText, previousChar, parts, () => key++, onOpenCodeFile, validation, imageBaseDir);
+    else
+      emitPlainTextWithBareUrls(
+        plainText,
+        previousChar,
+        parts,
+        () => key++,
+        onOpenCodeFile,
+        validation,
+        imageBaseDir,
+      );
     previousChar = plainText[plainText.length - 1] || previousChar;
     if (nextSpecial === -1) {
       break;

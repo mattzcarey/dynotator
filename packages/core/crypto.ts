@@ -13,29 +13,23 @@
  * - key: base64url-encoded 256-bit key for the URL fragment
  */
 export async function encrypt(
-  compressedData: string
+  compressedData: string,
 ): Promise<{ ciphertext: string; key: string }> {
-  const cryptoKey = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt']
-  );
+  const cryptoKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, [
+    "encrypt",
+  ]);
 
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const plaintext = new TextEncoder().encode(compressedData);
 
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    cryptoKey,
-    plaintext
-  );
+  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, cryptoKey, plaintext);
 
   // Prepend IV to ciphertext (IV || ciphertext+tag)
   const combined = new Uint8Array(iv.length + encrypted.byteLength);
   combined.set(iv, 0);
   combined.set(new Uint8Array(encrypted), iv.length);
 
-  const rawKey = await crypto.subtle.exportKey('raw', cryptoKey);
+  const rawKey = await crypto.subtle.exportKey("raw", cryptoKey);
 
   return {
     ciphertext: bytesToBase64url(combined),
@@ -49,10 +43,7 @@ export async function encrypt(
  * Expects ciphertext format: base64url(IV || encrypted+tag)
  * Returns the original compressed base64url string.
  */
-export async function decrypt(
-  ciphertext: string,
-  key: string
-): Promise<string> {
+export async function decrypt(ciphertext: string, key: string): Promise<string> {
   const combined = base64urlToBytes(ciphertext);
   const rawKey = base64urlToBytes(key);
 
@@ -60,18 +51,14 @@ export async function decrypt(
   const encrypted = combined.slice(12);
 
   const cryptoKey = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     rawKey.buffer as ArrayBuffer,
-    { name: 'AES-GCM', length: 256 },
+    { name: "AES-GCM", length: 256 },
     false,
-    ['decrypt']
+    ["decrypt"],
   );
 
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    cryptoKey,
-    encrypted
-  );
+  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, cryptoKey, encrypted);
 
   return new TextDecoder().decode(decrypted);
 }
@@ -84,14 +71,18 @@ export async function decrypt(
  */
 export async function encryptWithKey(plaintext: string, key: string): Promise<string> {
   const cryptoKey = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     base64urlToBytes(key).buffer as ArrayBuffer,
-    { name: 'AES-GCM', length: 256 },
+    { name: "AES-GCM", length: 256 },
     false,
-    ['encrypt']
+    ["encrypt"],
   );
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, new TextEncoder().encode(plaintext));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    cryptoKey,
+    new TextEncoder().encode(plaintext),
+  );
   const combined = new Uint8Array(iv.length + encrypted.byteLength);
   combined.set(iv, 0);
   combined.set(new Uint8Array(encrypted), iv.length);
@@ -103,10 +94,10 @@ export function decryptWithKey(envelope: string, key: string): Promise<string> {
   return decrypt(envelope, key);
 }
 
-const RELAY_KEY_INFO = 'plannotator-inbox relay key v1';
-const RELAY_AUTH_INFO = 'plannotator-inbox relay auth v1';
-const RELAY_UP_INFO = 'plannotator-inbox relay up v1';
-const RELAY_COLLAPSE_INFO = 'plannotator-inbox relay collapse v1';
+const RELAY_KEY_INFO = "plannotator-inbox relay key v1";
+const RELAY_AUTH_INFO = "plannotator-inbox relay auth v1";
+const RELAY_UP_INFO = "plannotator-inbox relay up v1";
+const RELAY_COLLAPSE_INFO = "plannotator-inbox relay collapse v1";
 
 /**
  * The values a pairing secret gives one phone at the relay (section 4,
@@ -118,32 +109,49 @@ const RELAY_COLLAPSE_INFO = 'plannotator-inbox relay collapse v1';
  * a MAC under the envelope key would reuse one key for two jobs); and `relaySecret`, the phone's bearer at the relay (which keeps only the
  * SHA-256 of that string). All base64url without padding.
  */
-export async function deriveRelayKeys(pairingSecret: string, deviceId: string): Promise<{ key: string; upKey: string; collapseKey: string; relaySecret: string }> {
-  const ikm = await crypto.subtle.importKey('raw', base64urlToBytes(pairingSecret).buffer as ArrayBuffer, 'HKDF', false, ['deriveBits']);
+export async function deriveRelayKeys(
+  pairingSecret: string,
+  deviceId: string,
+): Promise<{ key: string; upKey: string; collapseKey: string; relaySecret: string }> {
+  const ikm = await crypto.subtle.importKey(
+    "raw",
+    base64urlToBytes(pairingSecret).buffer as ArrayBuffer,
+    "HKDF",
+    false,
+    ["deriveBits"],
+  );
   const salt = new TextEncoder().encode(deviceId);
   const derive = async (info: string) =>
     bytesToBase64url(
-      new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: new TextEncoder().encode(info) }, ikm, 256))
+      new Uint8Array(
+        await crypto.subtle.deriveBits(
+          { name: "HKDF", hash: "SHA-256", salt, info: new TextEncoder().encode(info) },
+          ikm,
+          256,
+        ),
+      ),
     );
-  return { key: await derive(RELAY_KEY_INFO), upKey: await derive(RELAY_UP_INFO), collapseKey: await derive(RELAY_COLLAPSE_INFO), relaySecret: await derive(RELAY_AUTH_INFO) };
+  return {
+    key: await derive(RELAY_KEY_INFO),
+    upKey: await derive(RELAY_UP_INFO),
+    collapseKey: await derive(RELAY_COLLAPSE_INFO),
+    relaySecret: await derive(RELAY_AUTH_INFO),
+  };
 }
 
 // --- Helpers ---
 
 function bytesToBase64url(bytes: Uint8Array): string {
   // Loop to avoid RangeError on large payloads (same approach as compress.ts)
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
 function base64urlToBytes(b64: string): Uint8Array {
-  const base64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+  const base64 = b64.replace(/-/g, "+").replace(/_/g, "/");
   const binary = atob(base64);
-  return Uint8Array.from(binary, c => c.charCodeAt(0));
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 }

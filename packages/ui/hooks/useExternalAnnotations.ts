@@ -12,12 +12,12 @@
  * to avoid SSE/polling in static or demo contexts where there is no server.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { ExternalAnnotationEvent } from '../types';
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { ExternalAnnotationEvent } from "../types";
 
 const POLL_INTERVAL_MS = 500;
-const STREAM_URL = '/api/external-annotations/stream';
-const SNAPSHOT_URL = '/api/external-annotations';
+const STREAM_URL = "/api/external-annotations/stream";
+const SNAPSHOT_URL = "/api/external-annotations";
 
 /**
  * Wire transport for external annotations. The hook owns the state machine
@@ -29,10 +29,7 @@ const SNAPSHOT_URL = '/api/external-annotations';
  */
 export interface ExternalAnnotationTransport<T extends { id: string; source?: string }> {
   /** Open the live event stream. Returns an unsubscribe fn that tears it down. */
-  subscribe(
-    onEvent: (event: ExternalAnnotationEvent<T>) => void,
-    onError: () => void,
-  ): () => void;
+  subscribe(onEvent: (event: ExternalAnnotationEvent<T>) => void, onError: () => void): () => void;
   /** Fetch a version-gated snapshot. Resolves null when there are no changes (304). */
   getSnapshot(since: number): Promise<{ annotations: T[]; version: number } | null>;
   add(items: T[]): Promise<void>;
@@ -46,7 +43,9 @@ export interface ExternalAnnotationTransport<T extends { id: string; source?: st
  * EventSource on /api/external-annotations/stream; GET snapshot honoring 304→null;
  * CRUD via DELETE/PATCH fetches (optimistic local mutation stays in the hook).
  */
-function createDefaultTransport<T extends { id: string; source?: string }>(): ExternalAnnotationTransport<T> {
+function createDefaultTransport<
+  T extends { id: string; source?: string },
+>(): ExternalAnnotationTransport<T> {
   return {
     subscribe(onEvent, onError) {
       const es = new EventSource(STREAM_URL);
@@ -72,29 +71,29 @@ function createDefaultTransport<T extends { id: string; source?: string }>(): Ex
       // Skip (don't apply) on a malformed 200 — preserves existing annotations
       // and the version cursor instead of clearing them, matching the
       // pre-seam fetchSnapshot which only updated on well-formed payloads.
-      if (!Array.isArray(data.annotations) || typeof data.version !== 'number') return null;
+      if (!Array.isArray(data.annotations) || typeof data.version !== "number") return null;
       return { annotations: data.annotations, version: data.version };
     },
     async add(items) {
       await fetch(SNAPSHOT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ annotations: items }),
       });
     },
     async remove(id) {
-      await fetch(`${SNAPSHOT_URL}?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await fetch(`${SNAPSHOT_URL}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     },
     async update(id, fields) {
       await fetch(`${SNAPSHOT_URL}?id=${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(fields),
       });
     },
     async clear(source) {
-      const qs = source ? `?source=${encodeURIComponent(source)}` : '';
-      await fetch(`${SNAPSHOT_URL}${qs}`, { method: 'DELETE' });
+      const qs = source ? `?source=${encodeURIComponent(source)}` : "";
+      await fetch(`${SNAPSHOT_URL}${qs}`, { method: "DELETE" });
     },
   };
 }
@@ -127,20 +126,18 @@ export interface ExternalSessionClosed {
    * Who closed it: the agent (`POST /api/host/close`), or `"session"` when plan
    * mode or the agent session itself ended. Anything else reads as `"agent"`.
    */
-  by?: 'agent' | 'session';
+  by?: "agent" | "session";
 }
 
-export function useExternalAnnotations<T extends { id: string; source?: string }>(
-  options?: {
-    enabled?: boolean;
-    /**
-     * The stream reported that the agent closed this review
-     * (`POST /api/host/close`). Only the SSE stream carries it; the polling
-     * fallback does not.
-     */
-    onSessionClosed?: (event: ExternalSessionClosed) => void;
-  },
-): UseExternalAnnotationsReturn<T> {
+export function useExternalAnnotations<T extends { id: string; source?: string }>(options?: {
+  enabled?: boolean;
+  /**
+   * The stream reported that the agent closed this review
+   * (`POST /api/host/close`). Only the SSE stream carries it; the polling
+   * fallback does not.
+   */
+  onSessionClosed?: (event: ExternalSessionClosed) => void;
+}): UseExternalAnnotationsReturn<T> {
   const enabled = options?.enabled ?? true;
   const onSessionClosedRef = useRef(options?.onSessionClosed);
   onSessionClosedRef.current = options?.onSessionClosed;
@@ -171,34 +168,31 @@ export function useExternalAnnotations<T extends { id: string; source?: string }
     // --- Reducer (applies snapshot|add|remove|clear|update), verbatim ---
     function applyEvent(parsed: ExternalAnnotationEvent<T>) {
       switch (parsed.type) {
-        case 'snapshot':
+        case "snapshot":
           receivedSnapshotRef.current = true;
           setAnnotations(parsed.annotations);
           break;
-        case 'add':
+        case "add":
           setAnnotations((prev) => [...prev, ...parsed.annotations]);
           break;
-        case 'remove':
+        case "remove":
+          setAnnotations((prev) => prev.filter((a) => !parsed.ids.includes(a.id)));
+          break;
+        case "clear":
           setAnnotations((prev) =>
-            prev.filter((a) => !parsed.ids.includes(a.id)),
+            parsed.source ? prev.filter((a) => a.source !== parsed.source) : [],
           );
           break;
-        case 'clear':
+        case "update":
           setAnnotations((prev) =>
-            parsed.source
-              ? prev.filter((a) => a.source !== parsed.source)
-              : [],
+            prev.map((a) => (a.id === parsed.id ? (parsed.annotation as T) : a)),
           );
           break;
-        case 'update':
-          setAnnotations((prev) =>
-            prev.map((a) => a.id === parsed.id ? (parsed.annotation as T) : a),
-          );
-          break;
-        case 'session-closed':
+        case "session-closed":
           onSessionClosedRef.current?.({
-            unsentAnnotations: typeof parsed.unsentAnnotations === 'number' ? parsed.unsentAnnotations : 0,
-            by: parsed.by === 'session' ? 'session' : 'agent',
+            unsentAnnotations:
+              typeof parsed.unsentAnnotations === "number" ? parsed.unsentAnnotations : 0,
+            by: parsed.by === "session" ? "session" : "agent",
           });
           break;
       }
@@ -271,9 +265,7 @@ export function useExternalAnnotations<T extends { id: string; source?: string }
 
   const clearExternalAnnotations = useCallback(async (source?: string) => {
     // Optimistic update
-    setAnnotations((prev) =>
-      source ? prev.filter((a) => a.source !== source) : [],
-    );
+    setAnnotations((prev) => (source ? prev.filter((a) => a.source !== source) : []));
     try {
       await transportRef.current.clear(source);
     } catch {
@@ -290,5 +282,10 @@ export function useExternalAnnotations<T extends { id: string; source?: string }
     }
   }, []);
 
-  return { externalAnnotations: annotations, updateExternalAnnotation, deleteExternalAnnotation, clearExternalAnnotations };
+  return {
+    externalAnnotations: annotations,
+    updateExternalAnnotation,
+    deleteExternalAnnotation,
+    clearExternalAnnotations,
+  };
 }

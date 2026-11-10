@@ -24,7 +24,10 @@ export interface UseSidebarReturn<T extends string = SidebarTab> {
   toggleTab: (tab: T) => void;
 }
 
-export function useSidebar<T extends string = SidebarTab>(initialOpen: boolean, defaultTab?: T): UseSidebarReturn<T> {
+export function useSidebar<T extends string = SidebarTab>(
+  initialOpen: boolean,
+  defaultTab?: T,
+): UseSidebarReturn<T> {
   const [isOpen, setIsOpen] = useState(initialOpen);
   const [activeTab, setActiveTab] = useState<T>((defaultTab ?? "toc") as T);
 
@@ -48,7 +51,7 @@ export function useSidebar<T extends string = SidebarTab>(initialOpen: boolean, 
         setActiveTab(tab);
       }
     },
-    [isOpen, activeTab]
+    [isOpen, activeTab],
   );
 
   return { isOpen, activeTab, open, close, toggleTab };

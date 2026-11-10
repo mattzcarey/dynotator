@@ -4,7 +4,7 @@
  * +/- counts). Browser-only, and free of any diagram code, so a bundle that
  * only needs the tokens never pulls a diagram runtime in.
  */
-import { parseCssColor } from './cssColor';
+import { parseCssColor } from "./cssColor";
 
 /**
  * Read the custom properties `names` off `el` (default: the document element,
@@ -20,7 +20,7 @@ export function readThemeTokenValues<N extends string>(
   el?: Element | null,
   raw: readonly N[] = [],
 ): Partial<Record<N, string>> | undefined {
-  if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') return undefined;
+  if (typeof document === "undefined" || typeof getComputedStyle !== "function") return undefined;
   const target = el ?? document.documentElement;
   if (!target) return undefined;
   let computed: CSSStyleDeclaration;
@@ -33,11 +33,11 @@ export function readThemeTokenValues<N extends string>(
   let probe: HTMLElement | null = null;
   try {
     for (const name of names) {
-      let value = '';
+      let value = "";
       try {
         value = computed.getPropertyValue(`--${name}`).trim();
       } catch {
-        value = '';
+        value = "";
       }
       if (!value) continue;
       if (raw.includes(name)) {
@@ -51,13 +51,13 @@ export function readThemeTokenValues<N extends string>(
       // Unparsable as written: let the engine resolve it to a colour.
       try {
         if (!probe) {
-          probe = document.createElement('span');
-          probe.setAttribute('aria-hidden', 'true');
-          probe.style.position = 'absolute';
-          probe.style.width = '0';
-          probe.style.height = '0';
-          probe.style.overflow = 'hidden';
-          probe.style.pointerEvents = 'none';
+          probe = document.createElement("span");
+          probe.setAttribute("aria-hidden", "true");
+          probe.style.position = "absolute";
+          probe.style.width = "0";
+          probe.style.height = "0";
+          probe.style.overflow = "hidden";
+          probe.style.pointerEvents = "none";
           target.appendChild(probe);
         }
         probe.style.color = `var(--${name})`;

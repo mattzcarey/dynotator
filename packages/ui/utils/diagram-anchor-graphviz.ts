@@ -22,19 +22,24 @@
  *
  * Pure: no React, no DOM globals beyond the Element the caller hands in.
  */
-import { diagramWholeSourceLines, lineMentions, sameTarget, type DiagramTarget } from '@dynotator/core/diagram-anchor';
-import type { DiagramFinder } from './diagram-anchor';
+import {
+  diagramWholeSourceLines,
+  lineMentions,
+  sameTarget,
+  type DiagramTarget,
+} from "@dynotator/core/diagram-anchor";
+import type { DiagramFinder } from "./diagram-anchor";
 
 /** The selector of every element the pointer can address in a Graphviz svg. */
-export const GRAPHVIZ_TARGET_SELECTOR = 'g.node, g.edge, g.cluster';
+export const GRAPHVIZ_TARGET_SELECTOR = "g.node, g.edge, g.cluster";
 
 /** The group's own `<title>` (a direct child; nested groups carry their
  * own), which is the DOT name of the part. Entities (`&#45;&gt;`) come back
  * decoded by the parser. */
 function titleOf(el: Element): string | null {
   for (const child of Array.from(el.children)) {
-    if (child.tagName.toLowerCase() === 'title') {
-      return (child.textContent ?? '').trim();
+    if (child.tagName.toLowerCase() === "title") {
+      return (child.textContent ?? "").trim();
     }
   }
   return null;
@@ -43,10 +48,10 @@ function titleOf(el: Element): string | null {
 /** The text the part shows: every `<text>` under it, in order. A node
  * with no label attribute shows its name; a record label shows its fields. */
 function labelOf(el: Element): string {
-  return Array.from(el.querySelectorAll('text'))
-    .map((text) => text.textContent ?? '')
-    .join(' ')
-    .replace(/\s+/gu, ' ')
+  return Array.from(el.querySelectorAll("text"))
+    .map((text) => text.textContent ?? "")
+    .join(" ")
+    .replace(/\s+/gu, " ")
     .trim();
 }
 
@@ -56,9 +61,9 @@ function labelOf(el: Element): string {
 function splitEdgeTitle(title: string): { from: string; to: string } | null {
   const m = /^(.*?)(?:->|--)(.*)$/u.exec(title);
   if (m === null) return null;
-  const from = (m[1] ?? '').trim();
-  const to = (m[2] ?? '').trim();
-  if (from === '' || to === '') return null;
+  const from = (m[1] ?? "").trim();
+  const to = (m[2] ?? "").trim();
+  if (from === "" || to === "") return null;
   return { from, to };
 }
 
@@ -70,17 +75,17 @@ function splitEdgeTitle(title: string): { from: string; to: string } | null {
  */
 export function graphvizTargetFromElement(_svg: Element, el: Element): DiagramTarget | null {
   const title = titleOf(el);
-  if (title === null || title === '') return null;
-  if (el.classList.contains('node')) {
-    return { family: 'graphviz', kind: 'node', id: title, label: labelOf(el) };
+  if (title === null || title === "") return null;
+  if (el.classList.contains("node")) {
+    return { family: "graphviz", kind: "node", id: title, label: labelOf(el) };
   }
-  if (el.classList.contains('edge')) {
+  if (el.classList.contains("edge")) {
     const ends = splitEdgeTitle(title);
     if (ends === null) return null;
-    return { family: 'graphviz', kind: 'edge', ...ends, label: labelOf(el) };
+    return { family: "graphviz", kind: "edge", ...ends, label: labelOf(el) };
   }
-  if (el.classList.contains('cluster')) {
-    return { family: 'graphviz', kind: 'cluster', id: title, label: labelOf(el) };
+  if (el.classList.contains("cluster")) {
+    return { family: "graphviz", kind: "cluster", id: title, label: labelOf(el) };
   }
   return null;
 }
@@ -90,14 +95,16 @@ export function graphvizTargetFromElement(_svg: Element, el: Element): DiagramTa
  * label equals the stored label. Null when neither holds.
  */
 export function graphvizFindTarget(svg: Element, target: DiagramTarget): Element | null {
-  if (target.kind === 'diagram') return svg;
+  if (target.kind === "diagram") return svg;
   for (const el of Array.from(svg.querySelectorAll(GRAPHVIZ_TARGET_SELECTOR))) {
     const candidate = graphvizTargetFromElement(svg, el);
     if (candidate !== null && sameTarget(candidate, target)) return el;
   }
-  if (target.kind === 'node' && target.label !== '') {
+  if (target.kind === "node" && target.label !== "") {
     // Only while the label names ONE node (see the Mermaid finder).
-    const matches = Array.from(svg.querySelectorAll('g.node')).filter((el) => labelOf(el) === target.label);
+    const matches = Array.from(svg.querySelectorAll("g.node")).filter(
+      (el) => labelOf(el) === target.label,
+    );
     if (matches.length === 1) return matches[0] ?? null;
   }
   return null;
@@ -112,11 +119,14 @@ export function graphvizFindTarget(svg: Element, target: DiagramTarget): Element
  * the part is not found as a token, which is what a node that exists only
  * in an unsaved draft reads as until it is saved.
  */
-export function graphvizSourceLine(source: string, target: DiagramTarget): readonly [number, number] | null {
-  if (target.kind === 'diagram') return diagramWholeSourceLines(source);
-  const lines = source.split('\n');
+export function graphvizSourceLine(
+  source: string,
+  target: DiagramTarget,
+): readonly [number, number] | null {
+  if (target.kind === "diagram") return diagramWholeSourceLines(source);
+  const lines = source.split("\n");
   const matches = (line: string): boolean => {
-    if (target.kind === 'edge') {
+    if (target.kind === "edge") {
       return (
         target.from !== undefined &&
         target.to !== undefined &&
@@ -125,7 +135,7 @@ export function graphvizSourceLine(source: string, target: DiagramTarget): reado
       );
     }
     if (target.id === undefined) return false;
-    if (target.kind === 'cluster') {
+    if (target.kind === "cluster") {
       return /\bsubgraph\b/u.test(line) && lineMentions(line, target.id);
     }
     return lineMentions(line, target.id);

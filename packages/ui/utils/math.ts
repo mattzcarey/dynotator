@@ -19,8 +19,8 @@
  * away and drop the chunk (see HANDOFF.md "Lazy renderers and eager entries").
  */
 
-import type { KatexOptions } from 'katex';
-import { loadDefaultMathRenderer } from './math-default-loader';
+import type { KatexOptions } from "katex";
+import { loadDefaultMathRenderer } from "./math-default-loader";
 
 /** The subset of KaTeX's API the renderer needs. `katex` itself satisfies it. */
 export interface MathRenderer {
@@ -36,7 +36,7 @@ export type MathRendererLoader = () => Promise<MathRenderer>;
  * `./math-eager` is evaluated, which is what `tests/entry-assets.test.ts`
  * asserts on the built single-file HTML.
  */
-export type MathRendererSource = 'plannotator-math-eager' | 'loader' | 'host';
+export type MathRendererSource = "plannotator-math-eager" | "loader" | "host";
 
 let renderer: MathRenderer | null = null;
 let rendererSource: MathRendererSource | null = null;
@@ -71,7 +71,7 @@ export function getMathRendererSource(): MathRendererSource | null {
 }
 
 /** Register a renderer synchronously (what `./math-eager` does with `katex`). */
-export function setMathRenderer(next: MathRenderer, source: MathRendererSource = 'host'): void {
+export function setMathRenderer(next: MathRenderer, source: MathRendererSource = "host"): void {
   if (renderer === next) return;
   renderer = next;
   rendererSource = source;
@@ -119,7 +119,7 @@ export function loadMathRenderer(): Promise<MathRenderer> {
       (loaded) => {
         // A reset since this load started wants the slot empty: hand the
         // result to the caller that awaited it, but do not register it.
-        if (epoch === resetEpoch) setMathRenderer(loaded, 'loader');
+        if (epoch === resetEpoch) setMathRenderer(loaded, "loader");
         return loaded;
       },
       (err: unknown) => {
@@ -166,8 +166,8 @@ export function renderMathToHtml(
   return activeRenderer.renderToString(tex, {
     displayMode,
     throwOnError: false,
-    strict: 'warn',
+    strict: "warn",
     trust: false,
-    output: 'html',
+    output: "html",
   });
 }

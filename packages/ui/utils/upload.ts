@@ -29,8 +29,8 @@ export interface UploadTransport {
 const defaultUploadTransport: UploadTransport = {
   async upload(file) {
     const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    formData.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
     const data = await res.json();
     return { path: data.path, originalName: data.originalName };
   },

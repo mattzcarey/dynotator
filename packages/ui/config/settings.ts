@@ -12,45 +12,49 @@
 import {
   isAnnotateAgentTerminalSide,
   type AnnotateAgentTerminalSide,
-} from '@dynotator/core/agent-terminal';
-import type { DiffLineBgIntensity, ReviewDefaults } from '@dynotator/core/config-types';
-import { DEFAULT_FAVICON_STYLE, isFaviconStyle, type FaviconStyle } from '@dynotator/core/favicon-style';
+} from "@dynotator/core/agent-terminal";
+import type { DiffLineBgIntensity, ReviewDefaults } from "@dynotator/core/config-types";
+import {
+  DEFAULT_FAVICON_STYLE,
+  isFaviconStyle,
+  type FaviconStyle,
+} from "@dynotator/core/favicon-style";
 import {
   agentSwitchConfigValue,
   isAgentSwitchName,
   parseAgentSwitchConfig,
   type AgentSwitchChoice,
-} from '@dynotator/core/agent-switch';
+} from "@dynotator/core/agent-switch";
 import {
   DEFAULT_TOKEN_HOVER_DELAY_MS,
   isTokenHoverDelay,
   resolveStoredTokenHoverTrigger,
   type TokenHoverDelay,
   type TokenHoverTrigger,
-} from '@dynotator/core/token-hover';
-import { DEFAULT_DIAGRAM_SHADOW, isDiagramShadow } from '../utils/diagramShadow';
+} from "@dynotator/core/token-hover";
+import { DEFAULT_DIAGRAM_SHADOW, isDiagramShadow } from "../utils/diagramShadow";
 import {
   DEFAULT_DOCUMENT_TEXT_SIZE,
   isDocumentTextSize,
   type DocumentTextSize,
-} from '../utils/documentTextSize';
-import { normalizeFontFamilyName } from '../utils/cssFontFamily';
-import { storage } from '../utils/storage';
-import { isLookChoiceResolved } from '../utils/lookAndFeelAnnouncement';
-import { generateIdentity } from '../utils/generateIdentity';
+} from "../utils/documentTextSize";
+import { normalizeFontFamilyName } from "../utils/cssFontFamily";
+import { storage } from "../utils/storage";
+import { isLookChoiceResolved } from "../utils/lookAndFeelAnnouncement";
+import { generateIdentity } from "../utils/generateIdentity";
 import {
   getDefaultThemePair,
   normalizeThemePair,
   seedThemePair,
   type ThemePair,
-} from '../utils/themeRegistry';
-import { parseThemeMode } from '../components/themeModes';
+} from "../utils/themeRegistry";
+import { parseThemeMode } from "../components/themeModes";
 
 /** Legacy single-palette key, still written so a downgrade renders styled. */
-const COLOR_THEME_COOKIE = 'plannotator-color-theme';
-const MODE_COOKIE = 'plannotator-theme';
-const LIGHT_THEME_COOKIE = 'plannotator-light-theme';
-const DARK_THEME_COOKIE = 'plannotator-dark-theme';
+const COLOR_THEME_COOKIE = "plannotator-color-theme";
+const MODE_COOKIE = "plannotator-theme";
+const LIGHT_THEME_COOKIE = "plannotator-light-theme";
+const DARK_THEME_COOKIE = "plannotator-dark-theme";
 
 /**
  * Where a host keeps the two PRE-PAIR values, if not under Plannotator's own
@@ -99,12 +103,15 @@ export function readThemePairCookies(keys?: ThemePairLegacyKeys): ThemePair | un
   const legacy = storage.getItem(keys?.colorTheme ?? COLOR_THEME_COOKIE);
   if (!mode && !light && !dark && !legacy) return undefined;
   const seeded = seedThemePair(legacy, parseThemeMode(mode, getDefaultThemePair().mode));
-  return normalizeThemePair({ mode, light: light ?? seeded.light, dark: dark ?? seeded.dark }, seeded);
+  return normalizeThemePair(
+    { mode, light: light ?? seeded.light, dark: dark ?? seeded.dark },
+    seeded,
+  );
 }
 
 /** Pre-registry cookie keys of the agent switch, kept so an upgrade keeps the choice. */
-const AGENT_SWITCH_COOKIE = 'plannotator-agent-switch';
-const AGENT_SWITCH_CUSTOM_COOKIE = 'plannotator-agent-custom';
+const AGENT_SWITCH_COOKIE = "plannotator-agent-switch";
+const AGENT_SWITCH_CUSTOM_COOKIE = "plannotator-agent-custom";
 
 function readAgentSwitchCookies(): AgentSwitchChoice | undefined {
   const choice = parseAgentSwitchConfig(storage.getItem(AGENT_SWITCH_COOKIE));
@@ -120,21 +127,27 @@ function writeAgentSwitchCookies(choice: AgentSwitchChoice | null): void {
   if (choice.customName) storage.setItem(AGENT_SWITCH_CUSTOM_COOKIE, choice.customName);
   // Custom with its name cleared: drop the old name, or the next read would
   // pair it with "custom" and switch to that old agent again.
-  else if (choice.switchTo === 'custom') storage.removeItem(AGENT_SWITCH_CUSTOM_COOKIE);
+  else if (choice.switchTo === "custom") storage.removeItem(AGENT_SWITCH_CUSTOM_COOKIE);
 }
 
-const DIFF_LINE_BG_INTENSITY_VALUES = ['subtle', 'normal', 'strong'] as const;
+const DIFF_LINE_BG_INTENSITY_VALUES = ["subtle", "normal", "strong"] as const;
 function isDiffLineBgIntensity(v: unknown): v is DiffLineBgIntensity {
-  return typeof v === 'string' && (DIFF_LINE_BG_INTENSITY_VALUES as readonly string[]).includes(v);
+  return typeof v === "string" && (DIFF_LINE_BG_INTENSITY_VALUES as readonly string[]).includes(v);
 }
 
 function parseReviewDefaults(value: unknown): ReviewDefaults | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   const defaults: ReviewDefaults = {};
   for (const [providerId, providerValue] of Object.entries(value)) {
-    if (!providerId || !providerValue || typeof providerValue !== 'object' || Array.isArray(providerValue)) continue;
+    if (
+      !providerId ||
+      !providerValue ||
+      typeof providerValue !== "object" ||
+      Array.isArray(providerValue)
+    )
+      continue;
     const defaultDiffType = (providerValue as Record<string, unknown>).defaultDiffType;
-    if (typeof defaultDiffType === 'string' && defaultDiffType) {
+    if (typeof defaultDiffType === "string" && defaultDiffType) {
       defaults[providerId] = { defaultDiffType };
     }
   }
@@ -155,11 +168,11 @@ export interface SettingDef<T> {
 export const SETTINGS = {
   displayName: {
     defaultValue: () => generateIdentity(),
-    fromCookie: () => storage.getItem('plannotator-identity') || undefined,
-    toCookie: (v: string) => storage.setItem('plannotator-identity', v),
-    serverKey: 'displayName',
+    fromCookie: () => storage.getItem("plannotator-identity") || undefined,
+    toCookie: (v: string) => storage.setItem("plannotator-identity", v),
+    serverKey: "displayName",
     fromServer: (sc: Record<string, unknown>) =>
-      typeof sc.displayName === 'string' && sc.displayName ? sc.displayName : undefined,
+      typeof sc.displayName === "string" && sc.displayName ? sc.displayName : undefined,
     toServer: (v: string) => ({ displayName: v }),
   },
 
@@ -182,11 +195,12 @@ export const SETTINGS = {
     defaultValue: () => getDefaultThemePair(),
     fromCookie: () => readThemePairCookies(),
     toCookie: (v: ThemePair) => writeThemePairCookies(v),
-    serverKey: 'theme',
+    serverKey: "theme",
     fromServer: (sc: Record<string, unknown>) => {
       const theme = sc.theme as Record<string, unknown> | undefined;
-      if (!theme || typeof theme !== 'object') return undefined;
-      if (theme.mode === undefined && theme.light === undefined && theme.dark === undefined) return undefined;
+      if (!theme || typeof theme !== "object") return undefined;
+      if (theme.mode === undefined && theme.light === undefined && theme.dark === undefined)
+        return undefined;
       return normalizeThemePair(theme, getDefaultThemePair());
     },
     toServer: (v: ThemePair) => ({ theme: { mode: v.mode, light: v.light, dark: v.dark } }),
@@ -194,11 +208,11 @@ export const SETTINGS = {
   faviconStyle: {
     defaultValue: DEFAULT_FAVICON_STYLE as FaviconStyle,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-favicon');
+      const v = storage.getItem("plannotator-favicon");
       return isFaviconStyle(v) ? v : undefined;
     },
-    toCookie: (v: FaviconStyle) => storage.setItem('plannotator-favicon', v),
-    serverKey: 'favicon',
+    toCookie: (v: FaviconStyle) => storage.setItem("plannotator-favicon", v),
+    serverKey: "favicon",
     fromServer: (sc: Record<string, unknown>) => {
       const v = sc.favicon;
       return isFaviconStyle(v) ? v : undefined;
@@ -219,11 +233,13 @@ export const SETTINGS = {
       // a v1 marker with Grid stored is moved to Clean once, see
       // utils/lookAndFeelAnnouncement); until then they get Clean.
       if (!isLookChoiceResolved()) return undefined;
-      const v = storage.getItem('plannotator-grid-enabled');
-      return v === 'true' ? true : v === 'false' ? false : undefined;
+      const v = storage.getItem("plannotator-grid-enabled");
+      return v === "true" ? true : v === "false" ? false : undefined;
     },
-    toCookie: (v: boolean) => storage.setItem('plannotator-grid-enabled', String(v)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    toCookie: (v: boolean) => storage.setItem("plannotator-grid-enabled", String(v)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   /**
@@ -238,13 +254,15 @@ export const SETTINGS = {
       // `Number(null)` and `Number('')` are 0, which is a VALID amount here
       // (unlike the token-hover steps), so an absent cookie must be rejected
       // before the guard sees it — otherwise no cookie reads as "no shadow".
-      const raw = storage.getItem('plannotator-diagram-shadow');
-      if (raw === null || raw.trim() === '') return undefined;
+      const raw = storage.getItem("plannotator-diagram-shadow");
+      if (raw === null || raw.trim() === "") return undefined;
       const parsed = Number(raw);
       return isDiagramShadow(parsed) ? parsed : undefined;
     },
-    toCookie: (value: number) => storage.setItem('plannotator-diagram-shadow', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    toCookie: (value: number) => storage.setItem("plannotator-diagram-shadow", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   /**
@@ -255,14 +273,16 @@ export const SETTINGS = {
   documentTextSize: {
     defaultValue: DEFAULT_DOCUMENT_TEXT_SIZE as DocumentTextSize,
     fromCookie: () => {
-      const raw = storage.getItem('plannotator-document-text-size');
-      if (raw === null || raw.trim() === '') return undefined;
+      const raw = storage.getItem("plannotator-document-text-size");
+      if (raw === null || raw.trim() === "") return undefined;
       const parsed = Number(raw);
       return isDocumentTextSize(parsed) ? parsed : undefined;
     },
     toCookie: (value: DocumentTextSize) =>
-      storage.setItem('plannotator-document-text-size', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+      storage.setItem("plannotator-document-text-size", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   /**
@@ -271,11 +291,14 @@ export const SETTINGS = {
    * Empty = the theme's font. Cookie-only, like Text size.
    */
   documentFontFamily: {
-    defaultValue: '' as string,
+    defaultValue: "" as string,
     fromCookie: () =>
-      normalizeFontFamilyName(storage.getItem('plannotator-document-font-family') ?? '') || undefined,
-    toCookie: (value: string) => storage.setItem('plannotator-document-font-family', value),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+      normalizeFontFamilyName(storage.getItem("plannotator-document-font-family") ?? "") ||
+      undefined,
+    toCookie: (value: string) => storage.setItem("plannotator-document-font-family", value),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   /**
@@ -287,12 +310,13 @@ export const SETTINGS = {
   enterSavesComment: {
     defaultValue: false as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-enter-saves-comment');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-enter-saves-comment");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
-    toCookie: (value: boolean) =>
-      storage.setItem('plannotator-enter-saves-comment', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    toCookie: (value: boolean) => storage.setItem("plannotator-enter-saves-comment", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   /**
@@ -305,12 +329,13 @@ export const SETTINGS = {
   hideRepoOwner: {
     defaultValue: false as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-hide-repo-owner');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-hide-repo-owner");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
-    toCookie: (value: boolean) =>
-      storage.setItem('plannotator-hide-repo-owner', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    toCookie: (value: boolean) => storage.setItem("plannotator-hide-repo-owner", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   vimModeEnabled: {
@@ -319,12 +344,13 @@ export const SETTINGS = {
     // navigation from Settings > Vim.
     defaultValue: false as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-vim-mode-enabled');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-vim-mode-enabled");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
-    toCookie: (value: boolean) =>
-      storage.setItem('plannotator-vim-mode-enabled', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    toCookie: (value: boolean) => storage.setItem("plannotator-vim-mode-enabled", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   vimHudEnabled: {
@@ -332,12 +358,13 @@ export const SETTINGS = {
     // controls. It has no effect while Vim mode itself is disabled.
     defaultValue: false as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-vim-hud-enabled');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-vim-hud-enabled");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
-    toCookie: (value: boolean) =>
-      storage.setItem('plannotator-vim-hud-enabled', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    toCookie: (value: boolean) => storage.setItem("plannotator-vim-hud-enabled", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   vimHudKeyPanelEnabled: {
@@ -345,12 +372,14 @@ export const SETTINGS = {
     // bottom-right key panel to be hidden independently from the reticle.
     defaultValue: true as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-vim-hud-key-panel-enabled');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-vim-hud-key-panel-enabled");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
     toCookie: (value: boolean) =>
-      storage.setItem('plannotator-vim-hud-key-panel-enabled', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+      storage.setItem("plannotator-vim-hud-key-panel-enabled", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   // --- Diff display options (namespaced under diffOptions in config.json) ---
@@ -371,13 +400,15 @@ export const SETTINGS = {
   // and never the opening view — a review always opens on files. A
   // previously-persisted 'commits' cookie is treated as unset.
   reviewPanelView: {
-    defaultValue: 'tree' as 'sections' | 'tree',
+    defaultValue: "tree" as "sections" | "tree",
     fromCookie: () => {
-      const v = storage.getItem('plannotator-review-panel-view');
-      return v === 'tree' || v === 'sections' ? v : undefined;
+      const v = storage.getItem("plannotator-review-panel-view");
+      return v === "tree" || v === "sections" ? v : undefined;
     },
-    toCookie: (v: string) => storage.setItem('plannotator-review-panel-view', v),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    toCookie: (v: string) => storage.setItem("plannotator-review-panel-view", v),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   // The view the user last SELECTED via the in-review header toggle. Layered
@@ -388,19 +419,21 @@ export const SETTINGS = {
   // 'commits' is never recorded here for the same reason reviewPanelView
   // rejects it: the Commits view is session-only and never an opening view.
   reviewPanelViewLastUsed: {
-    defaultValue: null as 'sections' | 'tree' | null,
+    defaultValue: null as "sections" | "tree" | null,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-review-panel-view-last-used');
-      return v === 'tree' || v === 'sections' ? v : undefined;
+      const v = storage.getItem("plannotator-review-panel-view-last-used");
+      return v === "tree" || v === "sections" ? v : undefined;
     },
-    toCookie: (v: 'sections' | 'tree' | null) => {
+    toCookie: (v: "sections" | "tree" | null) => {
       // The null default seeds through here on first load — "unrecorded" has
       // no cookie representation, so write nothing.
-      if (v === 'sections' || v === 'tree') {
-        storage.setItem('plannotator-review-panel-view-last-used', v);
+      if (v === "sections" || v === "tree") {
+        storage.setItem("plannotator-review-panel-view-last-used", v);
       }
     },
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   // Compact left-panel preferences. These are deliberately cookie-only: they
@@ -409,12 +442,14 @@ export const SETTINGS = {
   reviewShowViewedControls: {
     defaultValue: true as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-review-show-viewed-controls');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-review-show-viewed-controls");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
     toCookie: (value: boolean) =>
-      storage.setItem('plannotator-review-show-viewed-controls', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+      storage.setItem("plannotator-review-show-viewed-controls", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   // Mark a file viewed when the reviewer scrolls past it or moves on to
@@ -424,12 +459,13 @@ export const SETTINGS = {
   reviewAutoViewed: {
     defaultValue: true as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-review-auto-viewed');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-review-auto-viewed");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
-    toCookie: (value: boolean) =>
-      storage.setItem('plannotator-review-auto-viewed', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+    toCookie: (value: boolean) => storage.setItem("plannotator-review-auto-viewed", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   // Hovering a token in a code-review diff opens a card with what the search
@@ -446,14 +482,17 @@ export const SETTINGS = {
   // off stays off. Resolution is pure and identical every time; see
   // resolveStoredTokenHoverTrigger.
   tokenHoverTrigger: {
-    defaultValue: 'hover' as TokenHoverTrigger,
-    fromCookie: () => resolveStoredTokenHoverTrigger(
-      storage.getItem('plannotator-token-hover-trigger'),
-      storage.getItem('plannotator-token-hover-cards'),
-    ),
+    defaultValue: "hover" as TokenHoverTrigger,
+    fromCookie: () =>
+      resolveStoredTokenHoverTrigger(
+        storage.getItem("plannotator-token-hover-trigger"),
+        storage.getItem("plannotator-token-hover-cards"),
+      ),
     toCookie: (value: TokenHoverTrigger) =>
-      storage.setItem('plannotator-token-hover-trigger', value),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+      storage.setItem("plannotator-token-hover-trigger", value),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   // How long the pointer rests on a symbol before a card is requested. Three
@@ -462,29 +501,33 @@ export const SETTINGS = {
   tokenHoverDelay: {
     defaultValue: DEFAULT_TOKEN_HOVER_DELAY_MS as TokenHoverDelay,
     fromCookie: () => {
-      const parsed = Number(storage.getItem('plannotator-token-hover-delay'));
+      const parsed = Number(storage.getItem("plannotator-token-hover-delay"));
       return isTokenHoverDelay(parsed) ? parsed : undefined;
     },
     toCookie: (value: TokenHoverDelay) =>
-      storage.setItem('plannotator-token-hover-delay', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+      storage.setItem("plannotator-token-hover-delay", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   reviewShowStageControls: {
     defaultValue: true as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-review-show-stage-controls');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-review-show-stage-controls");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
     toCookie: (value: boolean) =>
-      storage.setItem('plannotator-review-show-stage-controls', String(value)),
-    serverKey: undefined, fromServer: undefined, toServer: undefined,
+      storage.setItem("plannotator-review-show-stage-controls", String(value)),
+    serverKey: undefined,
+    fromServer: undefined,
+    toServer: undefined,
   },
 
   reviewDefaults: {
     defaultValue: {} as ReviewDefaults,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-review-defaults');
+      const value = storage.getItem("plannotator-review-defaults");
       if (!value) return undefined;
       try {
         return parseReviewDefaults(JSON.parse(value));
@@ -493,86 +536,109 @@ export const SETTINGS = {
       }
     },
     toCookie: (value: ReviewDefaults) =>
-      storage.setItem('plannotator-review-defaults', JSON.stringify(value)),
-    serverKey: 'reviewDefaults',
+      storage.setItem("plannotator-review-defaults", JSON.stringify(value)),
+    serverKey: "reviewDefaults",
     fromServer: (serverConfig: Record<string, unknown>) =>
       parseReviewDefaults(serverConfig.reviewDefaults),
     toServer: (value: ReviewDefaults) => ({ reviewDefaults: value }),
   },
 
   defaultDiffType: {
-    defaultValue: 'since-base' as 'since-base' | 'local-vs-remote' | 'uncommitted' | 'unstaged' | 'staged' | 'merge-base' | 'all',
+    defaultValue: "since-base" as
+      | "since-base"
+      | "local-vs-remote"
+      | "uncommitted"
+      | "unstaged"
+      | "staged"
+      | "merge-base"
+      | "all",
     fromCookie: () => {
-      const v = storage.getItem('plannotator-default-diff-type');
-      if (v === 'branch') return 'merge-base' as const;
-      return v === 'since-base' || v === 'local-vs-remote' || v === 'uncommitted' || v === 'unstaged' || v === 'staged' || v === 'merge-base' || v === 'all' ? v : undefined;
+      const v = storage.getItem("plannotator-default-diff-type");
+      if (v === "branch") return "merge-base" as const;
+      return v === "since-base" ||
+        v === "local-vs-remote" ||
+        v === "uncommitted" ||
+        v === "unstaged" ||
+        v === "staged" ||
+        v === "merge-base" ||
+        v === "all"
+        ? v
+        : undefined;
     },
-    toCookie: (v: string) => storage.setItem('plannotator-default-diff-type', v),
-    serverKey: 'diffOptions',
+    toCookie: (v: string) => storage.setItem("plannotator-default-diff-type", v),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.defaultDiffType;
-      if (v === 'branch') return 'merge-base' as const;
-      return v === 'since-base' || v === 'local-vs-remote' || v === 'uncommitted' || v === 'unstaged' || v === 'staged' || v === 'merge-base' || v === 'all' ? v : undefined;
+      if (v === "branch") return "merge-base" as const;
+      return v === "since-base" ||
+        v === "local-vs-remote" ||
+        v === "uncommitted" ||
+        v === "unstaged" ||
+        v === "staged" ||
+        v === "merge-base" ||
+        v === "all"
+        ? v
+        : undefined;
     },
     toServer: (v: string) => ({ diffOptions: { defaultDiffType: v } }),
   },
 
   diffStyle: {
-    defaultValue: 'split' as 'split' | 'unified',
+    defaultValue: "split" as "split" | "unified",
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-style') ?? storage.getItem('review-diff-style');
-      return v === 'split' || v === 'unified' ? v : undefined;
+      const v = storage.getItem("plannotator-diff-style") ?? storage.getItem("review-diff-style");
+      return v === "split" || v === "unified" ? v : undefined;
     },
-    toCookie: (v: string) => storage.setItem('plannotator-diff-style', v),
-    serverKey: 'diffOptions',
+    toCookie: (v: string) => storage.setItem("plannotator-diff-style", v),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.diffStyle;
-      return v === 'split' || v === 'unified' ? v : undefined;
+      return v === "split" || v === "unified" ? v : undefined;
     },
     toServer: (v: string) => ({ diffOptions: { diffStyle: v } }),
   },
 
   diffOverflow: {
-    defaultValue: 'scroll' as 'scroll' | 'wrap',
+    defaultValue: "scroll" as "scroll" | "wrap",
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-overflow');
-      return v === 'scroll' || v === 'wrap' ? v : undefined;
+      const v = storage.getItem("plannotator-diff-overflow");
+      return v === "scroll" || v === "wrap" ? v : undefined;
     },
-    toCookie: (v: string) => storage.setItem('plannotator-diff-overflow', v),
-    serverKey: 'diffOptions',
+    toCookie: (v: string) => storage.setItem("plannotator-diff-overflow", v),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.overflow;
-      return v === 'scroll' || v === 'wrap' ? v : undefined;
+      return v === "scroll" || v === "wrap" ? v : undefined;
     },
     toServer: (v: string) => ({ diffOptions: { overflow: v } }),
   },
 
   diffIndicators: {
-    defaultValue: 'bars' as 'bars' | 'classic' | 'none',
+    defaultValue: "bars" as "bars" | "classic" | "none",
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-indicators');
-      return v === 'bars' || v === 'classic' || v === 'none' ? v : undefined;
+      const v = storage.getItem("plannotator-diff-indicators");
+      return v === "bars" || v === "classic" || v === "none" ? v : undefined;
     },
-    toCookie: (v: string) => storage.setItem('plannotator-diff-indicators', v),
-    serverKey: 'diffOptions',
+    toCookie: (v: string) => storage.setItem("plannotator-diff-indicators", v),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.diffIndicators;
-      return v === 'bars' || v === 'classic' || v === 'none' ? v : undefined;
+      return v === "bars" || v === "classic" || v === "none" ? v : undefined;
     },
     toServer: (v: string) => ({ diffOptions: { diffIndicators: v } }),
   },
 
   diffLineDiffType: {
-    defaultValue: 'word-alt' as 'word-alt' | 'word' | 'char' | 'none',
+    defaultValue: "word-alt" as "word-alt" | "word" | "char" | "none",
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-line-diff-type');
-      return v === 'word-alt' || v === 'word' || v === 'char' || v === 'none' ? v : undefined;
+      const v = storage.getItem("plannotator-diff-line-diff-type");
+      return v === "word-alt" || v === "word" || v === "char" || v === "none" ? v : undefined;
     },
-    toCookie: (v: string) => storage.setItem('plannotator-diff-line-diff-type', v),
-    serverKey: 'diffOptions',
+    toCookie: (v: string) => storage.setItem("plannotator-diff-line-diff-type", v),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.lineDiffType;
-      return v === 'word-alt' || v === 'word' || v === 'char' || v === 'none' ? v : undefined;
+      return v === "word-alt" || v === "word" || v === "char" || v === "none" ? v : undefined;
     },
     toServer: (v: string) => ({ diffOptions: { lineDiffType: v } }),
   },
@@ -580,14 +646,14 @@ export const SETTINGS = {
   diffShowLineNumbers: {
     defaultValue: true as boolean,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-show-line-numbers');
-      return v === 'true' ? true : v === 'false' ? false : undefined;
+      const v = storage.getItem("plannotator-diff-show-line-numbers");
+      return v === "true" ? true : v === "false" ? false : undefined;
     },
-    toCookie: (v: boolean) => storage.setItem('plannotator-diff-show-line-numbers', String(v)),
-    serverKey: 'diffOptions',
+    toCookie: (v: boolean) => storage.setItem("plannotator-diff-show-line-numbers", String(v)),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.showLineNumbers;
-      return typeof v === 'boolean' ? v : undefined;
+      return typeof v === "boolean" ? v : undefined;
     },
     toServer: (v: boolean) => ({ diffOptions: { showLineNumbers: v } }),
   },
@@ -595,26 +661,26 @@ export const SETTINGS = {
   diffShowBackground: {
     defaultValue: true as boolean,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-show-background');
-      return v === 'true' ? true : v === 'false' ? false : undefined;
+      const v = storage.getItem("plannotator-diff-show-background");
+      return v === "true" ? true : v === "false" ? false : undefined;
     },
-    toCookie: (v: boolean) => storage.setItem('plannotator-diff-show-background', String(v)),
-    serverKey: 'diffOptions',
+    toCookie: (v: boolean) => storage.setItem("plannotator-diff-show-background", String(v)),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.showDiffBackground;
-      return typeof v === 'boolean' ? v : undefined;
+      return typeof v === "boolean" ? v : undefined;
     },
     toServer: (v: boolean) => ({ diffOptions: { showDiffBackground: v } }),
   },
 
   diffFontFamily: {
-    defaultValue: '' as string, // empty = theme default
-    fromCookie: () => storage.getItem('plannotator-diff-font-family') || undefined,
-    toCookie: (v: string) => storage.setItem('plannotator-diff-font-family', v),
-    serverKey: 'diffOptions',
+    defaultValue: "" as string, // empty = theme default
+    fromCookie: () => storage.getItem("plannotator-diff-font-family") || undefined,
+    toCookie: (v: string) => storage.setItem("plannotator-diff-font-family", v),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.fontFamily;
-      return typeof v === 'string' ? v : undefined;
+      return typeof v === "string" ? v : undefined;
     },
     toServer: (v: string) => ({ diffOptions: { fontFamily: v } }),
   },
@@ -622,14 +688,14 @@ export const SETTINGS = {
   diffHideWhitespace: {
     defaultValue: false as boolean,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-hide-whitespace');
-      return v === 'true' ? true : v === 'false' ? false : undefined;
+      const v = storage.getItem("plannotator-diff-hide-whitespace");
+      return v === "true" ? true : v === "false" ? false : undefined;
     },
-    toCookie: (v: boolean) => storage.setItem('plannotator-diff-hide-whitespace', String(v)),
-    serverKey: 'diffOptions',
+    toCookie: (v: boolean) => storage.setItem("plannotator-diff-hide-whitespace", String(v)),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.hideWhitespace;
-      return typeof v === 'boolean' ? v : undefined;
+      return typeof v === "boolean" ? v : undefined;
     },
     toServer: (v: boolean) => ({ diffOptions: { hideWhitespace: v } }),
   },
@@ -637,53 +703,52 @@ export const SETTINGS = {
   diffExpandUnchanged: {
     defaultValue: false as boolean,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-expand-unchanged');
-      return v === 'true' ? true : v === 'false' ? false : undefined;
+      const v = storage.getItem("plannotator-diff-expand-unchanged");
+      return v === "true" ? true : v === "false" ? false : undefined;
     },
-    toCookie: (v: boolean) => storage.setItem('plannotator-diff-expand-unchanged', String(v)),
-    serverKey: 'diffOptions',
+    toCookie: (v: boolean) => storage.setItem("plannotator-diff-expand-unchanged", String(v)),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.expandUnchanged;
-      return typeof v === 'boolean' ? v : undefined;
+      return typeof v === "boolean" ? v : undefined;
     },
     toServer: (v: boolean) => ({ diffOptions: { expandUnchanged: v } }),
   },
 
   diffFontSize: {
-    defaultValue: '' as string, // empty = theme default
-    fromCookie: () => storage.getItem('plannotator-diff-font-size') || undefined,
-    toCookie: (v: string) => storage.setItem('plannotator-diff-font-size', v),
-    serverKey: 'diffOptions',
+    defaultValue: "" as string, // empty = theme default
+    fromCookie: () => storage.getItem("plannotator-diff-font-size") || undefined,
+    toCookie: (v: string) => storage.setItem("plannotator-diff-font-size", v),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.fontSize;
-      return typeof v === 'string' ? v : undefined;
+      return typeof v === "string" ? v : undefined;
     },
     toServer: (v: string) => ({ diffOptions: { fontSize: v } }),
   },
   diffTabSize: {
     defaultValue: 2 as number,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-tab-size');
+      const v = storage.getItem("plannotator-diff-tab-size");
       const n = v ? parseInt(v, 10) : NaN;
       return Number.isFinite(n) && n >= 1 && n <= 8 ? n : undefined;
     },
-    toCookie: (v: number) => storage.setItem('plannotator-diff-tab-size', String(v)),
-    serverKey: 'diffOptions',
+    toCookie: (v: number) => storage.setItem("plannotator-diff-tab-size", String(v)),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.tabSize;
-      return typeof v === 'number' && v >= 1 && v <= 8 ? v : undefined;
+      return typeof v === "number" && v >= 1 && v <= 8 ? v : undefined;
     },
     toServer: (v: number) => ({ diffOptions: { tabSize: v } }),
   },
   diffLineBgIntensity: {
-    defaultValue: 'subtle' as DiffLineBgIntensity,
+    defaultValue: "subtle" as DiffLineBgIntensity,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-diff-line-bg-intensity');
+      const v = storage.getItem("plannotator-diff-line-bg-intensity");
       return isDiffLineBgIntensity(v) ? v : undefined;
     },
-    toCookie: (v: DiffLineBgIntensity) =>
-      storage.setItem('plannotator-diff-line-bg-intensity', v),
-    serverKey: 'diffOptions',
+    toCookie: (v: DiffLineBgIntensity) => storage.setItem("plannotator-diff-line-bg-intensity", v),
+    serverKey: "diffOptions",
     fromServer: (sc: Record<string, unknown>) => {
       const v = (sc.diffOptions as Record<string, unknown> | undefined)?.lineBgIntensity;
       return isDiffLineBgIntensity(v) ? v : undefined;
@@ -700,11 +765,11 @@ export const SETTINGS = {
   editSuggestions: {
     defaultValue: false as boolean,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-experimental-edit-suggestions');
-      return v === 'true' ? true : v === 'false' ? false : undefined;
+      const v = storage.getItem("plannotator-experimental-edit-suggestions");
+      return v === "true" ? true : v === "false" ? false : undefined;
     },
     toCookie: (v: boolean) =>
-      storage.setItem('plannotator-experimental-edit-suggestions', String(v)),
+      storage.setItem("plannotator-experimental-edit-suggestions", String(v)),
     serverKey: undefined,
     fromServer: undefined,
     toServer: undefined,
@@ -712,30 +777,30 @@ export const SETTINGS = {
   semanticDiffEnabled: {
     defaultValue: true as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-semantic-diff-enabled');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-semantic-diff-enabled");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
     toCookie: (value: boolean) =>
-      storage.setItem('plannotator-semantic-diff-enabled', String(value)),
-    serverKey: 'reviewAnalysis',
+      storage.setItem("plannotator-semantic-diff-enabled", String(value)),
+    serverKey: "reviewAnalysis",
     fromServer: (serverConfig: Record<string, unknown>) => {
-      const value = (serverConfig.reviewAnalysis as Record<string, unknown> | undefined)?.semanticDiff;
-      return typeof value === 'boolean' ? value : undefined;
+      const value = (serverConfig.reviewAnalysis as Record<string, unknown> | undefined)
+        ?.semanticDiff;
+      return typeof value === "boolean" ? value : undefined;
     },
     toServer: (value: boolean) => ({ reviewAnalysis: { semanticDiff: value } }),
   },
   callFlowEnabled: {
     defaultValue: false as boolean,
     fromCookie: () => {
-      const value = storage.getItem('plannotator-call-flow-enabled');
-      return value === 'true' ? true : value === 'false' ? false : undefined;
+      const value = storage.getItem("plannotator-call-flow-enabled");
+      return value === "true" ? true : value === "false" ? false : undefined;
     },
-    toCookie: (value: boolean) =>
-      storage.setItem('plannotator-call-flow-enabled', String(value)),
-    serverKey: 'reviewAnalysis',
+    toCookie: (value: boolean) => storage.setItem("plannotator-call-flow-enabled", String(value)),
+    serverKey: "reviewAnalysis",
     fromServer: (serverConfig: Record<string, unknown>) => {
       const value = (serverConfig.reviewAnalysis as Record<string, unknown> | undefined)?.callFlow;
-      return typeof value === 'boolean' ? value : undefined;
+      return typeof value === "boolean" ? value : undefined;
     },
     toServer: (value: boolean) => ({ reviewAnalysis: { callFlow: value } }),
   },
@@ -747,26 +812,26 @@ export const SETTINGS = {
   autoUpdate: {
     defaultValue: false as boolean,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-auto-update');
-      return v === 'true' ? true : v === 'false' ? false : undefined;
+      const v = storage.getItem("plannotator-auto-update");
+      return v === "true" ? true : v === "false" ? false : undefined;
     },
-    toCookie: (v: boolean) => storage.setItem('plannotator-auto-update', String(v)),
-    serverKey: 'autoUpdate',
+    toCookie: (v: boolean) => storage.setItem("plannotator-auto-update", String(v)),
+    serverKey: "autoUpdate",
     fromServer: (sc: Record<string, unknown>) =>
-      typeof sc.autoUpdate === 'boolean' ? sc.autoUpdate : undefined,
+      typeof sc.autoUpdate === "boolean" ? sc.autoUpdate : undefined,
     toServer: (v: boolean) => ({ autoUpdate: v }),
   },
   conventionalComments: {
     defaultValue: false as boolean,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-conventional-comments');
-      return v === 'true' ? true : v === 'false' ? false : undefined;
+      const v = storage.getItem("plannotator-conventional-comments");
+      return v === "true" ? true : v === "false" ? false : undefined;
     },
-    toCookie: (v: boolean) => storage.setItem('plannotator-conventional-comments', String(v)),
-    serverKey: 'conventionalComments',
+    toCookie: (v: boolean) => storage.setItem("plannotator-conventional-comments", String(v)),
+    serverKey: "conventionalComments",
     fromServer: (sc: Record<string, unknown>) => {
       const v = sc.conventionalComments;
-      return typeof v === 'boolean' ? v : undefined;
+      return typeof v === "boolean" ? v : undefined;
     },
     toServer: (v: boolean) => ({ conventionalComments: v }),
   },
@@ -774,12 +839,12 @@ export const SETTINGS = {
    *  Synced to ~/.plannotator/config.json as a parsed array (not a string). */
   conventionalLabels: {
     defaultValue: null as string | null,
-    fromCookie: () => storage.getItem('plannotator-cc-labels') || undefined,
+    fromCookie: () => storage.getItem("plannotator-cc-labels") || undefined,
     toCookie: (v: string | null) => {
-      if (v) storage.setItem('plannotator-cc-labels', v);
-      else storage.removeItem('plannotator-cc-labels');
+      if (v) storage.setItem("plannotator-cc-labels", v);
+      else storage.removeItem("plannotator-cc-labels");
     },
-    serverKey: 'conventionalLabels',
+    serverKey: "conventionalLabels",
     fromServer: (sc: Record<string, unknown>) => {
       const v = sc.conventionalLabels;
       if (v === null) return null;
@@ -809,11 +874,11 @@ export const SETTINGS = {
     defaultValue: null as AgentSwitchChoice | null,
     fromCookie: () => readAgentSwitchCookies(),
     toCookie: (v: AgentSwitchChoice | null) => writeAgentSwitchCookies(v),
-    serverKey: 'agentSwitch',
+    serverKey: "agentSwitch",
     fromServer: (sc: Record<string, unknown>) => {
       const choice = parseAgentSwitchConfig(sc.agentSwitch);
       // Custom with no name means no switch: never pair it with an old name.
-      if (!choice || choice.customName || choice.switchTo === 'custom') return choice;
+      if (!choice || choice.customName || choice.switchTo === "custom") return choice;
       // A plain choice keeps the name typed in the Custom field earlier, so
       // picking Custom again shows it (the cookie is the only place it lives).
       const customName = storage.getItem(AGENT_SWITCH_CUSTOM_COOKIE);
@@ -836,14 +901,14 @@ export const SETTINGS = {
    * side keeps it across the upgrade.
    */
   agentTerminalSide: {
-    defaultValue: 'left' as AnnotateAgentTerminalSide,
+    defaultValue: "left" as AnnotateAgentTerminalSide,
     fromCookie: () => {
-      const v = storage.getItem('plannotator-annotate-agent-terminal-side');
+      const v = storage.getItem("plannotator-annotate-agent-terminal-side");
       return isAnnotateAgentTerminalSide(v) ? v : undefined;
     },
     toCookie: (v: AnnotateAgentTerminalSide) =>
-      storage.setItem('plannotator-annotate-agent-terminal-side', v),
-    serverKey: 'agentTerminalSide',
+      storage.setItem("plannotator-annotate-agent-terminal-side", v),
+    serverKey: "agentTerminalSide",
     fromServer: (sc: Record<string, unknown>) =>
       isAnnotateAgentTerminalSide(sc.agentTerminalSide) ? sc.agentTerminalSide : undefined,
     toServer: (v: AnnotateAgentTerminalSide) => ({ agentTerminalSide: v }),
@@ -854,16 +919,15 @@ export const SETTINGS = {
    * Server-synced for the same reason as the placement above.
    */
   agentTerminalDefaultAgent: {
-    defaultValue: '' as string,
-    fromCookie: () =>
-      storage.getItem('plannotator-annotate-agent-terminal-default') || undefined,
+    defaultValue: "" as string,
+    fromCookie: () => storage.getItem("plannotator-annotate-agent-terminal-default") || undefined,
     toCookie: (v: string) => {
-      if (v) storage.setItem('plannotator-annotate-agent-terminal-default', v);
-      else storage.removeItem('plannotator-annotate-agent-terminal-default');
+      if (v) storage.setItem("plannotator-annotate-agent-terminal-default", v);
+      else storage.removeItem("plannotator-annotate-agent-terminal-default");
     },
-    serverKey: 'agentTerminalDefaultAgent',
+    serverKey: "agentTerminalDefaultAgent",
     fromServer: (sc: Record<string, unknown>) =>
-      typeof sc.agentTerminalDefaultAgent === 'string' && sc.agentTerminalDefaultAgent
+      typeof sc.agentTerminalDefaultAgent === "string" && sc.agentTerminalDefaultAgent
         ? sc.agentTerminalDefaultAgent
         : undefined,
     toServer: (v: string) => ({ agentTerminalDefaultAgent: v }),

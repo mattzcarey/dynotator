@@ -2,27 +2,27 @@
 .theme-cursor-midnight,
 .theme-cursor-midnight.light {
   --background: #1e2127;
-  --foreground: #D8DEE9;
+  --foreground: #d8dee9;
   --card: #272c36;
-  --card-foreground: #D8DEE9;
+  --card-foreground: #d8dee9;
   --popover: #20242c;
-  --popover-foreground: #D8DEE9;
-  --primary: #88C0D0;
+  --popover-foreground: #d8dee9;
+  --primary: #88c0d0;
   --primary-foreground: #1d2128;
-  --secondary: #434C5E;
-  --secondary-foreground: #D8DEE9;
+  --secondary: #434c5e;
+  --secondary-foreground: #d8dee9;
   --muted: #272c36;
   --muted-foreground: #7b88a1;
-  --accent: #8FBCBB;
+  --accent: #8fbcbb;
   --accent-foreground: #1d2128;
-  --destructive: #BF616A;
-  --destructive-foreground: #ECEFF4;
+  --destructive: #bf616a;
+  --destructive-foreground: #eceff4;
   --border: #3a4050;
   --input: #272c36;
-  --ring: #88C0D0;
-  --success: #A3BE8C;
+  --ring: #88c0d0;
+  --success: #a3be8c;
   --success-foreground: #1d2128;
-  --warning: #EBCB8B;
+  --warning: #ebcb8b;
   --warning-foreground: #1d2128;
 
   --font-sans: system-ui, sans-serif;
@@ -30,5 +30,5 @@
   --radius: 0.625rem;
 
   --code-bg: #191c22;
-  --focus-highlight: #8FBCBB;
+  --focus-highlight: #8fbcbb;
 }

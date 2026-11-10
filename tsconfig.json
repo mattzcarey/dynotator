@@ -15,6 +15,7 @@
     "paths": {
       "@dynotator/ui/theme-modes": ["./packages/ui/components/themeModes.tsx"],
       "@dynotator/ui/*": ["./packages/ui/*"],
+      "@dynotator/core": ["./packages/core/index.ts"],
       "@dynotator/core/*": ["./packages/core/*"],
       "@dynotator/shared/*": ["./packages/shared/*"],
       "@dynotator/editor": ["./packages/editor/App.tsx"],

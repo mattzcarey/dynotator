@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
-import type { Block } from '../../types';
-import { InlineMarkdown } from '../InlineMarkdown';
+import React, { useRef } from "react";
+import type { Block } from "../../types";
+import { InlineMarkdown } from "../InlineMarkdown";
 
 interface TableBlockProps {
   block: Block;
@@ -19,15 +19,15 @@ interface TableBlockProps {
 // Exported so TableToolbar can reuse it to build a CSV copy without
 // needing a second parser.
 export const parseTableContent = (content: string): { headers: string[]; rows: string[][] } => {
-  const lines = content.split('\n').filter((line) => line.trim());
+  const lines = content.split("\n").filter((line) => line.trim());
   if (lines.length === 0) return { headers: [], rows: [] };
 
   const parseRow = (line: string): string[] =>
     line
-      .replace(/^\|/, '')
-      .replace(/\|$/, '')
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
       .split(/(?<!\\)\|/)
-      .map((cell) => cell.trim().replace(/\\\|/g, '|'));
+      .map((cell) => cell.trim().replace(/\\\|/g, "|"));
 
   const headers = parseRow(lines[0]);
   const rows: string[][] = [];
@@ -51,8 +51,8 @@ const csvEscape = (value: string): string => {
 // Build RFC 4180 CSV from pre-parsed headers + rows. The popout uses this
 // directly with TanStack's visible (filter + sort applied) rows.
 export const buildCsvFromRows = (headers: string[], rows: string[][]): string => {
-  const lines = [headers, ...rows].map((row) => row.map(csvEscape).join(','));
-  return lines.join('\n');
+  const lines = [headers, ...rows].map((row) => row.map(csvEscape).join(","));
+  return lines.join("\n");
 };
 
 // Rebuild a pipe-delimited markdown table from pre-parsed headers + rows.
@@ -62,13 +62,13 @@ export const buildCsvFromRows = (headers: string[], rows: string[][]): string =>
 // parseTableContent unescapes `\|` → `|`, so cells may hold literal pipes.
 // Re-escape on the way out — otherwise the serialized table sprouts extra
 // columns wherever a cell had a pipe.
-const mdCellEscape = (value: string): string => value.replace(/\|/g, '\\|');
+const mdCellEscape = (value: string): string => value.replace(/\|/g, "\\|");
 
 export const buildMarkdownTable = (headers: string[], rows: string[][]): string => {
-  const headerLine = `| ${headers.map(mdCellEscape).join(' | ')} |`;
-  const separator = `| ${headers.map(() => '---').join(' | ')} |`;
-  const bodyLines = rows.map((row) => `| ${row.map(mdCellEscape).join(' | ')} |`);
-  return [headerLine, separator, ...bodyLines].join('\n');
+  const headerLine = `| ${headers.map(mdCellEscape).join(" | ")} |`;
+  const separator = `| ${headers.map(() => "---").join(" | ")} |`;
+  const bodyLines = rows.map((row) => `| ${row.map(mdCellEscape).join(" | ")} |`);
+  return [headerLine, separator, ...bodyLines].join("\n");
 };
 
 // Convert the markdown table's pipe-delimited source into RFC 4180 CSV.
@@ -109,7 +109,10 @@ export const TableBlock: React.FC<TableBlockProps> = ({
         <thead>
           <tr className="border-b border-border">
             {headers.map((header, i) => (
-              <th key={i} className="px-3 py-2 text-left font-semibold text-foreground/90 bg-muted/30">
+              <th
+                key={i}
+                className="px-3 py-2 text-left font-semibold text-foreground/90 bg-muted/30"
+              >
                 <InlineMarkdown
                   imageBaseDir={imageBaseDir}
                   onImageClick={onImageClick}

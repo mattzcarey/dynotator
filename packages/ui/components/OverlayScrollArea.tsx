@@ -6,7 +6,7 @@ import {
   type CSSProperties,
   type ElementType,
   type ReactNode,
-} from 'react';
+} from "react";
 
 /**
  * Native scroll container.
@@ -29,54 +29,55 @@ export interface OverlayScrollAreaHandle {
   getViewport(): HTMLElement | null;
 }
 
-export interface OverlayScrollAreaProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, 'children'> {
+export interface OverlayScrollAreaProps extends Omit<
+  React.HTMLAttributes<HTMLElement>,
+  "children"
+> {
   /** Root element tag (default 'div'). Use 'main' for the primary plan viewport. */
   element?: ElementType;
   children?: ReactNode;
   /** Fires with the scroll element on mount, and `null` on unmount. */
   onViewportReady?: (viewport: HTMLElement | null) => void;
   /** Horizontal overflow (default 'hidden'). */
-  overflowX?: 'hidden' | 'scroll' | 'visible' | 'auto';
+  overflowX?: "hidden" | "scroll" | "visible" | "auto";
   /** Vertical overflow (default 'auto'). */
-  overflowY?: 'hidden' | 'scroll' | 'visible' | 'auto';
+  overflowY?: "hidden" | "scroll" | "visible" | "auto";
 }
 
-export const OverlayScrollArea = forwardRef<
-  OverlayScrollAreaHandle,
-  OverlayScrollAreaProps
->(function OverlayScrollArea(
-  {
-    element = 'div',
-    children,
-    onViewportReady,
-    overflowX = 'hidden',
-    overflowY = 'auto',
-    style,
-    ...rest
+export const OverlayScrollArea = forwardRef<OverlayScrollAreaHandle, OverlayScrollAreaProps>(
+  function OverlayScrollArea(
+    {
+      element = "div",
+      children,
+      onViewportReady,
+      overflowX = "hidden",
+      overflowY = "auto",
+      style,
+      ...rest
+    },
+    ref,
+  ) {
+    const elRef = useRef<HTMLElement | null>(null);
+    // Hold the latest callback without changing the ref-callback identity, so the
+    // element isn't detached/reattached on every parent render.
+    const onReadyRef = useRef(onViewportReady);
+    onReadyRef.current = onViewportReady;
+
+    const getViewport = useCallback((): HTMLElement | null => elRef.current, []);
+    useImperativeHandle(ref, () => ({ getViewport }), [getViewport]);
+
+    const setEl = useCallback((node: HTMLElement | null) => {
+      elRef.current = node;
+      onReadyRef.current?.(node);
+    }, []);
+
+    const Comp = element as ElementType;
+    const mergedStyle: CSSProperties = { overflowX, overflowY, ...style };
+
+    return (
+      <Comp ref={setEl as React.Ref<HTMLElement>} style={mergedStyle} {...rest}>
+        {children}
+      </Comp>
+    );
   },
-  ref,
-) {
-  const elRef = useRef<HTMLElement | null>(null);
-  // Hold the latest callback without changing the ref-callback identity, so the
-  // element isn't detached/reattached on every parent render.
-  const onReadyRef = useRef(onViewportReady);
-  onReadyRef.current = onViewportReady;
-
-  const getViewport = useCallback((): HTMLElement | null => elRef.current, []);
-  useImperativeHandle(ref, () => ({ getViewport }), [getViewport]);
-
-  const setEl = useCallback((node: HTMLElement | null) => {
-    elRef.current = node;
-    onReadyRef.current?.(node);
-  }, []);
-
-  const Comp = element as ElementType;
-  const mergedStyle: CSSProperties = { overflowX, overflowY, ...style };
-
-  return (
-    <Comp ref={setEl as React.Ref<HTMLElement>} style={mergedStyle} {...rest}>
-      {children}
-    </Comp>
-  );
-});
+);

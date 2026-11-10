@@ -25,7 +25,7 @@
   --warning-foreground: #17191e;
 
   --font-sans: system-ui, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, monospace;
+  --font-mono: "Fira Code", ui-monospace, monospace;
   --radius: 0.625rem;
 
   --code-bg: #23262d;
@@ -58,7 +58,7 @@
   --warning-foreground: #17191e;
 
   --font-sans: system-ui, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, monospace;
+  --font-mono: "Fira Code", ui-monospace, monospace;
   --radius: 0.625rem;
 
   --code-bg: #23262d;

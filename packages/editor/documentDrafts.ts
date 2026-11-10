@@ -9,9 +9,9 @@
  * merge; useDocumentDrafts does the I/O.
  */
 
-import type { Annotation, ImageAttachment } from '@dynotator/ui/types';
-import type { FeedbackDocuments } from '@dynotator/ui/hooks/useLinkedDoc';
-import { mergeExternalAnnotations } from './feedbackDocuments';
+import type { Annotation, ImageAttachment } from "@dynotator/ui/types";
+import type { FeedbackDocuments } from "@dynotator/ui/hooks/useLinkedDoc";
+import { mergeExternalAnnotations } from "./feedbackDocuments";
 
 export interface DocumentDraftState {
   annotations: Annotation[];
@@ -59,7 +59,11 @@ export function planDocumentDraftWrites(input: {
     const previous = input.lastSent.get(path);
     if (previous === next) continue;
     if (previous === undefined && next === EMPTY) continue;
-    writes.push({ path, annotations: state.annotations, globalAttachments: state.globalAttachments });
+    writes.push({
+      path,
+      annotations: state.annotations,
+      globalAttachments: state.globalAttachments,
+    });
     sent.set(path, next);
   }
   for (const [path, previous] of input.lastSent) {
@@ -83,11 +87,19 @@ export function documentDraftAdditions(
   const heldPaths = new Set(held.globalAttachments.map((g) => g.path));
   const annotations = (Array.isArray(saved.annotations) ? saved.annotations : []).filter(
     (a): a is Annotation =>
-      !!a && typeof a === 'object' && typeof (a as Annotation).id === 'string' && !heldIds.has((a as Annotation).id),
+      !!a &&
+      typeof a === "object" &&
+      typeof (a as Annotation).id === "string" &&
+      !heldIds.has((a as Annotation).id),
   );
-  const globalAttachments = (Array.isArray(saved.globalAttachments) ? saved.globalAttachments : []).filter(
+  const globalAttachments = (
+    Array.isArray(saved.globalAttachments) ? saved.globalAttachments : []
+  ).filter(
     (g): g is ImageAttachment =>
-      !!g && typeof g === 'object' && typeof (g as ImageAttachment).path === 'string' && !heldPaths.has((g as ImageAttachment).path),
+      !!g &&
+      typeof g === "object" &&
+      typeof (g as ImageAttachment).path === "string" &&
+      !heldPaths.has((g as ImageAttachment).path),
   );
   return { annotations, globalAttachments };
 }
@@ -117,7 +129,10 @@ export function composeSessionDraft(input: {
   if (!input.enabled) return input.live;
   const { root, documents } = input.feedbackDocuments;
   const base: DocumentDraftState = root
-    ? { annotations: mergeExternalAnnotations(root.annotations, input.externalAnnotations), globalAttachments: root.globalAttachments }
+    ? {
+        annotations: mergeExternalAnnotations(root.annotations, input.externalAnnotations),
+        globalAttachments: root.globalAttachments,
+      }
     : input.live;
   const extraAnnotations: Annotation[] = [];
   const extraAttachments: ImageAttachment[] = [];

@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { agentToolHostName } from '../utils/agentToolSetting';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { agentToolHostName } from "../utils/agentToolSetting";
 
 /**
  * One-time offer to turn on the `plannotator` agent tool on Pi and OpenCode 2,
@@ -22,7 +22,7 @@ import { agentToolHostName } from '../utils/agentToolSetting';
  * agentToolAnnouncementEligible and useFirstRunAnnouncementWindow.
  */
 
-export type AgentToolOfferHost = 'pi' | 'opencode';
+export type AgentToolOfferHost = "pi" | "opencode";
 
 interface AgentToolAnnouncementDialogProps {
   readonly isOpen: boolean;
@@ -39,16 +39,16 @@ interface AgentToolAnnouncementDialogProps {
 }
 
 type SaveState =
-  | { readonly kind: 'idle' }
-  | { readonly kind: 'saving' }
-  | { readonly kind: 'saved' }
-  | { readonly kind: 'failed'; readonly message: string };
+  | { readonly kind: "idle" }
+  | { readonly kind: "saving" }
+  | { readonly kind: "saved" }
+  | { readonly kind: "failed"; readonly message: string };
 
 const SECONDARY_BUTTON_CLASS =
-  'inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-surface-0/40 px-3 text-sm font-medium text-foreground outline-none transition-colors motion-reduce:transition-none hover:bg-surface-1/70 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50';
+  "inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-surface-0/40 px-3 text-sm font-medium text-foreground outline-none transition-colors motion-reduce:transition-none hover:bg-surface-1/70 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50";
 
 const PRIMARY_BUTTON_CLASS =
-  'min-h-9 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground outline-none transition-opacity motion-reduce:transition-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50';
+  "min-h-9 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground outline-none transition-opacity motion-reduce:transition-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50";
 
 export function AgentToolAnnouncementDialog({
   isOpen,
@@ -60,7 +60,7 @@ export function AgentToolAnnouncementDialog({
   const doneRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onDismissRef = useRef(onDismiss);
-  const [save, setSave] = useState<SaveState>({ kind: 'idle' });
+  const [save, setSave] = useState<SaveState>({ kind: "idle" });
   const saveRef = useRef(save);
   saveRef.current = save;
   const mountedRef = useRef(true);
@@ -79,41 +79,41 @@ export function AgentToolAnnouncementDialog({
 
   // Never closed mid-save: the outcome has to be shown.
   const dismiss = useCallback(() => {
-    if (saveRef.current.kind === 'saving') return;
+    if (saveRef.current.kind === "saving") return;
     onDismissRef.current();
   }, []);
 
   const turnOn = useCallback(async () => {
-    if (saveRef.current.kind === 'saving' || saveRef.current.kind === 'saved') return;
-    setSave({ kind: 'saving' });
+    if (saveRef.current.kind === "saving" || saveRef.current.kind === "saved") return;
+    setSave({ kind: "saving" });
     try {
       await onTurnOn();
-      if (mountedRef.current) setSave({ kind: 'saved' });
+      if (mountedRef.current) setSave({ kind: "saved" });
     } catch (error) {
       if (!mountedRef.current) return;
       setSave({
-        kind: 'failed',
-        message: error instanceof Error && error.message ? error.message : 'Could not save the setting.',
+        kind: "failed",
+        message:
+          error instanceof Error && error.message ? error.message : "Could not save the setting.",
       });
     }
   }, [onTurnOn]);
 
   // Focus follows the outcome: Done once saved.
   useEffect(() => {
-    if (save.kind === 'saved') doneRef.current?.focus();
+    if (save.kind === "saved") doneRef.current?.focus();
   }, [save.kind]);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    previousFocusRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     // The decline button takes focus, so a stray Enter or Space never changes a setting.
     notNowRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
         dismiss();
@@ -122,18 +122,19 @@ export function AgentToolAnnouncementDialog({
       // Both apps submit their decision on Mod+Enter from a window-level
       // handler; swallowing it here on the capture phase keeps a keystroke
       // aimed at this dialog from approving a plan or posting a review.
-      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (event.key !== "Tab") return;
 
-      const dialog = document.querySelector<HTMLElement>('[data-agent-tool-announcement-dialog]');
+      const dialog = document.querySelector<HTMLElement>("[data-agent-tool-announcement-dialog]");
       const focusable = Array.from(
-        dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')
-          ?? [],
-      ).filter((element) => element.getAttribute('tabindex') !== '-1');
+        dialog?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => element.getAttribute("tabindex") !== "-1");
       if (focusable.length === 0) return;
 
       const first = focusable[0];
@@ -147,9 +148,9 @@ export function AgentToolAnnouncementDialog({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener("keydown", handleKeyDown, true);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener("keydown", handleKeyDown, true);
       previousFocusRef.current?.focus();
       previousFocusRef.current = null;
     };
@@ -157,7 +158,7 @@ export function AgentToolAnnouncementDialog({
 
   if (!isOpen) return null;
 
-  const saving = save.kind === 'saving';
+  const saving = save.kind === "saving";
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 p-4 backdrop-blur-sm"
@@ -175,29 +176,39 @@ export function AgentToolAnnouncementDialog({
         className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
       >
         <style>{DIALOG_LAYOUT_CSS}</style>
-        <div className="pn-ato-graphic shrink-0 border-b border-border px-4 py-3" aria-hidden="true">
+        <div
+          className="pn-ato-graphic shrink-0 border-b border-border px-4 py-3"
+          aria-hidden="true"
+        >
           <RoundTripGraphic agent={agent} />
         </div>
         <div className="min-h-0 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
-          <h2 id="agent-tool-announcement-title" className="text-balance text-xl font-semibold tracking-tight sm:text-2xl">
+          <h2
+            id="agent-tool-announcement-title"
+            className="text-balance text-xl font-semibold tracking-tight sm:text-2xl"
+          >
             Do you use Plannotator as a skill?
           </h2>
           <div id="agent-tool-announcement-description">
             <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground">
-              Like asking {agent} to &ldquo;use Plannotator to show me the HTML plan&rdquo; or &ldquo;open a
-              Plannotator code review&rdquo;.
+              Like asking {agent} to &ldquo;use Plannotator to show me the HTML plan&rdquo; or
+              &ldquo;open a Plannotator code review&rdquo;.
             </p>
             <p className="mt-3 text-pretty text-sm leading-relaxed text-foreground">
-              If so, turn on the Plannotator tool. Those requests then open right away while {agent} keeps
-              working, and your feedback comes back as a message.
+              If so, turn on the Plannotator tool. Those requests then open right away while {agent}{" "}
+              keeps working, and your feedback comes back as a message.
             </p>
           </div>
-          <p className="mt-3 text-pretty text-xs leading-relaxed text-muted-foreground" data-agent-tool-cost>
-            Adds about 800 tokens to each request.{save.kind === 'saved' ? '' : ` ${startsLine(host)}`}
+          <p
+            className="mt-3 text-pretty text-xs leading-relaxed text-muted-foreground"
+            data-agent-tool-cost
+          >
+            Adds about 800 tokens to each request.
+            {save.kind === "saved" ? "" : ` ${startsLine(host)}`}
           </p>
 
           <div className="mt-5 flex flex-col gap-3">
-            {save.kind === 'saved' ? (
+            {save.kind === "saved" ? (
               <p
                 role="status"
                 data-agent-tool-status="saved"
@@ -206,7 +217,7 @@ export function AgentToolAnnouncementDialog({
                 <span className="size-2 shrink-0 rounded-full bg-success" aria-hidden="true" />
                 Turned on. {startsLine(host)}
               </p>
-            ) : save.kind === 'failed' ? (
+            ) : save.kind === "failed" ? (
               <p
                 role="alert"
                 data-agent-tool-status="failed"
@@ -219,7 +230,7 @@ export function AgentToolAnnouncementDialog({
 
             {/* Stacks full-width below sm (secondary first, so focus order matches reading order); one row from sm. */}
             <div className="pn-ato-actions">
-              {save.kind === 'saved' ? (
+              {save.kind === "saved" ? (
                 <button
                   ref={doneRef}
                   type="button"
@@ -248,7 +259,11 @@ export function AgentToolAnnouncementDialog({
                     data-agent-tool-turn-on
                     className={`${PRIMARY_BUTTON_CLASS} w-full sm:w-auto`}
                   >
-                    {saving ? 'Turning on…' : save.kind === 'failed' ? 'Try again' : 'Yes, turn it on'}
+                    {saving
+                      ? "Turning on…"
+                      : save.kind === "failed"
+                        ? "Try again"
+                        : "Yes, turn it on"}
                   </button>
                 </>
               )}
@@ -281,7 +296,9 @@ const DIALOG_LAYOUT_CSS = `
 
 /** When the change applies on each host; part of the small print and the saved status. */
 function startsLine(host: AgentToolOfferHost): string {
-  return host === 'opencode' ? 'Starts the next time OpenCode starts.' : 'Starts with your next Pi session.';
+  return host === "opencode"
+    ? "Starts the next time OpenCode starts."
+    : "Starts with your next Pi session.";
 }
 
 /*
@@ -307,41 +324,184 @@ const ROUND_TRIP_MOTION_CSS = `
 
 function RoundTripGraphic({ agent }: { agent: string }) {
   return (
-    <svg viewBox="0 0 480 176" className="mx-auto block h-auto w-full font-sans" style={{ maxWidth: 460 }} focusable="false">
+    <svg
+      viewBox="0 0 480 176"
+      className="mx-auto block h-auto w-full font-sans"
+      style={{ maxWidth: 460 }}
+      focusable="false"
+    >
       <style>{ROUND_TRIP_MOTION_CSS}</style>
 
       {/* The agent: a terminal tile */}
       <g transform="translate(92 52)">
-        <rect x="0.75" y="0.75" width="54.5" height="54.5" rx="12" style={{ fill: 'var(--card)', stroke: 'var(--border)' }} strokeWidth="1.5" />
-        <path d="M17 21 L25 28 L17 35" style={{ fill: 'none', stroke: 'var(--primary)' }} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <rect x="29" y="33" width="11" height="3" rx="1.5" style={{ fill: 'var(--primary)' }} />
+        <rect
+          x="0.75"
+          y="0.75"
+          width="54.5"
+          height="54.5"
+          rx="12"
+          style={{ fill: "var(--card)", stroke: "var(--border)" }}
+          strokeWidth="1.5"
+        />
+        <path
+          d="M17 21 L25 28 L17 35"
+          style={{ fill: "none", stroke: "var(--primary)" }}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <rect x="29" y="33" width="11" height="3" rx="1.5" style={{ fill: "var(--primary)" }} />
       </g>
-      <text x={120} y={140} textAnchor="middle" fontSize="13" fontWeight="600" style={{ fill: 'var(--foreground)' }}>
-        {agent} <tspan fontWeight="400" style={{ fill: 'var(--muted-foreground)' }}>keeps working</tspan>
+      <text
+        x={120}
+        y={140}
+        textAnchor="middle"
+        fontSize="13"
+        fontWeight="600"
+        style={{ fill: "var(--foreground)" }}
+      >
+        {agent}{" "}
+        <tspan fontWeight="400" style={{ fill: "var(--muted-foreground)" }}>
+          keeps working
+        </tspan>
       </text>
 
       {/* Plannotator: a document with one highlighted, commented line */}
       <g transform="translate(318 38)">
-        <rect x="0.75" y="0.75" width="66.5" height="82.5" rx="10" style={{ fill: 'var(--card)', stroke: 'var(--border)' }} strokeWidth="1.5" />
-        <rect x="12" y="15" width="30.8" height="4" rx="2" style={{ fill: 'var(--foreground)' }} fillOpacity="0.55" />
-        <rect x="12" y="29" width="44" height="3" rx="1.5" style={{ fill: 'var(--muted-foreground)' }} fillOpacity="0.45" />
-        <rect x="9" y="38" width="50" height="11" rx="3" style={{ fill: 'var(--accent)' }} fillOpacity="0.28" />
-        <rect x="12" y="42" width="36.1" height="3" rx="1.5" style={{ fill: 'var(--foreground)' }} fillOpacity="0.6" />
-        <rect x="12" y="56" width="39.6" height="3" rx="1.5" style={{ fill: 'var(--muted-foreground)' }} fillOpacity="0.45" />
-        <rect x="12" y="66" width="24.2" height="3" rx="1.5" style={{ fill: 'var(--muted-foreground)' }} fillOpacity="0.45" />
-        <circle cx="64" cy="43" r="7" style={{ fill: 'var(--accent)', stroke: 'var(--card)' }} strokeWidth="2" />
+        <rect
+          x="0.75"
+          y="0.75"
+          width="66.5"
+          height="82.5"
+          rx="10"
+          style={{ fill: "var(--card)", stroke: "var(--border)" }}
+          strokeWidth="1.5"
+        />
+        <rect
+          x="12"
+          y="15"
+          width="30.8"
+          height="4"
+          rx="2"
+          style={{ fill: "var(--foreground)" }}
+          fillOpacity="0.55"
+        />
+        <rect
+          x="12"
+          y="29"
+          width="44"
+          height="3"
+          rx="1.5"
+          style={{ fill: "var(--muted-foreground)" }}
+          fillOpacity="0.45"
+        />
+        <rect
+          x="9"
+          y="38"
+          width="50"
+          height="11"
+          rx="3"
+          style={{ fill: "var(--accent)" }}
+          fillOpacity="0.28"
+        />
+        <rect
+          x="12"
+          y="42"
+          width="36.1"
+          height="3"
+          rx="1.5"
+          style={{ fill: "var(--foreground)" }}
+          fillOpacity="0.6"
+        />
+        <rect
+          x="12"
+          y="56"
+          width="39.6"
+          height="3"
+          rx="1.5"
+          style={{ fill: "var(--muted-foreground)" }}
+          fillOpacity="0.45"
+        />
+        <rect
+          x="12"
+          y="66"
+          width="24.2"
+          height="3"
+          rx="1.5"
+          style={{ fill: "var(--muted-foreground)" }}
+          fillOpacity="0.45"
+        />
+        <circle
+          cx="64"
+          cy="43"
+          r="7"
+          style={{ fill: "var(--accent)", stroke: "var(--card)" }}
+          strokeWidth="2"
+        />
       </g>
-      <text x={352} y={140} textAnchor="middle" fontSize="13" fontWeight="600" style={{ fill: 'var(--foreground)' }}>Plannotator</text>
+      <text
+        x={352}
+        y={140}
+        textAnchor="middle"
+        fontSize="13"
+        fontWeight="600"
+        style={{ fill: "var(--foreground)" }}
+      >
+        Plannotator
+      </text>
 
       {/* opens right away */}
-      <path d="M152 64 Q 236 16 310 56" style={{ fill: 'none', stroke: 'var(--muted-foreground)' }} strokeWidth="1.75" strokeLinecap="round" />
-      <path d="M302.5 47.5 L311 56.5 L299 59" style={{ fill: 'none', stroke: 'var(--muted-foreground)' }} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-      <text x={232} y={28} textAnchor="middle" fontSize="12" style={{ fill: 'var(--muted-foreground)' }}>opens right away</text>
+      <path
+        d="M152 64 Q 236 16 310 56"
+        style={{ fill: "none", stroke: "var(--muted-foreground)" }}
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <path
+        d="M302.5 47.5 L311 56.5 L299 59"
+        style={{ fill: "none", stroke: "var(--muted-foreground)" }}
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <text
+        x={232}
+        y={28}
+        textAnchor="middle"
+        fontSize="12"
+        style={{ fill: "var(--muted-foreground)" }}
+      >
+        opens right away
+      </text>
 
       {/* your feedback comes back */}
-      <path d="M310 106 Q 236 150 152 98" pathLength={1} className="pn-ato-return" style={{ fill: 'none', stroke: 'var(--primary)' }} strokeWidth="2.25" strokeLinecap="round" />
-      <path d="M153 112 L151.5 98.5 L164.5 100" className="pn-ato-return-head" style={{ fill: 'none', stroke: 'var(--primary)' }} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
-      <text x={236} y={166} textAnchor="middle" fontSize="12" fontWeight="600" className="pn-ato-return-label" style={{ fill: 'var(--primary)' }}>your feedback, as a message</text>
+      <path
+        d="M310 106 Q 236 150 152 98"
+        pathLength={1}
+        className="pn-ato-return"
+        style={{ fill: "none", stroke: "var(--primary)" }}
+        strokeWidth="2.25"
+        strokeLinecap="round"
+      />
+      <path
+        d="M153 112 L151.5 98.5 L164.5 100"
+        className="pn-ato-return-head"
+        style={{ fill: "none", stroke: "var(--primary)" }}
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <text
+        x={236}
+        y={166}
+        textAnchor="middle"
+        fontSize="12"
+        fontWeight="600"
+        className="pn-ato-return-label"
+        style={{ fill: "var(--primary)" }}
+      >
+        your feedback, as a message
+      </text>
     </svg>
   );
 }

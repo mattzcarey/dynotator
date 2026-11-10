@@ -1,5 +1,5 @@
-import React from 'react';
-import { useServerSessionReplaced } from '../utils/serverSession';
+import React from "react";
+import { useServerSessionReplaced } from "../utils/serverSession";
 
 /**
  * The stale-tab prompt (packages/ui/utils/serverSession.ts): shown once a

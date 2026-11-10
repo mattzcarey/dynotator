@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import type { Block } from '../../types';
-import { computeListIndices, groupBlocks, parseMarkdownToBlocks } from '../../utils/parser';
+import React, { useMemo } from "react";
+import type { Block } from "../../types";
+import { computeListIndices, groupBlocks, parseMarkdownToBlocks } from "../../utils/parser";
 // BlockRenderer renders QuestionBlock, which renders this: a cycle that only
 // meets at render time, after both modules have loaded.
-import { BlockRenderer } from '../BlockRenderer';
+import { BlockRenderer } from "../BlockRenderer";
 
 /**
  * The document renderers at the card's scale and tone. A stylesheet rather
@@ -49,12 +49,14 @@ export const QuestionContext: React.FC<{
   githubRepo?: string;
   repoHost?: string;
 }> = ({ id, markdown, ...inlineProps }) => {
-  const groups = useMemo((): Array<{ list: Block[]; indices: (number | null)[] } | { block: Block }> => {
+  const groups = useMemo((): Array<
+    { list: Block[]; indices: (number | null)[] } | { block: Block }
+  > => {
     // Ids leave after grouping (grouping keys on them); undefined makes the
     // renderers omit `data-block-id`.
     const anonymous = (block: Block): Block => ({ ...block, id: undefined as unknown as string });
     return groupBlocks(parseMarkdownToBlocks(markdown, { frontmatter: false })).map((group) =>
-      group.type === 'list-group'
+      group.type === "list-group"
         ? { list: group.blocks.map(anonymous), indices: computeListIndices(group.blocks) }
         : { block: anonymous(group.block) },
     );
@@ -67,12 +69,19 @@ export const QuestionContext: React.FC<{
       data-question-part="context"
     >
       {/* React hoists this into <head> once for every card. */}
-      <style href="plannotator-question-context" precedence="default">{QUESTION_CONTEXT_CSS}</style>
+      <style href="plannotator-question-context" precedence="default">
+        {QUESTION_CONTEXT_CSS}
+      </style>
       {groups.map((group, i) =>
-        'list' in group ? (
+        "list" in group ? (
           <div key={`l-${i}`} data-question-context-list="">
             {group.list.map((block, j) => (
-              <BlockRenderer key={j} block={block} orderedIndex={group.indices[j]} {...inlineProps} />
+              <BlockRenderer
+                key={j}
+                block={block}
+                orderedIndex={group.indices[j]}
+                {...inlineProps}
+              />
             ))}
           </div>
         ) : (

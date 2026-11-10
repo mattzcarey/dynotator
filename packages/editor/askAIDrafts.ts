@@ -1,4 +1,4 @@
-import type { AskAIParams } from '@dynotator/ui/hooks/useAIChat';
+import type { AskAIParams } from "@dynotator/ui/hooks/useAIChat";
 
 /**
  * The annotation context that rides with a side-chat Ask AI question (#1748).
@@ -19,7 +19,7 @@ export function askAIAnnotationParams(options: {
   feedbackExport: string | undefined;
   /** The current drafts as a plain list; '' when none. */
   draftList: () => string;
-}): Pick<AskAIParams, 'contextUpdate' | 'draftAnnotations'> {
+}): Pick<AskAIParams, "contextUpdate" | "draftAnnotations"> {
   if (options.sessionBridge) return { draftAnnotations: options.draftList() };
   return { contextUpdate: options.hasSession ? options.feedbackExport : undefined };
 }

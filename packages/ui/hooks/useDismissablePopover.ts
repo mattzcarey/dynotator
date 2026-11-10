@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 /**
  * Outside-`pointerdown` + Escape dismissal for anchored popovers — the one
@@ -35,7 +35,7 @@ export function useDismissablePopover({
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (event.key !== "Escape" || event.defaultPrevented) return;
       // Fail closed: an Escape that dismisses the popover is consumed here
       // (document bubbles before window), so the host apps' window-level
       // Escape ladders never also act on it — one Escape, one rung.
@@ -47,18 +47,18 @@ export function useDismissablePopover({
     let blurTimer: ReturnType<typeof setTimeout> | undefined;
     const handleWindowBlur = () => {
       blurTimer = setTimeout(() => {
-        if (document.activeElement?.tagName === 'IFRAME') onDismiss();
+        if (document.activeElement?.tagName === "IFRAME") onDismiss();
       }, 0);
     };
 
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    if (dismissOnIframeFocus) window.addEventListener('blur', handleWindowBlur);
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    if (dismissOnIframeFocus) window.addEventListener("blur", handleWindowBlur);
 
     return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-      if (dismissOnIframeFocus) window.removeEventListener('blur', handleWindowBlur);
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      if (dismissOnIframeFocus) window.removeEventListener("blur", handleWindowBlur);
       if (blurTimer !== undefined) clearTimeout(blurTimer);
     };
   }, [enabled, ref, onDismiss, dismissOnIframeFocus]);

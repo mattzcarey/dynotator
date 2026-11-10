@@ -1,6 +1,6 @@
-import type React from 'react';
-import { getProviderMeta } from './ProviderIcons';
-import { ModelSourceHint, modelSourceToolForProvider } from './ModelSourceHint';
+import type React from "react";
+import { getProviderMeta } from "./ProviderIcons";
+import { ModelSourceHint, modelSourceToolForProvider } from "./ModelSourceHint";
 import {
   findSessionBridge,
   getAIProviderSettings,
@@ -8,9 +8,9 @@ import {
   saveAIProviderSelection,
   savePreferredModel,
   type AIProviderOption,
-} from '../utils/aiProvider';
-import { useState } from 'react';
-import type { Origin } from '@dynotator/core/agents';
+} from "../utils/aiProvider";
+import { useState } from "react";
+import type { Origin } from "@dynotator/core/agents";
 
 interface AIProvider extends AIProviderOption {
   capabilities: Record<string, boolean>;
@@ -32,8 +32,8 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
   const settings = getAIProviderSettings();
   const originDefault = resolveAIProviderSelection({ providers, origin, settings }).providerId;
   const effectiveSelection = selectedProviderId ?? originDefault ?? providers[0]?.id ?? null;
-  const [preferredModels, setPreferredModels] = useState<Record<string, string>>(() =>
-    getAIProviderSettings().preferredModels
+  const [preferredModels, setPreferredModels] = useState<Record<string, string>>(
+    () => getAIProviderSettings().preferredModels,
   );
 
   const handleSelectProvider = (providerId: string) => {
@@ -47,7 +47,7 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
 
   const handleModelChange = (providerId: string, modelId: string) => {
     savePreferredModel(providerId, modelId);
-    setPreferredModels(prev => ({ ...prev, [providerId]: modelId }));
+    setPreferredModels((prev) => ({ ...prev, [providerId]: modelId }));
   };
 
   if (providers.length === 0) {
@@ -57,10 +57,31 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
           <div className="text-sm font-medium">AI Provider</div>
         </div>
         <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-600 dark:text-amber-400">
-          <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <svg
+            className="w-4 h-4 flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
-          <span>No AI providers detected. Install the <strong>claude</strong> or <strong>codex</strong> CLI and make sure you're authenticated. <a href="https://plannotator.ai/docs/guides/ai-features/" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-700 dark:hover:text-amber-300">Setup guide</a></span>
+          <span>
+            No AI providers detected. Install the <strong>claude</strong> or <strong>codex</strong>{" "}
+            CLI and make sure you're authenticated.{" "}
+            <a
+              href="https://plannotator.ai/docs/guides/ai-features/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-amber-700 dark:hover:text-amber-300"
+            >
+              Setup guide
+            </a>
+          </span>
         </div>
       </>
     );
@@ -112,7 +133,7 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
           const Icon = meta.icon;
           const isSelected = effectiveSelection === p.id;
           const models = p.models ?? [];
-          const defaultModel = models.find(m => m.default) ?? models[0];
+          const defaultModel = models.find((m) => m.default) ?? models[0];
           const selectedModel = preferredModels[p.id] ?? defaultModel?.id ?? null;
 
           return (
@@ -122,9 +143,9 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
                 onClick={() => handleSelectProvider(p.id)}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
                   isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted-foreground/30 hover:bg-muted/50'
-                } ${models.length > 1 && isSelected ? 'rounded-b-none border-b-0' : ''}`}
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30 hover:bg-muted/50"
+                } ${models.length > 1 && isSelected ? "rounded-b-none border-b-0" : ""}`}
               >
                 <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-muted-foreground">
                   <Icon className="w-4 h-4" />
@@ -133,7 +154,13 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
                   <div className="text-sm font-medium">{meta.label}</div>
                 </div>
                 {isSelected && (
-                  <svg className="w-4 h-4 text-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg
+                    className="w-4 h-4 text-primary flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
@@ -145,12 +172,14 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
                   <label className="flex items-center gap-2">
                     <span className="text-[11px] text-muted-foreground">Model</span>
                     <select
-                      value={selectedModel ?? ''}
+                      value={selectedModel ?? ""}
                       onChange={(e) => handleModelChange(p.id, e.target.value)}
                       className="flex-1 text-xs bg-muted rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer"
                     >
-                      {models.map(m => (
-                        <option key={m.id} value={m.id}>{m.label}</option>
+                      {models.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.label}
+                        </option>
                       ))}
                     </select>
                   </label>
@@ -166,7 +195,8 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
               {!isSelected && models.length > 0 && (
                 <div className="px-3 -mt-0.5">
                   <span className="text-[10px] text-muted-foreground/50">
-                    {models.find(m => m.id === (preferredModels[p.id] ?? defaultModel?.id))?.label ?? defaultModel?.label}
+                    {models.find((m) => m.id === (preferredModels[p.id] ?? defaultModel?.id))
+                      ?.label ?? defaultModel?.label}
                   </span>
                 </div>
               )}
@@ -176,8 +206,16 @@ export const AISettingsTab: React.FC<AISettingsTabProps> = ({
       </div>
 
       <div className="text-[10px] text-muted-foreground/70">
-        Providers are detected from installed CLI tools. No API keys are managed by Plannotator — you must be authenticated with each CLI independently.{' '}
-        <a href="https://plannotator.ai/docs/guides/ai-features/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Learn more</a>
+        Providers are detected from installed CLI tools. No API keys are managed by Plannotator —
+        you must be authenticated with each CLI independently.{" "}
+        <a
+          href="https://plannotator.ai/docs/guides/ai-features/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          Learn more
+        </a>
       </div>
     </>
   );

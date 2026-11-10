@@ -1,8 +1,8 @@
 /// <reference path="../globals.d.ts" />
-import React, { useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import lookGridImg from '../assets/look-grid.png';
-import lookFlatImg from '../assets/look-flat.png';
+import React, { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import lookGridImg from "../assets/look-grid.png";
+import lookFlatImg from "../assets/look-flat.png";
 
 interface LookAndFeelAnnouncementDialogProps {
   isOpen: boolean;
@@ -17,7 +17,7 @@ interface LookAndFeelAnnouncementDialogProps {
    * for someone moved from Grid to Clean when Clean became the default; the
    * same chooser, with a line saying what changed.
    */
-  variant?: 'first-run' | 'moved';
+  variant?: "first-run" | "moved";
 }
 
 const LOOK_OPTIONS: {
@@ -29,18 +29,18 @@ const LOOK_OPTIONS: {
   desc: string;
 }[] = [
   {
-    key: 'grid',
+    key: "grid",
     value: true,
     img: lookGridImg,
-    title: 'Grid',
-    desc: 'A floating plan card on grid paper.',
+    title: "Grid",
+    desc: "A floating plan card on grid paper.",
   },
   {
-    key: 'clean',
+    key: "clean",
     value: false,
     img: lookFlatImg,
-    title: 'Clean',
-    desc: 'A simple, edge-to-edge document.',
+    title: "Clean",
+    desc: "A simple, edge-to-edge document.",
   },
 ];
 
@@ -54,7 +54,7 @@ export const LookAndFeelAnnouncementDialog: React.FC<LookAndFeelAnnouncementDial
   gridEnabled,
   onToggleGrid,
   onDismiss,
-  variant = 'first-run',
+  variant = "first-run",
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const continueRef = useRef<HTMLButtonElement>(null);
@@ -68,18 +68,17 @@ export const LookAndFeelAnnouncementDialog: React.FC<LookAndFeelAnnouncementDial
   useEffect(() => {
     if (!isOpen) return;
 
-    previousFocusRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     continueRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         onDismissRef.current();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (event.key !== "Tab") return;
 
       const focusable = Array.from(
         dialogRef.current?.querySelectorAll<HTMLElement>(
@@ -99,9 +98,9 @@ export const LookAndFeelAnnouncementDialog: React.FC<LookAndFeelAnnouncementDial
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
       previousFocusRef.current?.focus();
       previousFocusRef.current = null;
     };
@@ -113,10 +112,10 @@ export const LookAndFeelAnnouncementDialog: React.FC<LookAndFeelAnnouncementDial
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-background/90 backdrop-blur-sm"
       style={{
-        paddingTop: 'max(0.75rem, var(--pn-safe-top, 0px))',
-        paddingRight: 'max(0.75rem, var(--pn-safe-right, 0px))',
-        paddingBottom: 'max(0.75rem, var(--pn-safe-bottom, 0px))',
-        paddingLeft: 'max(0.75rem, var(--pn-safe-left, 0px))',
+        paddingTop: "max(0.75rem, var(--pn-safe-top, 0px))",
+        paddingRight: "max(0.75rem, var(--pn-safe-right, 0px))",
+        paddingBottom: "max(0.75rem, var(--pn-safe-bottom, 0px))",
+        paddingLeft: "max(0.75rem, var(--pn-safe-left, 0px))",
       }}
     >
       <div
@@ -129,7 +128,7 @@ export const LookAndFeelAnnouncementDialog: React.FC<LookAndFeelAnnouncementDial
         className="flex w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
         style={{
           maxHeight:
-            'calc(var(--pn-viewport-height, 100vh) - max(0.75rem, var(--pn-safe-top, 0px)) - max(0.75rem, var(--pn-safe-bottom, 0px)))',
+            "calc(var(--pn-viewport-height, 100vh) - max(0.75rem, var(--pn-safe-top, 0px)) - max(0.75rem, var(--pn-safe-bottom, 0px)))",
         }}
       >
         <header className="border-b border-border px-4 py-4 sm:px-6 sm:py-5">
@@ -137,20 +136,24 @@ export const LookAndFeelAnnouncementDialog: React.FC<LookAndFeelAnnouncementDial
             id="plan-look-choice-title"
             className="text-balance text-xl font-semibold tracking-tight sm:text-2xl"
           >
-            {variant === 'moved' ? 'Plans now open in Clean' : 'Choose how plans look'}
+            {variant === "moved" ? "Plans now open in Clean" : "Choose how plans look"}
           </h2>
           <p
             id="plan-look-choice-description"
             className="mt-1 text-sm leading-relaxed text-muted-foreground"
           >
-            {variant === 'moved'
+            {variant === "moved"
               ? "Grid is one switch away in Settings, or pick it here."
               : "Pick a starting view. You can change it anytime in Settings."}
           </p>
         </header>
 
         <div className="min-h-0 overflow-y-auto p-3 sm:p-5">
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-4" role="group" aria-label="Plan appearance">
+          <div
+            className="grid grid-cols-2 gap-2.5 sm:gap-4"
+            role="group"
+            aria-label="Plan appearance"
+          >
             {LOOK_OPTIONS.map((option) => {
               const selected = gridEnabled === option.value;
               return (
@@ -161,8 +164,8 @@ export const LookAndFeelAnnouncementDialog: React.FC<LookAndFeelAnnouncementDial
                   aria-pressed={selected}
                   className={`plan-look-choice-option min-h-11 min-w-0 rounded-xl border p-2 text-left outline-none transition-[background-color,border-color,box-shadow] motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card active:bg-muted/35 sm:p-3 ${
                     selected
-                      ? 'border-primary bg-primary/[0.06] shadow-sm'
-                      : 'border-border bg-muted/20'
+                      ? "border-primary bg-primary/[0.06] shadow-sm"
+                      : "border-border bg-muted/20"
                   }`}
                 >
                   <img
@@ -173,11 +176,13 @@ export const LookAndFeelAnnouncementDialog: React.FC<LookAndFeelAnnouncementDial
                     draggable={false}
                   />
                   <span className="mt-2.5 flex min-w-0 items-center justify-between gap-2 px-0.5">
-                    <span className="truncate text-sm font-semibold sm:text-base">{option.title}</span>
+                    <span className="truncate text-sm font-semibold sm:text-base">
+                      {option.title}
+                    </span>
                     <span
                       aria-hidden="true"
                       className={`h-4 w-4 shrink-0 rounded-full border-2 p-[3px] ${
-                        selected ? 'border-primary' : 'border-muted-foreground/35'
+                        selected ? "border-primary" : "border-muted-foreground/35"
                       }`}
                     >
                       {selected && <span className="block h-full w-full rounded-full bg-primary" />}

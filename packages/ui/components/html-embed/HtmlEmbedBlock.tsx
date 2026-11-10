@@ -18,8 +18,8 @@
  * ui's popout, scrolling).
  */
 
-import { Code } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Code } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   EMBED_SANDBOX,
   EMBED_THEME_TOKENS,
@@ -28,13 +28,19 @@ import {
   readEmbedMessage,
   type EmbedMode,
   type EmbedTheme,
-} from '@dynotator/core/html-embed';
-import type { Block } from '../../types';
-import { CodeBlock } from '../blocks/CodeBlock';
-import { HostTitle } from '../HostTitle';
-import { PopoutDialog } from '../PopoutDialog';
-import { useTheme } from '../ThemeProvider';
-import { acquireEmbedLoad, claimEmbedLive, onEmbedLiveFreed, releaseEmbedLive, useNearViewport } from './loadGate';
+} from "@dynotator/core/html-embed";
+import type { Block } from "../../types";
+import { CodeBlock } from "../blocks/CodeBlock";
+import { HostTitle } from "../HostTitle";
+import { PopoutDialog } from "../PopoutDialog";
+import { useTheme } from "../ThemeProvider";
+import {
+  acquireEmbedLoad,
+  claimEmbedLive,
+  onEmbedLiveFreed,
+  releaseEmbedLive,
+  useNearViewport,
+} from "./loadGate";
 
 /** A host that can serve embed documents (the Inbox: POST /api/inbox/embeds). */
 export interface HtmlEmbedHost {
@@ -62,7 +68,7 @@ function useEmbedTheme(): EmbedTheme {
       const value = style.getPropertyValue(name).trim();
       if (value) vars[name] = value;
     }
-    return { vars, scheme: resolvedMode === 'light' ? 'light' : 'dark' };
+    return { vars, scheme: resolvedMode === "light" ? "light" : "dark" };
   }, [resolvedMode]);
   const [theme, setTheme] = useState<EmbedTheme>(read);
   useEffect(() => {
@@ -125,19 +131,20 @@ function EmbedFrame({
         spoke.current = true;
         handlers.current.onReady?.();
       }
-      if (message.kind === 'height') handlers.current.onHeight?.(message.height);
-      else if (message.kind === 'link') {
-        const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation;
+      if (message.kind === "height") handlers.current.onHeight?.(message.height);
+      else if (message.kind === "link") {
+        const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } })
+          .userActivation;
         if (document.activeElement !== frame || activation?.isActive === false) return;
-        window.open(message.url, '_blank', 'noopener,noreferrer');
+        window.open(message.url, "_blank", "noopener,noreferrer");
       } else handlers.current.onEscape(frame);
     };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
   }, []);
 
   useEffect(() => {
-    if (loaded.current) ref.current?.contentWindow?.postMessage(embedThemeMessage(theme), '*');
+    if (loaded.current) ref.current?.contentWindow?.postMessage(embedThemeMessage(theme), "*");
   }, [theme]);
 
   return (
@@ -155,11 +162,11 @@ function EmbedFrame({
         handlers.current.onLoaded?.();
       }}
       style={{
-        display: 'block',
-        width: '100%',
-        height: mode === 'full' ? '100%' : `${height ?? EMBED_FIRST_HEIGHT}px`,
+        display: "block",
+        width: "100%",
+        height: mode === "full" ? "100%" : `${height ?? EMBED_FIRST_HEIGHT}px`,
         border: 0,
-        background: 'transparent',
+        background: "transparent",
         // Must match the page's own color-scheme, or the browser paints an opaque backdrop behind it.
         colorScheme: theme.scheme,
       }}
@@ -167,14 +174,14 @@ function EmbedFrame({
   );
 }
 
-type Phase = 'far' | 'waiting' | 'loading' | 'ready' | 'failed';
+type Phase = "far" | "waiting" | "loading" | "ready" | "failed";
 
 export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedHost }) {
   const figureRef = useRef<HTMLElement>(null);
   const near = useNearViewport(figureRef);
   const theme = useEmbedTheme();
   const [showCode, setShowCode] = useState(false);
-  const [phase, setPhase] = useState<Phase>('far');
+  const [phase, setPhase] = useState<Phase>("far");
   const [url, setUrl] = useState<string | null>(null);
   const [height, setHeight] = useState<number | undefined>(undefined);
   const [expanded, setExpanded] = useState(false);
@@ -194,7 +201,7 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
     const start = () => {
       if (cancelled) return;
       if (!claimEmbedLive(forced)) {
-        setPhase('waiting');
+        setPhase("waiting");
         stopWaiting = onEmbedLiveFreed(() => {
           stopWaiting?.();
           stopWaiting = null;
@@ -203,7 +210,7 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
         return;
       }
       holdsLive = true;
-      setPhase('loading');
+      setPhase("loading");
       void acquireEmbedLoad().then(async (release) => {
         if (cancelled) return release();
         releaseLoad.current = release;
@@ -216,7 +223,7 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
         if (cancelled) return release();
         if (next === null) {
           release();
-          setPhase('failed');
+          setPhase("failed");
           return;
         }
         setUrl(next);
@@ -242,13 +249,16 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
   const ready = useCallback(() => {
     releaseLoad.current?.();
     releaseLoad.current = null;
-    setPhase((now) => (now === 'loading' ? 'ready' : now));
+    setPhase((now) => (now === "loading" ? "ready" : now));
   }, []);
 
   // A page that never speaks (the frame was refused, or the Inbox lost it): its code instead.
   useEffect(() => {
-    if (phase !== 'loading' || url === null) return;
-    const timer = setTimeout(() => setPhase((now) => (now === 'loading' ? 'failed' : now)), readyTimeoutMs);
+    if (phase !== "loading" || url === null) return;
+    const timer = setTimeout(
+      () => setPhase((now) => (now === "loading" ? "failed" : now)),
+      readyTimeoutMs,
+    );
     return () => clearTimeout(timer);
   }, [phase, url]);
 
@@ -258,13 +268,15 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
   }, []);
 
   const clipped = !expanded && height !== undefined && height > EMBED_CLIP_PX;
-  const title = host.author ? `HTML from ${host.author}` : 'HTML page';
-  const caption = host.author ? `From ${host.author}. It runs in a sandbox and can load from the web.` : 'It runs in a sandbox and can load from the web.';
+  const title = host.author ? `HTML from ${host.author}` : "HTML page";
+  const caption = host.author
+    ? `From ${host.author}. It runs in a sandbox and can load from the web.`
+    : "It runs in a sandbox and can load from the web.";
   const live = !showCode && url !== null;
 
   const body = useMemo(() => {
-    if (showCode || phase === 'failed') return <CodeBlock block={block} isHovered={false} />;
-    if (phase === 'waiting') {
+    if (showCode || phase === "failed") return <CodeBlock block={block} isHovered={false} />;
+    if (phase === "waiting") {
       return (
         <button
           type="button"
@@ -281,17 +293,27 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
   }, [showCode, phase, block, height]);
 
   return (
-    <figure ref={figureRef} data-block-id={block.id} data-html-embed="" data-html-embed-phase={showCode ? 'code' : phase} className="my-4">
+    <figure
+      ref={figureRef}
+      data-block-id={block.id}
+      data-html-embed=""
+      data-html-embed-phase={showCode ? "code" : phase}
+      className="my-4"
+    >
       {body ?? (
         <div className="relative">
           <div
             data-html-embed-clip=""
             style={{
               maxHeight: clipped ? EMBED_CLIP_PX : undefined,
-              overflow: 'hidden',
+              overflow: "hidden",
               // A fade that needs no background color: the message shows through it.
-              maskImage: clipped ? 'linear-gradient(to bottom, black calc(100% - 72px), transparent)' : undefined,
-              WebkitMaskImage: clipped ? 'linear-gradient(to bottom, black calc(100% - 72px), transparent)' : undefined,
+              maskImage: clipped
+                ? "linear-gradient(to bottom, black calc(100% - 72px), transparent)"
+                : undefined,
+              WebkitMaskImage: clipped
+                ? "linear-gradient(to bottom, black calc(100% - 72px), transparent)"
+                : undefined,
             }}
           >
             {live ? (
@@ -325,14 +347,21 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
           )}
         </div>
       )}
-      <figcaption data-html-embed-caption="" className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+      <figcaption
+        data-html-embed-caption=""
+        className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"
+      >
         <Code aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
         <HostTitle title={caption}>
           <span className="truncate">HTML · sandboxed</span>
         </HostTitle>
         <span className="flex-1" />
         {expanded && !showCode && (
-          <button type="button" className="rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground" onClick={() => setExpanded(false)}>
+          <button
+            type="button"
+            className="rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground"
+            onClick={() => setExpanded(false)}
+          >
             Show less
           </button>
         )}
@@ -340,7 +369,7 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
           type="button"
           data-html-embed-code=""
           aria-pressed={showCode}
-          className={`rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground ${showCode ? 'bg-muted text-foreground' : ''}`}
+          className={`rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground ${showCode ? "bg-muted text-foreground" : ""}`}
           onClick={() => setShowCode((value) => !value)}
         >
           Code
@@ -361,11 +390,19 @@ export function HtmlEmbedBlock({ block, host }: { block: Block; host: HtmlEmbedH
           onClose={() => setFull(false)}
           title={title}
           className="h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-none"
-          dataAttributes={{ 'data-html-embed-popout': '' }}
+          dataAttributes={{ "data-html-embed-popout": "" }}
         >
-          <div className="flex h-9 shrink-0 items-center border-b border-border pl-4 pr-12 text-xs font-medium text-foreground">{title}</div>
+          <div className="flex h-9 shrink-0 items-center border-b border-border pl-4 pr-12 text-xs font-medium text-foreground">
+            {title}
+          </div>
           <div className="min-h-0 flex-1">
-            <EmbedFrame url={url} theme={theme} mode="full" title={title} onEscape={() => setFull(false)} />
+            <EmbedFrame
+              url={url}
+              theme={theme}
+              mode="full"
+              title={title}
+              onEscape={() => setFull(false)}
+            />
           </div>
         </PopoutDialog>
       )}

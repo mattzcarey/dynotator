@@ -32,7 +32,7 @@ import {
   calculateViewportEnvironment,
   calculateVisibleViewportBounds,
   type ViewportEdgeInsets,
-} from '../hooks/useViewportEnvironment';
+} from "../hooks/useViewportEnvironment";
 
 let touchSelectionToolbar = false;
 
@@ -79,7 +79,7 @@ export interface ToolbarViewport {
   height: number;
 }
 
-export type TouchToolbarPlacement = 'below' | 'above' | 'pinned' | 'hidden';
+export type TouchToolbarPlacement = "below" | "above" | "pinned" | "hidden";
 
 export interface TouchToolbarPosition {
   /** Top edge of the toolbar, in the same (layout viewport) coordinates as `anchor`. */
@@ -99,7 +99,12 @@ export function unionToolbarRect(rects: readonly ToolbarRect[]): ToolbarRect | n
   for (const r of rects) {
     if (!(r.right > r.left || r.bottom > r.top)) continue; // an empty piece
     out = out
-      ? { top: Math.min(out.top, r.top), bottom: Math.max(out.bottom, r.bottom), left: Math.min(out.left, r.left), right: Math.max(out.right, r.right) }
+      ? {
+          top: Math.min(out.top, r.top),
+          bottom: Math.max(out.bottom, r.bottom),
+          left: Math.min(out.left, r.left),
+          right: Math.max(out.right, r.right),
+        }
       : { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
   }
   return out;
@@ -118,55 +123,69 @@ export function placeTouchToolbar(input: {
   anchor: ToolbarRect;
   toolbar: { width: number; height: number };
   viewport: ToolbarViewport;
-  mode: 'center-above' | 'top-right';
+  mode: "center-above" | "top-right";
   margin?: number;
   insets?: Partial<ViewportEdgeInsets>;
 }): TouchToolbarPosition {
   const { anchor, toolbar, viewport, mode } = input;
   const margin = input.margin ?? TOUCH_TOOLBAR_EDGE_MARGIN;
   const bounds = calculateVisibleViewportBounds(
-    { width: viewport.width, height: viewport.height, offsetTop: viewport.top, offsetLeft: viewport.left, keyboardInset: 0 },
+    {
+      width: viewport.width,
+      height: viewport.height,
+      offsetTop: viewport.top,
+      offsetLeft: viewport.left,
+      keyboardInset: 0,
+    },
     margin,
     input.insets,
   );
 
   const minLeft = bounds.left;
   const maxLeft = bounds.right - toolbar.width;
-  const idealLeft = mode === 'center-above'
-    ? (anchor.left + anchor.right) / 2 - toolbar.width / 2
-    : anchor.right - toolbar.width;
+  const idealLeft =
+    mode === "center-above"
+      ? (anchor.left + anchor.right) / 2 - toolbar.width / 2
+      : anchor.right - toolbar.width;
   const left = maxLeft < minLeft ? minLeft : clamp(idealLeft, minLeft, maxLeft);
   const minTop = bounds.top;
   const maxTop = Math.max(minTop, bounds.bottom - toolbar.height);
   const base = { left, maxWidth: bounds.width };
 
-  const offscreen = anchor.bottom <= viewport.top
-    || anchor.top >= viewport.top + viewport.height
-    || anchor.right <= viewport.left
-    || anchor.left >= viewport.left + viewport.width;
-  if (offscreen) return { ...base, top: minTop, placement: 'hidden' };
+  const offscreen =
+    anchor.bottom <= viewport.top ||
+    anchor.top >= viewport.top + viewport.height ||
+    anchor.right <= viewport.left ||
+    anchor.left >= viewport.left + viewport.width;
+  if (offscreen) return { ...base, top: minTop, placement: "hidden" };
 
-  if (mode === 'top-right') {
+  if (mode === "top-right") {
     // A hovered block, not a selection: no native menu to avoid.
-    return { ...base, top: clamp(anchor.top - toolbar.height - 4, minTop, maxTop), placement: 'above' };
+    return {
+      ...base,
+      top: clamp(anchor.top - toolbar.height - 4, minTop, maxTop),
+      placement: "above",
+    };
   }
 
   // iOS's menu goes below a selection that starts near the top: sit under it.
   const nearTop = anchor.top - bounds.top < IOS_MENU_ROOM_ABOVE;
-  const gaps = nearTop ? [TOUCH_TOOLBAR_GAP_BELOW + IOS_MENU_CLEARANCE, TOUCH_TOOLBAR_GAP_BELOW] : [TOUCH_TOOLBAR_GAP_BELOW];
+  const gaps = nearTop
+    ? [TOUCH_TOOLBAR_GAP_BELOW + IOS_MENU_CLEARANCE, TOUCH_TOOLBAR_GAP_BELOW]
+    : [TOUCH_TOOLBAR_GAP_BELOW];
   for (const gap of gaps) {
     const below = anchor.bottom + gap;
     // Selection scrolled up past the top edge: keep the toolbar on screen.
-    if (below <= maxTop) return { ...base, top: Math.max(below, minTop), placement: 'below' };
+    if (below <= maxTop) return { ...base, top: Math.max(below, minTop), placement: "below" };
   }
   // No room below (a selection near the bottom): above, but over the band
   // where iOS draws its menu (centered above the selection), then right above
   // the selection, then pinned to the bottom edge.
   for (const gap of [TOUCH_TOOLBAR_GAP_ABOVE + IOS_MENU_CLEARANCE, TOUCH_TOOLBAR_GAP_ABOVE]) {
     const above = anchor.top - gap - toolbar.height;
-    if (above >= minTop) return { ...base, top: Math.min(above, maxTop), placement: 'above' };
+    if (above >= minTop) return { ...base, top: Math.min(above, maxTop), placement: "above" };
   }
-  return { ...base, top: maxTop, placement: 'pinned' };
+  return { ...base, top: maxTop, placement: "pinned" };
 }
 
 /**
@@ -181,7 +200,13 @@ export function readVisibleViewport(): ToolbarViewport {
     layoutWidth: window.innerWidth,
     layoutHeight: window.innerHeight,
     visualViewport: vv
-      ? { width: vv.width, height: vv.height, offsetTop: vv.offsetTop, offsetLeft: vv.offsetLeft, scale: vv.scale }
+      ? {
+          width: vv.width,
+          height: vv.height,
+          offsetTop: vv.offsetTop,
+          offsetLeft: vv.offsetLeft,
+          scale: vv.scale,
+        }
       : null,
   });
   const zoomed = !!vv && Math.abs(vv.scale - 1) > 0.01 && vv.width > 0 && vv.height > 0;
@@ -197,8 +222,10 @@ let insetCache: { key: string; insets: ViewportEdgeInsets } | null = null;
 
 /** Insets change with the device's orientation, not with pinch zoom (which resizes the window's inner size). */
 function insetCacheKey(): string {
-  const landscape = typeof window.matchMedia === 'function' && window.matchMedia('(orientation: landscape)').matches;
-  return `${window.screen?.width ?? 0}x${window.screen?.height ?? 0}:${landscape ? 'l' : 'p'}`;
+  const landscape =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(orientation: landscape)").matches;
+  return `${window.screen?.width ?? 0}x${window.screen?.height ?? 0}:${landscape ? "l" : "p"}`;
 }
 
 /**
@@ -209,16 +236,22 @@ function insetCacheKey(): string {
 export function readSafeAreaInsets(): ViewportEdgeInsets {
   const key = insetCacheKey();
   if (insetCache?.key === key) return insetCache.insets;
-  const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;'
-    + 'padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;" +
+    "padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)";
   document.body.appendChild(probe);
   const cs = getComputedStyle(probe);
   const px = (v: string) => {
     const n = parseFloat(v);
     return Number.isFinite(n) && n > 0 ? n : 0;
   };
-  const insets = { top: px(cs.paddingTop), right: px(cs.paddingRight), bottom: px(cs.paddingBottom), left: px(cs.paddingLeft) };
+  const insets = {
+    top: px(cs.paddingTop),
+    right: px(cs.paddingRight),
+    bottom: px(cs.paddingBottom),
+    left: px(cs.paddingLeft),
+  };
   probe.remove();
   insetCache = { key, insets };
   return insets;

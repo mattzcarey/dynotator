@@ -49,11 +49,13 @@ export function isMatchingAgentTerminalDelivery(
   delivered: AgentTerminalDeliveryRecord | null,
   current: AgentTerminalDeliveryRecord | null,
 ): boolean {
-  return !!delivered &&
+  return (
+    !!delivered &&
     !!current &&
     delivered.terminalSessionId === current.terminalSessionId &&
     delivered.feedbackKey === current.feedbackKey &&
-    delivered.targetPath === current.targetPath;
+    delivered.targetPath === current.targetPath
+  );
 }
 
 export function shouldSendAgentTerminalFeedback(
@@ -79,7 +81,9 @@ const ASK_DRAFTS_END_LOOKALIKE = /\[\s*end\s+of\s+(?:the\s+)?draft\s+annotations
 
 function terminalDraftBlock(draftAnnotations: string | undefined): string {
   if (draftAnnotations === undefined) return "";
-  const list = draftAnnotations.replace(ASK_DRAFTS_END_LOOKALIKE, "(quoted: end of draft annotations)").trim();
+  const list = draftAnnotations
+    .replace(ASK_DRAFTS_END_LOOKALIKE, "(quoted: end of draft annotations)")
+    .trim();
   return list ? [ASK_DRAFTS_LABEL, list, ASK_DRAFTS_END].join("\n") : ASK_DRAFTS_CLEARED;
 }
 

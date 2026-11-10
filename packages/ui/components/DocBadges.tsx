@@ -15,15 +15,15 @@
  * actually has a previous version to diff against.
  */
 
-import React from 'react';
-import { PlanDiffBadge } from './plan-diff/PlanDiffBadge';
-import type { PlanDiffStats } from '../utils/planDiffEngine';
-import { hostnameOrFallback } from '@dynotator/core/project';
-import { basenameFromPath } from '@dynotator/core/source-save';
-import { OpenInAppButton } from './OpenInAppButton';
-import { HostTitle } from './HostTitle';
-import { useConfigValue } from '../config';
-import { repoLabel } from '../utils/repoLabel';
+import React from "react";
+import { PlanDiffBadge } from "./plan-diff/PlanDiffBadge";
+import type { PlanDiffStats } from "../utils/planDiffEngine";
+import { hostnameOrFallback } from "@dynotator/core/project";
+import { basenameFromPath } from "@dynotator/core/source-save";
+import { OpenInAppButton } from "./OpenInAppButton";
+import { HostTitle } from "./HostTitle";
+import { useConfigValue } from "../config";
+import { repoLabel } from "../utils/repoLabel";
 
 export interface LinkedDocBadgeInfo {
   filepath: string;
@@ -32,11 +32,11 @@ export interface LinkedDocBadgeInfo {
   onBack?: () => void;
   label?: string;
   backLabel?: string;
-  variant?: 'breadcrumb' | 'folder-file';
+  variant?: "breadcrumb" | "folder-file";
 }
 
 export interface DocBadgesProps {
-  layout: 'column' | 'row' | 'header';
+  layout: "column" | "row" | "header";
   repoInfo?: { display: string; branch?: string } | null;
   planDiffStats?: PlanDiffStats | null;
   isPlanDiffActive?: boolean;
@@ -48,7 +48,11 @@ export interface DocBadgesProps {
   planDiffBaselineLabel?: string;
   planDiffBaselineTooltip?: string;
   showDemoBadge?: boolean;
-  archiveInfo?: { status: 'approved' | 'denied' | 'unknown'; timestamp: string; title: string } | null;
+  archiveInfo?: {
+    status: "approved" | "denied" | "unknown";
+    timestamp: string;
+    title: string;
+  } | null;
   linkedDocInfo?: LinkedDocBadgeInfo | null;
   /** Source attribution for HTML/URL annotations (e.g. "https://..." or "index.html") */
   sourceInfo?: string;
@@ -74,11 +78,10 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
   sourceInfo,
   openInAppPath,
 }) => {
-  const hideRepoOwner = useConfigValue('hideRepoOwner');
-  const isRow = layout === 'row';
-  const isHorizontal = layout !== 'column';
-  const canOpenInApp =
-    !!openInAppPath && !/^https?:\/\//i.test(openInAppPath);
+  const hideRepoOwner = useConfigValue("hideRepoOwner");
+  const isRow = layout === "row";
+  const isHorizontal = layout !== "column";
+  const canOpenInApp = !!openInAppPath && !/^https?:\/\//i.test(openInAppPath);
   // Never shrinks: a file name chip beside it gives up its width first.
   const openInButton = canOpenInApp ? (
     <span className="flex flex-shrink-0">
@@ -93,13 +96,19 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
   // header comment.
   const anything = isRow
     ? (hasPreviousVersion && planDiffStats) || (archiveInfo && !linkedDocInfo)
-    : repoInfo || hasPreviousVersion || showDemoBadge || linkedDocInfo || archiveInfo || sourceInfo || canOpenInApp;
+    : repoInfo ||
+      hasPreviousVersion ||
+      showDemoBadge ||
+      linkedDocInfo ||
+      archiveInfo ||
+      sourceInfo ||
+      canOpenInApp;
   if (!anything) return null;
 
   // Row layout: single horizontal line. Column layout: stacked rows.
   const outerClass = isHorizontal
-    ? `flex flex-row items-center gap-1.5 text-[9px] text-muted-foreground/70 font-mono ${layout === 'header' ? 'flex-wrap' : ''}`
-    : 'flex flex-col items-start gap-1 text-[9px] text-muted-foreground/50 font-mono';
+    ? `flex flex-row items-center gap-1.5 text-[9px] text-muted-foreground/70 font-mono ${layout === "header" ? "flex-wrap" : ""}`
+    : "flex flex-col items-start gap-1 text-[9px] text-muted-foreground/50 font-mono";
 
   return (
     <div className={outerClass}>
@@ -117,7 +126,9 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
             <HostTitle title={repoInfo.display} cut>
               <span
                 className={`truncate px-1.5 py-0.5 bg-muted/50 rounded ${
-                  repoInfo.branch ? 'flex-shrink-0 max-w-[calc(100%_-_4.5em_-_0.375rem)]' : 'min-w-0'
+                  repoInfo.branch
+                    ? "flex-shrink-0 max-w-[calc(100%_-_4.5em_-_0.375rem)]"
+                    : "min-w-0"
                 }`}
               >
                 {repoLabel(repoInfo.display, hideRepoOwner)}
@@ -126,7 +137,11 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
             {repoInfo.branch && (
               <HostTitle title={repoInfo.branch} cut>
                 <span className="min-w-[4.5em] px-1.5 py-0.5 bg-muted/30 rounded flex items-center gap-1 overflow-hidden">
-                  <svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor">
+                  <svg
+                    className="w-2.5 h-2.5 flex-shrink-0"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                  >
                     <path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
                   </svg>
                   <span className="truncate">{repoInfo.branch}</span>
@@ -150,9 +165,7 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
             className="px-1.5 py-0.5 bg-muted/30 rounded truncate max-w-[200px]"
             title={sourceInfo}
           >
-            {/^https?:\/\//i.test(sourceInfo)
-              ? hostnameOrFallback(sourceInfo)
-              : sourceInfo}
+            {/^https?:\/\//i.test(sourceInfo) ? hostnameOrFallback(sourceInfo) : sourceInfo}
           </span>
           {openInButton}
         </div>
@@ -180,32 +193,29 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
         <div className="flex items-center gap-1.5">
           <span
             className={`px-1.5 py-0.5 rounded ${
-              archiveInfo.status === 'approved'
-                ? 'bg-green-500/15 text-green-600 dark:text-green-400'
-                : archiveInfo.status === 'denied'
-                  ? 'bg-red-500/15 text-red-600 dark:text-red-400'
-                  : 'bg-muted/50 text-muted-foreground'
+              archiveInfo.status === "approved"
+                ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                : archiveInfo.status === "denied"
+                  ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                  : "bg-muted/50 text-muted-foreground"
             }`}
           >
-            {archiveInfo.status === 'approved'
-              ? 'Approved'
-              : archiveInfo.status === 'denied'
-                ? 'Denied'
-                : 'Unknown'}
+            {archiveInfo.status === "approved"
+              ? "Approved"
+              : archiveInfo.status === "denied"
+                ? "Denied"
+                : "Unknown"}
           </span>
           {archiveInfo.timestamp && (
-            <span
-              className="px-1.5 py-0.5 bg-muted/50 rounded"
-              title={archiveInfo.timestamp}
-            >
+            <span className="px-1.5 py-0.5 bg-muted/50 rounded" title={archiveInfo.timestamp}>
               {new Date(archiveInfo.timestamp).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}{' '}
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}{" "}
               {new Date(archiveInfo.timestamp).toLocaleTimeString(undefined, {
-                hour: 'numeric',
-                minute: '2-digit',
+                hour: "numeric",
+                minute: "2-digit",
               })}
             </span>
           )}
@@ -213,8 +223,9 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
       )}
 
       {/* Linked-doc breadcrumb: only in column layout (sticky lane is hidden in linked-doc mode) */}
-      {!isRow && linkedDocInfo && (
-        linkedDocInfo.variant === 'folder-file' ? (
+      {!isRow &&
+        linkedDocInfo &&
+        (linkedDocInfo.variant === "folder-file" ? (
           <div className="flex min-w-0 max-w-full items-center gap-2">
             {linkedDocInfo.onBack && (
               <button
@@ -252,10 +263,10 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
                   d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
                 />
               </svg>
-              {linkedDocInfo.backLabel || 'plan'}
+              {linkedDocInfo.backLabel || "plan"}
             </button>
             <span className="px-1.5 py-0.5 bg-primary/10 text-primary/80 rounded flex-shrink-0">
-              {linkedDocInfo.label || 'Linked File'}
+              {linkedDocInfo.label || "Linked File"}
             </span>
             <HostTitle title={linkedDocInfo.filepath}>
               <span className="min-w-0 px-1.5 py-0.5 bg-muted/50 text-muted-foreground rounded truncate">
@@ -264,8 +275,7 @@ export const DocBadges: React.FC<DocBadgesProps> = ({
             </HostTitle>
             {openInButton}
           </div>
-        )
-      )}
+        ))}
     </div>
   );
 };

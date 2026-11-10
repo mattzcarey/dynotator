@@ -54,7 +54,12 @@ export function useLocalLinkResolver(): LocalLinkResolver | null {
 }
 
 /** A click the browser would open in a new tab or window: Cmd/Ctrl/Shift, or not the main button. */
-export function isNewTabClick(event: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; button: number }): boolean {
+export function isNewTabClick(event: {
+  metaKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  button: number;
+}): boolean {
   return event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0;
 }
 

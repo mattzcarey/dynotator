@@ -1,13 +1,27 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { hasPendingBusyChoice, type AIChatEntry, type PendingPermission } from '../../hooks/useAIChat';
-import { findSessionBridge, hasNonInterruptibleSession, type AIProviderOption } from '../../utils/aiProvider';
-import { formatRelativeTime, renderChatMarkdown } from '../../utils/aiChatFormat';
-import { OverlayScrollArea } from '../OverlayScrollArea';
-import { SparklesIcon } from '../SparklesIcon';
-import { AIProviderBar } from './AIProviderBar';
-import { NewChatButton } from './NewChatButton';
-import { SessionAskActions, SessionAskNote, SessionAskStatus, sessionAskErrorTone, type SessionAskAction } from './SessionAskNotice';
-import { submitHint } from '../../utils/platform';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  hasPendingBusyChoice,
+  type AIChatEntry,
+  type PendingPermission,
+} from "../../hooks/useAIChat";
+import {
+  findSessionBridge,
+  hasNonInterruptibleSession,
+  type AIProviderOption,
+} from "../../utils/aiProvider";
+import { formatRelativeTime, renderChatMarkdown } from "../../utils/aiChatFormat";
+import { OverlayScrollArea } from "../OverlayScrollArea";
+import { SparklesIcon } from "../SparklesIcon";
+import { AIProviderBar } from "./AIProviderBar";
+import { NewChatButton } from "./NewChatButton";
+import {
+  SessionAskActions,
+  SessionAskNote,
+  SessionAskStatus,
+  sessionAskErrorTone,
+  type SessionAskAction,
+} from "./SessionAskNotice";
+import { submitHint } from "../../utils/platform";
 
 interface DocumentAIChatPanelProps {
   messages: AIChatEntry[];
@@ -20,7 +34,11 @@ interface DocumentAIChatPanelProps {
   onRespondToPermission?: (requestId: string, allow: boolean) => void;
   aiProviders?: AIProviderOption[];
   aiConfig?: { providerId: string | null; model: string | null; reasoningEffort?: string | null };
-  onAIConfigChange?: (config: { providerId?: string | null; model?: string | null; reasoningEffort?: string | null }) => void;
+  onAIConfigChange?: (config: {
+    providerId?: string | null;
+    model?: string | null;
+    reasoningEffort?: string | null;
+  }) => void;
   /** "Ask this session": the reviewer's choice on a busy answer. */
   onSessionAskAction?: (questionId: string, action: SessionAskAction) => void;
   /** Optional note under the provider bar on how to get "Ask this session" (askSessionSetupHint). */
@@ -43,20 +61,23 @@ function truncate(text: string, max = 180): string {
 function formatToolInput(toolName: string, input: Record<string, unknown>): string | null {
   if (!input || Object.keys(input).length === 0) return null;
 
-  if (toolName === 'Bash' && typeof input.command === 'string') {
+  if (toolName === "Bash" && typeof input.command === "string") {
     return input.command;
   }
-  if ((toolName === 'Read' || toolName === 'Write' || toolName === 'Edit') && typeof input.file_path === 'string') {
+  if (
+    (toolName === "Read" || toolName === "Write" || toolName === "Edit") &&
+    typeof input.file_path === "string"
+  ) {
     return input.file_path;
   }
-  if (toolName === 'Glob' && typeof input.pattern === 'string') {
+  if (toolName === "Glob" && typeof input.pattern === "string") {
     return input.pattern;
   }
-  if (toolName === 'Grep' && typeof input.pattern === 'string') {
-    const path = typeof input.path === 'string' ? ` in ${input.path}` : '';
+  if (toolName === "Grep" && typeof input.pattern === "string") {
+    const path = typeof input.path === "string" ? ` in ${input.path}` : "";
     return `${input.pattern}${path}`;
   }
-  if ((toolName === 'WebFetch' || toolName === 'WebSearch') && typeof input.url === 'string') {
+  if ((toolName === "WebFetch" || toolName === "WebSearch") && typeof input.url === "string") {
     return input.url;
   }
 
@@ -86,14 +107,14 @@ export const DocumentAIChatPanel: React.FC<DocumentAIChatPanelProps> = ({
   // A session that is never interrupted (T3 Code): Stop only stops listening.
   const listenOnly = hasNonInterruptibleSession(aiProviders);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [generalInput, setGeneralInput] = useState('');
+  const [generalInput, setGeneralInput] = useState("");
   const latestMessage = messages[messages.length - 1];
-  const latestResponseText = latestMessage?.response.text ?? '';
+  const latestResponseText = latestMessage?.response.text ?? "";
 
   useEffect(() => {
     if (!scrollRef.current) return;
-    const last = scrollRef.current.querySelector('[data-ai-message]:last-child');
-    last?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const last = scrollRef.current.querySelector("[data-ai-message]:last-child");
+    last?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length, latestResponseText]);
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -102,7 +123,7 @@ export const DocumentAIChatPanel: React.FC<DocumentAIChatPanelProps> = ({
     onNewChat();
     // The button leaves with the messages; keep focus in the panel.
     requestAnimationFrame(() => {
-      rootRef.current?.querySelector<HTMLTextAreaElement>('textarea')?.focus();
+      rootRef.current?.querySelector<HTMLTextAreaElement>("textarea")?.focus();
     });
   }, [onNewChat]);
 
@@ -110,7 +131,7 @@ export const DocumentAIChatPanel: React.FC<DocumentAIChatPanelProps> = ({
     const question = generalInput.trim();
     if (!question || !onAskGeneral) return;
     onAskGeneral(question);
-    setGeneralInput('');
+    setGeneralInput("");
   }, [generalInput, onAskGeneral]);
 
   return (
@@ -132,9 +153,13 @@ export const DocumentAIChatPanel: React.FC<DocumentAIChatPanelProps> = ({
               </div>
               <p className="text-xs">
                 {onAskGeneral ? (
-                  <>Select text and click <strong>Ask AI</strong>, or ask a general question below.</>
+                  <>
+                    Select text and click <strong>Ask AI</strong>, or ask a general question below.
+                  </>
                 ) : (
-                  <>Select text and click <strong>Ask AI</strong>.</>
+                  <>
+                    Select text and click <strong>Ask AI</strong>.
+                  </>
                 )}
               </p>
             </div>
@@ -146,7 +171,7 @@ export const DocumentAIChatPanel: React.FC<DocumentAIChatPanelProps> = ({
             </div>
           )}
 
-          {messages.map(entry => (
+          {messages.map((entry) => (
             <DocumentQAPair
               key={entry.question.id}
               entry={entry}
@@ -159,28 +184,32 @@ export const DocumentAIChatPanel: React.FC<DocumentAIChatPanelProps> = ({
 
       {/* Pending permission requests — pinned just above the input/model bar so
           the user sees them right where they act, not buried at the top. */}
-      {permissionRequests.filter(p => !p.decided).length > 0 && (
+      {permissionRequests.filter((p) => !p.decided).length > 0 && (
         <div className="border-t border-border/50 p-2 space-y-2">
-          {permissionRequests.filter(p => !p.decided).map(permission => (
-            <PermissionCard
-              key={permission.requestId}
-              permission={permission}
-              onRespond={onRespondToPermission ?? (() => {})}
-            />
-          ))}
+          {permissionRequests
+            .filter((p) => !p.decided)
+            .map((permission) => (
+              <PermissionCard
+                key={permission.requestId}
+                permission={permission}
+                onRespond={onRespondToPermission ?? (() => {})}
+              />
+            ))}
         </div>
       )}
 
-      {!hideProviderBar && <AIProviderBar
-        providers={aiProviders}
-        selectedProviderId={aiConfig?.providerId ?? null}
-        selectedModel={aiConfig?.model ?? null}
-        selectedReasoningEffort={aiConfig?.reasoningEffort ?? null}
-        onProviderChange={(providerId) => onAIConfigChange?.({ providerId })}
-        onModelChange={(model) => onAIConfigChange?.({ model })}
-        onReasoningEffortChange={(reasoningEffort) => onAIConfigChange?.({ reasoningEffort })}
-        setupHint={askSessionSetupHint}
-      />}
+      {!hideProviderBar && (
+        <AIProviderBar
+          providers={aiProviders}
+          selectedProviderId={aiConfig?.providerId ?? null}
+          selectedModel={aiConfig?.model ?? null}
+          selectedReasoningEffort={aiConfig?.reasoningEffort ?? null}
+          onProviderChange={(providerId) => onAIConfigChange?.({ providerId })}
+          onModelChange={(model) => onAIConfigChange?.({ model })}
+          onReasoningEffortChange={(reasoningEffort) => onAIConfigChange?.({ reasoningEffort })}
+          setupHint={askSessionSetupHint}
+        />
+      )}
 
       {onAskGeneral && (
         <GeneralInput
@@ -204,7 +233,7 @@ const DocumentQAPair = memo<{
 }>(({ entry, onSessionAskAction, canInterrupt }) => {
   const { question, response } = entry;
   const renderedResponse = useMemo(
-    () => response.text ? renderChatMarkdown(response.text) : null,
+    () => (response.text ? renderChatMarkdown(response.text) : null),
     [response.text],
   );
   const scope = question.scope;
@@ -214,15 +243,13 @@ const DocumentQAPair = memo<{
       <div className="p-2.5 rounded-lg border border-transparent hover:bg-muted/30 transition-colors">
         <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-1.5 min-w-0">
-            {scope?.kind === 'selection' && (
+            {scope?.kind === "selection" && (
               <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                 selection
               </span>
             )}
             {scope?.label && (
-              <span className="text-[10px] text-muted-foreground truncate">
-                {scope.label}
-              </span>
+              <span className="text-[10px] text-muted-foreground truncate">{scope.label}</span>
             )}
           </div>
           <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">
@@ -244,7 +271,9 @@ const DocumentQAPair = memo<{
             <SessionAskActions
               response={response}
               canInterrupt={canInterrupt}
-              onAction={onSessionAskAction ? (action) => onSessionAskAction(question.id, action) : undefined}
+              onAction={
+                onSessionAskAction ? (action) => onSessionAskAction(question.id, action) : undefined
+              }
             />
           </>
         ) : response.text ? (
@@ -277,9 +306,7 @@ const PermissionCard: React.FC<{
       <p className="text-[10px] font-medium text-warning uppercase tracking-wider mb-1">
         Permission Request
       </p>
-      <p className="text-xs font-mono text-foreground/80 break-all">
-        {label}
-      </p>
+      <p className="text-xs font-mono text-foreground/80 break-all">{label}</p>
       {toolInput && (
         <p className="mt-1 px-2 py-1 rounded bg-background/60 border border-warning/20 text-[10px] font-mono text-foreground/80 break-all">
           {toolInput}
@@ -320,7 +347,7 @@ const GeneralInput: React.FC<{
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, [value]);
 
@@ -338,7 +365,12 @@ const GeneralInput: React.FC<{
           style={{ maxHeight: 120 }}
           disabled={disabled}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.nativeEvent.isComposing && !disabled) {
+            if (
+              event.key === "Enter" &&
+              (event.metaKey || event.ctrlKey) &&
+              !event.nativeEvent.isComposing &&
+              !disabled
+            ) {
               event.preventDefault();
               onSubmit();
             }
@@ -348,8 +380,12 @@ const GeneralInput: React.FC<{
           <button
             onClick={onStop}
             className="p-1.5 mb-px rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
-            title={observationOnly ? 'Stop listening; the question keeps running in the session' : 'Stop generating'}
-            aria-label={observationOnly ? 'Stop listening' : 'Stop generating'}
+            title={
+              observationOnly
+                ? "Stop listening; the question keeps running in the session"
+                : "Stop generating"
+            }
+            aria-label={observationOnly ? "Stop listening" : "Stop generating"}
           >
             {observationOnly && <span className="text-[10px] mr-1">Stop listening</span>}
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
@@ -364,8 +400,18 @@ const GeneralInput: React.FC<{
             title={`Send (${submitHint})`}
             aria-label="Send AI question"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+              />
             </svg>
           </button>
         )}

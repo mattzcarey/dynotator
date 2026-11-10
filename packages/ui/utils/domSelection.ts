@@ -1,31 +1,31 @@
 /** Elements whose text must not become part of a document annotation range. */
 const NON_ANNOTATABLE_SELECTOR = [
-  'button',
-  'input',
-  'textarea',
-  'select',
-  'script',
-  'style',
+  "button",
+  "input",
+  "textarea",
+  "select",
+  "script",
+  "style",
   '[contenteditable]:not([contenteditable="false"])',
-  '[data-pinpoint-ignore]',
-  '.select-none',
-  '.annotation-toolbar',
-  '.katex',
-].join(',');
+  "[data-pinpoint-ignore]",
+  ".select-none",
+  ".annotation-toolbar",
+  ".katex",
+].join(",");
 
 const DOCUMENT_KEYBOARD_CONTROL_SELECTOR = [
-  'button',
-  'input',
-  'textarea',
-  'select',
-  'a[href]',
-  'summary',
+  "button",
+  "input",
+  "textarea",
+  "select",
+  "a[href]",
+  "summary",
   '[contenteditable]:not([contenteditable="false"])',
   '[role="button"]',
   '[role="link"]',
   '[role="textbox"]',
   '[role="dialog"]',
-].join(',');
+].join(",");
 
 /**
  * Return the annotatable text nodes under an element in document order.
@@ -40,9 +40,7 @@ export function getAnnotatableTextNodes(element: Element): Text[] {
       if (!parent || parent.closest(NON_ANNOTATABLE_SELECTOR)) {
         return NodeFilter.FILTER_REJECT;
       }
-      return node.textContent?.length
-        ? NodeFilter.FILTER_ACCEPT
-        : NodeFilter.FILTER_REJECT;
+      return node.textContent?.length ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
     },
   });
 
@@ -60,9 +58,11 @@ export function getAnnotatableTextNodes(element: Element): Text[] {
  */
 export function isDocumentKeyboardControl(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
-  return target.matches(DOCUMENT_KEYBOARD_CONTROL_SELECTOR)
-    || target.closest(DOCUMENT_KEYBOARD_CONTROL_SELECTOR) !== null
-    || (target instanceof HTMLElement && target.isContentEditable);
+  return (
+    target.matches(DOCUMENT_KEYBOARD_CONTROL_SELECTOR) ||
+    target.closest(DOCUMENT_KEYBOARD_CONTROL_SELECTOR) !== null ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
 }
 
 /**

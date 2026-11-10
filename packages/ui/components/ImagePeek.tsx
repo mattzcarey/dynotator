@@ -1,4 +1,13 @@
-import React, { forwardRef, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 /**
  * The picture list a stepper opens ("A · Peek", approval "inbox-image-viewer",
@@ -43,9 +52,9 @@ export interface ImagePeekProps {
   current: string | null;
   onPick: (key: string) => void;
   /** Esc or Tab (`key`: the host puts focus back on its opener), or a press outside / the sheet's backdrop (`outside`). */
-  onClose: (reason: 'key' | 'outside') => void;
+  onClose: (reason: "key" | "outside") => void;
   /** `popover`: a panel the host positions above its bar. `sheet`: a phone's bottom sheet, three across. */
-  variant?: 'popover' | 'sheet';
+  variant?: "popover" | "sheet";
   /** The grid's accessible name. */
   label: string;
   /** An id for the panel, for the opener's `aria-controls`. */
@@ -62,29 +71,43 @@ export interface ImagePeekProps {
 }
 
 const PaperclipIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    width="11"
+    height="11"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
   </svg>
 );
 
 /** Where focus may move from `at` (row, column) for a key, or null when the key is not the grid's. */
-export function peekMove(rows: readonly { items: readonly unknown[] }[], at: { row: number; col: number }, key: string): { row: number; col: number } | null {
+export function peekMove(
+  rows: readonly { items: readonly unknown[] }[],
+  at: { row: number; col: number },
+  key: string,
+): { row: number; col: number } | null {
   const flat: { row: number; col: number }[] = [];
   rows.forEach((row, r) => row.items.forEach((_, c) => flat.push({ row: r, col: c })));
   if (flat.length === 0) return null;
   const index = flat.findIndex((p) => p.row === at.row && p.col === at.col);
   switch (key) {
-    case 'ArrowRight':
+    case "ArrowRight":
       return flat[Math.min(flat.length - 1, index + 1)]!;
-    case 'ArrowLeft':
+    case "ArrowLeft":
       return flat[Math.max(0, index - 1)]!;
-    case 'Home':
+    case "Home":
       return flat[0]!;
-    case 'End':
+    case "End":
       return flat[flat.length - 1]!;
-    case 'ArrowDown':
-    case 'ArrowUp': {
-      const step = key === 'ArrowDown' ? 1 : -1;
+    case "ArrowDown":
+    case "ArrowUp": {
+      const step = key === "ArrowDown" ? 1 : -1;
       for (let r = at.row + step; r >= 0 && r < rows.length; r += step) {
         const count = rows[r]!.items.length;
         if (count > 0) return { row: r, col: Math.min(at.col, count - 1) };
@@ -102,12 +125,15 @@ export interface ImagePeekHandle {
   handleKey: (event: { key: string; isComposing?: boolean }) => boolean;
 }
 
-export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function ImagePeek({ rows, current, onPick, onClose, variant = 'popover', label, id, className = '', sheetHeader }, ref) {
-  const sheet = variant === 'sheet';
+export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function ImagePeek(
+  { rows, current, onPick, onClose, variant = "popover", label, id, className = "", sheetHeader },
+  ref,
+) {
+  const sheet = variant === "sheet";
   const header = sheet && sheetHeader ? sheetHeader : null;
   const gridRef = useRef<HTMLDivElement>(null);
   const autoId = useId();
-  const labelId = `${(id ?? `pn-peek-${autoId}`).replace(/:/g, '')}-label`;
+  const labelId = `${(id ?? `pn-peek-${autoId}`).replace(/:/g, "")}-label`;
   const start = useMemo(() => {
     for (let r = 0; r < rows.length; r++) {
       const c = rows[r]!.items.findIndex((item) => item.key === current);
@@ -120,13 +146,14 @@ export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function Im
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  const cellOf = (at: { row: number; col: number }) => gridRef.current?.querySelector<HTMLElement>(`[data-peek-cell="${at.row}:${at.col}"]`) ?? null;
+  const cellOf = (at: { row: number; col: number }) =>
+    gridRef.current?.querySelector<HTMLElement>(`[data-peek-cell="${at.row}:${at.col}"]`) ?? null;
 
   // Focus starts on the open item, and the open item is in view.
   useLayoutEffect(() => {
     const cell = cellOf(start);
     cell?.focus({ preventScroll: true });
-    cell?.scrollIntoView?.({ block: 'nearest' });
+    cell?.scrollIntoView?.({ block: "nearest" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -136,23 +163,23 @@ export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function Im
     const onDown = (event: PointerEvent) => {
       const target = event.target instanceof Node ? event.target : null;
       if (!target || gridRef.current?.contains(target)) return;
-      if (target instanceof Element && target.closest('[data-peek-opener]')) return;
-      onCloseRef.current('outside');
+      if (target instanceof Element && target.closest("[data-peek-opener]")) return;
+      onCloseRef.current("outside");
     };
-    document.addEventListener('pointerdown', onDown, true);
-    return () => document.removeEventListener('pointerdown', onDown, true);
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
   }, [sheet]);
 
   const focusRef = useRef(focus);
   focusRef.current = focus;
   const handleKey = (event: { key: string; isComposing?: boolean }): boolean => {
     if (event.isComposing) return false;
-    if (event.key === 'Escape' || event.key === 'Tab') {
-      onClose('key');
+    if (event.key === "Escape" || event.key === "Tab") {
+      onClose("key");
       return true;
     }
     const at = focusRef.current;
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === "Enter" || event.key === " ") {
       const item = rows[at.row]?.items[at.col];
       if (item) onPick(item.key);
       return true;
@@ -163,7 +190,7 @@ export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function Im
     setFocus(next);
     const cell = cellOf(next);
     cell?.focus({ preventScroll: true });
-    cell?.scrollIntoView?.({ block: 'nearest' });
+    cell?.scrollIntoView?.({ block: "nearest" });
     return true;
   };
   const handleKeyRef = useRef(handleKey);
@@ -172,7 +199,7 @@ export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function Im
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // With a header above the grid, Shift+Tab moves up into it instead of closing the sheet.
-    if (header && event.key === 'Tab' && event.shiftKey) return;
+    if (header && event.key === "Tab" && event.shiftKey) return;
     if (!handleKey({ key: event.key, isComposing: event.nativeEvent.isComposing })) return;
     event.preventDefault();
     event.stopPropagation();
@@ -197,24 +224,45 @@ export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function Im
       <span id={labelId} className="sr-only">
         {label}
       </span>
-      {sheet && !header && <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" aria-hidden="true" />}
+      {sheet && !header && (
+        <div
+          className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-muted-foreground/30"
+          aria-hidden="true"
+        />
+      )}
       {rows.map((row, r) => (
         <div
           key={row.key}
           role="row"
-          className={`${sheet ? 'flex flex-col gap-2 py-2' : 'grid grid-cols-[84px_1fr] gap-2 px-1 py-2'} ${r > 0 ? 'border-t border-border/60' : ''}`}
+          className={`${sheet ? "flex flex-col gap-2 py-2" : "grid grid-cols-[84px_1fr] gap-2 px-1 py-2"} ${r > 0 ? "border-t border-border/60" : ""}`}
           data-peek-row={row.key}
         >
-          <span role="rowheader" className={`text-[12.5px] text-muted-foreground ${sheet ? 'px-1 text-[14px]' : 'pt-1 tabular-nums'}`}>
+          <span
+            role="rowheader"
+            className={`text-[12.5px] text-muted-foreground ${sheet ? "px-1 text-[14px]" : "pt-1 tabular-nums"}`}
+          >
             {row.label}
           </span>
-          <div role="presentation" className={sheet ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-2'}>
+          <div
+            role="presentation"
+            className={
+              sheet
+                ? "grid grid-cols-3 gap-2"
+                : "grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-2"
+            }
+          >
             {row.items.map((item, c) => {
               const open = item.key === current;
               const focused = focus.row === r && focus.col === c;
-              const words = [item.name, item.attached ? 'attached' : null, item.count ? `${item.count} comment${item.count === 1 ? '' : 's'}` : null, item.detail ?? null, open ? 'open now' : null]
+              const words = [
+                item.name,
+                item.attached ? "attached" : null,
+                item.count ? `${item.count} comment${item.count === 1 ? "" : "s"}` : null,
+                item.detail ?? null,
+                open ? "open now" : null,
+              ]
                 .filter(Boolean)
-                .join(', ');
+                .join(", ");
               return (
                 <div
                   key={item.key}
@@ -224,31 +272,52 @@ export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function Im
                   aria-label={words}
                   data-peek-cell={`${r}:${c}`}
                   data-peek-item={item.key}
-                  data-peek-open={open ? '' : undefined}
+                  data-peek-open={open ? "" : undefined}
                   onClick={() => onPick(item.key)}
                   onFocus={() => setFocus({ row: r, col: c })}
                   className="group flex min-w-0 cursor-pointer flex-col gap-1 rounded-lg p-1 outline-none hover:bg-muted/70 focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-dashed focus-visible:outline-foreground/45"
                 >
                   <span
-                    className={`relative block w-full overflow-hidden rounded-md border bg-muted ${sheet ? 'h-[99px]' : 'aspect-[16/10]'} ${open ? 'border-primary ring-2 ring-primary' : 'border-border/70'}`}
+                    className={`relative block w-full overflow-hidden rounded-md border bg-muted ${sheet ? "h-[99px]" : "aspect-[16/10]"} ${open ? "border-primary ring-2 ring-primary" : "border-border/70"}`}
                   >
                     {item.thumb ? (
-                      <img src={item.thumb} alt="" loading="lazy" decoding="async" draggable={false} className="h-full w-full object-cover object-top" />
+                      <img
+                        src={item.thumb}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        className="h-full w-full object-cover object-top"
+                      />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center font-mono text-[12px] font-semibold tracking-wide text-muted-foreground">{item.tile ?? 'FILE'}</span>
+                      <span className="flex h-full w-full items-center justify-center font-mono text-[12px] font-semibold tracking-wide text-muted-foreground">
+                        {item.tile ?? "FILE"}
+                      </span>
                     )}
                     {item.attached && (
-                      <span className="absolute bottom-1 left-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-card text-foreground shadow-sm" aria-hidden="true" data-peek-attached="">
+                      <span
+                        className="absolute bottom-1 left-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-card text-foreground shadow-sm"
+                        aria-hidden="true"
+                        data-peek-attached=""
+                      >
                         <PaperclipIcon />
                       </span>
                     )}
                     {item.count ? (
-                      <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground" aria-hidden="true" data-peek-count="">
+                      <span
+                        className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground"
+                        aria-hidden="true"
+                        data-peek-count=""
+                      >
                         {item.count}
                       </span>
                     ) : null}
                   </span>
-                  <span className={`line-clamp-2 [overflow-wrap:anywhere] text-[12.5px] leading-tight ${open ? 'font-semibold text-foreground' : 'text-foreground/85'}`}>{item.name}</span>
+                  <span
+                    className={`line-clamp-2 [overflow-wrap:anywhere] text-[12.5px] leading-tight ${open ? "font-semibold text-foreground" : "text-foreground/85"}`}
+                  >
+                    {item.name}
+                  </span>
                 </div>
               );
             })}
@@ -261,24 +330,40 @@ export const ImagePeek = forwardRef<ImagePeekHandle, ImagePeekProps>(function Im
   if (!sheet) return panel;
   return (
     <div className="fixed inset-0 z-[220] flex flex-col justify-end" data-image-peek-sheet="">
-      <div className="absolute inset-0 bg-black/40" aria-hidden="true" onClick={() => onClose('outside')} data-peek-backdrop="" />
-      <div className={header ? 'relative overflow-hidden rounded-t-[12px] border-t border-border bg-popover shadow-2xl' : 'relative'}>
+      <div
+        className="absolute inset-0 bg-black/40"
+        aria-hidden="true"
+        onClick={() => onClose("outside")}
+        data-peek-backdrop=""
+      />
+      <div
+        className={
+          header
+            ? "relative overflow-hidden rounded-t-[12px] border-t border-border bg-popover shadow-2xl"
+            : "relative"
+        }
+      >
         {header && (
           <div
             className="px-3 pt-2 text-popover-foreground"
             onKeyDown={(event) => {
               // Escape closes the sheet; so does Shift+Tab out of its first control (focus leaving the sheet
               // closes it, as Tab out of the grid does: the host puts focus back on its opener).
-              const first = event.currentTarget.querySelector<HTMLElement>('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-              const leaving = event.key === 'Tab' && event.shiftKey && event.target === first;
-              if (event.key !== 'Escape' && !leaving) return;
+              const first = event.currentTarget.querySelector<HTMLElement>(
+                'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+              );
+              const leaving = event.key === "Tab" && event.shiftKey && event.target === first;
+              if (event.key !== "Escape" && !leaving) return;
               event.preventDefault();
               event.stopPropagation();
-              onClose('key');
+              onClose("key");
             }}
             data-peek-sheet-header=""
           >
-            <div className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" aria-hidden="true" />
+            <div
+              className="mx-auto mb-2 h-1.5 w-10 rounded-full bg-muted-foreground/30"
+              aria-hidden="true"
+            />
             {header}
           </div>
         )}

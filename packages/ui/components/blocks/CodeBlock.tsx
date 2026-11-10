@@ -1,8 +1,12 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import type { Block } from '../../types';
-import { copyTextToClipboard } from '../../utils/clipboard';
-import { applyHighlight, codeBlockClassName, codeBlockKeepsLayout } from '../../utils/codeHighlight';
-import { useFenceTheme } from '../../hooks/useFenceTheme';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import type { Block } from "../../types";
+import { copyTextToClipboard } from "../../utils/clipboard";
+import {
+  applyHighlight,
+  codeBlockClassName,
+  codeBlockKeepsLayout,
+} from "../../utils/codeHighlight";
+import { useFenceTheme } from "../../hooks/useFenceTheme";
 
 interface CodeBlockProps {
   block: Block;
@@ -31,7 +35,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({ block, onHover, onLeave })
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      console.error('Failed to copy');
+      console.error("Failed to copy");
     }
   }, [block.content]);
 
@@ -51,22 +55,40 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({ block, onHover, onLeave })
       data-block-id={block.id}
       // A whole-file code document: its text is the source, so the
       // highlighter measures a selection's real offset in it.
-      data-content-start-line={typeof block.contentStartLine === 'number' ? block.contentStartLine : undefined}
+      data-content-start-line={
+        typeof block.contentStartLine === "number" ? block.contentStartLine : undefined
+      }
       onMouseEnter={onHover ? handleMouseEnter : undefined}
       onMouseLeave={onLeave}
     >
       <button
         onClick={handleCopy}
         className="absolute top-2 right-2 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity z-10"
-        title={copied ? 'Copied!' : 'Copy code'}
+        title={copied ? "Copied!" : "Copy code"}
       >
         {copied ? (
-          <svg className="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg
+            className="w-4 h-4 text-success"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         ) : (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
           </svg>
         )}
       </button>
@@ -74,8 +96,10 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({ block, onHover, onLeave })
         <code
           ref={codeRef}
           className={codeClassName}
-          data-keep-layout={codeBlockKeepsLayout(block.content) ? '' : undefined}
-        >{block.content}</code>
+          data-keep-layout={codeBlockKeepsLayout(block.content) ? "" : undefined}
+        >
+          {block.content}
+        </code>
       </pre>
     </div>
   );

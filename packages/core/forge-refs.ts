@@ -83,8 +83,11 @@ export function forgeRefLinks(repo: { display?: string; host?: string }): ForgeR
  * a match out of the middle of a longer path, URL or address (`a/owner/repo#1`,
  * `x.owner/repo#1`, `john@owner/repo#1`).
  */
-export const CROSS_REPO_REF_PATTERN = /(?<![\w./@-])([A-Za-z0-9][A-Za-z0-9_-]{0,99})\/([A-Za-z0-9_.][A-Za-z0-9_.-]{0,99})#([1-9]\d{0,9})(?!\w)/;
-const CROSS_REPO_REF_AT_START = new RegExp(`^${CROSS_REPO_REF_PATTERN.source.replace("(?<![\\w./@-])", "")}`);
+export const CROSS_REPO_REF_PATTERN =
+  /(?<![\w./@-])([A-Za-z0-9][A-Za-z0-9_-]{0,99})\/([A-Za-z0-9_.][A-Za-z0-9_.-]{0,99})#([1-9]\d{0,9})(?!\w)/;
+const CROSS_REPO_REF_AT_START = new RegExp(
+  `^${CROSS_REPO_REF_PATTERN.source.replace("(?<![\\w./@-])", "")}`,
+);
 
 /**
  * A repo part that reads as a file, so `docs/guide.md#2` or `src/app.ts#12`
@@ -98,7 +101,23 @@ const FILE_LIKE_REPO =
   /\.(?:git|mdx?|markdown|txt|html?|rst|adoc|[cm]?ts|tsx|jsx|mjs|cjs|py|rb|go|rs|java|c|cpp|h|hpp|cs|swift|kt|scala|sh|bash|zsh|sql|graphql|json|ya?ml|toml|ini|css|scss|less|xml|tf|lua|dart|ex|exs|vue|svelte|astro|zig|proto|lock|log|csv|pdf|png|jpe?g|gif|svg)$/i;
 
 /** Prose pairs written with a slash (`and/or#1` in a list is not a repo). */
-const PROSE_PAIRS = new Set(["and/or", "either/or", "he/she", "his/her", "him/her", "s/he", "yes/no", "on/off", "true/false", "read/write", "input/output", "i/o", "before/after", "pros/cons", "client/server"]);
+const PROSE_PAIRS = new Set([
+  "and/or",
+  "either/or",
+  "he/she",
+  "his/her",
+  "him/her",
+  "s/he",
+  "yes/no",
+  "on/off",
+  "true/false",
+  "read/write",
+  "input/output",
+  "i/o",
+  "before/after",
+  "pros/cons",
+  "client/server",
+]);
 
 export interface CrossRepoRef {
   /** The ref as written: `owner/repo#123`. */
@@ -130,7 +149,13 @@ export function matchCrossRepoRef(
   if (!m) return null;
   const [label, owner, repo, number] = m;
   const path = `${owner}/${repo}`;
-  if (/^\.+$/.test(repo) || /^\d+$/.test(owner) || FILE_LIKE_REPO.test(repo) || PROSE_PAIRS.has(path.toLowerCase())) return null;
+  if (
+    /^\.+$/.test(repo) ||
+    /^\d+$/.test(owner) ||
+    FILE_LIKE_REPO.test(repo) ||
+    PROSE_PAIRS.has(path.toLowerCase())
+  )
+    return null;
   const href = forgeRefLinks({ display: path, host: project.host })?.issue(number) ?? null;
   return { label, path, href };
 }

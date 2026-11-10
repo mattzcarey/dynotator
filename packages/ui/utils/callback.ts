@@ -7,7 +7,7 @@
 
 /** Actions the user can trigger via the in-Plannotator callback buttons. */
 export enum CallbackAction {
-  Approve  = "approve",
+  Approve = "approve",
   Feedback = "feedback",
 }
 
@@ -17,8 +17,14 @@ export interface CallbackConfig {
   token: string;
 }
 
-export interface ToastSuccess { readonly type: 'success'; readonly message: string }
-export interface ToastError   { readonly type: 'error';   readonly message: string }
+export interface ToastSuccess {
+  readonly type: "success";
+  readonly message: string;
+}
+export interface ToastError {
+  readonly type: "error";
+  readonly message: string;
+}
 export type ToastPayload = ToastSuccess | ToastError | null;
 
 /**
@@ -75,9 +81,10 @@ export async function executeCallback(
   config: CallbackConfig,
   annotatedUrl: string,
 ): Promise<ToastPayload> {
-  const successMsg = action === CallbackAction.Approve
-    ? "Plan approved! The bot will proceed to implementation."
-    : "Feedback sent! The bot will re-plan with your annotations.";
+  const successMsg =
+    action === CallbackAction.Approve
+      ? "Plan approved! The bot will proceed to implementation."
+      : "Feedback sent! The bot will re-plan with your annotations.";
   try {
     const res = await fetch(config.callbackUrl, {
       method: "POST",
@@ -87,9 +94,10 @@ export async function executeCallback(
     if (!res.ok) {
       return {
         type: "error",
-        message: res.status === 401
-          ? "Plan link expired — request a new one from the bot."
-          : "Callback failed.",
+        message:
+          res.status === 401
+            ? "Plan link expired — request a new one from the bot."
+            : "Callback failed.",
       };
     }
     return { type: "success", message: successMsg };

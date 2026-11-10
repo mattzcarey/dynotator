@@ -7,20 +7,25 @@
  * The word is drawn by CSS (`content: attr(data-label)`), so the badge adds no text to the document: a text search,
  * a copy or a restore never meets it. Styles: `comment-card.css`.
  */
-import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import type Highlighter from '@plannotator/web-highlighter';
-import type { CommentPopoverState } from '../hooks/useAnnotationHighlighter';
-import { Icon } from './inbox-thread/icons';
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import type Highlighter from "@plannotator/web-highlighter";
+import type { CommentPopoverState } from "../hooks/useAnnotationHighlighter";
+import { Icon } from "./inbox-thread/icons";
 
 /** How far the badge's start sits back from the words' end, and how far it rises into the line gap. */
 const BACK = 10;
 const RISE = 3;
 const FALLBACK_WIDTH = 56;
 
-interface Placed { id: string; left: number; top: number; quote: string }
+interface Placed {
+  id: string;
+  left: number;
+  top: number;
+  quote: string;
+}
 
 function quoteOf(draft: CommentPopoverState): string {
-  const text = (draft.selectedText ?? draft.contextText).replace(/\s+/g, ' ').trim();
+  const text = (draft.selectedText ?? draft.contextText).replace(/\s+/g, " ").trim();
   return text.length > 60 ? `${text.slice(0, 60)}…` : text;
 }
 
@@ -52,7 +57,9 @@ export function CommentDraftBadges({
     const cs = getComputedStyle(container);
     const colLeft = parseFloat(cs.paddingLeft) || 0;
     const colRight = container.clientWidth - (parseFloat(cs.paddingRight) || 0);
-    const measured = layerRef.current?.querySelector<HTMLElement>('[data-comment-draft-badge]')?.offsetWidth;
+    const measured = layerRef.current?.querySelector<HTMLElement>(
+      "[data-comment-draft-badge]",
+    )?.offsetWidth;
     if (measured) widthRef.current = measured;
     const width = widthRef.current;
     const next: Placed[] = [];
@@ -60,14 +67,28 @@ export function CommentDraftBadges({
       const id: string | undefined = draft.source?.id;
       if (!id) continue;
       let doms: HTMLElement[] = [];
-      try { doms = (highlighter.getDoms(id) as HTMLElement[] | undefined) ?? []; } catch { doms = []; }
-      const rects = doms.filter((el) => el.isConnected).flatMap((el) => [...el.getClientRects()]).filter((r) => r.width > 0);
+      try {
+        doms = (highlighter.getDoms(id) as HTMLElement[] | undefined) ?? [];
+      } catch {
+        doms = [];
+      }
+      const rects = doms
+        .filter((el) => el.isConnected)
+        .flatMap((el) => [...el.getClientRects()])
+        .filter((r) => r.width > 0);
       if (!rects.length) continue;
       // The end of the words: the lowest line's rightmost piece.
       const bottom = Math.max(...rects.map((r) => r.bottom));
-      const last = rects.filter((r) => r.bottom >= bottom - 2).reduce((a, b) => (b.right > a.right ? b : a));
+      const last = rects
+        .filter((r) => r.bottom >= bottom - 2)
+        .reduce((a, b) => (b.right > a.right ? b : a));
       const left = Math.max(colLeft, Math.min(last.right - box.left - BACK, colRight - width));
-      next.push({ id, left: Math.round(left), top: Math.round(last.bottom - box.top - RISE), quote: quoteOf(draft) });
+      next.push({
+        id,
+        left: Math.round(left),
+        top: Math.round(last.bottom - box.top - RISE),
+        quote: quoteOf(draft),
+      });
     }
     setPlaced((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
   }, [containerRef, drafts, highlighterRef]);
@@ -76,18 +97,21 @@ export function CommentDraftBadges({
     place();
     const container = containerRef.current;
     if (!container) return;
-    window.addEventListener('resize', place);
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => place());
+    window.addEventListener("resize", place);
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => place());
     observer?.observe(container);
     void document.fonts?.ready.then(() => place());
     return () => {
-      window.removeEventListener('resize', place);
+      window.removeEventListener("resize", place);
       observer?.disconnect();
     };
   }, [containerRef, place]);
   // Measured once drawn: the real width keeps a badge at a line's end inside the column.
   useLayoutEffect(() => {
-    const measured = layerRef.current?.querySelector<HTMLElement>('[data-comment-draft-badge]')?.offsetWidth;
+    const measured = layerRef.current?.querySelector<HTMLElement>(
+      "[data-comment-draft-badge]",
+    )?.offsetWidth;
     if (measured && measured !== widthRef.current) place();
   }, [placed, place]);
   // Back from the comment a badge opened (Escape, the chevron): its badge is drawn anew, and focus, left on the page
@@ -98,7 +122,9 @@ export function CommentDraftBadges({
     openedFrom.current = null;
     const active = document.activeElement;
     if (active && active !== document.body) return;
-    layerRef.current?.querySelector<HTMLElement>(`[data-comment-draft-badge="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+    layerRef.current
+      ?.querySelector<HTMLElement>(`[data-comment-draft-badge="${CSS.escape(id)}"]`)
+      ?.focus({ preventScroll: true });
   }, [placed]);
 
   if (placed.length === 0) return null;
@@ -112,7 +138,11 @@ export function CommentDraftBadges({
           style={{ left: p.left, top: p.top }}
           data-comment-draft-badge={p.id}
           data-label="Draft"
-          aria-label={p.quote ? `Draft comment on “${p.quote}”, not sent. Open it` : 'Draft comment, not sent. Open it'}
+          aria-label={
+            p.quote
+              ? `Draft comment on “${p.quote}”, not sent. Open it`
+              : "Draft comment, not sent. Open it"
+          }
           title="Your comment, not sent. Open it"
           onPointerDown={(event) => event.stopPropagation()}
           onMouseDown={(event) => event.stopPropagation()}

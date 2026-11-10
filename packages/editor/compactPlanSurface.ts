@@ -1,4 +1,4 @@
-import type { SidebarTab } from '@dynotator/ui/hooks/useSidebar';
+import type { SidebarTab } from "@dynotator/ui/hooks/useSidebar";
 
 /**
  * The compact Plan shell presents one foreground task at a time. Navigator,
@@ -6,16 +6,16 @@ import type { SidebarTab } from '@dynotator/ui/hooks/useSidebar';
  * with it for horizontal space.
  */
 export type CompactPlanSurface =
-  | { readonly type: 'artifact' }
-  | { readonly type: 'navigator'; readonly tab: SidebarTab }
-  | { readonly type: 'annotations' }
-  | { readonly type: 'ai' }
-  | { readonly type: 'review' };
+  | { readonly type: "artifact" }
+  | { readonly type: "navigator"; readonly tab: SidebarTab }
+  | { readonly type: "annotations" }
+  | { readonly type: "ai" }
+  | { readonly type: "review" };
 
-export const COMPACT_PLAN_ARTIFACT: CompactPlanSurface = { type: 'artifact' };
+export const COMPACT_PLAN_ARTIFACT: CompactPlanSurface = { type: "artifact" };
 
 export function openCompactPlanNavigator(tab: SidebarTab): CompactPlanSurface {
-  return { type: 'navigator', tab };
+  return { type: "navigator", tab };
 }
 
 /**
@@ -28,7 +28,7 @@ export function toggleCompactPlanNavigator(
   surface: CompactPlanSurface,
   tab: SidebarTab,
 ): CompactPlanSurface {
-  if (surface.type === 'navigator' && surface.tab === tab) {
+  if (surface.type === "navigator" && surface.tab === tab) {
     return COMPACT_PLAN_ARTIFACT;
   }
   return openCompactPlanNavigator(tab);

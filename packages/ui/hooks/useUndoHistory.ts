@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef } from "react";
 import {
   createUndoHistoryState,
   recordUndoAction,
@@ -6,7 +6,7 @@ import {
   takeUndoAction,
   type HistoryDirection,
   type UndoHistoryState,
-} from '../utils/undoHistory';
+} from "../utils/undoHistory";
 
 /** Imperative bounded history API used by surface-specific command adapters. */
 export interface UndoHistoryApi<TAction> {
@@ -67,7 +67,8 @@ export function useUndoHistory<TAction>({
       replaceLast(expected, next) {
         const history = historyRef.current;
         const { past, future } = history.state;
-        if (past.length === 0 || past[past.length - 1] !== expected || future.length > 0) return false;
+        if (past.length === 0 || past[past.length - 1] !== expected || future.length > 0)
+          return false;
         history.state = {
           past: next === null ? past.slice(0, -1) : [...past.slice(0, -1), next],
           future,
@@ -79,7 +80,7 @@ export function useUndoHistory<TAction>({
         const step = takeUndoAction(history.state);
         if (step.action === null) return false;
         history.state = step.state;
-        optionsRef.current.apply(step.action, 'undo');
+        optionsRef.current.apply(step.action, "undo");
         return true;
       },
       redo() {
@@ -87,7 +88,7 @@ export function useUndoHistory<TAction>({
         const step = takeRedoAction(history.state, optionsRef.current.capacity);
         if (step.action === null) return false;
         history.state = step.state;
-        optionsRef.current.apply(step.action, 'redo');
+        optionsRef.current.apply(step.action, "redo");
         return true;
       },
       clear() {

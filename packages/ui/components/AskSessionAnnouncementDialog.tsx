@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { ExternalLink, Pause, Play } from 'lucide-react';
-import { prefersReducedMotion, XMark } from './TerminalToolsAnnouncementDialog';
-import type { AskSessionAgent } from '../utils/askSessionAnnouncement';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ExternalLink, Pause, Play } from "lucide-react";
+import { prefersReducedMotion, XMark } from "./TerminalToolsAnnouncementDialog";
+import type { AskSessionAgent } from "../utils/askSessionAnnouncement";
 
 /**
  * One-time announcement for "Ask this session": Ask AI is answered by the
@@ -24,24 +24,25 @@ import type { AskSessionAgent } from '../utils/askSessionAnnouncement';
  */
 
 /** The feature's docs page (goes live with the 0.28.0 release that ships this dialog). */
-export const ASK_SESSION_DOCS_URL = 'https://docs.plannotator.ai/open-source/workflows/ask-this-session';
+export const ASK_SESSION_DOCS_URL =
+  "https://docs.plannotator.ai/open-source/workflows/ask-this-session";
 
 /** The X post the footage was cut for. */
-export const ASK_SESSION_WATCH_URL = 'https://x.com/plannotator/status/2106875215170899992';
+export const ASK_SESSION_WATCH_URL = "https://x.com/plannotator/status/2106875215170899992";
 
 /** Same look as the terminal-tools announcement's outbound actions. */
 const OUTBOUND_ACTION_CLASS =
-  'inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-surface-0/40 px-3 text-sm font-medium text-foreground outline-none transition-colors motion-reduce:transition-none hover:bg-surface-1/70 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card';
+  "inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-surface-0/40 px-3 text-sm font-medium text-foreground outline-none transition-colors motion-reduce:transition-none hover:bg-surface-1/70 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card";
 
 /** Where the marketing deploy publishes `apps/marketing/public/assets/`. */
-const MEDIA_BASE_URL = 'https://plannotator.ai/assets';
+const MEDIA_BASE_URL = "https://plannotator.ai/assets";
 
 export const ASK_SESSION_DEMO = {
   mp4: `${MEDIA_BASE_URL}/ask-this-session-demo.mp4`,
   webm: `${MEDIA_BASE_URL}/ask-this-session-demo.webm`,
   poster: `${MEDIA_BASE_URL}/ask-this-session-poster.jpg`,
   description:
-    'A code review opened from Claude Code: two lines are selected and asked about in Plannotator, the question arrives in the Claude Code session, and its answer streams back into the Ask AI panel. Then a comment is sent and arrives in Claude Code as a message.',
+    "A code review opened from Claude Code: two lines are selected and asked about in Plannotator, the question arrives in the Claude Code session, and its answer streams back into the Ask AI panel. Then a comment is sent and arrives in Claude Code as a message.",
 } as const;
 
 /** The footage is 1280x800. */
@@ -54,17 +55,18 @@ interface AgentCopy {
 }
 
 const AGENT_COPY: Record<AskSessionAgent, AgentCopy> = {
-  'claude-code': {
-    name: 'Claude Code',
-    freeLine: 'Claude Code stays free while you review, and your decision arrives as a message.',
+  "claude-code": {
+    name: "Claude Code",
+    freeLine: "Claude Code stays free while you review, and your decision arrives as a message.",
   },
   pi: {
-    name: 'Pi',
-    freeLine: 'Pi stays free while you review, and your decision arrives as a message.',
+    name: "Pi",
+    freeLine: "Pi stays free while you review, and your decision arrives as a message.",
   },
   opencode: {
-    name: 'OpenCode',
-    freeLine: 'Code review and annotate no longer hold the session, and your feedback arrives as a message.',
+    name: "OpenCode",
+    freeLine:
+      "Code review and annotate no longer hold the session, and your feedback arrives as a message.",
   },
 };
 
@@ -147,12 +149,12 @@ function DemoPlayer({ reducedMotion }: { readonly reducedMotion: boolean }) {
         <button
           type="button"
           onClick={toggle}
-          aria-label={playing ? 'Pause demo' : 'Play demo'}
-          data-ask-session-playback={playing ? 'pause' : 'play'}
+          aria-label={playing ? "Pause demo" : "Play demo"}
+          data-ask-session-playback={playing ? "pause" : "play"}
           className={
             playing
-              ? 'absolute bottom-3 left-3 grid size-9 place-items-center rounded-full border border-border/60 bg-background/70 text-foreground opacity-0 outline-none backdrop-blur-sm transition-opacity motion-reduce:transition-none group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:ring-2 focus-visible:ring-primary'
-              : 'absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-border/60 bg-background/80 text-foreground shadow-lg outline-none backdrop-blur-sm transition-transform motion-reduce:transition-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-primary'
+              ? "absolute bottom-3 left-3 grid size-9 place-items-center rounded-full border border-border/60 bg-background/70 text-foreground opacity-0 outline-none backdrop-blur-sm transition-opacity motion-reduce:transition-none group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:ring-2 focus-visible:ring-primary"
+              : "absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-border/60 bg-background/80 text-foreground shadow-lg outline-none backdrop-blur-sm transition-transform motion-reduce:transition-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-primary"
           }
         >
           {playing ? (
@@ -186,13 +188,12 @@ export function AskSessionAnnouncementDialog({
   useEffect(() => {
     if (!isOpen) return;
 
-    previousFocusRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dismissRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
         onDismissRef.current();
@@ -202,18 +203,19 @@ export function AskSessionAnnouncementDialog({
       // handler. This listener runs on the capture phase, so swallowing the
       // chord here stops a keystroke aimed at the announcement from approving
       // a plan or posting a review behind it.
-      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (event.key !== "Tab") return;
 
-      const dialog = document.querySelector<HTMLElement>('[data-ask-session-announcement-dialog]');
+      const dialog = document.querySelector<HTMLElement>("[data-ask-session-announcement-dialog]");
       const focusable = Array.from(
-        dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')
-          ?? [],
-      ).filter((element) => element.getAttribute('tabindex') !== '-1');
+        dialog?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => element.getAttribute("tabindex") !== "-1");
       if (focusable.length === 0) return;
 
       const first = focusable[0];
@@ -227,9 +229,9 @@ export function AskSessionAnnouncementDialog({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener("keydown", handleKeyDown, true);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener("keydown", handleKeyDown, true);
       previousFocusRef.current?.focus();
       previousFocusRef.current = null;
     };

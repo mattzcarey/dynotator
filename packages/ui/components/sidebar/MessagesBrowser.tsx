@@ -83,14 +83,8 @@ export const MessagesBrowser: React.FC<MessagesBrowserProps> = ({
                 {isDefault ? " ★" : ""}
               </span>
               <span className="flex-1 min-w-0">
-                <span className="line-clamp-2 leading-snug">
-                  {previewText(msg.text)}
-                </span>
-                {ts && (
-                  <span className="block text-[10px] text-muted-foreground mt-0.5">
-                    {ts}
-                  </span>
-                )}
+                <span className="line-clamp-2 leading-snug">{previewText(msg.text)}</span>
+                {ts && <span className="block text-[10px] text-muted-foreground mt-0.5">{ts}</span>}
               </span>
               {annotationCount > 0 && (
                 <span

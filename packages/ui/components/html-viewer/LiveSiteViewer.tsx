@@ -21,8 +21,18 @@ import { forwardRef, useCallback, useState } from "react";
 import { HtmlViewer, type HtmlViewerProps } from "./HtmlViewer";
 import { AnnotationType, type Annotation } from "../../types";
 
-export interface LiveSiteViewerProps
-  extends Omit<HtmlViewerProps, "rawHtml" | "src" | "liveSession" | "currentPageUrl" | "onPageChange" | "fullViewport" | "inputMethod" | "vimModeEnabled" | "onOpenLink"> {
+export interface LiveSiteViewerProps extends Omit<
+  HtmlViewerProps,
+  | "rawHtml"
+  | "src"
+  | "liveSession"
+  | "currentPageUrl"
+  | "onPageChange"
+  | "fullViewport"
+  | "inputMethod"
+  | "vimModeEnabled"
+  | "onOpenLink"
+> {
   /**
    * What the frame loads: the proxy's URL (host's localhost spelling, the
    * target's path and query), or, with `liveNested`, the host's same-origin
@@ -56,7 +66,11 @@ export const LiveSiteViewer = forwardRef<unknown, LiveSiteViewerProps>(function 
   );
   const add = useCallback(
     (annotation: Annotation) =>
-      onAddAnnotation(pageUrl && annotation.type !== AnnotationType.GLOBAL_COMMENT ? { ...annotation, pageUrl } : annotation),
+      onAddAnnotation(
+        pageUrl && annotation.type !== AnnotationType.GLOBAL_COMMENT
+          ? { ...annotation, pageUrl }
+          : annotation,
+      ),
     [onAddAnnotation, pageUrl],
   );
   return (
@@ -65,7 +79,9 @@ export const LiveSiteViewer = forwardRef<unknown, LiveSiteViewerProps>(function 
       ref={ref as never}
       rawHtml=""
       src={appUrl}
-      liveSession={liveNested ? { origin: proxyOrigin, token, nested: true } : { origin: proxyOrigin, token }}
+      liveSession={
+        liveNested ? { origin: proxyOrigin, token, nested: true } : { origin: proxyOrigin, token }
+      }
       currentPageUrl={pageUrl}
       onPageChange={onPage}
       onAddAnnotation={add}

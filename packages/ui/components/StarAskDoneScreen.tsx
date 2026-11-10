@@ -17,30 +17,34 @@
  * closes on the decision). The card's button is always the plain link here: starring with gh needs the server, which
  * stops right after (the Inbox stars with gh).
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { getAutoCloseDelay } from '../utils/storage';
-import { StarAskCard } from './StarAskCard';
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { getAutoCloseDelay } from "../utils/storage";
+import { StarAskCard } from "./StarAskCard";
 
 export interface StarAskClient {
   /** At load: may the ask show later? Nothing is used up. */
   claim(): Promise<{ show: boolean; can_star: boolean }>;
   /** At the decision: the card draws now (stamped); `show: false` draws nothing. */
   shown(): Promise<{ show: boolean }>;
-  answer(answer: 'not-now' | 'opened'): Promise<unknown>;
+  answer(answer: "not-now" | "opened"): Promise<unknown>;
 }
 
 async function post<T>(path: string, body: unknown = {}): Promise<T> {
-  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
   if (!res.ok) throw new Error(`${path}: ${res.status}`);
   return (await res.json()) as T;
 }
 
 /** The plan, review and annotate servers' routes (both runtimes). */
 export const starAskHttpClient: StarAskClient = {
-  claim: () => post('/api/star-ask/claim'),
-  shown: () => post('/api/star-ask/shown'),
+  claim: () => post("/api/star-ask/claim"),
+  shown: () => post("/api/star-ask/shown"),
   // Best effort: the server has usually stopped by the time the person answers; the stamp already recorded the show.
-  answer: (answer) => post('/api/star-ask/answer', { answer }).catch(() => undefined),
+  answer: (answer) => post("/api/star-ask/answer", { answer }).catch(() => undefined),
 };
 
 export interface StarAskDoneScreenInput {
@@ -60,7 +64,13 @@ export interface StarAskDoneScreenInput {
  * The card for the done screen, or null. Claims (checks) once per page, when `ready` and `eligible` first hold with
  * auto-close off; at the decision, if the claim said it may show, stamps it and draws the card.
  */
-export function useStarAskDoneScreen({ ready, eligible, decided, client = starAskHttpClient, autoCloseDelay = getAutoCloseDelay }: StarAskDoneScreenInput): ReactNode | null {
+export function useStarAskDoneScreen({
+  ready,
+  eligible,
+  decided,
+  client = starAskHttpClient,
+  autoCloseDelay = getAutoCloseDelay,
+}: StarAskDoneScreenInput): ReactNode | null {
   const [mayShow, setMayShow] = useState(false);
   const [shown, setShown] = useState(false);
   const [gone, setGone] = useState(false);
@@ -75,7 +85,7 @@ export function useStarAskDoneScreen({ ready, eligible, decided, client = starAs
     if (!ready || !eligible || asked.current) return;
     asked.current = true;
     // Auto-close on: the tab closes on the decision, so it never asks.
-    if (closeDelay.current() !== 'off') return;
+    if (closeDelay.current() !== "off") return;
     api.current
       .claim()
       .then((answer) => {
@@ -88,7 +98,7 @@ export function useStarAskDoneScreen({ ready, eligible, decided, client = starAs
     if (!decided || !eligible || !mayShow || stamped.current) return;
     stamped.current = true;
     // Auto-close turned on during the review: the tab closes now, so nothing is used up.
-    if (closeDelay.current() !== 'off') return;
+    if (closeDelay.current() !== "off") return;
     api.current
       .shown()
       .then((answer) => {

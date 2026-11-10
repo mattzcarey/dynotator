@@ -24,10 +24,10 @@ export type DocumentTextSize = (typeof DOCUMENT_TEXT_SIZE_OPTIONS)[number];
 export const DEFAULT_DOCUMENT_TEXT_SIZE: DocumentTextSize = 15;
 
 /** The attribute index.css keys on; present only away from the default. */
-export const DOCUMENT_TEXT_SIZE_ATTRIBUTE = 'data-doc-text-size';
+export const DOCUMENT_TEXT_SIZE_ATTRIBUTE = "data-doc-text-size";
 
 /** The multiplier index.css scales by (size / 15). */
-export const DOCUMENT_TEXT_SCALE_PROPERTY = '--doc-text-scale';
+export const DOCUMENT_TEXT_SCALE_PROPERTY = "--doc-text-scale";
 
 /** Only an offered step is a size; anything else reads as the default. */
 export function isDocumentTextSize(value: unknown): value is DocumentTextSize {

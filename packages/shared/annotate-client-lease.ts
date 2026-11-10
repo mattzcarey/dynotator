@@ -91,7 +91,8 @@ export function createAnnotateClientLeaseTracker(
 ): AnnotateClientLeaseTracker {
   const graceMs = options.graceMs ?? ANNOTATE_CLIENT_LEASE_GRACE_MS;
   const setTimer = options.setTimer ?? ((callback, ms) => setTimeout(callback, ms));
-  const clearTimer = options.clearTimer ?? ((handle) => clearTimeout(handle as ReturnType<typeof setTimeout>));
+  const clearTimer =
+    options.clearTimer ?? ((handle) => clearTimeout(handle as ReturnType<typeof setTimeout>));
 
   let active = 0;
   let cancelled = false;

@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   canonicalQuestionAnswer,
   emptyQuestionAnswer,
@@ -10,12 +10,12 @@ import {
   type ParsedQuestion,
   type QuestionAnswer,
   type QuestionStatus,
-} from '@dynotator/core/question-block';
-import { InlineMarkdown } from '../InlineMarkdown';
-import { QuestionContext } from './QuestionContext';
-import { HostTitle } from '../HostTitle';
-import { UNAVAILABLE_IMAGE_CLASS, useImageResolver } from '../ImageResolverContext';
-import { getImageSrc } from '../ImageThumbnail';
+} from "@dynotator/core/question-block";
+import { InlineMarkdown } from "../InlineMarkdown";
+import { QuestionContext } from "./QuestionContext";
+import { HostTitle } from "../HostTitle";
+import { UNAVAILABLE_IMAGE_CLASS, useImageResolver } from "../ImageResolverContext";
+import { getImageSrc } from "../ImageThumbnail";
 import {
   questionChoiceWords,
   questionPictureShape,
@@ -23,7 +23,7 @@ import {
   readQuestionPictureSize,
   type QuestionPictureShape,
   type QuestionPictureSize,
-} from './questionPictureLayout';
+} from "./questionPictureLayout";
 
 /**
  * A `:::question` block rendered as an answer card (the approved "Card"
@@ -87,13 +87,13 @@ const DOUBLE_CLICK_REVERT_MS = 800;
  */
 let lastRowClick: EventTarget | null = null;
 
-const now = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+const now = (): number => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 /** The double-click guard's name for the recommended row (never a label: it
  *  holds a character no choice label can). */
-const SUGGESTION_ROW = '\u0000suggestion';
+const SUGGESTION_ROW = "\u0000suggestion";
 
-const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
+const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(" ");
 
 /** The box every pill in the eyebrow shares (the status tags, the decision
  *  tags, the toggle and the split tag): one height, one line-height, and a
@@ -104,17 +104,23 @@ const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(
  *  `align-[1px]` does nothing inside that flex row; it stays because it is
  *  the only use of the class, and dropping it would change the stylesheet
  *  the guides.show viewer pins (a deploy for no visible change). */
-const PILL = 'annotation-exclude select-none inline-flex h-[18px] items-center gap-1 whitespace-nowrap rounded border px-1.5 align-[1px] text-[10.5px] font-semibold leading-4 tracking-[0.03em]';
+const PILL =
+  "annotation-exclude select-none inline-flex h-[18px] items-center gap-1 whitespace-nowrap rounded border px-1.5 align-[1px] text-[10.5px] font-semibold leading-4 tracking-[0.03em]";
 
-const Tag: React.FC<{ tone: 'rec' | 'ok' | 'skip' | 'open' | 'warn'; children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({ tone, children, className, style }) => (
+const Tag: React.FC<{
+  tone: "rec" | "ok" | "skip" | "open" | "warn";
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ tone, children, className, style }) => (
   <span
     className={cx(
       PILL,
-      tone === 'rec' && 'border-transparent bg-primary/15 text-primary',
-      tone === 'ok' && 'border-transparent bg-success/15 text-success',
-      tone === 'skip' && 'border-transparent bg-muted text-muted-foreground',
-      tone === 'open' && 'border-dashed border-border text-muted-foreground',
-      tone === 'warn' && 'border-transparent bg-warning/15 text-warning',
+      tone === "rec" && "border-transparent bg-primary/15 text-primary",
+      tone === "ok" && "border-transparent bg-success/15 text-success",
+      tone === "skip" && "border-transparent bg-muted text-muted-foreground",
+      tone === "open" && "border-dashed border-border text-muted-foreground",
+      tone === "warn" && "border-transparent bg-warning/15 text-warning",
       className,
     )}
     style={style}
@@ -126,32 +132,78 @@ const Tag: React.FC<{ tone: 'rec' | 'ok' | 'skip' | 'open' | 'warn'; children: R
 );
 
 const CheckGlyph = () => (
-  <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+  <svg
+    viewBox="0 0 16 16"
+    width="10"
+    height="10"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    aria-hidden="true"
+  >
     <path d="m3.5 8.5 3 3 6-7" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const ChevronRightGlyph = () => (
-  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" className="shrink-0 transition-transform duration-150 ease-out group-aria-expanded:rotate-90 motion-reduce:transition-none">
+  <svg
+    viewBox="0 0 16 16"
+    width="12"
+    height="12"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    aria-hidden="true"
+    className="shrink-0 transition-transform duration-150 ease-out group-aria-expanded:rotate-90 motion-reduce:transition-none"
+  >
     <path d="m6 3.5 4.5 4.5L6 12.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const DiamondGlyph = () => (
-  <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="shrink-0">
-    <path d="M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41l-7.59-7.59a2.41 2.41 0 0 0-3.41 0Z" strokeLinejoin="round" />
+  <svg
+    viewBox="0 0 24 24"
+    width="10"
+    height="10"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden="true"
+    className="shrink-0"
+  >
+    <path
+      d="M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41l-7.59-7.59a2.41 2.41 0 0 0-3.41 0Z"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
 const ZoomGlyph = () => (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width="14"
+    height="14"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden="true"
+  >
     <circle cx="11" cy="11" r="7" />
     <path d="m20 20-3.5-3.5M11 8v6M8 11h6" strokeLinecap="round" />
   </svg>
 );
 
 const PictureGlyph = () => (
-  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="shrink-0">
+  <svg
+    viewBox="0 0 24 24"
+    width="12"
+    height="12"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden="true"
+    className="shrink-0"
+  >
     <rect x="3" y="4" width="18" height="16" rx="2" />
     <path d="m3 16 5-5 4 4 3-3 6 6" strokeLinejoin="round" />
   </svg>
@@ -167,10 +219,10 @@ const PictureGlyph = () => (
  *  that must stay at full strength. Inline so it adds no utility classes to
  *  the shared stylesheet and wins over the tag's `text-primary`. */
 const DECISION_OFF_STYLE: React.CSSProperties = {
-  background: 'transparent',
-  color: 'color-mix(in oklab, var(--muted-foreground) 55%, transparent)',
-  outline: '1px dotted currentColor',
-  outlineOffset: '-1px',
+  background: "transparent",
+  color: "color-mix(in oklab, var(--muted-foreground) 55%, transparent)",
+  outline: "1px dotted currentColor",
+  outlineOffset: "-1px",
 };
 
 /**
@@ -199,16 +251,21 @@ const DECISION_OFF_STYLE: React.CSSProperties = {
  *   has no row gap, so a footer that fits is unchanged.
  * A footer that fits on one row draws exactly as before, on any pointer.
  */
-const FOOT_BUTTON = "whitespace-nowrap pointer-coarse:relative pointer-coarse:before:absolute pointer-coarse:before:left-1/2 pointer-coarse:before:top-1/2 pointer-coarse:before:h-11 pointer-coarse:before:w-full pointer-coarse:before:min-w-11 pointer-coarse:before:-translate-x-1/2 pointer-coarse:before:-translate-y-1/2 pointer-coarse:before:content-['']";
-const FOOT_FIT = '@max-[10rem]/qcard:max-w-full @max-[10rem]/qcard:overflow-hidden @max-[10rem]/qcard:text-ellipsis';
-const FOOT_OWN_ROW = '@max-[10rem]/qcard:basis-full';
+const FOOT_BUTTON =
+  "whitespace-nowrap pointer-coarse:relative pointer-coarse:before:absolute pointer-coarse:before:left-1/2 pointer-coarse:before:top-1/2 pointer-coarse:before:h-11 pointer-coarse:before:w-full pointer-coarse:before:min-w-11 pointer-coarse:before:-translate-x-1/2 pointer-coarse:before:-translate-y-1/2 pointer-coarse:before:content-['']";
+const FOOT_FIT =
+  "@max-[10rem]/qcard:max-w-full @max-[10rem]/qcard:overflow-hidden @max-[10rem]/qcard:text-ellipsis";
+const FOOT_OWN_ROW = "@max-[10rem]/qcard:basis-full";
 
 /** Two answers say the same thing (identity and line ignored). */
-const sameAnswer = (a: QuestionAnswer | null | undefined, b: QuestionAnswer | null | undefined): boolean => {
+const sameAnswer = (
+  a: QuestionAnswer | null | undefined,
+  b: QuestionAnswer | null | undefined,
+): boolean => {
   const norm = (x: QuestionAnswer | null | undefined) =>
     !x || isQuestionAnswerEmpty(x)
-      ? ''
-      : JSON.stringify([x.selected, x.other ?? '', x.text ?? '', x.note ?? '', !!x.skipped]);
+      ? ""
+      : JSON.stringify([x.selected, x.other ?? "", x.text ?? "", x.note ?? "", !!x.skipped]);
   return norm(a) === norm(b);
 };
 
@@ -250,7 +307,7 @@ export interface QuestionBlockProps {
    *  `'when-answered'` (default, the 0.52.0 behaviour): only a question that
    *  carries `Decision: when answered`. `'any'`: also a question with no
    *  decision line, once the host passes a `decisionRecording` for it. */
-  decisionScope?: 'when-answered' | 'any';
+  decisionScope?: "when-answered" | "any";
   /** Makes the "Records a decision" tag a toggle button (`aria-pressed`):
    *  a click calls this with the question's key and the next state. The host
    *  stores it and passes it back as `decisionRecording`. Not offered in a
@@ -268,12 +325,15 @@ export interface QuestionBlockProps {
   /** `'none'` hides the card's own status tag (Open / Answered / Settled /
    *  Skipped) so the host can draw its own; the decision tags stay. Default
    *  `'card'`. */
-  statusTag?: 'card' | 'none';
+  statusTag?: "card" | "none";
   /** The host's own words for the card's status tag, per question (ui seam;
    *  the Plannotator Inbox says "Not sent" for a pick it has saved but not
    *  sent, where the card would say "Answered"). Return undefined for the
    *  card's own tag. Absent: today's tags. Ignored with `statusTag: 'none'`. */
-  statusLabel?: (question: IndexedQuestion, status: QuestionStatus) => QuestionStatusLabel | undefined;
+  statusLabel?: (
+    question: IndexedQuestion,
+    status: QuestionStatus,
+  ) => QuestionStatusLabel | undefined;
   /** Host content drawn right under the prompt (a host note such as "Replaces
    *  <an earlier question>"), given the question. Return null for none.
    *  Absent: nothing is drawn there (today's card). */
@@ -314,29 +374,33 @@ export interface QuestionBlockProps {
 
 /** The picture tile's label (`pictureBadge`): a small dark chip over the picture's top-left corner. */
 const PICTURE_BADGE_STYLE: React.CSSProperties = {
-  position: 'absolute',
+  position: "absolute",
   left: 6,
   top: 6,
   zIndex: 1,
-  pointerEvents: 'none',
+  pointerEvents: "none",
   borderRadius: 4,
-  background: 'rgb(0 0 0 / 0.6)',
-  color: 'white',
-  padding: '0 6px',
+  background: "rgb(0 0 0 / 0.6)",
+  color: "white",
+  padding: "0 6px",
   fontSize: 10.5,
   fontWeight: 600,
-  lineHeight: '18px',
-  letterSpacing: '0.02em',
+  lineHeight: "18px",
+  letterSpacing: "0.02em",
 };
 
 /** A host's status tag (`statusLabel`): its words, and the tone of one of the card's own tags (default `open`). */
 export interface QuestionStatusLabel {
   label: string;
-  tone?: 'ok' | 'open' | 'skip';
+  tone?: "ok" | "open" | "skip";
 }
 
 /** The choices as they are, or (a host's `renderAfterChoices` drew something) in a tray box with that content right after it. */
-const TrayIf: React.FC<{ on: boolean; after: React.ReactNode; children: React.ReactNode }> = ({ on, after, children }) =>
+const TrayIf: React.FC<{ on: boolean; after: React.ReactNode; children: React.ReactNode }> = ({
+  on,
+  after,
+  children,
+}) =>
   on ? (
     <div className="mt-2.5" data-question-tray-host="">
       <div data-question-tray="">{children}</div>
@@ -356,10 +420,10 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   saveLabel,
   renderFooter,
   decisionRecording,
-  decisionScope = 'when-answered',
+  decisionScope = "when-answered",
   onToggleDecisionRecording,
   onOpenDecision,
-  statusTag = 'card',
+  statusTag = "card",
   statusLabel,
   renderBelowPrompt,
   renderAfterChoices,
@@ -382,8 +446,8 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   // it cannot be shown.
   const pictureSrc = (src: string): string | null => {
     const resolved = resolveImage ? resolveImage(src) : null;
-    if (resolved?.kind === 'unavailable') return null;
-    if (resolved?.kind === 'src') return resolved.src;
+    if (resolved?.kind === "unavailable") return null;
+    if (resolved?.kind === "src") return resolved.src;
     return /^(https?:\/\/|data:|blob:)/i.test(src) ? src : getImageSrc(src, imageBaseDir);
   };
   // The host's reason a picture is not shown (its resolver's `unavailable`
@@ -392,18 +456,21 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   // Markdown preview: "N remote images held · Load remote images").
   const pictureHeldTitle = (src: string): string | null => {
     const resolved = resolveImage ? resolveImage(src) : null;
-    return resolved?.kind === 'unavailable' ? resolved.title : null;
+    return resolved?.kind === "unavailable" ? resolved.title : null;
   };
   const heldPlaceholder = (src: string, alt: string) => {
     const title = pictureHeldTitle(src);
     return title === null ? null : (
-      <span className={UNAVAILABLE_IMAGE_CLASS} title={title} data-image-unavailable="">{alt || 'Image'}</span>
+      <span className={UNAVAILABLE_IMAGE_CLASS} title={title} data-image-unavailable="">
+        {alt || "Image"}
+      </span>
     );
   };
   // Pictures that failed to load (by the URL tried): a tile shows its alt
   // text instead, and with none left the choices are text rows.
   const [failedPictures, setFailedPictures] = useState<ReadonlySet<string>>(() => new Set());
-  const markPictureFailed = (url: string) => setFailedPictures((prev) => (prev.has(url) ? prev : new Set([...prev, url])));
+  const markPictureFailed = (url: string) =>
+    setFailedPictures((prev) => (prev.has(url) ? prev : new Set([...prev, url])));
   // An answer saved under an older label of a choice (0.28.1 read a wrapped
   // plain bullet's first line as its label) shows that choice picked; the
   // next edit stores the current label.
@@ -418,7 +485,8 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   // The Trade-offs table (option lines' Pros and Cons): closed until the person opens it.
   const [tradeoffsOpen, setTradeoffsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const answer: QuestionAnswer | undefined = saveMode && draft ? draft.answer ?? undefined : savedAnswer;
+  const answer: QuestionAnswer | undefined =
+    saveMode && draft ? (draft.answer ?? undefined) : savedAnswer;
   const dirty = saveMode && !!draft && !sameAnswer(draft.answer, savedAnswer);
   // Every edit goes through here: straight to the host in live mode, into the
   // draft in save mode.
@@ -435,7 +503,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
     const next = draft.answer && !isQuestionAnswerEmpty(draft.answer) ? draft.answer : null;
     const submitted = draft;
     const result = onSaveAnswer(question.key, next);
-    if (result && typeof (result as Promise<unknown>).then === 'function') {
+    if (result && typeof (result as Promise<unknown>).then === "function") {
       setSaving(true);
       (result as Promise<unknown>).then(
         () => {
@@ -456,10 +524,11 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
     setNotePinned(null);
   };
   const hostFooter = renderFooter?.(indexed, savedAnswer);
-  const afterChoices = question.kind === 'text' ? null : renderAfterChoices?.(indexed);
-  const hasAfterChoices = afterChoices !== null && afterChoices !== undefined && afterChoices !== false;
+  const afterChoices = question.kind === "text" ? null : renderAfterChoices?.(indexed);
+  const hasAfterChoices =
+    afterChoices !== null && afterChoices !== undefined && afterChoices !== false;
   const hasHostFooter = hostFooter !== null && hostFooter !== undefined && hostFooter !== false;
-  const uid = useId().replace(/:/g, '');
+  const uid = useId().replace(/:/g, "");
   const tradeoffsId = `q-tradeoffs-${uid}`;
   const promptId = `q-prompt-${uid}`;
   const contextId = `q-context-${uid}`;
@@ -475,14 +544,18 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   // Accept recommended goes away once clicked: focus moves to what
   // the click filled in, never to the page.
   const focusAfterAcceptRef = useRef(false);
-  const lastPickRef = useRef<{ label: string; before: QuestionAnswer | undefined; at: number } | null>(null);
+  const lastPickRef = useRef<{
+    label: string;
+    before: QuestionAnswer | undefined;
+    at: number;
+  } | null>(null);
   // Who set the "Other…" answer while this card was open: the recommended
   // row (its pick, or Accept recommended) or the Other field. null: neither
   // (an answer the host stored): an Other answer that is exactly the agent's
   // text then reads as the row, unless the Other field has focus. Typing
   // never turns into the row, so "Yes, but slower" stays in the field when
   // the recommendation is "Yes".
-  const [otherBy, setOtherBy] = useState<'row' | 'field' | null>(null);
+  const [otherBy, setOtherBy] = useState<"row" | "field" | null>(null);
   const [otherFocused, setOtherFocused] = useState(false);
   // Pick any: the reviewer's own Other text the recommended row replaced when
   // ticked, put back when it is unticked (the answer has one Other field).
@@ -504,10 +577,10 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   // A note alone does not change a settled choice: the [x] stays drawn (and
   // the status stays Settled) until the reviewer picks, fills Other or skips.
   const status = questionStatus(question, answer);
-  const hostStatus = statusTag === 'none' ? undefined : statusLabel?.(indexed, status);
-  const answered = status === 'answered';
-  const skipped = status === 'skipped';
-  const settled = status === 'settled';
+  const hostStatus = statusTag === "none" ? undefined : statusLabel?.(indexed, status);
+  const answered = status === "answered";
+  const skipped = status === "skipped";
+  const settled = status === "settled";
   const settledLabels = question.choices.filter((c) => c.settled).map((c) => c.label);
   const hasRecommendation = question.choices.some((c) => c.recommended) || !!question.suggestedText;
   // "Accept recommended" stays offered on a pick-any question whose
@@ -517,17 +590,19 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   // choice, and a pick-any question recommending only its own answer (the
   // recommended row after the choices: Accept would clear the ticks for it,
   // and the row is one click anyway) offer it no more.
-  const offerAccept = !readOnly && hasRecommendation && !settled && (
-    !answered
-    || (question.kind === 'multi'
-      && question.choices.some((c) => c.recommended)
-      && !question.choices.some((c) => c.settled)
-      && !isRecommendedQuestionAnswer(
-        answer!,
-        question.choices.filter((c) => c.recommended).map((c) => c.label),
-        question.suggestedText,
-      ))
-  );
+  const offerAccept =
+    !readOnly &&
+    hasRecommendation &&
+    !settled &&
+    (!answered ||
+      (question.kind === "multi" &&
+        question.choices.some((c) => c.recommended) &&
+        !question.choices.some((c) => c.settled) &&
+        !isRecommendedQuestionAnswer(
+          answer!,
+          question.choices.filter((c) => c.recommended).map((c) => c.label),
+          question.suggestedText,
+        )));
   const selected = answered || skipped ? answer!.selected : settledLabels;
   const base = answer ?? emptyQuestionAnswer(indexed);
 
@@ -539,7 +614,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   const pick = (label: string, checked: boolean) => {
     lastPickRef.current = { label, before: answer, at: now() };
     const { skipped: _s, ...rest } = base;
-    if (question.kind === 'multi') {
+    if (question.kind === "multi") {
       const nextSelected = checked
         ? [...selected.filter((l) => l !== label), label]
         : selected.filter((l) => l !== label);
@@ -563,29 +638,29 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
     if (!text) return;
     lastPickRef.current = { label: SUGGESTION_ROW, before: answer, at: now() };
     const { skipped: _s, other: _o, ...rest } = base;
-    if (question.kind === 'multi') {
+    if (question.kind === "multi") {
       if (checked) {
         if (!suggestionPicked) replacedOtherRef.current = storedOther.trim() ? storedOther : null;
-        setOtherBy('row');
+        setOtherBy("row");
         commit({ ...rest, selected, other: text });
       } else {
         const back = replacedOtherRef.current;
         replacedOtherRef.current = null;
-        setOtherBy(back ? 'field' : null);
+        setOtherBy(back ? "field" : null);
         commit({ ...rest, selected, ...(back ? { other: back } : {}) });
       }
     } else if (checked) {
       replacedOtherRef.current = null;
-      setOtherBy('row');
+      setOtherBy("row");
       commit({ ...rest, selected: [], other: text });
     }
   };
 
   const setOther = (value: string) => {
-    setOtherBy('field');
+    setOtherBy("field");
     replacedOtherRef.current = null;
     const { skipped: _s, other: _o, ...rest } = base;
-    const keepSelected = question.kind === 'multi' ? selected : value.trim() ? [] : rest.selected;
+    const keepSelected = question.kind === "multi" ? selected : value.trim() ? [] : rest.selected;
     commit({ ...rest, selected: keepSelected, ...(value ? { other: value } : {}) });
   };
 
@@ -614,7 +689,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
     const next = recommendedQuestionAnswer(indexed, base);
     if (!next) return;
     replacedOtherRef.current = null;
-    if (next.other) setOtherBy('row');
+    if (next.other) setOtherBy("row");
     focusAfterAcceptRef.current = true;
     commit(next);
   };
@@ -629,8 +704,9 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
     // Focus still on something in the card (the button was not removed): leave it.
     const active = document.activeElement;
     if (active && active !== document.body && card.contains(active)) return;
-    const target = card.querySelector<HTMLElement>('input:checked:not(:disabled)')
-      ?? card.querySelector<HTMLElement>('textarea:not(:disabled), input[type="text"]:not(:disabled)');
+    const target =
+      card.querySelector<HTMLElement>("input:checked:not(:disabled)") ??
+      card.querySelector<HTMLElement>('textarea:not(:disabled), input[type="text"]:not(:disabled)');
     target?.focus({ preventScroll: true });
   });
 
@@ -644,7 +720,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   // cancelling the click is what keeps a text drag from also picking. It runs
   // in the capture phase so the cancel lands before any label activation.
   const onRowPointerDown = (event: React.PointerEvent) => {
-    pressRef.current = { x: event.clientX, y: event.clientY, touch: event.pointerType === 'touch' };
+    pressRef.current = { x: event.clientX, y: event.clientY, touch: event.pointerType === "touch" };
   };
   const onRowClick = (event: React.MouseEvent, label: string) => {
     const press = pressRef.current;
@@ -668,33 +744,36 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
     }
     const limit = press?.touch ? DRAG_THRESHOLD_TOUCH : DRAG_THRESHOLD_MOUSE;
     const moved = !!press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > limit;
-    const selection = typeof window !== 'undefined' ? window.getSelection() : null;
-    const selecting = !!selection && !selection.isCollapsed && selection.toString().trim() !== '';
+    const selection = typeof window !== "undefined" ? window.getSelection() : null;
+    const selecting = !!selection && !selection.isCollapsed && selection.toString().trim() !== "";
     if (moved || selecting) event.preventDefault();
   };
 
-  const eyebrow = number > 0
-    ? `Question ${number} of ${total}${question.kind === 'multi' ? ' · pick any' : ''}`
-    : `Question${question.kind === 'multi' ? ' · pick any' : ''}`;
+  const eyebrow =
+    number > 0
+      ? `Question ${number} of ${total}${question.kind === "multi" ? " · pick any" : ""}`
+      : `Question${question.kind === "multi" ? " · pick any" : ""}`;
   const groupName = `question-${uid}`;
-  const inputType = question.kind === 'multi' ? 'checkbox' : 'radio';
-  const storedOther = answer?.other ?? '';
+  const inputType = question.kind === "multi" ? "checkbox" : "radio";
+  const storedOther = answer?.other ?? "";
   // The recommended row holds the "Other…" answer when it is the agent's
   // text; the Other field is then empty (typing there replaces it).
-  const suggestionRow = question.kind !== 'text' && !!question.suggestedText;
-  const suggestionPicked = suggestionRow
-    && storedOther.trim() !== ''
-    && storedOther.trim() === question.suggestedText!.trim()
-    && (otherBy === 'row' || (otherBy === null && !otherFocused));
-  const other = suggestionPicked ? '' : storedOther;
-  const otherOn = other.trim() !== '';
+  const suggestionRow = question.kind !== "text" && !!question.suggestedText;
+  const suggestionPicked =
+    suggestionRow &&
+    storedOther.trim() !== "" &&
+    storedOther.trim() === question.suggestedText!.trim() &&
+    (otherBy === "row" || (otherBy === null && !otherFocused));
+  const other = suggestionPicked ? "" : storedOther;
+  const otherOn = other.trim() !== "";
   // Picture choices: each choice's picture URL (null: none, or not shown).
   const pictures = question.choices.map((c) => (c.image ? pictureSrc(c.image.src) : null));
-  const showTiles = pictureChoices
-    && question.kind !== 'text'
-    && pictures.some((url) => url !== null && !failedPictures.has(url));
+  const showTiles =
+    pictureChoices &&
+    question.kind !== "text" &&
+    pictures.some((url) => url !== null && !failedPictures.has(url));
   const recommendedLabels = question.choices.filter((c) => c.recommended).map((c) => c.label);
-  const showsUrl = question.shows?.kind === 'image' ? pictureSrc(question.shows.src) : null;
+  const showsUrl = question.shows?.kind === "image" ? pictureSrc(question.shows.src) : null;
   // A `Shows:` picture that failed to load is its label, as a picture tile's is.
   const showsSrc = showsUrl !== null && !failedPictures.has(showsUrl) ? showsUrl : null;
 
@@ -702,26 +781,39 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   // `decisionScope: 'any'`) any other question once the host supplies a
   // recording state for it. A recorded decision (`question.decision`) is
   // never affected.
-  const decisionCapable = !question.decision
-    && (!!question.decisionOnAnswer || (decisionScope === 'any' && decisionRecording !== undefined));
+  const decisionCapable =
+    !question.decision &&
+    (!!question.decisionOnAnswer || (decisionScope === "any" && decisionRecording !== undefined));
   const recordingOn = decisionRecording ?? true;
   const decisionToggleable = decisionCapable && !readOnly && !!onToggleDecisionRecording;
   const decisionOpenable = decisionCapable && !readOnly && !!onOpenDecision;
   // Present only when the host speaks to recording, so a card without these
   // props carries exactly the attributes it always did.
-  const recordingAttr = decisionCapable && (decisionRecording !== undefined || !!onToggleDecisionRecording)
-    ? (recordingOn ? 'on' : 'off')
-    : undefined;
+  const recordingAttr =
+    decisionCapable && (decisionRecording !== undefined || !!onToggleDecisionRecording)
+      ? recordingOn
+        ? "on"
+        : "off"
+      : undefined;
 
-  const describedBy = [question.stakes ? stakesId : null, question.context ? contextId : null, question.kind === 'text' && question.suggestedText && !answered ? suggestId : null]
-    .filter(Boolean)
-    .join(' ') || undefined;
+  const describedBy =
+    [
+      question.stakes ? stakesId : null,
+      question.context ? contextId : null,
+      question.kind === "text" && question.suggestedText && !answered ? suggestId : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
   // A text question's recommended answer: shown above the field with the
   // same Recommended tag a choice carries; the footer's Accept recommended
   // fills it in. (A pick question's is a row of its own, below.)
-  const suggestedLine = question.kind === 'text' && question.suggestedText && !answered && (
-    <div id={suggestId} className="mt-2 text-[12.5px] text-muted-foreground" data-question-suggested="">
+  const suggestedLine = question.kind === "text" && question.suggestedText && !answered && (
+    <div
+      id={suggestId}
+      className="mt-2 text-[12.5px] text-muted-foreground"
+      data-question-suggested=""
+    >
       <Tag tone="rec">Recommended</Tag> {inline(question.suggestedText)}
     </div>
   );
@@ -730,15 +822,15 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
     <fieldset
       ref={cardRef}
       className={cx(
-        'question-block my-5 min-w-0 rounded-[10px] border px-3.5 pb-2.5 pt-3',
+        "question-block my-5 min-w-0 rounded-[10px] border px-3.5 pb-2.5 pt-3",
         // A size container: the card's own width lays out its footer (FOOT_BUTTON).
-        '@container/qcard',
+        "@container/qcard",
         // Native radios/checkboxes follow the theme's mode. ThemeProvider marks
         // light mode with `.light` on the root; a host without theme classes
         // keeps the page's own color-scheme.
-        '[:root[class*=theme-]:not(.light)_&]:[color-scheme:dark]',
-        'bg-[color-mix(in_oklab,var(--background)_35%,var(--card))]',
-        answered ? 'border-primary/45' : 'border-border/85',
+        "[:root[class*=theme-]:not(.light)_&]:[color-scheme:dark]",
+        "bg-[color-mix(in_oklab,var(--background)_35%,var(--card))]",
+        answered ? "border-primary/45" : "border-border/85",
       )}
       data-block-id={blockId}
       data-block-type="directive"
@@ -748,99 +840,183 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
       aria-labelledby={promptId}
       aria-describedby={describedBy}
       aria-disabled={readOnly || undefined}
-      data-question-decision={question.decision ? 'recorded' : question.decisionOnAnswer ? 'on-answer' : undefined}
+      data-question-decision={
+        question.decision ? "recorded" : question.decisionOnAnswer ? "on-answer" : undefined
+      }
       data-question-decision-recording={recordingAttr}
     >
-      <div className="annotation-exclude select-none mb-1.5 flex items-center gap-2" data-pinpoint-ignore="">
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{eyebrow}</span>
+      <div
+        className="annotation-exclude select-none mb-1.5 flex items-center gap-2"
+        data-pinpoint-ignore=""
+      >
+        <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          {eyebrow}
+        </span>
         <span className="ml-auto inline-flex items-center gap-1">
-          {question.decision && <><Tag tone="rec"><DiamondGlyph />Decision</Tag>{' '}</>}
-          {decisionCapable && (decisionOpenable ? (
-            // Two targets in one tag: the diamond switches recording, the
-            // words open the host's decision card. Siblings, never nested.
-            // Target size (WCAG 2.5.8) without changing the drawn tag: the
-            // diamond's invisible `before:` box reaches 6 px past it on every
-            // side (24 px wide, about 30 px tall), and the words, positioned
-            // and later in the tree, paint over its right-hand part, so a
-            // click on the words is always the words. The words (110 px wide)
-            // meet the spacing exception: nothing else to click within 12 px
-            // of their centre line.
-            <><span
-              className="annotation-exclude select-none inline-flex h-[18px] items-stretch whitespace-nowrap rounded border border-transparent text-[10.5px] font-semibold leading-4 tracking-[0.03em] bg-primary/15 text-primary"
-              style={recordingOn ? undefined : DECISION_OFF_STYLE}
-              data-pinpoint-ignore=""
-              data-question-decision-tag=""
-            >{decisionToggleable ? (
-              <HostTitle title="Record as a decision"><button
-                type="button"
-                aria-pressed={recordingOn}
-                aria-label="Record as a decision"
-                onClick={() => onToggleDecisionRecording!(question.key, !recordingOn)}
-                className="relative inline-flex cursor-pointer items-center rounded pl-1.5 pr-0.5 before:absolute before:-inset-1.5 before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                data-question-decision-toggle=""
-              ><DiamondGlyph /></button></HostTitle>
-            ) : (
-              <span className="inline-flex items-center pl-1.5 pr-0.5"><DiamondGlyph /></span>
-            )}<button
-              type="button"
-              aria-haspopup="dialog"
-              onClick={(event) => onOpenDecision!(question.key, event.currentTarget)}
-              className="relative cursor-pointer rounded pl-0.5 pr-1.5 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              data-question-decision-open=""
-            >Records a decision</button></span>{' '}</>
-          ) : decisionToggleable ? (
-            // Focus shows as a ring, not an outline: the dotted outline is
-            // what draws the off state.
-            <><button
-              type="button"
-              aria-pressed={recordingOn}
-              onClick={() => onToggleDecisionRecording!(question.key, !recordingOn)}
-              className={cx(PILL, 'cursor-pointer border-transparent bg-primary/15 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary')}
-              style={recordingOn ? undefined : DECISION_OFF_STYLE}
-              data-pinpoint-ignore=""
-              data-question-decision-toggle=""
-            ><DiamondGlyph />Records a decision</button>{' '}</>
-          ) : recordingOn ? (
-            <><Tag tone="rec"><DiamondGlyph />Records a decision</Tag>{' '}</>
-          ) : (
-            <><Tag tone="rec" style={DECISION_OFF_STYLE}><DiamondGlyph />Records a decision</Tag>{' '}</>
-          ))}
-          {question.reversible && (
-            <><HostTitle title={question.reversible.why ? `Can't be undone: ${question.reversible.why}` : "Can't be undone"}>
-              <span className="inline-flex" data-question-irreversible="">
-                <Tag tone="warn">Can&rsquo;t be undone</Tag>
-                {question.reversible.why && <span className="sr-only">: {question.reversible.why}</span>}
-              </span>
-            </HostTitle>{' '}</>
-          )}
-          {statusTag !== 'none' && hostStatus && <Tag tone={hostStatus.tone ?? 'open'}>{hostStatus.label}</Tag>}
-          {statusTag !== 'none' && !hostStatus && (
+          {question.decision && (
             <>
-              {status === 'answered' && <Tag tone="ok"><CheckGlyph />Answered</Tag>}
-              {status === 'settled' && <Tag tone="ok"><CheckGlyph />Settled</Tag>}
-              {status === 'skipped' && <Tag tone="skip">Skipped</Tag>}
-              {status === 'open' && <Tag tone="open">Open</Tag>}
+              <Tag tone="rec">
+                <DiamondGlyph />
+                Decision
+              </Tag>{" "}
+            </>
+          )}
+          {decisionCapable &&
+            (decisionOpenable ? (
+              // Two targets in one tag: the diamond switches recording, the
+              // words open the host's decision card. Siblings, never nested.
+              // Target size (WCAG 2.5.8) without changing the drawn tag: the
+              // diamond's invisible `before:` box reaches 6 px past it on every
+              // side (24 px wide, about 30 px tall), and the words, positioned
+              // and later in the tree, paint over its right-hand part, so a
+              // click on the words is always the words. The words (110 px wide)
+              // meet the spacing exception: nothing else to click within 12 px
+              // of their centre line.
+              <>
+                <span
+                  className="annotation-exclude select-none inline-flex h-[18px] items-stretch whitespace-nowrap rounded border border-transparent text-[10.5px] font-semibold leading-4 tracking-[0.03em] bg-primary/15 text-primary"
+                  style={recordingOn ? undefined : DECISION_OFF_STYLE}
+                  data-pinpoint-ignore=""
+                  data-question-decision-tag=""
+                >
+                  {decisionToggleable ? (
+                    <HostTitle title="Record as a decision">
+                      <button
+                        type="button"
+                        aria-pressed={recordingOn}
+                        aria-label="Record as a decision"
+                        onClick={() => onToggleDecisionRecording!(question.key, !recordingOn)}
+                        className="relative inline-flex cursor-pointer items-center rounded pl-1.5 pr-0.5 before:absolute before:-inset-1.5 before:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        data-question-decision-toggle=""
+                      >
+                        <DiamondGlyph />
+                      </button>
+                    </HostTitle>
+                  ) : (
+                    <span className="inline-flex items-center pl-1.5 pr-0.5">
+                      <DiamondGlyph />
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    aria-haspopup="dialog"
+                    onClick={(event) => onOpenDecision!(question.key, event.currentTarget)}
+                    className="relative cursor-pointer rounded pl-0.5 pr-1.5 hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    data-question-decision-open=""
+                  >
+                    Records a decision
+                  </button>
+                </span>{" "}
+              </>
+            ) : decisionToggleable ? (
+              // Focus shows as a ring, not an outline: the dotted outline is
+              // what draws the off state.
+              <>
+                <button
+                  type="button"
+                  aria-pressed={recordingOn}
+                  onClick={() => onToggleDecisionRecording!(question.key, !recordingOn)}
+                  className={cx(
+                    PILL,
+                    "cursor-pointer border-transparent bg-primary/15 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                  )}
+                  style={recordingOn ? undefined : DECISION_OFF_STYLE}
+                  data-pinpoint-ignore=""
+                  data-question-decision-toggle=""
+                >
+                  <DiamondGlyph />
+                  Records a decision
+                </button>{" "}
+              </>
+            ) : recordingOn ? (
+              <>
+                <Tag tone="rec">
+                  <DiamondGlyph />
+                  Records a decision
+                </Tag>{" "}
+              </>
+            ) : (
+              <>
+                <Tag tone="rec" style={DECISION_OFF_STYLE}>
+                  <DiamondGlyph />
+                  Records a decision
+                </Tag>{" "}
+              </>
+            ))}
+          {question.reversible && (
+            <>
+              <HostTitle
+                title={
+                  question.reversible.why
+                    ? `Can't be undone: ${question.reversible.why}`
+                    : "Can't be undone"
+                }
+              >
+                <span className="inline-flex" data-question-irreversible="">
+                  <Tag tone="warn">Can&rsquo;t be undone</Tag>
+                  {question.reversible.why && (
+                    <span className="sr-only">: {question.reversible.why}</span>
+                  )}
+                </span>
+              </HostTitle>{" "}
+            </>
+          )}
+          {statusTag !== "none" && hostStatus && (
+            <Tag tone={hostStatus.tone ?? "open"}>{hostStatus.label}</Tag>
+          )}
+          {statusTag !== "none" && !hostStatus && (
+            <>
+              {status === "answered" && (
+                <Tag tone="ok">
+                  <CheckGlyph />
+                  Answered
+                </Tag>
+              )}
+              {status === "settled" && (
+                <Tag tone="ok">
+                  <CheckGlyph />
+                  Settled
+                </Tag>
+              )}
+              {status === "skipped" && <Tag tone="skip">Skipped</Tag>}
+              {status === "open" && <Tag tone="open">Open</Tag>}
             </>
           )}
         </span>
       </div>
 
-      <p id={promptId} className="m-0 text-[15px] font-semibold leading-[1.45] text-foreground" data-question-part="prompt">
+      <p
+        id={promptId}
+        className="m-0 text-[15px] font-semibold leading-[1.45] text-foreground"
+        data-question-part="prompt"
+      >
         {inline(question.prompt)}
       </p>
       {question.stakes && (
-        <p id={stakesId} className="m-0 mt-1 text-[13px] font-medium leading-[1.45] text-foreground/90" data-question-part="stakes">
+        <p
+          id={stakesId}
+          className="m-0 mt-1 text-[13px] font-medium leading-[1.45] text-foreground/90"
+          data-question-part="stakes"
+        >
           {inline(question.stakes)}
         </p>
       )}
       {question.shows && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12.5px]" data-question-shows="">
-          <span className="annotation-exclude select-none text-muted-foreground" data-pinpoint-ignore="">Shows</span>
-          {question.shows.kind === 'image' ? (
+        <div
+          className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12.5px]"
+          data-question-shows=""
+        >
+          <span
+            className="annotation-exclude select-none text-muted-foreground"
+            data-pinpoint-ignore=""
+          >
+            Shows
+          </span>
+          {question.shows.kind === "image" ? (
             showsSrc && onImageClick ? (
               <button
                 type="button"
-                onClick={() => onImageClick(showsSrc, question.shows!.label || 'Picture')}
+                onClick={() => onImageClick(showsSrc, question.shows!.label || "Picture")}
                 className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-border/80 bg-background/60 py-0.5 pl-0.5 pr-2 text-foreground hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
                 data-question-shows-open=""
               >
@@ -854,14 +1030,20 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
                   data-image-src={question.shows.src}
                   onError={() => markPictureFailed(showsSrc)}
                 />
-                <span className="truncate">{question.shows.label || 'Picture'}</span>
+                <span className="truncate">{question.shows.label || "Picture"}</span>
               </button>
             ) : (
-              heldPlaceholder(question.shows.src, question.shows.label)
-                ?? <span className="inline-flex items-center gap-1 text-foreground"><PictureGlyph />{question.shows.label || question.shows.src}</span>
+              (heldPlaceholder(question.shows.src, question.shows.label) ?? (
+                <span className="inline-flex items-center gap-1 text-foreground">
+                  <PictureGlyph />
+                  {question.shows.label || question.shows.src}
+                </span>
+              ))
             )
           ) : (
-            <span className="min-w-0 text-foreground">{inline(`[${question.shows.label}](${question.shows.src})`)}</span>
+            <span className="min-w-0 text-foreground">
+              {inline(`[${question.shows.label}](${question.shows.src})`)}
+            </span>
           )}
         </div>
       )}
@@ -905,19 +1087,19 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
         />
       )}
 
-      {question.kind === 'text' ? (
+      {question.kind === "text" ? (
         <>
           {suggestedLine}
           <textarea
             className={cx(
               // annotation-exclude: typed text is not document text, so a
               // text-search restore of another annotation never lands in it.
-              'annotation-exclude mt-2.5 block min-h-[74px] w-full resize-y rounded-[7px] border border-border bg-background px-2.5 py-2 text-[13.5px] leading-normal text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-ring focus:ring-1 focus:ring-ring disabled:cursor-default',
-              skipped && 'opacity-55',
+              "annotation-exclude mt-2.5 block min-h-[74px] w-full resize-y rounded-[7px] border border-border bg-background px-2.5 py-2 text-[13.5px] leading-normal text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-ring focus:ring-1 focus:ring-ring disabled:cursor-default",
+              skipped && "opacity-55",
             )}
             aria-labelledby={promptId}
-            placeholder={readOnly ? '' : 'Type your answer…'}
-            value={answer?.text ?? ''}
+            placeholder={readOnly ? "" : "Type your answer…"}
+            value={answer?.text ?? ""}
             onChange={(e) => setText(e.target.value)}
             disabled={readOnly}
           />
@@ -925,144 +1107,195 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
       ) : (
         <>
           <TrayIf on={hasAfterChoices} after={afterChoices}>
-          <div
-            className={cx(hasAfterChoices ? 'grid gap-0.5' : 'mt-2.5 grid gap-0.5', skipped && 'opacity-55')}
-            role={inputType === 'radio' ? 'radiogroup' : 'group'}
-            aria-labelledby={promptId}
-          >
-            {showTiles ? (
-              <QuestionPictureTiles
-                choices={question.choices}
-                urls={question.choices.map((_c, index) => {
-                  const url = pictures[index];
-                  return url !== null && url !== undefined && !failedPictures.has(url) ? url : null;
-                })}
-                selected={selected}
-                inputType={inputType}
-                name={groupName}
-                readOnly={readOnly}
-                onPick={pick}
-                onZoom={
-                  onZoomChoice
-                    ? (url, alt, index) => onZoomChoice(question.key, index, url, alt)
-                    : onImageClick
-                }
-                onPictureError={markPictureFailed}
-                heldTitle={pictureHeldTitle}
-                renderText={inline}
-                labelProps={(label) => ({ onPointerDown: onRowPointerDown, onClickCapture: (event) => onRowClick(event, label) })}
-                pictureBadge={pictureBadge}
-                // Asked by the picture's own URL, loaded or not: a picture that fails keeps the set's layout.
-                pictureSize={pictureSize ? (index) => (pictures[index] ? pictureSize(pictures[index]!) : null) : undefined}
-              />
-            ) : (
-              question.choices.map((choice) => {
-                const checked = selected.includes(choice.label);
-                return (
-                  <label
-                    key={choice.label}
-                    className={cx(
-                      'flex items-start gap-2.5 rounded-[7px] px-[9px] py-1.5 transition-colors',
-                      readOnly ? 'cursor-default' : 'cursor-pointer hover:bg-muted/45',
-                      checked && 'bg-primary/12 hover:bg-primary/12',
-                    )}
-                    data-question-option=""
-                    onPointerDown={onRowPointerDown}
-                    onClickCapture={(event) => onRowClick(event, choice.label)}
-                  >
-                    <input
-                      type={inputType}
-                      name={groupName}
-                      checked={checked}
-                      onChange={(e) => pick(choice.label, e.target.checked)}
-                      className="mt-[3px] h-[15px] w-[15px] shrink-0 cursor-pointer accent-primary disabled:cursor-default"
-                      data-question-control=""
-                      disabled={readOnly}
-                    />
-                    <span className="min-w-0 flex-1 select-text text-[13.5px] leading-[1.45] text-foreground" data-question-part="choice">
-                      <span className="font-[550]">{inline(choice.label)}</span>
-                      {choice.image && pictureChoices && pictureHeldTitle(choice.image.src) !== null && <> {heldPlaceholder(choice.image.src, choice.image.alt || choice.label)}</>}
-                      {choice.description && (
-                        <span className="text-muted-foreground"> — {inline(choice.description)}</span>
-                      )}
-                      {choice.recommended && <> <Tag tone="rec">Recommended</Tag></>}
-                    </span>
-                  </label>
-                );
-              })
-            )}
-            {suggestionRow && (
-              // The agent's recommended answer that is none of its choices:
-              // drawn exactly as a choice (the same control, row and tag), so
-              // the card reads as one list of answers.
-              <label
-                className={cx(
-                  'flex items-start gap-2.5 rounded-[7px] px-[9px] py-1.5 transition-colors',
-                  readOnly ? 'cursor-default' : 'cursor-pointer hover:bg-muted/45',
-                  suggestionPicked && 'bg-primary/12 hover:bg-primary/12',
-                )}
-                data-question-option=""
-                data-question-suggested=""
-                onPointerDown={onRowPointerDown}
-                onClickCapture={(event) => onRowClick(event, SUGGESTION_ROW)}
-              >
-                <input
-                  type={inputType}
+            <div
+              className={cx(
+                hasAfterChoices ? "grid gap-0.5" : "mt-2.5 grid gap-0.5",
+                skipped && "opacity-55",
+              )}
+              role={inputType === "radio" ? "radiogroup" : "group"}
+              aria-labelledby={promptId}
+            >
+              {showTiles ? (
+                <QuestionPictureTiles
+                  choices={question.choices}
+                  urls={question.choices.map((_c, index) => {
+                    const url = pictures[index];
+                    return url !== null && url !== undefined && !failedPictures.has(url)
+                      ? url
+                      : null;
+                  })}
+                  selected={selected}
+                  inputType={inputType}
                   name={groupName}
-                  checked={suggestionPicked}
-                  onChange={(e) => pickSuggestion(e.target.checked)}
-                  className="mt-[3px] h-[15px] w-[15px] shrink-0 cursor-pointer accent-primary disabled:cursor-default"
-                  data-question-control=""
-                  disabled={readOnly}
+                  readOnly={readOnly}
+                  onPick={pick}
+                  onZoom={
+                    onZoomChoice
+                      ? (url, alt, index) => onZoomChoice(question.key, index, url, alt)
+                      : onImageClick
+                  }
+                  onPictureError={markPictureFailed}
+                  heldTitle={pictureHeldTitle}
+                  renderText={inline}
+                  labelProps={(label) => ({
+                    onPointerDown: onRowPointerDown,
+                    onClickCapture: (event) => onRowClick(event, label),
+                  })}
+                  pictureBadge={pictureBadge}
+                  // Asked by the picture's own URL, loaded or not: a picture that fails keeps the set's layout.
+                  pictureSize={
+                    pictureSize
+                      ? (index) => (pictures[index] ? pictureSize(pictures[index]!) : null)
+                      : undefined
+                  }
                 />
-                <span className="min-w-0 flex-1 select-text text-[13.5px] leading-[1.45] text-foreground" data-question-part="choice">
-                  <span className="font-[550]">{inline(question.suggestedText!)}</span>
-                  {' '}<Tag tone="rec">Recommended</Tag>
-                </span>
-              </label>
-            )}
-            {/* A read-only card with no Other answer has nothing to show there (it drew a bare "+"). */}
-            {(!readOnly || otherOn) && (
-              <div className="flex items-center gap-2.5 rounded-[7px] px-[9px] py-[5px]">
-                <span
-                  aria-hidden="true"
-                  data-question-control=""
+              ) : (
+                question.choices.map((choice) => {
+                  const checked = selected.includes(choice.label);
+                  return (
+                    <label
+                      key={choice.label}
+                      className={cx(
+                        "flex items-start gap-2.5 rounded-[7px] px-[9px] py-1.5 transition-colors",
+                        readOnly ? "cursor-default" : "cursor-pointer hover:bg-muted/45",
+                        checked && "bg-primary/12 hover:bg-primary/12",
+                      )}
+                      data-question-option=""
+                      onPointerDown={onRowPointerDown}
+                      onClickCapture={(event) => onRowClick(event, choice.label)}
+                    >
+                      <input
+                        type={inputType}
+                        name={groupName}
+                        checked={checked}
+                        onChange={(e) => pick(choice.label, e.target.checked)}
+                        className="mt-[3px] h-[15px] w-[15px] shrink-0 cursor-pointer accent-primary disabled:cursor-default"
+                        data-question-control=""
+                        disabled={readOnly}
+                      />
+                      <span
+                        className="min-w-0 flex-1 select-text text-[13.5px] leading-[1.45] text-foreground"
+                        data-question-part="choice"
+                      >
+                        <span className="font-[550]">{inline(choice.label)}</span>
+                        {choice.image &&
+                          pictureChoices &&
+                          pictureHeldTitle(choice.image.src) !== null && (
+                            <>
+                              {" "}
+                              {heldPlaceholder(choice.image.src, choice.image.alt || choice.label)}
+                            </>
+                          )}
+                        {choice.description && (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            — {inline(choice.description)}
+                          </span>
+                        )}
+                        {choice.recommended && (
+                          <>
+                            {" "}
+                            <Tag tone="rec">Recommended</Tag>
+                          </>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+              {suggestionRow && (
+                // The agent's recommended answer that is none of its choices:
+                // drawn exactly as a choice (the same control, row and tag), so
+                // the card reads as one list of answers.
+                <label
                   className={cx(
-                    'annotation-exclude select-none grid h-[15px] w-[15px] shrink-0 place-items-center border-[1.5px] text-[11px] leading-none',
-                    question.kind === 'multi' ? 'rounded-[3px]' : 'rounded-full',
-                    otherOn ? 'border-solid border-primary bg-primary text-primary-foreground' : 'border-dashed border-border text-muted-foreground',
+                    "flex items-start gap-2.5 rounded-[7px] px-[9px] py-1.5 transition-colors",
+                    readOnly ? "cursor-default" : "cursor-pointer hover:bg-muted/45",
+                    suggestionPicked && "bg-primary/12 hover:bg-primary/12",
                   )}
+                  data-question-option=""
+                  data-question-suggested=""
+                  onPointerDown={onRowPointerDown}
+                  onClickCapture={(event) => onRowClick(event, SUGGESTION_ROW)}
                 >
-                  {otherOn ? <CheckGlyph /> : '+'}
-                </span>
-                <input
-                  type="text"
-                  value={other}
-                  onChange={(e) => setOther(e.target.value)}
-                  onFocus={() => {
-                    // A stored answer that reads as the row stays the row
-                    // while the reviewer types here (typing replaces it).
-                    if (otherBy === null && suggestionPicked) setOtherBy('row');
-                    setOtherFocused(true);
-                  }}
-                  onBlur={() => setOtherFocused(false)}
-                  disabled={readOnly}
-                  placeholder={readOnly ? '' : 'Other…'}
-                  aria-label={number > 0 ? `Other answer to question ${number}` : 'Other answer'}
-                  className="annotation-exclude min-w-0 flex-1 border-0 border-b border-transparent bg-transparent py-[3px] text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-ring"
-                />
-              </div>
-            )}
-          </div>
+                  <input
+                    type={inputType}
+                    name={groupName}
+                    checked={suggestionPicked}
+                    onChange={(e) => pickSuggestion(e.target.checked)}
+                    className="mt-[3px] h-[15px] w-[15px] shrink-0 cursor-pointer accent-primary disabled:cursor-default"
+                    data-question-control=""
+                    disabled={readOnly}
+                  />
+                  <span
+                    className="min-w-0 flex-1 select-text text-[13.5px] leading-[1.45] text-foreground"
+                    data-question-part="choice"
+                  >
+                    <span className="font-[550]">{inline(question.suggestedText!)}</span>{" "}
+                    <Tag tone="rec">Recommended</Tag>
+                  </span>
+                </label>
+              )}
+              {/* A read-only card with no Other answer has nothing to show there (it drew a bare "+"). */}
+              {(!readOnly || otherOn) && (
+                <div className="flex items-center gap-2.5 rounded-[7px] px-[9px] py-[5px]">
+                  <span
+                    aria-hidden="true"
+                    data-question-control=""
+                    className={cx(
+                      "annotation-exclude select-none grid h-[15px] w-[15px] shrink-0 place-items-center border-[1.5px] text-[11px] leading-none",
+                      question.kind === "multi" ? "rounded-[3px]" : "rounded-full",
+                      otherOn
+                        ? "border-solid border-primary bg-primary text-primary-foreground"
+                        : "border-dashed border-border text-muted-foreground",
+                    )}
+                  >
+                    {otherOn ? <CheckGlyph /> : "+"}
+                  </span>
+                  <input
+                    type="text"
+                    value={other}
+                    onChange={(e) => setOther(e.target.value)}
+                    onFocus={() => {
+                      // A stored answer that reads as the row stays the row
+                      // while the reviewer types here (typing replaces it).
+                      if (otherBy === null && suggestionPicked) setOtherBy("row");
+                      setOtherFocused(true);
+                    }}
+                    onBlur={() => setOtherFocused(false)}
+                    disabled={readOnly}
+                    placeholder={readOnly ? "" : "Other…"}
+                    aria-label={number > 0 ? `Other answer to question ${number}` : "Other answer"}
+                    className="annotation-exclude min-w-0 flex-1 border-0 border-b border-transparent bg-transparent py-[3px] text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-ring"
+                  />
+                </div>
+              )}
+            </div>
           </TrayIf>
         </>
       )}
 
       {question.why && (
-        <p className="m-0 mt-2 text-[12.5px] leading-[1.45] text-muted-foreground" data-question-part="why">
+        <p
+          className="m-0 mt-2 text-[12.5px] leading-[1.45] text-muted-foreground"
+          data-question-part="why"
+        >
           <span className="font-semibold text-foreground/85">
-            {recommendedLabels.length > 0 ? <>Why {recommendedLabels.map((label, i) => <React.Fragment key={label}>{i > 0 ? ', ' : ''}{inline(label)}</React.Fragment>)}:</> : 'Why:'}
-          </span>{' '}
+            {recommendedLabels.length > 0 ? (
+              <>
+                Why{" "}
+                {recommendedLabels.map((label, i) => (
+                  <React.Fragment key={label}>
+                    {i > 0 ? ", " : ""}
+                    {inline(label)}
+                  </React.Fragment>
+                ))}
+                :
+              </>
+            ) : (
+              "Why:"
+            )}
+          </span>{" "}
           {inline(question.why)}
         </p>
       )}
@@ -1071,61 +1304,85 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
           table, one row per option with its Pros and Cons side by side (stacked in a narrow card). No Recommended
           tag here: the option above carries it. Drawn only when a choice has Pros or Cons, which only a host that
           reads option lines (`questionOptionLines`) parses: every other card is unchanged. */}
-      {question.kind !== 'text' && question.choices.some((c) => c.pros?.length || c.cons?.length) && (
-        <div className="annotation-exclude" data-pinpoint-ignore="" data-question-part="tradeoffs">
-          <button
-            type="button"
-            className="group -ml-1.5 mt-1.5 inline-flex items-center gap-1 rounded-lg border-0 bg-transparent px-1.5 py-[3px] text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
-            aria-expanded={tradeoffsOpen}
-            aria-controls={tradeoffsId}
-            onClick={() => setTradeoffsOpen((open) => !open)}
-            data-question-tradeoffs-toggle=""
-          >
-            <ChevronRightGlyph />
-            Trade-offs
-          </button>
+      {question.kind !== "text" &&
+        question.choices.some((c) => c.pros?.length || c.cons?.length) && (
           <div
-            id={tradeoffsId}
-            hidden={!tradeoffsOpen}
-            role="table"
-            aria-label="Trade-offs"
-            className="mb-0.5 mt-1 grid gap-2.5 text-[12.5px] leading-[1.45] @min-[600px]/qcard:gap-2"
-            data-question-tradeoffs=""
+            className="annotation-exclude"
+            data-pinpoint-ignore=""
+            data-question-part="tradeoffs"
           >
-            <div role="row" className="hidden text-[12px] font-semibold text-foreground/85 @min-[600px]/qcard:grid @min-[600px]/qcard:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1fr)] @min-[600px]/qcard:gap-x-[18px]">
-              <span role="columnheader"><span className="sr-only">Option</span></span>
-              <span role="columnheader">Pros</span>
-              <span role="columnheader">Cons</span>
-            </div>
-            {question.choices.map((c, i) => (
+            <button
+              type="button"
+              className="group -ml-1.5 mt-1.5 inline-flex items-center gap-1 rounded-lg border-0 bg-transparent px-1.5 py-[3px] text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+              aria-expanded={tradeoffsOpen}
+              aria-controls={tradeoffsId}
+              onClick={() => setTradeoffsOpen((open) => !open)}
+              data-question-tradeoffs-toggle=""
+            >
+              <ChevronRightGlyph />
+              Trade-offs
+            </button>
+            <div
+              id={tradeoffsId}
+              hidden={!tradeoffsOpen}
+              role="table"
+              aria-label="Trade-offs"
+              className="mb-0.5 mt-1 grid gap-2.5 text-[12.5px] leading-[1.45] @min-[600px]/qcard:gap-2"
+              data-question-tradeoffs=""
+            >
               <div
-                key={`${i}:${c.label}`}
                 role="row"
-                className="grid grid-cols-[minmax(0,1fr)] gap-y-0.5 @min-[600px]/qcard:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1fr)] @min-[600px]/qcard:gap-x-[18px]"
-                data-question-tradeoffs-row=""
+                className="hidden text-[12px] font-semibold text-foreground/85 @min-[600px]/qcard:grid @min-[600px]/qcard:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1fr)] @min-[600px]/qcard:gap-x-[18px]"
               >
-                <span role="rowheader" className="min-w-0 break-words text-[13px] font-[550] text-foreground">{inline(c.label)}</span>
-                {(['pros', 'cons'] as const).map((side) => (
-                  <span
-                    key={side}
-                    role="cell"
-                    className="grid min-w-0 grid-cols-[38px_minmax(0,1fr)] gap-2 text-muted-foreground @min-[600px]/qcard:block"
-                  >
-                    <b className="font-semibold text-foreground/85 @min-[600px]/qcard:sr-only">{side === 'pros' ? 'Pros' : 'Cons'}</b>
-                    <span className="min-w-0 break-words">
-                      {c[side]?.length ? inline(c[side]!.join('; ')) : <span aria-label="none">-</span>}
-                    </span>
-                  </span>
-                ))}
+                <span role="columnheader">
+                  <span className="sr-only">Option</span>
+                </span>
+                <span role="columnheader">Pros</span>
+                <span role="columnheader">Cons</span>
               </div>
-            ))}
+              {question.choices.map((c, i) => (
+                <div
+                  key={`${i}:${c.label}`}
+                  role="row"
+                  className="grid grid-cols-[minmax(0,1fr)] gap-y-0.5 @min-[600px]/qcard:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1fr)] @min-[600px]/qcard:gap-x-[18px]"
+                  data-question-tradeoffs-row=""
+                >
+                  <span
+                    role="rowheader"
+                    className="min-w-0 break-words text-[13px] font-[550] text-foreground"
+                  >
+                    {inline(c.label)}
+                  </span>
+                  {(["pros", "cons"] as const).map((side) => (
+                    <span
+                      key={side}
+                      role="cell"
+                      className="grid min-w-0 grid-cols-[38px_minmax(0,1fr)] gap-2 text-muted-foreground @min-[600px]/qcard:block"
+                    >
+                      <b className="font-semibold text-foreground/85 @min-[600px]/qcard:sr-only">
+                        {side === "pros" ? "Pros" : "Cons"}
+                      </b>
+                      <span className="min-w-0 break-words">
+                        {c[side]?.length ? (
+                          inline(c[side]!.join("; "))
+                        ) : (
+                          <span aria-label="none">-</span>
+                        )}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {noteOpen && (!readOnly || !!answer?.note?.trim()) && (
         <div className="mt-2">
-          <p id={noteLabelId} className="annotation-exclude select-none mb-1 ml-0.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
+          <p
+            id={noteLabelId}
+            className="annotation-exclude select-none mb-1 ml-0.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground"
+          >
             Note
           </p>
           <textarea
@@ -1133,7 +1390,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
             className="annotation-exclude block min-h-[54px] w-full resize-y rounded-[7px] border border-border bg-background px-2.5 py-2 text-[13.5px] leading-normal text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-ring focus:ring-1 focus:ring-ring"
             aria-labelledby={noteLabelId}
             placeholder="Context for the agent…"
-            value={answer?.note ?? ''}
+            value={answer?.note ?? ""}
             onChange={(e) => setNote(e.target.value)}
             disabled={readOnly}
           />
@@ -1152,11 +1409,11 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
               aria-expanded={noteOpen}
               className={cx(
                 FOOT_BUTTON,
-                'rounded-[5px] px-[7px] py-[3px] text-xs hover:bg-muted hover:text-foreground',
-                noteOpen ? 'text-foreground' : 'text-muted-foreground',
+                "rounded-[5px] px-[7px] py-[3px] text-xs hover:bg-muted hover:text-foreground",
+                noteOpen ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {noteOpen ? 'Hide note' : 'Add note'}
+              {noteOpen ? "Hide note" : "Add note"}
             </button>
           )}
           {/* Skip is a live-mode draft state; an explicit save never writes it. */}
@@ -1167,11 +1424,11 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
               aria-pressed={skipped}
               className={cx(
                 FOOT_BUTTON,
-                'rounded-[5px] px-[7px] py-[3px] text-xs hover:bg-muted hover:text-foreground',
-                skipped ? 'text-foreground' : 'text-muted-foreground',
+                "rounded-[5px] px-[7px] py-[3px] text-xs hover:bg-muted hover:text-foreground",
+                skipped ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {skipped ? 'Unskip' : 'Skip'}
+              {skipped ? "Unskip" : "Skip"}
             </button>
           )}
           {/* Plannotator's own footer (no host actions, no save bar) keeps the
@@ -1181,30 +1438,52 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
               <button
                 type="button"
                 onClick={acceptRecommended}
-                className={cx(FOOT_BUTTON, FOOT_FIT, FOOT_OWN_ROW, 'ml-auto rtl:ml-0 rtl:mr-auto rounded-md border border-primary/45 bg-primary/10 px-2.5 py-[3px] text-[12.5px] font-medium text-primary hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary')}
+                className={cx(
+                  FOOT_BUTTON,
+                  FOOT_FIT,
+                  FOOT_OWN_ROW,
+                  "ml-auto rtl:ml-0 rtl:mr-auto rounded-md border border-primary/45 bg-primary/10 px-2.5 py-[3px] text-[12.5px] font-medium text-primary hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                )}
               >
                 Accept recommended
               </button>
             )
           ) : (
-            <div className={cx(FOOT_OWN_ROW, 'ml-auto rtl:ml-0 rtl:mr-auto flex min-w-0 flex-wrap items-center justify-end gap-1')}>
+            <div
+              className={cx(
+                FOOT_OWN_ROW,
+                "ml-auto rtl:ml-0 rtl:mr-auto flex min-w-0 flex-wrap items-center justify-end gap-1",
+              )}
+            >
               {offerAccept && (
                 <button
                   type="button"
                   onClick={acceptRecommended}
-                  className={cx(FOOT_BUTTON, FOOT_FIT, 'rounded-md border border-primary/45 bg-primary/10 px-2.5 py-[3px] text-[12.5px] font-medium text-primary hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary')}
+                  className={cx(
+                    FOOT_BUTTON,
+                    FOOT_FIT,
+                    "rounded-md border border-primary/45 bg-primary/10 px-2.5 py-[3px] text-[12.5px] font-medium text-primary hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                  )}
                 >
                   Accept recommended
                 </button>
               )}
-              {hasHostFooter && <span className="inline-flex items-center gap-1" data-question-host-footer="">{hostFooter}</span>}
+              {hasHostFooter && (
+                <span className="inline-flex items-center gap-1" data-question-host-footer="">
+                  {hostFooter}
+                </span>
+              )}
               {dirty && (
                 <>
                   <button
                     type="button"
                     onClick={cancel}
                     disabled={saving}
-                    className={cx(FOOT_BUTTON, FOOT_FIT, 'rounded-[5px] px-[7px] py-[3px] text-xs text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60')}
+                    className={cx(
+                      FOOT_BUTTON,
+                      FOOT_FIT,
+                      "rounded-[5px] px-[7px] py-[3px] text-xs text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60",
+                    )}
                   >
                     Cancel
                   </button>
@@ -1213,9 +1492,14 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
                     onClick={save}
                     disabled={saving}
                     aria-busy={saving || undefined}
-                    className={cx(FOOT_BUTTON, FOOT_FIT, 'rounded-md bg-primary px-2.5 py-[3px] text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60')}
+                    className={cx(
+                      FOOT_BUTTON,
+                      FOOT_FIT,
+                      "rounded-md bg-primary px-2.5 py-[3px] text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60",
+                    )}
                   >
-                    {(typeof saveLabel === 'function' ? saveLabel(question) : saveLabel) || 'Save answer'}
+                    {(typeof saveLabel === "function" ? saveLabel(question) : saveLabel) ||
+                      "Save answer"}
                   </button>
                 </>
               )}
@@ -1240,7 +1524,7 @@ export interface QuestionPictureTilesProps {
   /** The URL each choice's picture loads from, in choice order; null (no picture shown) draws its alt text. */
   urls: readonly (string | null)[];
   selected: readonly string[];
-  inputType: 'radio' | 'checkbox';
+  inputType: "radio" | "checkbox";
   /** The radio group's name. */
   name: string;
   readOnly?: boolean;
@@ -1295,9 +1579,15 @@ export const QuestionPictureTiles: React.FC<QuestionPictureTilesProps> = ({
   // Known before any picture loads, so a host's layout (inbox.css) never moves once they do.
   // A picture that fails to load keeps its recorded size and shape (the failed box draws none of it), so the set's
   // shape, and with it the layout, stays as it was.
-  const sizes = choices.map((choice, index) => (choice.image ? readQuestionPictureSize(pictureSize?.(index)) : null));
-  const shapes: (QuestionPictureShape | null)[] = sizes.map((size) => (size ? questionPictureShape(size) : null));
-  const pictured = choices.flatMap((choice, index) => (choice.image ? [shapes[index] ?? null] : []));
+  const sizes = choices.map((choice, index) =>
+    choice.image ? readQuestionPictureSize(pictureSize?.(index)) : null,
+  );
+  const shapes: (QuestionPictureShape | null)[] = sizes.map((size) =>
+    size ? questionPictureShape(size) : null,
+  );
+  const pictured = choices.flatMap((choice, index) =>
+    choice.image ? [shapes[index] ?? null] : [],
+  );
   return (
     <div
       className="mb-1 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2"
@@ -1305,14 +1595,14 @@ export const QuestionPictureTiles: React.FC<QuestionPictureTilesProps> = ({
       data-question-tiles-count={choices.length}
       data-question-tiles-shape={questionPicturesShape(pictured)}
       data-question-tiles-words={questionChoiceWords(choices)}
-      data-question-tiles-bare={choices.some((choice) => !choice.image) ? '' : undefined}
+      data-question-tiles-bare={choices.some((choice) => !choice.image) ? "" : undefined}
     >
       {choices.map((choice, index) => {
         const checked = selected.includes(choice.label);
         const shown = urls[index] ?? null;
         const size = sizes[index];
         // The alt text names the picture; one that only repeats the label is decorative.
-        const alt = choice.image ? (choice.image.alt || choice.label) : '';
+        const alt = choice.image ? choice.image.alt || choice.label : "";
         const decorative = !!choice.image && alt.trim() === choice.label.trim();
         const host = labelProps?.(choice.label);
         const input = inputProps?.(choice.label);
@@ -1321,19 +1611,22 @@ export const QuestionPictureTiles: React.FC<QuestionPictureTilesProps> = ({
           <div
             key={choice.label}
             className={cx(
-              'relative flex min-w-0 flex-col overflow-hidden rounded-[9px] border transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary',
-              checked ? 'border-primary/70 bg-primary/10' : 'border-border/80 bg-background/40',
-              !readOnly && !checked && 'hover:border-foreground/30',
+              "relative flex min-w-0 flex-col overflow-hidden rounded-[9px] border transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary",
+              checked ? "border-primary/70 bg-primary/10" : "border-border/80 bg-background/40",
+              !readOnly && !checked && "hover:border-foreground/30",
             )}
             data-question-tile=""
-            data-question-tile-checked={checked ? '' : undefined}
-            data-question-tile-recommended={choice.recommended ? '' : undefined}
+            data-question-tile-checked={checked ? "" : undefined}
+            data-question-tile-recommended={choice.recommended ? "" : undefined}
             data-question-tile-shape={shapes[index] ?? undefined}
-            data-question-tile-no-picture={choice.image ? undefined : ''}
+            data-question-tile-no-picture={choice.image ? undefined : ""}
           >
             <label
               {...host}
-              className={cx('flex min-w-0 flex-1 flex-col', readOnly ? 'cursor-default' : 'cursor-pointer')}
+              className={cx(
+                "flex min-w-0 flex-1 flex-col",
+                readOnly ? "cursor-default" : "cursor-pointer",
+              )}
               data-question-option=""
             >
               {choice.image && (
@@ -1343,8 +1636,12 @@ export const QuestionPictureTiles: React.FC<QuestionPictureTilesProps> = ({
                   // The size rides custom properties, which draw nothing unless a host's CSS reads them.
                   style={
                     size
-                      ? ({ position: 'relative', '--question-picture-ratio': `${size.width} / ${size.height}`, '--question-picture-width': `${size.width}px` } as React.CSSProperties)
-                      : { position: 'relative' }
+                      ? ({
+                          position: "relative",
+                          "--question-picture-ratio": `${size.width} / ${size.height}`,
+                          "--question-picture-width": `${size.width}px`,
+                        } as React.CSSProperties)
+                      : { position: "relative" }
                   }
                   data-pinpoint-ignore=""
                   data-question-tile-picture=""
@@ -1360,7 +1657,7 @@ export const QuestionPictureTiles: React.FC<QuestionPictureTilesProps> = ({
                   {shown ? (
                     <img
                       src={shown}
-                      alt={decorative ? '' : alt}
+                      alt={decorative ? "" : alt}
                       draggable={false}
                       loading="lazy"
                       className="h-full w-full object-contain"
@@ -1375,14 +1672,17 @@ export const QuestionPictureTiles: React.FC<QuestionPictureTilesProps> = ({
                       title={held ?? undefined}
                       data-image-unavailable=""
                       // Not held by the host: the picture failed to load.
-                      data-question-picture-failed={held ? undefined : ''}
+                      data-question-picture-failed={held ? undefined : ""}
                     >
                       {alt}
                     </span>
                   )}
                 </span>
               )}
-              <span className="flex w-full min-w-0 items-start gap-2 px-2.5 py-2" data-question-tile-caption="">
+              <span
+                className="flex w-full min-w-0 items-start gap-2 px-2.5 py-2"
+                data-question-tile-caption=""
+              >
                 <input
                   {...input}
                   type={inputType}
@@ -1393,14 +1693,25 @@ export const QuestionPictureTiles: React.FC<QuestionPictureTilesProps> = ({
                   data-question-control=""
                   disabled={readOnly}
                 />
-                <span className="min-w-0 flex-1 select-text text-[13px] leading-[1.4] text-foreground" data-question-part="choice">
-                  <span className="font-[550]" data-question-tile-label="">{renderText(choice.label)}</span>
+                <span
+                  className="min-w-0 flex-1 select-text text-[13px] leading-[1.4] text-foreground"
+                  data-question-part="choice"
+                >
+                  <span className="font-[550]" data-question-tile-label="">
+                    {renderText(choice.label)}
+                  </span>
                   {choice.description && (
-                    <span className="block text-muted-foreground" data-question-tile-description="">{renderText(choice.description)}</span>
+                    <span className="block text-muted-foreground" data-question-tile-description="">
+                      {renderText(choice.description)}
+                    </span>
                   )}
                   {renderBadges
                     ? renderBadges(choice, index)
-                    : choice.recommended && <span className="mt-1 block"><Tag tone="rec">Recommended</Tag></span>}
+                    : choice.recommended && (
+                        <span className="mt-1 block">
+                          <Tag tone="rec">Recommended</Tag>
+                        </span>
+                      )}
                 </span>
               </span>
             </label>

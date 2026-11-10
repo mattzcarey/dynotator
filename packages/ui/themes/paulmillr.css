@@ -26,7 +26,7 @@
   --warning-foreground: #000000;
 
   --font-sans: system-ui, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+  --font-mono: ui-monospace, "SF Mono", Consolas, monospace;
   --radius: 0.625rem;
 
   --code-bg: #1a1a1a;

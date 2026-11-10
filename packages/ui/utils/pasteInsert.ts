@@ -36,10 +36,10 @@
  */
 
 /** Input types the page can insert into with a caret (email and number have no selection API). */
-const TEXT_INPUT_TYPES = new Set(['text', 'search', 'url', 'tel', 'password']);
+const TEXT_INPUT_TYPES = new Set(["text", "search", "url", "tel", "password"]);
 
 /** Editors that read the paste themselves through a hidden textarea or own their own model. */
-const NATIVE_PASTE = '[data-native-paste], .xterm, .cm-editor, .monaco-editor';
+const NATIVE_PASTE = "[data-native-paste], .xterm, .cm-editor, .monaco-editor";
 
 export type PlainTextField = HTMLTextAreaElement | HTMLInputElement;
 
@@ -50,12 +50,12 @@ export interface PasteInsertion {
   end: number;
 }
 
-type PasteLike = Pick<ClipboardEvent, 'defaultPrevented' | 'clipboardData' | 'target'> & {
+type PasteLike = Pick<ClipboardEvent, "defaultPrevented" | "clipboardData" | "target"> & {
   composedPath?: () => EventTarget[];
 };
 
 function plainTextField(target: EventTarget | null | undefined): PlainTextField | null {
-  if (!target || typeof (target as Node).nodeType !== 'number') return null;
+  if (!target || typeof (target as Node).nodeType !== "number") return null;
   const el = target as Element;
   const view = el.ownerDocument?.defaultView;
   if (!view) return null;
@@ -67,14 +67,14 @@ function plainTextField(target: EventTarget | null | undefined): PlainTextField 
 function carriesFiles(data: DataTransfer): boolean {
   if ((data.files?.length ?? 0) > 0) return true;
   for (const item of Array.from(data.items ?? [])) {
-    if (item.kind === 'file') return true;
+    if (item.kind === "file") return true;
   }
   return false;
 }
 
 function focused(field: PlainTextField): boolean {
   const root = field.getRootNode() as Document | ShadowRoot;
-  return 'activeElement' in root && root.activeElement === field;
+  return "activeElement" in root && root.activeElement === field;
 }
 
 /** Cut to `room` UTF-16 units without splitting a surrogate pair. */
@@ -90,7 +90,10 @@ function truncate(text: string, room: number): string {
  * What the page should insert for this paste, or null to leave it to the
  * browser. Pure apart from reading the event and the field.
  */
-export function plainTextPasteInsertion(event: PasteLike, composing = false): PasteInsertion | null {
+export function plainTextPasteInsertion(
+  event: PasteLike,
+  composing = false,
+): PasteInsertion | null {
   if (event.defaultPrevented || composing) return null;
   const data = event.clipboardData;
   if (!data) return null;
@@ -101,11 +104,11 @@ export function plainTextPasteInsertion(event: PasteLike, composing = false): Pa
   if (field.closest(NATIVE_PASTE)) return null;
   if (!focused(field)) return null;
   if (carriesFiles(data)) return null;
-  let text = data.getData('text/plain');
+  let text = data.getData("text/plain");
   if (!text) return null;
   // What Chrome does with line breaks: a textarea keeps each as \n, a one-line input turns each into a space.
-  text = text.replace(/\r\n?/g, '\n');
-  if (field.tagName !== 'TEXTAREA') text = text.replace(/\n/g, ' ');
+  text = text.replace(/\r\n?/g, "\n");
+  if (field.tagName !== "TEXTAREA") text = text.replace(/\n/g, " ");
   if (!text) return null;
   const start = field.selectionStart;
   const end = field.selectionEnd;
@@ -124,19 +127,20 @@ export function insertPastedText({ field, text, start, end }: PasteInsertion): v
   const doc = field.ownerDocument;
   let inserted = false;
   try {
-    inserted = typeof doc.execCommand === 'function' && doc.execCommand('insertText', false, text) === true;
+    inserted =
+      typeof doc.execCommand === "function" && doc.execCommand("insertText", false, text) === true;
   } catch {
     inserted = false;
   }
   if (inserted) return;
-  field.setRangeText(text, start, end, 'end');
+  field.setRangeText(text, start, end, "end");
   const caret = start + text.length;
   field.setSelectionRange(caret, caret); // some engines put the caret elsewhere after setRangeText
   const view = doc.defaultView;
   const event =
-    view && typeof view.InputEvent === 'function'
-      ? new view.InputEvent('input', { bubbles: true, inputType: 'insertFromPaste', data: text })
-      : new Event('input', { bubbles: true });
+    view && typeof view.InputEvent === "function"
+      ? new view.InputEvent("input", { bubbles: true, inputType: "insertFromPaste", data: text })
+      : new Event("input", { bubbles: true });
   field.dispatchEvent(event);
 }
 
@@ -144,7 +148,10 @@ export function insertPastedText({ field, text, start, end }: PasteInsertion): v
 export interface PasteEngineNavigator {
   userAgent?: string;
   platform?: string;
-  userAgentData?: { brands?: ReadonlyArray<{ brand: string; version: string }>; platform?: string } | null;
+  userAgentData?: {
+    brands?: ReadonlyArray<{ brand: string; version: string }>;
+    platform?: string;
+  } | null;
 }
 
 /** The Chromium majors with the bug: 155 added the check, 157 ships the fix. */
@@ -163,10 +170,10 @@ const AFFECTED_CHROMIUM = new Set([155, 156]);
  */
 export function chromiumPasteBugAffected(nav: PasteEngineNavigator | undefined | null): boolean {
   if (!nav) return false;
-  const ua = nav.userAgent ?? '';
+  const ua = nav.userAgent ?? "";
   const data = nav.userAgentData ?? null;
   let major = Number.NaN;
-  const brand = data?.brands?.find((b) => b.brand === 'Chromium');
+  const brand = data?.brands?.find((b) => b.brand === "Chromium");
   if (brand) major = Number.parseInt(brand.version, 10);
   if (Number.isNaN(major)) {
     const match = /Chrome\/(\d+)/.exec(ua);
@@ -175,14 +182,14 @@ export function chromiumPasteBugAffected(nav: PasteEngineNavigator | undefined |
   if (!AFFECTED_CHROMIUM.has(major)) return false;
   // Client hints name the platform when present; else navigator.platform or the UA string.
   if (data?.platform) return /^mac/i.test(data.platform);
-  return /^mac/i.test(nav.platform ?? '') || /Macintosh|Mac OS X/.test(ua);
+  return /^mac/i.test(nav.platform ?? "") || /Macintosh|Mac OS X/.test(ua);
 }
 
 /**
  * Tests (the e2e simulation, in a Chromium that is not 155 or 156) set this
  * to `true` on the window to turn the workaround on whatever the engine.
  */
-export const FORCE_PLAIN_TEXT_PASTE_FLAG = '__plannotatorForcePlainTextPaste';
+export const FORCE_PLAIN_TEXT_PASTE_FLAG = "__plannotatorForcePlainTextPaste";
 
 export interface PlainTextPasteOptions {
   /** Whether the workaround runs. Default: the engine gate, or the window's force flag. */
@@ -197,10 +204,14 @@ export interface PlainTextPasteOptions {
  * runs first and can claim the paste. Does nothing outside the affected
  * engine (`chromiumPasteBugAffected`).
  */
-export function installPlainTextPaste(win: Window = window, options: PlainTextPasteOptions = {}): () => void {
+export function installPlainTextPaste(
+  win: Window = window,
+  options: PlainTextPasteOptions = {},
+): () => void {
   const doc = win.document;
   const engine = chromiumPasteBugAffected(win.navigator as unknown as PasteEngineNavigator);
-  const forced = () => (win as unknown as Record<string, unknown>)[FORCE_PLAIN_TEXT_PASTE_FLAG] === true;
+  const forced = () =>
+    (win as unknown as Record<string, unknown>)[FORCE_PLAIN_TEXT_PASTE_FLAG] === true;
   const enabled = () => options.enabled ?? (engine || forced());
   let composing = false;
   const onCompositionStart = () => {
@@ -219,16 +230,16 @@ export function installPlainTextPaste(win: Window = window, options: PlainTextPa
     event.preventDefault();
     insertPastedText(insertion);
   };
-  doc.addEventListener('compositionstart', onCompositionStart, true);
-  doc.addEventListener('compositionend', onCompositionEnd, true);
-  doc.addEventListener('focusin', onCompositionEnd, true);
-  win.addEventListener('blur', onCompositionEnd);
-  win.addEventListener('paste', onPaste);
+  doc.addEventListener("compositionstart", onCompositionStart, true);
+  doc.addEventListener("compositionend", onCompositionEnd, true);
+  doc.addEventListener("focusin", onCompositionEnd, true);
+  win.addEventListener("blur", onCompositionEnd);
+  win.addEventListener("paste", onPaste);
   return () => {
-    doc.removeEventListener('compositionstart', onCompositionStart, true);
-    doc.removeEventListener('compositionend', onCompositionEnd, true);
-    doc.removeEventListener('focusin', onCompositionEnd, true);
-    win.removeEventListener('blur', onCompositionEnd);
-    win.removeEventListener('paste', onPaste);
+    doc.removeEventListener("compositionstart", onCompositionStart, true);
+    doc.removeEventListener("compositionend", onCompositionEnd, true);
+    doc.removeEventListener("focusin", onCompositionEnd, true);
+    win.removeEventListener("blur", onCompositionEnd);
+    win.removeEventListener("paste", onPaste);
   };
 }

@@ -1,15 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
-const VIM_DOCUMENT_FOCUS_REQUEST = 'plannotator:vim-document-focus-request';
+const VIM_DOCUMENT_FOCUS_REQUEST = "plannotator:vim-document-focus-request";
 
 const EDITABLE_FOCUS_SELECTOR = [
-  'input',
-  'textarea',
-  'select',
+  "input",
+  "textarea",
+  "select",
   '[contenteditable]:not([contenteditable="false"])',
   '[role="textbox"]',
   '[role="combobox"]',
-].join(',');
+].join(",");
 
 const BLOCKING_OVERLAY_SELECTOR = [
   '[role="dialog"]',
@@ -17,14 +17,14 @@ const BLOCKING_OVERLAY_SELECTOR = [
   // Some legacy Plannotator modals predate explicit dialog semantics. Keep
   // Vim from focusing the obscured document underneath those full-screen
   // overlays while they are brought onto the shared dialog primitive.
-  '.fixed.inset-0',
+  ".fixed.inset-0",
   // An open dismissable popover (ActionMenu, ApproveDropdown, DecisionControl)
   // owns Escape through useDismissablePopover. Without this, the vim handler
   // runs first (it registered earlier on document), preventDefaults while
   // reclaiming focus, and the popover's own Escape handler then skips the
   // defaultPrevented event — the menu never closes.
-  '[data-pn-dismissable-popover]',
-].join(',');
+  "[data-pn-dismissable-popover]",
+].join(",");
 
 /** Inputs for restoring keyboard ownership to a Vim-enabled document. */
 export interface UseVimDocumentFocusOptions {
@@ -81,12 +81,7 @@ export function useVimDocumentFocus({
     if (!enabled) return;
 
     const handleFocusRequest = (event: Event) => {
-      if (
-        !event.defaultPrevented
-        && !blocked
-        && !hasBlockingOverlay()
-        && focusDocument()
-      ) {
+      if (!event.defaultPrevented && !blocked && !hasBlockingOverlay() && focusDocument()) {
         // One visible document owns each request when a host renders multiple
         // Viewer instances.
         event.preventDefault();
@@ -94,16 +89,16 @@ export function useVimDocumentFocus({
     };
     const handleEscape = (event: KeyboardEvent) => {
       if (
-        event.key !== 'Escape'
-        || event.defaultPrevented
-        || event.isComposing
-        || event.ctrlKey
-        || event.metaKey
-        || event.altKey
-        || event.shiftKey
-        || blocked
-        || targetOwnsTextInput(event.target)
-        || hasBlockingOverlay()
+        event.key !== "Escape" ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.shiftKey ||
+        blocked ||
+        targetOwnsTextInput(event.target) ||
+        hasBlockingOverlay()
       ) {
         return;
       }
@@ -114,10 +109,10 @@ export function useVimDocumentFocus({
     };
 
     document.addEventListener(VIM_DOCUMENT_FOCUS_REQUEST, handleFocusRequest);
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
     return () => {
       document.removeEventListener(VIM_DOCUMENT_FOCUS_REQUEST, handleFocusRequest);
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [blocked, enabled, focusDocument]);
 }

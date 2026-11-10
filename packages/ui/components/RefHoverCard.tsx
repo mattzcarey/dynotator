@@ -28,8 +28,8 @@
  * inside them does nothing until the person confirms it in the card.
  */
 
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   forgeRefLabel,
   type ForgeRef,
@@ -38,10 +38,10 @@ import {
   type ForgeRefCardResult,
   type ForgeRefChecks,
   type ForgeRefPerson,
-} from '@dynotator/core/forge-ref-card';
-import { loadRefCard, refCardTarget } from '../utils/refCard';
-import { RenderedMarkdown } from './RenderedMarkdown';
-import { tooltipContainerOf } from './HostTitle';
+} from "@dynotator/core/forge-ref-card";
+import { loadRefCard, refCardTarget } from "../utils/refCard";
+import { RenderedMarkdown } from "./RenderedMarkdown";
+import { tooltipContainerOf } from "./HostTitle";
 
 /** How long a hover or focus rests on a link before the card opens and its data is asked for. */
 export const REF_CARD_DELAY_MS = 400;
@@ -60,75 +60,101 @@ const BODY_MAX_PINNED = 340;
 
 function timeAgo(iso: string, now = Date.now()): string {
   const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return '';
+  if (!Number.isFinite(t)) return "";
   const s = Math.max(0, Math.round((now - t) / 1000));
-  if (s < 60) return 'just now';
+  if (s < 60) return "just now";
   const m = Math.round(s / 60);
   if (m < 60) return `${m} min ago`;
   const h = Math.round(m / 60);
   if (h < 24) return `${h} h ago`;
   const d = Math.round(h / 24);
-  if (d < 30) return `${d} day${d === 1 ? '' : 's'} ago`;
-  return new Date(t).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  if (d < 30) return `${d} day${d === 1 ? "" : "s"} ago`;
+  return new Date(t).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 const fmt = (n: number) => n.toLocaleString();
-const forgeName = (p: ForgeRef['platform']) => (p === 'gitlab' ? 'GitLab' : 'GitHub');
+const forgeName = (p: ForgeRef["platform"]) => (p === "gitlab" ? "GitLab" : "GitHub");
 
 /** "Issue", "Pull request", "Merge request". */
-export function refKindName(ref: Pick<ForgeRef, 'platform' | 'kind'>): string {
-  return ref.kind === 'issue' ? 'Issue' : ref.platform === 'gitlab' ? 'Merge request' : 'Pull request';
+export function refKindName(ref: Pick<ForgeRef, "platform" | "kind">): string {
+  return ref.kind === "issue"
+    ? "Issue"
+    : ref.platform === "gitlab"
+      ? "Merge request"
+      : "Pull request";
 }
 
 const FAILURE_TEXT: Record<ForgeRefCardError, (forge: string, cli: string) => string> = {
-  unsupported: (_forge, cli) => `Details show for hosts your ${cli} is signed in to. This one isn't, so nothing was fetched.`,
-  cli_missing: (forge, cli) => `Install the ${forge} CLI (${cli}) on this computer to see details here.`,
+  unsupported: (_forge, cli) =>
+    `Details show for hosts your ${cli} is signed in to. This one isn't, so nothing was fetched.`,
+  cli_missing: (forge, cli) =>
+    `Install the ${forge} CLI (${cli}) on this computer to see details here.`,
   signed_out: (_forge, cli) => `Sign in with ${cli} auth login to see details here.`,
-  not_found: (forge) => `None of your signed-in ${forge} accounts can see this one, or it doesn't exist.`,
+  not_found: (forge) =>
+    `None of your signed-in ${forge} accounts can see this one, or it doesn't exist.`,
   rate_limited: (forge) => `${forge} asked for a short break. Details come back in a minute.`,
   unavailable: () => "Details couldn't load right now.",
 };
 
-type Tone = 'open' | 'merged' | 'closed' | 'neutral';
+type Tone = "open" | "merged" | "closed" | "neutral";
 
 function stateOf(data: ForgeRefCardData): { label: string; tone: Tone } {
   switch (data.state) {
-    case 'open':
-      return { label: 'Open', tone: 'open' };
-    case 'draft':
-      return { label: 'Draft', tone: 'neutral' };
-    case 'merged':
-      return { label: 'Merged', tone: 'merged' };
-    case 'completed':
-      return { label: 'Closed', tone: 'merged' };
-    case 'not_planned':
-      return { label: 'Not planned', tone: 'neutral' };
+    case "open":
+      return { label: "Open", tone: "open" };
+    case "draft":
+      return { label: "Draft", tone: "neutral" };
+    case "merged":
+      return { label: "Merged", tone: "merged" };
+    case "completed":
+      return { label: "Closed", tone: "merged" };
+    case "not_planned":
+      return { label: "Not planned", tone: "neutral" };
     default:
-      return { label: 'Closed', tone: data.kind === 'pull' ? 'closed' : 'neutral' };
+      return { label: "Closed", tone: data.kind === "pull" ? "closed" : "neutral" };
   }
 }
 
 // Merged and done read in the palette's primary (violet in Plannotator's own), like the forges' purple.
 const TONE_TEXT: Record<Tone, string> = {
-  open: 'text-success',
-  merged: 'text-primary',
-  closed: 'text-destructive',
-  neutral: 'text-muted-foreground',
+  open: "text-success",
+  merged: "text-primary",
+  closed: "text-destructive",
+  neutral: "text-muted-foreground",
 };
 const TONE_PILL: Record<Tone, string> = {
-  open: 'bg-success/15 text-success',
-  merged: 'bg-primary/15 text-primary',
-  closed: 'bg-destructive/15 text-destructive',
-  neutral: 'bg-muted text-muted-foreground',
+  open: "bg-success/15 text-success",
+  merged: "bg-primary/15 text-primary",
+  closed: "bg-destructive/15 text-destructive",
+  neutral: "bg-muted text-muted-foreground",
 };
 
-function StateIcon({ kind, tone, className = '' }: { kind: 'issue' | 'pull'; tone: Tone; className?: string }) {
+function StateIcon({
+  kind,
+  tone,
+  className = "",
+}: {
+  kind: "issue" | "pull";
+  tone: Tone;
+  className?: string;
+}) {
   const cls = `h-4 w-4 flex-none ${TONE_TEXT[tone]} ${className}`;
-  if (kind === 'issue') {
+  if (kind === "issue") {
     return (
-      <svg viewBox="0 0 16 16" className={cls} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <svg
+        viewBox="0 0 16 16"
+        className={cls}
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      >
         <circle cx="8" cy="8" r="6.25" />
-        {tone === 'merged' ? (
+        {tone === "merged" ? (
           <path d="M5.5 8.2l1.7 1.7 3.4-3.6" strokeLinecap="round" strokeLinejoin="round" />
         ) : (
           <circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" />
@@ -137,19 +163,37 @@ function StateIcon({ kind, tone, className = '' }: { kind: 'issue' | 'pull'; ton
     );
   }
   return (
-    <svg viewBox="0 0 16 16" className={cls} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <svg
+      viewBox="0 0 16 16"
+      className={cls}
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
       <circle cx="4.5" cy="3.5" r="1.6" />
       <circle cx="4.5" cy="12.5" r="1.6" />
       <circle cx="11.5" cy="12.5" r="1.6" />
       <path d="M4.5 5.1v5.8" />
-      {tone === 'merged' ? <path d="M4.5 5.1c0 3.4 7 2.4 7 5.8" /> : <path d="M11.5 10.9V6.5a2 2 0 00-2-2H7.5m1.4-1.4L7.5 4.5l1.4 1.4" />}
+      {tone === "merged" ? (
+        <path d="M4.5 5.1c0 3.4 7 2.4 7 5.8" />
+      ) : (
+        <path d="M11.5 10.9V6.5a2 2 0 00-2-2H7.5m1.4-1.4L7.5 4.5l1.4 1.4" />
+      )}
     </svg>
   );
 }
 
 function Avatar({ person, size = 18 }: { person: ForgeRefPerson; size?: number }) {
   return person.avatarUrl ? (
-    <img src={person.avatarUrl} alt="" width={size} height={size} className="flex-none rounded-full" />
+    <img
+      src={person.avatarUrl}
+      alt=""
+      width={size}
+      height={size}
+      className="flex-none rounded-full"
+    />
   ) : (
     <span
       aria-hidden="true"
@@ -162,55 +206,68 @@ function Avatar({ person, size = 18 }: { person: ForgeRefPerson; size?: number }
 }
 
 /** "All 32 checks passed" / "Pipeline failed · 2 of 12 jobs". */
-export function checksText(checks: ForgeRefChecks, platform: ForgeRef['platform']): string {
-  if (platform === 'gitlab') {
-    const jobs = (n: number) => `${n} job${n === 1 ? '' : 's'}`;
-    if (checks.state === 'failure') return `Pipeline failed${checks.total ? ` · ${checks.failed} of ${jobs(checks.total)}` : ''}`;
-    if (checks.state === 'pending') return `Pipeline running${checks.total ? ` · ${checks.pending} of ${jobs(checks.total)} left` : ''}`;
-    return `Pipeline passed${checks.total ? ` · ${jobs(checks.total)}` : ''}`;
+export function checksText(checks: ForgeRefChecks, platform: ForgeRef["platform"]): string {
+  if (platform === "gitlab") {
+    const jobs = (n: number) => `${n} job${n === 1 ? "" : "s"}`;
+    if (checks.state === "failure")
+      return `Pipeline failed${checks.total ? ` · ${checks.failed} of ${jobs(checks.total)}` : ""}`;
+    if (checks.state === "pending")
+      return `Pipeline running${checks.total ? ` · ${checks.pending} of ${jobs(checks.total)} left` : ""}`;
+    return `Pipeline passed${checks.total ? ` · ${jobs(checks.total)}` : ""}`;
   }
-  if (checks.failed > 0) return `${checks.failed} failing${checks.pending ? `, ${checks.pending} running` : ''} · ${checks.passed} passed`;
-  if (checks.pending > 0 || checks.state === 'pending') return `${checks.pending} running · ${checks.passed} passed`;
-  return `All ${checks.total} check${checks.total === 1 ? '' : 's'} passed`;
+  if (checks.failed > 0)
+    return `${checks.failed} failing${checks.pending ? `, ${checks.pending} running` : ""} · ${checks.passed} passed`;
+  if (checks.pending > 0 || checks.state === "pending")
+    return `${checks.pending} running · ${checks.passed} passed`;
+  return `All ${checks.total} check${checks.total === 1 ? "" : "s"} passed`;
 }
 
-function ChecksLine({ checks, platform }: { checks: ForgeRefChecks; platform: ForgeRef['platform'] }) {
-  const failing = checks.state === 'failure' || checks.failed > 0;
-  const pending = !failing && (checks.state === 'pending' || checks.pending > 0);
-  const tone = failing ? 'text-destructive' : pending ? 'text-warning' : 'text-success';
+function ChecksLine({
+  checks,
+  platform,
+}: {
+  checks: ForgeRefChecks;
+  platform: ForgeRef["platform"];
+}) {
+  const failing = checks.state === "failure" || checks.failed > 0;
+  const pending = !failing && (checks.state === "pending" || checks.pending > 0);
+  const tone = failing ? "text-destructive" : pending ? "text-warning" : "text-success";
   return (
-    <span className={`inline-flex items-center gap-1 ${tone}`} data-ref-card-checks={failing ? 'failure' : pending ? 'pending' : 'success'}>
-      <span aria-hidden="true">{failing ? '✕' : pending ? '●' : '✓'}</span>
+    <span
+      className={`inline-flex items-center gap-1 ${tone}`}
+      data-ref-card-checks={failing ? "failure" : pending ? "pending" : "success"}
+    >
+      <span aria-hidden="true">{failing ? "✕" : pending ? "●" : "✓"}</span>
       {checksText(checks, platform)}
     </span>
   );
 }
 
 const REVIEW_TEXT = {
-  approved: { text: 'Approved', cls: 'text-success' },
-  changes_requested: { text: 'Changes requested', cls: 'text-destructive' },
-  review_required: { text: 'Review required', cls: 'text-warning' },
+  approved: { text: "Approved", cls: "text-success" },
+  changes_requested: { text: "Changes requested", cls: "text-destructive" },
+  review_required: { text: "Review required", cls: "text-warning" },
 } as const;
 
 /** Body markdown with images and links made harmless (the renderer still sanitizes HTML). An empty title: the alt text says it, and no native tooltip shows. */
-const NO_IMAGES = () => ({ kind: 'unavailable' as const, title: '' });
+const NO_IMAGES = () => ({ kind: "unavailable" as const, title: "" });
 
 /** A local path in an untrusted body never opens anything of the host's (a thread's file, a document). */
-const NO_LOCAL_LINKS = () => ({ kind: 'unavailable' as const, title: '' });
+const NO_LOCAL_LINKS = () => ({ kind: "unavailable" as const, title: "" });
 
-const XLINK = 'http://www.w3.org/1999/xlink';
+const XLINK = "http://www.w3.org/1999/xlink";
 /** Everything in a body that could navigate: HTML and SVG anchors, image-map areas. */
-const LINKISH = 'a, area';
+const LINKISH = "a, area";
 
 function linkHref(el: Element): string | null {
-  return el.getAttribute('href') ?? el.getAttributeNS(XLINK, 'href');
+  return el.getAttribute("href") ?? el.getAttributeNS(XLINK, "href");
 }
 
 /** The link an event landed on, `href` still on it or already moved. */
 function linkAt(root: Element | null, target: EventTarget | null): Element | null {
   const el = target instanceof Element ? target.closest(LINKISH) : null;
   if (!el || !root?.contains(el)) return null;
-  return el.hasAttribute('data-ref-card-href') || linkHref(el) !== null ? el : null;
+  return el.hasAttribute("data-ref-card-href") || linkHref(el) !== null ? el : null;
 }
 
 /**
@@ -223,14 +280,14 @@ function neutralizeLinks(root: Element): void {
   for (const a of root.querySelectorAll(LINKISH)) {
     const href = linkHref(a);
     if (href === null) continue;
-    a.setAttribute('data-ref-card-href', href);
-    a.removeAttribute('href');
-    a.removeAttributeNS(XLINK, 'href');
-    a.removeAttribute('target');
-    a.setAttribute('role', 'link');
+    a.setAttribute("data-ref-card-href", href);
+    a.removeAttribute("href");
+    a.removeAttributeNS(XLINK, "href");
+    a.removeAttribute("target");
+    a.setAttribute("role", "link");
     if (a instanceof HTMLElement || a instanceof SVGElement) {
       a.tabIndex = 0;
-      a.style.cursor = 'pointer';
+      a.style.cursor = "pointer";
     }
   }
 }
@@ -247,11 +304,12 @@ export function confirmUrlParts(url: string): { scheme: string; host: string; pa
   try {
     u = new URL(url);
   } catch {
-    return { scheme: '', host: url, path: '' };
+    return { scheme: "", host: url, path: "" };
   }
-  const rest = `${u.pathname === '/' && !u.search && !u.hash ? '' : u.pathname}${u.search}${u.hash}`;
+  const rest = `${u.pathname === "/" && !u.search && !u.hash ? "" : u.pathname}${u.search}${u.hash}`;
   const half = Math.floor((CONFIRM_PATH_MAX - 1) / 2);
-  const path = rest.length > CONFIRM_PATH_MAX ? `${rest.slice(0, half)}…${rest.slice(-half)}` : rest;
+  const path =
+    rest.length > CONFIRM_PATH_MAX ? `${rest.slice(0, half)}…${rest.slice(-half)}` : rest;
   return { scheme: `${u.protocol}//`, host: u.host, path };
 }
 
@@ -295,28 +353,36 @@ function SafeMarkdown({ markdown }: { markdown: string }) {
       if (!a) return;
       e.preventDefault();
       e.stopPropagation();
-      if (e.type === 'mousedown') return;
-      const href = a.getAttribute('data-ref-card-href') ?? linkHref(a) ?? '';
+      if (e.type === "mousedown") return;
+      const href = a.getAttribute("data-ref-card-href") ?? linkHref(a) ?? "";
       setConfirm(/^https?:\/\//i.test(href) ? href : null);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') ask(e);
+      if (e.key === "Enter") ask(e);
     };
     const onMouseDown = (e: MouseEvent) => {
       // The middle button's autoscroll and open-in-tab start on the press.
       if (e.button === 1) ask(e);
     };
-    body.addEventListener('click', ask, true);
-    body.addEventListener('auxclick', ask, true);
-    body.addEventListener('mousedown', onMouseDown, true);
-    body.addEventListener('keydown', onKey, true);
-    const observer = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => neutralizeLinks(body));
-    observer?.observe(body, { childList: true, subtree: true, attributes: true, attributeFilter: ['href'] });
+    body.addEventListener("click", ask, true);
+    body.addEventListener("auxclick", ask, true);
+    body.addEventListener("mousedown", onMouseDown, true);
+    body.addEventListener("keydown", onKey, true);
+    const observer =
+      typeof MutationObserver === "undefined"
+        ? null
+        : new MutationObserver(() => neutralizeLinks(body));
+    observer?.observe(body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["href"],
+    });
     return () => {
-      body.removeEventListener('click', ask, true);
-      body.removeEventListener('auxclick', ask, true);
-      body.removeEventListener('mousedown', onMouseDown, true);
-      body.removeEventListener('keydown', onKey, true);
+      body.removeEventListener("click", ask, true);
+      body.removeEventListener("auxclick", ask, true);
+      body.removeEventListener("mousedown", onMouseDown, true);
+      body.removeEventListener("keydown", onKey, true);
       observer?.disconnect();
     };
   }, []);
@@ -325,18 +391,36 @@ function SafeMarkdown({ markdown }: { markdown: string }) {
       // `!`: a host may rescale the renderer's fixed sizes in a later cascade layer (the Inbox's text size does).
       className="text-[12.5px] leading-[1.55] text-foreground [overflow-wrap:anywhere] [&_h1]:my-1.5! [&_h1]:text-[13px]! [&_h1]:font-semibold [&_h2]:my-1.5! [&_h2]:text-[13px]! [&_h2]:font-semibold [&_h3]:my-1! [&_h3]:text-[12.5px]! [&_h3]:font-semibold [&_p]:my-1! [&_p]:text-[12.5px]! [&_p]:leading-[1.55]! [&_.text-sm]:text-[12.5px]! [&_pre]:text-[11.5px]! [&_.my-5]:my-2! [&_ul]:my-1! [&_li]:my-0! [&>:first-child]:mt-0!"
     >
-      <div
-        ref={bodyRef}
-      >
-        <RenderedMarkdown markdown={markdown} softLineBreaks resolveImage={NO_IMAGES} resolveLocalLink={NO_LOCAL_LINKS} />
+      <div ref={bodyRef}>
+        <RenderedMarkdown
+          markdown={markdown}
+          softLineBreaks
+          resolveImage={NO_IMAGES}
+          resolveLocalLink={NO_LOCAL_LINKS}
+        />
       </div>
       {confirm ? (
-        <div className="mt-1.5 flex items-center gap-2 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-[11.5px]" role="group" aria-label="Open this link?" data-ref-card-confirm="">
+        <div
+          className="mt-1.5 flex items-center gap-2 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-[11.5px]"
+          role="group"
+          aria-label="Open this link?"
+          data-ref-card-confirm=""
+        >
           <ConfirmUrl url={confirm} />
-          <a href={confirm} target="_blank" rel="noopener noreferrer nofollow" className="font-medium text-primary hover:underline" onClick={() => setConfirm(null)}>
+          <a
+            href={confirm}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="font-medium text-primary hover:underline"
+            onClick={() => setConfirm(null)}
+          >
             Open
           </a>
-          <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setConfirm(null)}>
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => setConfirm(null)}
+          >
             Cancel
           </button>
         </div>
@@ -363,15 +447,31 @@ export interface RefCardViewProps {
   tight?: boolean;
 }
 
-export function RefCardView({ target, href, result, pinned, onClose, sheet, tight }: RefCardViewProps) {
+export function RefCardView({
+  target,
+  href,
+  result,
+  pinned,
+  onClose,
+  sheet,
+  tight,
+}: RefCardViewProps) {
   const repoName = `${target.owner}/${target.repo}`;
   const forge = forgeName(target.platform);
-  const btn = sheet ? 'min-h-11 px-3' : 'h-7 px-2.5';
+  const btn = sheet ? "min-h-11 px-3" : "h-7 px-2.5";
   const footer = (extra?: React.ReactNode) => (
-    <div className="flex flex-none items-center gap-2 border-t border-border px-3.5 py-2 text-[11.5px] text-muted-foreground" data-ref-card-foot="">
+    <div
+      className="flex flex-none items-center gap-2 border-t border-border px-3.5 py-2 text-[11.5px] text-muted-foreground"
+      data-ref-card-foot=""
+    >
       <span className="min-w-0 flex-1 truncate">{extra}</span>
       {onClose && (pinned || sheet) ? (
-        <button type="button" onClick={onClose} className={`${btn} rounded-md hover:bg-muted hover:text-foreground`} data-ref-card-close="">
+        <button
+          type="button"
+          onClick={onClose}
+          className={`${btn} rounded-md hover:bg-muted hover:text-foreground`}
+          data-ref-card-close=""
+        >
           Close
         </button>
       ) : null}
@@ -405,7 +505,7 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
   }
 
   if (!result || !result.ok) {
-    const error = result && 'error' in result ? result.error : 'unavailable';
+    const error = result && "error" in result ? result.error : "unavailable";
     return (
       <div>
         <div className="px-3.5 pb-3 pt-3">
@@ -413,8 +513,11 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
           <div className="mt-1 text-[13.5px] font-semibold text-foreground">
             {refKindName(target)} {forgeRefLabel(target)}
           </div>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground" data-ref-card-error={error}>
-            {FAILURE_TEXT[error](forge, target.platform === 'gitlab' ? 'glab' : 'gh')}
+          <p
+            className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground"
+            data-ref-card-error={error}
+          >
+            {FAILURE_TEXT[error](forge, target.platform === "gitlab" ? "glab" : "gh")}
           </p>
         </div>
         {footer()}
@@ -428,12 +531,16 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
   const p = d.pull;
   // One element scrolls: the description (its own height capped), or, when tight, the header and the description together.
   const together = !!tight && !sheet;
-  const scroller = { 'data-ref-card-scroll': '', tabIndex: 0 };
+  const scroller = { "data-ref-card-scroll": "", tabIndex: 0 };
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div
-        className={together ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain' : 'flex min-h-0 flex-1 flex-col'}
-        {...(together ? { ...scroller, 'aria-label': `${refKindName(ref)} details` } : {})}
+        className={
+          together
+            ? "min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            : "flex min-h-0 flex-1 flex-col"
+        }
+        {...(together ? { ...scroller, "aria-label": `${refKindName(ref)} details` } : {})}
       >
         <div className="flex-none px-3.5 pt-3" data-ref-card-head="">
           <div className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
@@ -443,12 +550,19 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
           </div>
           <div className="mt-1.5 flex items-start gap-2">
             <StateIcon kind={d.kind} tone={state.tone} className="mt-[3px]" />
-            <div className="min-w-0 flex-1 text-[14px] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]" data-ref-card-title="">
-              {d.title} <span className="font-normal text-muted-foreground">{forgeRefLabel(ref)}</span>
+            <div
+              className="min-w-0 flex-1 text-[14px] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]"
+              data-ref-card-title=""
+            >
+              {d.title}{" "}
+              <span className="font-normal text-muted-foreground">{forgeRefLabel(ref)}</span>
             </div>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-muted-foreground">
-            <span className={`rounded-full px-2 py-[1px] text-[11px] font-semibold ${TONE_PILL[state.tone]}`} data-ref-card-state={d.state}>
+            <span
+              className={`rounded-full px-2 py-[1px] text-[11px] font-semibold ${TONE_PILL[state.tone]}`}
+              data-ref-card-state={d.state}
+            >
               {state.label}
             </span>
             {d.author ? (
@@ -457,9 +571,9 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
                 {d.author.login}
               </span>
             ) : null}
-            {d.closedAt && d.state !== 'open' && d.state !== 'draft' ? (
+            {d.closedAt && d.state !== "open" && d.state !== "draft" ? (
               <span>
-                {d.state === 'merged' ? 'merged' : 'closed'} {timeAgo(d.closedAt)}
+                {d.state === "merged" ? "merged" : "closed"} {timeAgo(d.closedAt)}
               </span>
             ) : (
               <span>updated {timeAgo(d.updatedAt)}</span>
@@ -468,16 +582,20 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
           {p ? (
             <div className="mt-2 space-y-1 text-[11.5px]">
               {p.base || p.head ? (
-                <div className="min-w-0 truncate font-mono text-[11px] text-muted-foreground" data-ref-card-branch="">
+                <div
+                  className="min-w-0 truncate font-mono text-[11px] text-muted-foreground"
+                  data-ref-card-branch=""
+                >
                   {p.base} ← {p.head}
                 </div>
               ) : null}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span>
-                  <span className="text-success">+{fmt(p.additions)}</span> <span className="text-destructive">−{fmt(p.deletions)}</span>
+                  <span className="text-success">+{fmt(p.additions)}</span>{" "}
+                  <span className="text-destructive">−{fmt(p.deletions)}</span>
                   <span className="text-muted-foreground">
-                    {' '}
-                    · {fmt(p.files)} file{p.files === 1 ? '' : 's'}
+                    {" "}
+                    · {fmt(p.files)} file{p.files === 1 ? "" : "s"}
                   </span>
                 </span>
                 {p.checks ? <ChecksLine checks={p.checks} platform={d.platform} /> : null}
@@ -492,13 +610,24 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
           {d.labels.length > 0 || d.assignees.length > 0 ? (
             <div className="mt-2 flex flex-wrap items-center gap-1">
               {d.labels.map((l) => (
-                <span key={l.name} className="inline-flex max-w-full items-center gap-1 rounded-full border border-border px-1.5 py-[1px] text-[10.5px] text-foreground">
-                  <span aria-hidden="true" className="h-2 w-2 flex-none rounded-full" style={{ background: `#${l.color}` }} />
+                <span
+                  key={l.name}
+                  className="inline-flex max-w-full items-center gap-1 rounded-full border border-border px-1.5 py-[1px] text-[10.5px] text-foreground"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-2 w-2 flex-none rounded-full"
+                    style={{ background: `#${l.color}` }}
+                  />
                   <span className="truncate">{l.name}</span>
                 </span>
               ))}
               {d.assignees.length > 0 ? (
-                <span className="ml-auto inline-flex items-center gap-1" role="img" aria-label={`Assigned to ${d.assignees.map((a) => a.login).join(', ')}`}>
+                <span
+                  className="ml-auto inline-flex items-center gap-1"
+                  role="img"
+                  aria-label={`Assigned to ${d.assignees.map((a) => a.login).join(", ")}`}
+                >
                   {d.assignees.map((a) => (
                     <Avatar key={a.login} person={a} size={16} />
                   ))}
@@ -509,19 +638,36 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
         </div>
 
         <div
-          className={`mt-2.5 border-t border-border px-3.5 py-2.5 ${together ? '' : 'min-h-0 flex-1 overflow-y-auto overscroll-contain'}`}
+          className={`mt-2.5 border-t border-border px-3.5 py-2.5 ${together ? "" : "min-h-0 flex-1 overflow-y-auto overscroll-contain"}`}
           style={sheet || together ? undefined : { maxHeight: pinned ? BODY_MAX_PINNED : BODY_MAX }}
           data-ref-card-body=""
-          {...(together ? {} : { ...scroller, 'aria-label': `${refKindName(ref)} description` })}
+          {...(together ? {} : { ...scroller, "aria-label": `${refKindName(ref)} description` })}
         >
-          {d.body.trim() ? <SafeMarkdown markdown={d.body} /> : <p className="text-[12px] italic text-muted-foreground">No description.</p>}
-          {d.bodyCut ? <p className="mt-1 text-[11px] text-muted-foreground">The rest is on {forge}.</p> : null}
+          {d.body.trim() ? (
+            <SafeMarkdown markdown={d.body} />
+          ) : (
+            <p className="text-[12px] italic text-muted-foreground">No description.</p>
+          )}
+          {d.bodyCut ? (
+            <p className="mt-1 text-[11px] text-muted-foreground">The rest is on {forge}.</p>
+          ) : null}
           {d.linked.length > 0 ? (
             <div className="mt-2.5 space-y-1">
-              <div className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">{d.kind === 'pull' ? 'Closes' : 'Closed by'}</div>
+              <div className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {d.kind === "pull" ? "Closes" : "Closed by"}
+              </div>
               {d.linked.map((l) => (
                 <div key={l.number} className="flex items-center gap-1.5 text-[12px]">
-                  <StateIcon kind={d.kind === 'pull' ? 'issue' : 'pull'} tone={l.state === 'open' ? 'open' : l.state === 'merged' || d.kind === 'pull' ? 'merged' : 'closed'} />
+                  <StateIcon
+                    kind={d.kind === "pull" ? "issue" : "pull"}
+                    tone={
+                      l.state === "open"
+                        ? "open"
+                        : l.state === "merged" || d.kind === "pull"
+                          ? "merged"
+                          : "closed"
+                    }
+                  />
                   <span className="min-w-0 truncate">{l.title}</span>
                   <span className="flex-none text-muted-foreground">#{l.number}</span>
                 </div>
@@ -529,10 +675,15 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
             </div>
           ) : null}
           {d.lastComment ? (
-            <div className="mt-2.5 rounded-md border border-border bg-muted/30 px-2.5 py-2" data-ref-card-comment="">
+            <div
+              className="mt-2.5 rounded-md border border-border bg-muted/30 px-2.5 py-2"
+              data-ref-card-comment=""
+            >
               <div className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 {d.lastComment.author ? <Avatar person={d.lastComment.author} size={14} /> : null}
-                <span className="font-medium text-foreground">{d.lastComment.author?.login ?? 'someone'}</span>
+                <span className="font-medium text-foreground">
+                  {d.lastComment.author?.login ?? "someone"}
+                </span>
                 <span>commented {timeAgo(d.lastComment.at)}</span>
                 <span className="ml-auto">latest</span>
               </div>
@@ -543,8 +694,10 @@ export function RefCardView({ target, href, result, pinned, onClose, sheet, tigh
       </div>
       {footer(
         <span className="inline-flex items-center gap-1">
-          <span aria-hidden="true">💬</span> {d.comments} comment{d.comments === 1 ? '' : 's'}
-          {pinned && !sheet ? <span className="ml-1.5 text-muted-foreground/80">· pinned</span> : null}
+          <span aria-hidden="true">💬</span> {d.comments} comment{d.comments === 1 ? "" : "s"}
+          {pinned && !sheet ? (
+            <span className="ml-1.5 text-muted-foreground/80">· pinned</span>
+          ) : null}
         </span>,
       )}
     </div>
@@ -557,7 +710,7 @@ interface OpenCard {
   anchor: HTMLAnchorElement;
   href: string;
   target: ForgeRef;
-  via: 'hover' | 'focus' | 'tap';
+  via: "hover" | "focus" | "tap";
   pinned: boolean;
   result: ForgeRefCardResult | null | undefined;
 }
@@ -566,7 +719,7 @@ interface OpenCard {
 let closeOther: (() => void) | null = null;
 
 function touchOnly(): boolean {
-  return typeof window !== 'undefined' && !!window.matchMedia?.('(hover: none)').matches;
+  return typeof window !== "undefined" && !!window.matchMedia?.("(hover: none)").matches;
 }
 
 function firstControl(card: HTMLElement | null): HTMLElement | null {
@@ -579,14 +732,22 @@ function firstControl(card: HTMLElement | null): HTMLElement | null {
  * is tight or not (a tight card's description is uncapped, and its scroller clips the rest).
  */
 function naturalHeight(card: HTMLElement, pinned: boolean): { natural: number; body: number } {
-  const head = card.querySelector<HTMLElement>('[data-ref-card-head]');
-  const body = card.querySelector<HTMLElement>('[data-ref-card-body]');
-  const foot = card.querySelector<HTMLElement>('[data-ref-card-foot]');
+  const head = card.querySelector<HTMLElement>("[data-ref-card-head]");
+  const body = card.querySelector<HTMLElement>("[data-ref-card-body]");
+  const foot = card.querySelector<HTMLElement>("[data-ref-card-foot]");
   if (!head || !body || !foot) return { natural: card.scrollHeight, body: 0 };
   const cs = getComputedStyle(body);
-  const bodyHeight = Math.min(body.scrollHeight + (parseFloat(cs.borderTopWidth) || 0), pinned ? BODY_MAX_PINNED : BODY_MAX);
+  const bodyHeight = Math.min(
+    body.scrollHeight + (parseFloat(cs.borderTopWidth) || 0),
+    pinned ? BODY_MAX_PINNED : BODY_MAX,
+  );
   return {
-    natural: head.offsetHeight + (parseFloat(cs.marginTop) || 0) + bodyHeight + foot.offsetHeight + (card.offsetHeight - card.clientHeight),
+    natural:
+      head.offsetHeight +
+      (parseFloat(cs.marginTop) || 0) +
+      bodyHeight +
+      foot.offsetHeight +
+      (card.offsetHeight - card.clientHeight),
     body: bodyHeight,
   };
 }
@@ -631,7 +792,10 @@ interface Pos {
  */
 export function useRefHoverCards(
   rootRef: React.RefObject<HTMLElement | null>,
-  { delayMs = REF_CARD_DELAY_MS, onlyWithData = false }: { delayMs?: number; onlyWithData?: boolean } = {},
+  {
+    delayMs = REF_CARD_DELAY_MS,
+    onlyWithData = false,
+  }: { delayMs?: number; onlyWithData?: boolean } = {},
 ): React.ReactNode {
   const [card, setCard] = useState<OpenCard | null>(null);
   /** onlyWithData: the link a card is being fetched for (cleared when the hover or focus leaves it). */
@@ -644,7 +808,7 @@ export function useRefHoverCards(
   current.current = card;
   const openTimer = useRef<number | null>(null);
   const closeTimer = useRef<number | null>(null);
-  const lastPointer = useRef('mouse');
+  const lastPointer = useRef("mouse");
 
   const clearTimers = () => {
     if (openTimer.current !== null) window.clearTimeout(openTimer.current);
@@ -658,12 +822,13 @@ export function useRefHoverCards(
     if (!was) return;
     const focusWasInside = !!cardRef.current?.contains(document.activeElement);
     setCard(null);
-    if (restoreFocus && (focusWasInside || was.via === 'tap')) was.anchor.focus({ preventScroll: true });
+    if (restoreFocus && (focusWasInside || was.via === "tap"))
+      was.anchor.focus({ preventScroll: true });
   }, []);
   const closeSelf = useRef(() => close());
   closeSelf.current = () => close();
 
-  const open = useCallback((anchor: HTMLAnchorElement, target: ForgeRef, via: OpenCard['via']) => {
+  const open = useCallback((anchor: HTMLAnchorElement, target: ForgeRef, via: OpenCard["via"]) => {
     clearTimers();
     if (dataOnly.current) {
       // Nothing on screen until the forge answered; then only if the hover or focus is still on the link.
@@ -682,7 +847,7 @@ export function useRefHoverCards(
     if (closeOther && closeOther !== closeSelf.current) closeOther();
     closeOther = closeSelf.current;
     const href = anchor.href;
-    setCard({ anchor, href, target, via, pinned: via === 'tap', result: undefined });
+    setCard({ anchor, href, target, via, pinned: via === "tap", result: undefined });
     void loadRefCard(href, target).then((result) => {
       setCard((c) => (c && c.anchor === anchor ? { ...c, result } : c));
     });
@@ -699,8 +864,10 @@ export function useRefHoverCards(
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const linkOf = (t: EventTarget | null) => (t instanceof Element ? t.closest<HTMLAnchorElement>('a[href]') : null);
-    const targetOf = (a: HTMLAnchorElement | null) => (a && root.contains(a) ? refCardTarget(a.href) : null);
+    const linkOf = (t: EventTarget | null) =>
+      t instanceof Element ? t.closest<HTMLAnchorElement>("a[href]") : null;
+    const targetOf = (a: HTMLAnchorElement | null) =>
+      a && root.contains(a) ? refCardTarget(a.href) : null;
     const later = (fn: () => void) => {
       if (openTimer.current !== null) window.clearTimeout(openTimer.current);
       openTimer.current = window.setTimeout(fn, delayMs);
@@ -709,7 +876,7 @@ export function useRefHoverCards(
       lastPointer.current = e.pointerType;
     };
     const onOver = (e: PointerEvent) => {
-      if (e.pointerType === 'touch' || touchOnly()) return;
+      if (e.pointerType === "touch" || touchOnly()) return;
       const a = linkOf(e.target);
       const target = targetOf(a);
       if (!a || !target) return;
@@ -717,7 +884,7 @@ export function useRefHoverCards(
         if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
         return;
       }
-      later(() => open(a, target, 'hover'));
+      later(() => open(a, target, "hover"));
     };
     const onOut = (e: PointerEvent) => {
       const a = linkOf(e.target);
@@ -727,13 +894,17 @@ export function useRefHoverCards(
         window.clearTimeout(openTimer.current);
         openTimer.current = null;
       }
-      if (current.current?.anchor === a && !(e.relatedTarget instanceof Node && cardRef.current?.contains(e.relatedTarget))) scheduleClose();
+      if (
+        current.current?.anchor === a &&
+        !(e.relatedTarget instanceof Node && cardRef.current?.contains(e.relatedTarget))
+      )
+        scheduleClose();
     };
     const onFocusIn = (e: FocusEvent) => {
       const a = linkOf(e.target);
       const target = targetOf(a);
-      if (!a || !target || !a.matches(':focus-visible') || current.current?.anchor === a) return;
-      later(() => open(a, target, 'focus'));
+      if (!a || !target || !a.matches(":focus-visible") || current.current?.anchor === a) return;
+      later(() => open(a, target, "focus"));
     };
     const onFocusOut = (e: FocusEvent) => {
       const a = linkOf(e.target);
@@ -742,11 +913,17 @@ export function useRefHoverCards(
       if (wanted.current === a) wanted.current = null;
       const c = current.current;
       const next = e.relatedTarget;
-      if (c?.anchor === a && c.via === 'focus' && !c.pinned && !(next instanceof Node && cardRef.current?.contains(next))) close();
+      if (
+        c?.anchor === a &&
+        c.via === "focus" &&
+        !c.pinned &&
+        !(next instanceof Node && cardRef.current?.contains(next))
+      )
+        close();
     };
     const onKey = (e: KeyboardEvent) => {
       const c = current.current;
-      if (!c || e.target !== c.anchor || e.key !== 'Tab' || e.shiftKey) return;
+      if (!c || e.target !== c.anchor || e.key !== "Tab" || e.shiftKey) return;
       const first = firstControl(cardRef.current);
       if (!first) return;
       e.preventDefault();
@@ -756,36 +933,36 @@ export function useRefHoverCards(
     const onClick = (e: MouseEvent) => {
       // onlyWithData: a tap follows the link as it always did.
       if (dataOnly.current) return;
-      if (lastPointer.current !== 'touch' && !touchOnly()) return;
+      if (lastPointer.current !== "touch" && !touchOnly()) return;
       const a = linkOf(e.target);
       const target = targetOf(a);
       if (!a || !target) return;
       e.preventDefault();
       e.stopPropagation();
-      open(a, target, 'tap');
+      open(a, target, "tap");
     };
-    root.addEventListener('pointerdown', onPointerDown, true);
-    root.addEventListener('pointerover', onOver);
-    root.addEventListener('pointerout', onOut);
-    root.addEventListener('focusin', onFocusIn);
-    root.addEventListener('focusout', onFocusOut);
-    root.addEventListener('keydown', onKey);
-    root.addEventListener('click', onClick, true);
+    root.addEventListener("pointerdown", onPointerDown, true);
+    root.addEventListener("pointerover", onOver);
+    root.addEventListener("pointerout", onOut);
+    root.addEventListener("focusin", onFocusIn);
+    root.addEventListener("focusout", onFocusOut);
+    root.addEventListener("keydown", onKey);
+    root.addEventListener("click", onClick, true);
     return () => {
-      root.removeEventListener('pointerdown', onPointerDown, true);
-      root.removeEventListener('pointerover', onOver);
-      root.removeEventListener('pointerout', onOut);
-      root.removeEventListener('focusin', onFocusIn);
-      root.removeEventListener('focusout', onFocusOut);
-      root.removeEventListener('keydown', onKey);
-      root.removeEventListener('click', onClick, true);
+      root.removeEventListener("pointerdown", onPointerDown, true);
+      root.removeEventListener("pointerover", onOver);
+      root.removeEventListener("pointerout", onOut);
+      root.removeEventListener("focusin", onFocusIn);
+      root.removeEventListener("focusout", onFocusOut);
+      root.removeEventListener("keydown", onKey);
+      root.removeEventListener("click", onClick, true);
       clearTimers();
     };
   }, [rootRef, delayMs, open, close, scheduleClose]);
 
   const reposition = useCallback(() => {
     const c = current.current;
-    if (!c || !cardRef.current || c.via === 'tap') return;
+    if (!c || !cardRef.current || c.via === "tap") return;
     setPos(place(c.anchor, cardRef.current, c.pinned));
   }, []);
 
@@ -793,7 +970,7 @@ export function useRefHoverCards(
   useEffect(() => {
     if (!card) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== "Escape") return;
       // Used: the window's own Escape (closing a thread) skips it.
       e.preventDefault();
       e.stopPropagation();
@@ -803,23 +980,23 @@ export function useRefHoverCards(
       const t = e.target as Node;
       if (cardRef.current?.contains(t) || card.anchor.contains(t)) return;
       // The sheet's scrim closes on its click: closing on pointer-down would let the tap land on what is under it.
-      if (t instanceof Element && t.closest('[data-ref-card-scrim]')) return;
+      if (t instanceof Element && t.closest("[data-ref-card-scrim]")) return;
       close();
     };
     const onScroll = (e: Event) => {
-      if (card.via === 'tap' || cardRef.current?.contains(e.target as Node)) return;
+      if (card.via === "tap" || cardRef.current?.contains(e.target as Node)) return;
       if (!current.current?.pinned) close();
       else reposition();
     };
-    window.addEventListener('keydown', onKey, true);
-    window.addEventListener('pointerdown', onDown, true);
-    window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', reposition);
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", reposition);
     return () => {
-      window.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('pointerdown', onDown, true);
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', reposition);
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", reposition);
     };
   }, [card, close, reposition]);
 
@@ -835,13 +1012,13 @@ export function useRefHoverCards(
     else reposition();
   }, [card?.anchor, card?.result, card?.pinned, reposition]);
 
-  if (!card || typeof document === 'undefined') return null;
+  if (!card || typeof document === "undefined") return null;
   const container = tooltipContainerOf(card.anchor) ?? document.body;
-  const sheet = card.via === 'tap';
+  const sheet = card.via === "tap";
   const label = card.result?.ok
     ? `${refKindName(card.result.data)} ${forgeRefLabel(card.result.data)}: ${card.result.data.title}`
     : `${refKindName(card.target)} ${forgeRefLabel(card.target)}`;
-  const surface = 'border border-border bg-popover text-popover-foreground shadow-2xl';
+  const surface = "border border-border bg-popover text-popover-foreground shadow-2xl";
   const body = (
     <div
       ref={cardRef}
@@ -849,20 +1026,24 @@ export function useRefHoverCards(
       aria-label={label}
       aria-modal={sheet ? true : undefined}
       data-ref-card=""
-      data-ref-card-pinned={card.pinned ? '' : undefined}
-      data-ref-card-sheet={sheet ? '' : undefined}
-      data-ref-card-tight={!sheet && pos?.tight ? '' : undefined}
+      data-ref-card-pinned={card.pinned ? "" : undefined}
+      data-ref-card-sheet={sheet ? "" : undefined}
+      data-ref-card-tight={!sheet && pos?.tight ? "" : undefined}
       onPointerEnter={() => {
         if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
       }}
       onPointerLeave={(e) => {
-        if (e.pointerType !== 'touch' && !card.pinned) scheduleClose();
+        if (e.pointerType !== "touch" && !card.pinned) scheduleClose();
       }}
       onPointerDown={() => {
         if (!card.pinned) setCard((c) => (c ? { ...c, pinned: true } : c));
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Tab' && e.shiftKey && document.activeElement === firstControl(cardRef.current)) {
+        if (
+          e.key === "Tab" &&
+          e.shiftKey &&
+          document.activeElement === firstControl(cardRef.current)
+        ) {
           e.preventDefault();
           card.anchor.focus();
         }
@@ -870,22 +1051,44 @@ export function useRefHoverCards(
       className={
         sheet
           ? `fixed inset-x-0 bottom-0 z-[120] flex max-h-[78vh] flex-col overflow-hidden rounded-t-[12px] pb-[env(safe-area-inset-bottom)] ${surface}`
-          : `fixed z-[120] flex flex-col overflow-hidden rounded-xl ${surface} ${card.pinned ? 'ring-1 ring-primary/30' : ''}`
+          : `fixed z-[120] flex flex-col overflow-hidden rounded-xl ${surface} ${card.pinned ? "ring-1 ring-primary/30" : ""}`
       }
       style={
         sheet
           ? undefined
-          : { width: Math.min(CARD_WIDTH, window.innerWidth - EDGE * 2), left: pos?.left ?? -9999, top: pos?.top ?? -9999, maxHeight: pos?.maxHeight ?? 520 }
+          : {
+              width: Math.min(CARD_WIDTH, window.innerWidth - EDGE * 2),
+              left: pos?.left ?? -9999,
+              top: pos?.top ?? -9999,
+              maxHeight: pos?.maxHeight ?? 520,
+            }
       }
     >
-      {sheet ? <div aria-hidden="true" className="mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-muted-foreground/30" /> : null}
-      <RefCardView target={card.target} href={card.href} result={card.result} pinned={card.pinned} sheet={sheet} tight={!sheet && !!pos?.tight} onClose={() => close(true)} />
+      {sheet ? (
+        <div
+          aria-hidden="true"
+          className="mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-muted-foreground/30"
+        />
+      ) : null}
+      <RefCardView
+        target={card.target}
+        href={card.href}
+        result={card.result}
+        pinned={card.pinned}
+        sheet={sheet}
+        tight={!sheet && !!pos?.tight}
+        onClose={() => close(true)}
+      />
     </div>
   );
   return createPortal(
     sheet ? (
       <>
-        <div className="fixed inset-0 z-[119] bg-black/30" data-ref-card-scrim="" onClick={() => close(true)} />
+        <div
+          className="fixed inset-0 z-[119] bg-black/30"
+          data-ref-card-scrim=""
+          onClick={() => close(true)}
+        />
         {body}
       </>
     ) : (

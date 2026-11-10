@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -8,12 +8,12 @@ import {
   useReactTable,
   type ColumnDef,
   type SortingState,
-} from '@tanstack/react-table';
-import type { Block } from '../../types';
-import { copyTextToClipboard } from '../../utils/clipboard';
-import { InlineMarkdown } from '../InlineMarkdown';
-import { PopoutDialog } from '../PopoutDialog';
-import { parseTableContent, buildCsvFromRows, buildMarkdownTable } from './TableBlock';
+} from "@tanstack/react-table";
+import type { Block } from "../../types";
+import { copyTextToClipboard } from "../../utils/clipboard";
+import { InlineMarkdown } from "../InlineMarkdown";
+import { PopoutDialog } from "../PopoutDialog";
+import { parseTableContent, buildCsvFromRows, buildMarkdownTable } from "./TableBlock";
 
 interface TablePopoutProps {
   block: Block;
@@ -63,7 +63,7 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
       rows.map((row) => {
         const obj: Row = {};
         columnIds.forEach((id, i) => {
-          obj[id] = row[i] ?? '';
+          obj[id] = row[i] ?? "";
         });
         return obj;
       }),
@@ -90,24 +90,31 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
         ),
       }),
     );
-  }, [columnIds, headers, imageBaseDir, onImageClick, onOpenLinkedDoc, onNavigateAnchor, githubRepo, repoHost]);
+  }, [
+    columnIds,
+    headers,
+    imageBaseDir,
+    onImageClick,
+    onOpenLinkedDoc,
+    onNavigateAnchor,
+    githubRepo,
+    repoHost,
+  ]);
 
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [globalFilter, setGlobalFilter] = useState("");
   const [copiedMd, setCopiedMd] = useState(false);
   const [copiedCsv, setCopiedCsv] = useState(false);
 
   const getVisibleRowsData = (): string[][] =>
-    table.getRowModel().rows.map((row) =>
-      columnIds.map((id) => row.getValue<string>(id) ?? ''),
-    );
+    table.getRowModel().rows.map((row) => columnIds.map((id) => row.getValue<string>(id) ?? ""));
 
   const handleCopyMarkdown = async () => {
     if (await copyTextToClipboard(buildMarkdownTable(headers, getVisibleRowsData()))) {
       setCopiedMd(true);
       setTimeout(() => setCopiedMd(false), 1500);
     } else {
-      console.error('Failed to copy');
+      console.error("Failed to copy");
     }
   };
 
@@ -116,7 +123,7 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
       setCopiedCsv(true);
       setTimeout(() => setCopiedCsv(false), 1500);
     } else {
-      console.error('Failed to copy');
+      console.error("Failed to copy");
     }
   };
 
@@ -129,7 +136,7 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: 'includesString',
+    globalFilterFn: "includesString",
   });
 
   const visibleRows = table.getRowModel().rows;
@@ -141,12 +148,22 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
       onClose={onClose}
       title="Table"
       container={container}
-      dataAttributes={{ 'data-block-id': block.id }}
+      dataAttributes={{ "data-block-id": block.id }}
     >
       <div className="flex items-center gap-3 px-5 pt-4 pb-3 pr-12">
         <div className="relative max-w-sm flex-1">
-          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
+          <svg
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
+            />
           </svg>
           <input
             type="text"
@@ -158,7 +175,7 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
         </div>
         <span className="text-xs text-muted-foreground tabular-nums">
           {visibleRows.length === totalRows
-            ? `${totalRows} row${totalRows === 1 ? '' : 's'}`
+            ? `${totalRows} row${totalRows === 1 ? "" : "s"}`
             : `${visibleRows.length} of ${totalRows}`}
         </span>
         <div className="ml-auto flex items-center gap-1">
@@ -166,22 +183,40 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
             onClick={handleCopyMarkdown}
             title={
               copiedMd
-                ? 'Copied!'
+                ? "Copied!"
                 : visibleRows.length === totalRows
-                  ? 'Copy as markdown'
-                  : `Copy ${visibleRows.length} row${visibleRows.length === 1 ? '' : 's'} as markdown`
+                  ? "Copy as markdown"
+                  : `Copy ${visibleRows.length} row${visibleRows.length === 1 ? "" : "s"} as markdown`
             }
             className={`p-1.5 rounded-md transition-colors ${
-              copiedMd ? 'text-success' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              copiedMd
+                ? "text-success"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             {copiedMd ? (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
               </svg>
             )}
           </button>
@@ -189,16 +224,16 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
             onClick={handleCopyCsv}
             title={
               copiedCsv
-                ? 'Copied as CSV!'
+                ? "Copied as CSV!"
                 : visibleRows.length === totalRows
-                  ? 'Copy as CSV'
-                  : `Copy ${visibleRows.length} row${visibleRows.length === 1 ? '' : 's'} as CSV`
+                  ? "Copy as CSV"
+                  : `Copy ${visibleRows.length} row${visibleRows.length === 1 ? "" : "s"} as CSV`
             }
             className={`px-2 py-1 rounded-md text-[10px] font-bold tracking-tight uppercase leading-none transition-colors ${
-              copiedCsv ? 'text-success' : 'text-primary hover:bg-primary/10'
+              copiedCsv ? "text-success" : "text-primary hover:bg-primary/10"
             }`}
           >
-            {copiedCsv ? '✓' : 'CSV'}
+            {copiedCsv ? "✓" : "CSV"}
           </button>
         </div>
       </div>
@@ -229,7 +264,10 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
           <tbody>
             {visibleRows.length === 0 ? (
               <tr>
-                <td colSpan={columnIds.length} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td
+                  colSpan={columnIds.length}
+                  className="px-3 py-8 text-center text-sm text-muted-foreground"
+                >
                   No rows match the filter.
                 </td>
               </tr>
@@ -270,13 +308,13 @@ export const TablePopout = React.memo(
     prev.repoHost === next.repoHost,
 );
 
-const SortIndicator: React.FC<{ dir: false | 'asc' | 'desc' }> = ({ dir }) => {
-  const activeUp = dir === 'asc';
-  const activeDown = dir === 'desc';
+const SortIndicator: React.FC<{ dir: false | "asc" | "desc" }> = ({ dir }) => {
+  const activeUp = dir === "asc";
+  const activeDown = dir === "desc";
   return (
     <span className="inline-flex flex-col leading-none text-[9px]">
-      <span className={activeUp ? 'text-foreground' : 'text-muted-foreground/40'}>▲</span>
-      <span className={activeDown ? 'text-foreground' : 'text-muted-foreground/40'}>▼</span>
+      <span className={activeUp ? "text-foreground" : "text-muted-foreground/40"}>▲</span>
+      <span className={activeDown ? "text-foreground" : "text-muted-foreground/40"}>▼</span>
     </span>
   );
 };

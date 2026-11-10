@@ -15,7 +15,7 @@ import {
   getScrollViewportTop,
   offsetScrollViewport,
   scrollViewportTo,
-} from '../hooks/useScrollViewport';
+} from "../hooks/useScrollViewport";
 
 export interface ScrollAnchor {
   /** The first block visible at the top of the viewport, null when none is. */
@@ -28,7 +28,7 @@ export interface ScrollAnchor {
 }
 
 function blocksIn(viewport: HTMLElement): HTMLElement[] {
-  return Array.from(viewport.querySelectorAll<HTMLElement>('[data-block-id]'));
+  return Array.from(viewport.querySelectorAll<HTMLElement>("[data-block-id]"));
 }
 
 /** Capture where the reader is in `viewport`. */
@@ -40,7 +40,7 @@ export function captureScrollAnchor(viewport: HTMLElement): ScrollAnchor {
     if (rect.height <= 0 && rect.width <= 0) continue;
     if (rect.bottom > viewportTop + 1) {
       return {
-        blockId: block.getAttribute('data-block-id'),
+        blockId: block.getAttribute("data-block-id"),
         offset: rect.top - viewportTop,
         scrollTop,
       };
@@ -51,7 +51,7 @@ export function captureScrollAnchor(viewport: HTMLElement): ScrollAnchor {
 
 function findBlock(viewport: HTMLElement, blockId: string): HTMLElement | null {
   for (const block of blocksIn(viewport)) {
-    if (block.getAttribute('data-block-id') === blockId) return block;
+    if (block.getAttribute("data-block-id") === blockId) return block;
   }
   return null;
 }
@@ -76,7 +76,7 @@ export function restoreScrollAnchor(viewport: HTMLElement, anchor: ScrollAnchor)
     const delta = block.getBoundingClientRect().top - viewportTop - anchor.offset;
     if (Math.abs(delta) >= 1) offsetScrollViewport(viewport, delta);
   } else if (Math.abs(getScrollViewportTop(viewport) - anchor.scrollTop) >= 1) {
-    scrollViewportTo(viewport, { top: anchor.scrollTop, behavior: 'auto' });
+    scrollViewportTo(viewport, { top: anchor.scrollTop, behavior: "auto" });
   }
   return getScrollViewportTop(viewport);
 }

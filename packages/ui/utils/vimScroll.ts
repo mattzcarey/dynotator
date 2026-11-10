@@ -1,7 +1,4 @@
-import {
-  getScrollViewportRect,
-  offsetScrollViewport,
-} from '../hooks/useScrollViewport';
+import { getScrollViewportRect, offsetScrollViewport } from "../hooks/useScrollViewport";
 
 /**
  * Keep the Vim cursor clear of the HUD bands that hug the viewport edges.
@@ -96,10 +93,10 @@ export function resolveVimScrollMargin(viewportHeight: number): number {
  */
 function vimHudBandTop(element: HTMLElement): number | undefined {
   const doc = element.ownerDocument;
-  const keyHud = doc.querySelector<HTMLElement>('[data-vim-key-hud]');
-  const badge = doc.querySelector<HTMLElement>('[data-vim-mode-badge]');
+  const keyHud = doc.querySelector<HTMLElement>("[data-vim-key-hud]");
+  const badge = doc.querySelector<HTMLElement>("[data-vim-mode-badge]");
   const tops: number[] = [];
-  if (keyHud && keyHud.getAttribute('data-expanded') !== 'true') {
+  if (keyHud && keyHud.getAttribute("data-expanded") !== "true") {
     const rect = keyHud.getBoundingClientRect();
     if (rect.height > 0) tops.push(rect.top);
   }
@@ -132,7 +129,7 @@ export function scrollVimTargetIntoView(
 ): void {
   const viewport = scrollViewport ?? null;
   if (!viewport) {
-    element.scrollIntoView({ block: 'nearest' });
+    element.scrollIntoView({ block: "nearest" });
     return;
   }
 
@@ -142,20 +139,20 @@ export function scrollVimTargetIntoView(
 
   const margin = resolveVimScrollMargin(viewportRect.height);
   const stickyBottom = viewport
-    .querySelector<HTMLElement>('[data-viewer-document-header], [data-sticky-actions]')
+    .querySelector<HTMLElement>("[data-viewer-document-header], [data-sticky-actions]")
     ?.getBoundingClientRect().bottom;
-  const topMargin = stickyBottom !== undefined
-    ? Math.max(margin, stickyBottom - viewportRect.top + 8)
-    : margin;
+  const topMargin =
+    stickyBottom !== undefined ? Math.max(margin, stickyBottom - viewportRect.top + 8) : margin;
 
   // Mirror of the top band: keep the caret above the floating HUD by the same
   // 8px gap. The HUD rect wins over the ratio band whenever it is larger (the
   // key HUD needs ~238px, well past the 160px clamp) and is allowed to shrink
   // past it when only the small mode pill floats (floor: the minimum margin).
   const hudTop = vimHudBandTop(element);
-  const bottomMargin = hudTop !== undefined
-    ? Math.max(VIM_SCROLL_MARGIN_MIN, viewportRect.bottom - hudTop + 8)
-    : margin;
+  const bottomMargin =
+    hudTop !== undefined
+      ? Math.max(VIM_SCROLL_MARGIN_MIN, viewportRect.bottom - hudTop + 8)
+      : margin;
 
   const delta = computeVimScrollDelta(
     { top: viewportRect.top, height: viewportRect.height },

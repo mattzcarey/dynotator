@@ -1,5 +1,11 @@
-import { useEffect, useRef, type RefObject } from 'react';
-import { wordAround, wordAtPoint, wordRange, type TextPosition, type WordBounds } from '../utils/wordAtPoint';
+import { useEffect, useRef, type RefObject } from "react";
+import {
+  wordAround,
+  wordAtPoint,
+  wordRange,
+  type TextPosition,
+  type WordBounds,
+} from "../utils/wordAtPoint";
 
 /**
  * How long a click on a word waits for a second click before it becomes a
@@ -21,35 +27,35 @@ const CLICK_SLOP_PX = 4;
  * skips (blockTargeting.ts SKIP_SELECTORS).
  */
 const NOT_A_WORD_CLICK = [
-  '.annotation-toolbar',
-  '.annotation-highlight',
-  'mark[data-bind-id]',
-  '[data-highlight-id]',
-  'button',
-  '[data-pinpoint-ignore]',
-  'a',
+  ".annotation-toolbar",
+  ".annotation-highlight",
+  "mark[data-bind-id]",
+  "[data-highlight-id]",
+  "button",
+  "[data-pinpoint-ignore]",
+  "a",
   '[role="button"]',
   '[role="link"]',
   '[role="checkbox"]',
-  'input',
-  'textarea',
-  'select',
-  'label',
-  'summary',
-  'img',
-  'svg',
-  'canvas',
-  'video',
-  '.katex',
-  '.math-annotatable',
-  '[data-math-tex]',
-  '.annotation-exclude',
-  'fieldset.question-block',
+  "input",
+  "textarea",
+  "select",
+  "label",
+  "summary",
+  "img",
+  "svg",
+  "canvas",
+  "video",
+  ".katex",
+  ".math-annotatable",
+  "[data-math-tex]",
+  ".annotation-exclude",
+  "fieldset.question-block",
   '[contenteditable]:not([contenteditable="false"])',
-].join(',');
+].join(",");
 
 /** Open toolbars, composers and pickers: a click while one is open only closes it. */
-const ANNOTATION_UI = '.annotation-toolbar, [data-quick-label-picker]';
+const ANNOTATION_UI = ".annotation-toolbar, [data-quick-label-picker]";
 
 export interface UseClickWordOptions {
   containerRef: RefObject<HTMLElement | null>;
@@ -76,7 +82,8 @@ interface Press {
   dismisses: boolean;
 }
 
-const samePos = (a: TextPosition, node: Node | null, offset: number) => a.node === node && a.offset === offset;
+const samePos = (a: TextPosition, node: Node | null, offset: number) =>
+  a.node === node && a.offset === offset;
 
 /**
  * Click a word, part of the Select input method:
@@ -94,7 +101,14 @@ const samePos = (a: TextPosition, node: Node | null, offset: number) => a.node =
  * drag the browser leaves as a caret, and one let go outside the document,
  * are repaired by `useAnnotationHighlighter` for every input method.
  */
-export function useClickWord({ containerRef, enabled, clicksEnabled, snapDrags, annotationUiOpen, onSelectRange }: UseClickWordOptions): void {
+export function useClickWord({
+  containerRef,
+  enabled,
+  clicksEnabled,
+  snapDrags,
+  annotationUiOpen,
+  onSelectRange,
+}: UseClickWordOptions): void {
   const onSelectRangeRef = useRef(onSelectRange);
   onSelectRangeRef.current = onSelectRange;
   const clicksEnabledRef = useRef(clicksEnabled);
@@ -123,7 +137,9 @@ export function useClickWord({ containerRef, enabled, clicksEnabled, snapDrags, 
     };
 
     const isPreviewSelection = (sel: Selection) =>
-      !!preview && samePos(preview.start, sel.anchorNode, sel.anchorOffset) && samePos(preview.end, sel.focusNode, sel.focusOffset);
+      !!preview &&
+      samePos(preview.start, sel.anchorNode, sel.anchorOffset) &&
+      samePos(preview.end, sel.focusNode, sel.focusOffset);
 
     const onPointerDown = (e: PointerEvent) => {
       pressAtRelease = null;
@@ -134,7 +150,7 @@ export function useClickWord({ containerRef, enabled, clicksEnabled, snapDrags, 
       cancelPending();
       press = null;
       down = false;
-      if (!inside || e.button !== 0 || e.pointerType === 'touch') return;
+      if (!inside || e.button !== 0 || e.pointerType === "touch") return;
       // Read before the browser collapses the selection and before outside-click dismissal runs.
       const liveSelection = !!sel && !sel.isCollapsed && !pendingPreview;
       const uiOpen = annotationUiOpenRef.current || !!document.querySelector(ANNOTATION_UI);
@@ -159,26 +175,40 @@ export function useClickWord({ containerRef, enabled, clicksEnabled, snapDrags, 
     const onPointerMove = (e: PointerEvent) => {
       const p = press;
       if (!p || !down) return;
-      if (!p.moved && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) >= CLICK_SLOP_PX) p.moved = true;
+      if (!p.moved && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) >= CLICK_SLOP_PX)
+        p.moved = true;
     };
 
     /** Snap the live selection of a single-press drag to whole words. */
     const snap = () => {
       if (!press || !press.moved || press.detail > 1 || !snapDragsRef.current) return;
       const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0 || sel.isCollapsed || !sel.anchorNode || !sel.focusNode) return;
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed || !sel.anchorNode || !sel.focusNode)
+        return;
       if (!container.contains(sel.anchorNode) || !container.contains(sel.focusNode)) return;
-      const forward = sel.anchorNode === sel.focusNode
-        ? sel.anchorOffset <= sel.focusOffset
-        : (sel.anchorNode.compareDocumentPosition(sel.focusNode) & Node.DOCUMENT_POSITION_PRECEDING) === 0;
-      const focusWord = wordAround(sel.focusNode, sel.focusOffset, 1) ?? wordAround(sel.focusNode, sel.focusOffset, -1);
+      const forward =
+        sel.anchorNode === sel.focusNode
+          ? sel.anchorOffset <= sel.focusOffset
+          : (sel.anchorNode.compareDocumentPosition(sel.focusNode) &
+              Node.DOCUMENT_POSITION_PRECEDING) ===
+            0;
+      const focusWord =
+        wordAround(sel.focusNode, sel.focusOffset, 1) ??
+        wordAround(sel.focusNode, sel.focusOffset, -1);
       const anchor = press.word ? (forward ? press.word.start : press.word.end) : null;
-      const focus = focusWord && !(focusWord.start.node.parentElement?.closest(NOT_A_WORD_CLICK))
-        ? (forward ? focusWord.end : focusWord.start)
-        : null;
+      const focus =
+        focusWord && !focusWord.start.node.parentElement?.closest(NOT_A_WORD_CLICK)
+          ? forward
+            ? focusWord.end
+            : focusWord.start
+          : null;
       const a = anchor ?? { node: sel.anchorNode as Text, offset: sel.anchorOffset };
       const f = focus ?? { node: sel.focusNode as Text, offset: sel.focusOffset };
-      if (samePos(a, sel.anchorNode, sel.anchorOffset) && samePos(f, sel.focusNode, sel.focusOffset)) return;
+      if (
+        samePos(a, sel.anchorNode, sel.anchorOffset) &&
+        samePos(f, sel.focusNode, sel.focusOffset)
+      )
+        return;
       sel.setBaseAndExtent(a.node, a.offset, f.node, f.offset);
     };
 
@@ -214,7 +244,8 @@ export function useClickWord({ containerRef, enabled, clicksEnabled, snapDrags, 
       if (!sel || (sel.rangeCount > 0 && !sel.isCollapsed)) return;
       const word = wordAtPoint(e.clientX, e.clientY);
       if (!word || !container.contains(word.start.node) || !p.word) return;
-      if (word.start.node !== p.word.start.node || word.start.offset !== p.word.start.offset) return;
+      if (word.start.node !== p.word.start.node || word.start.offset !== p.word.start.offset)
+        return;
       // Select now (no DOM change, so a second click still counts as a double click); highlight after the wait.
       sel.setBaseAndExtent(word.start.node, word.start.offset, word.end.node, word.end.offset);
       preview = word;
@@ -227,9 +258,11 @@ export function useClickWord({ containerRef, enabled, clicksEnabled, snapDrags, 
         // The document may have been replaced or edited under the wait (a host that remounts its
         // body, a live edit): only the word that was clicked, still in place, is highlighted.
         if (!still || !word.start.node.isConnected || !word.end.node.isConnected) return;
-        if (word.start.offset > word.start.node.length || word.end.offset > word.end.node.length) return;
+        if (word.start.offset > word.start.node.length || word.end.offset > word.end.node.length)
+          return;
         const range = wordRange(word);
-        if (!container.contains(range.commonAncestorContainer) || range.toString() !== clicked) return;
+        if (!container.contains(range.commonAncestorContainer) || range.toString() !== clicked)
+          return;
         onSelectRangeRef.current(range);
       };
       arm = () => {
@@ -245,28 +278,28 @@ export function useClickWord({ containerRef, enabled, clicksEnabled, snapDrags, 
       if (timer !== undefined) arm();
     };
 
-    window.addEventListener('pointerdown', onPointerDown, true);
-    window.addEventListener('mousedown', onMouseDown, true);
-    window.addEventListener('pointermove', onPointerMove, true);
-    window.addEventListener('pointerup', onPointerUp, true);
-    window.addEventListener('pointercancel', onPointerUp, true);
-    document.addEventListener('selectionchange', onSelectionChange);
-    container.addEventListener('click', onClick, true);
-    container.addEventListener('mouseup', onMouseUp, true);
-    document.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("mousedown", onMouseDown, true);
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("pointerup", onPointerUp, true);
+    window.addEventListener("pointercancel", onPointerUp, true);
+    document.addEventListener("selectionchange", onSelectionChange);
+    container.addEventListener("click", onClick, true);
+    container.addEventListener("mouseup", onMouseUp, true);
+    document.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       cancelPending();
-      window.removeEventListener('pointerdown', onPointerDown, true);
-      window.removeEventListener('mousedown', onMouseDown, true);
-      window.removeEventListener('pointermove', onPointerMove, true);
-        window.removeEventListener('pointerup', onPointerUp, true);
-      window.removeEventListener('pointercancel', onPointerUp, true);
-      document.removeEventListener('selectionchange', onSelectionChange);
-      container.removeEventListener('click', onClick, true);
-      container.removeEventListener('mouseup', onMouseUp, true);
-      document.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("mousedown", onMouseDown, true);
+      window.removeEventListener("pointermove", onPointerMove, true);
+      window.removeEventListener("pointerup", onPointerUp, true);
+      window.removeEventListener("pointercancel", onPointerUp, true);
+      document.removeEventListener("selectionchange", onSelectionChange);
+      container.removeEventListener("click", onClick, true);
+      container.removeEventListener("mouseup", onMouseUp, true);
+      document.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [containerRef, enabled]);
 }

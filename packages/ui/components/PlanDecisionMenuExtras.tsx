@@ -1,14 +1,14 @@
-import React from 'react';
-import { Check } from 'lucide-react';
-import type { Agent } from '../hooks/useAgents';
-import { useConfigValue } from '../config/useConfig';
+import React from "react";
+import { Check } from "lucide-react";
+import type { Agent } from "../hooks/useAgents";
+import { useConfigValue } from "../config/useConfig";
 import {
   getAgentSwitchDefaults,
   saveAgentSwitchSettings,
   type AgentSwitchSettings,
-} from '../utils/agentSwitch';
-import { ActionMenuDivider } from './ActionMenu';
-import { cn } from '../lib/utils';
+} from "../utils/agentSwitch";
+import { ActionMenuDivider } from "./ActionMenu";
+import { cn } from "../lib/utils";
 
 /**
  * Rows plan review puts under the decisions in DecisionControl's menu
@@ -20,7 +20,7 @@ import { cn } from '../lib/utils';
  */
 
 function isSelected(agentId: string, setting: AgentSwitchSettings): boolean {
-  if (setting.switchTo === 'custom' || setting.switchTo === 'disabled') return false;
+  if (setting.switchTo === "custom" || setting.switchTo === "disabled") return false;
   return agentId.toLowerCase() === setting.switchTo.toLowerCase();
 }
 
@@ -37,11 +37,13 @@ const RadioRow: React.FC<{
     onClick={onSelect}
     data-agent-switch-option="true"
     className={cn(
-      'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors outline-none focus-visible:bg-muted',
-      checked ? 'bg-primary/10 font-medium text-primary' : 'text-popover-foreground hover:bg-muted',
+      "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors outline-none focus-visible:bg-muted",
+      checked ? "bg-primary/10 font-medium text-primary" : "text-popover-foreground hover:bg-muted",
     )}
   >
-    <span className="w-3.5 flex-shrink-0">{checked && <Check className="size-3.5" aria-hidden="true" />}</span>
+    <span className="w-3.5 flex-shrink-0">
+      {checked && <Check className="size-3.5" aria-hidden="true" />}
+    </span>
     <span className="truncate">{children}</span>
     {note && <span className="ml-auto text-[10px] text-muted-foreground">{note}</span>}
   </button>
@@ -55,10 +57,10 @@ const RadioRow: React.FC<{
 export const AgentSwitchMenuSection: React.FC<{ agents: Agent[] }> = ({ agents }) => {
   // Reactive: config.json's value lands through configStore.init() once
   // /api/plan answers, which may be after this mounts (#1390).
-  const stored = useConfigValue('agentSwitch');
-  const setting: AgentSwitchSettings = stored ?? getAgentSwitchDefaults('plan');
-  const isCustom = setting.switchTo === 'custom' && !!setting.customName;
-  const title = 'After approval, switch to';
+  const stored = useConfigValue("agentSwitch");
+  const setting: AgentSwitchSettings = stored ?? getAgentSwitchDefaults("plan");
+  const isCustom = setting.switchTo === "custom" && !!setting.customName;
+  const title = "After approval, switch to";
 
   return (
     <>
@@ -85,8 +87,8 @@ export const AgentSwitchMenuSection: React.FC<{ agents: Agent[] }> = ({ agents }
           </RadioRow>
         )}
         <RadioRow
-          checked={setting.switchTo === 'disabled'}
-          onSelect={() => saveAgentSwitchSettings({ switchTo: 'disabled' })}
+          checked={setting.switchTo === "disabled"}
+          onSelect={() => saveAgentSwitchSettings({ switchTo: "disabled" })}
         >
           No switch
         </RadioRow>
@@ -111,7 +113,7 @@ export const PermissionModeMenuLine: React.FC<{
       className="flex items-center justify-between gap-2 px-3 py-1.5 text-[10px] text-muted-foreground"
     >
       <span>
-        After approval, {agentName} runs in{' '}
+        After approval, {agentName} runs in{" "}
         <span className="font-medium text-foreground">{modeLabel}</span>
       </span>
       <button

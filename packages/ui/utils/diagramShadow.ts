@@ -17,7 +17,7 @@ export const DEFAULT_DIAGRAM_SHADOW = 70;
 
 /** Any whole percent in range is valid, not only the offered steps. */
 export function isDiagramShadow(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 100;
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 100;
 }
 
 /** The 0..1 amount `buildMermaidThemeVariables` takes. */

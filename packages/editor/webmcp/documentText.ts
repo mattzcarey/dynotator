@@ -3,7 +3,7 @@
  * block-boundary windowing, quote resolution and context excerpts. No DOM,
  * no React, so every anchoring rule is unit-testable with parsed blocks.
  */
-import type { Annotation, Block } from '@dynotator/ui/types';
+import type { Annotation, Block } from "@dynotator/ui/types";
 
 export interface OutlineEntry {
   /** Stable heading slug the tools accept as `section`. */
@@ -25,27 +25,30 @@ export const MAX_ANNOTATIONS_IN_RESPONSE = 200;
 export function slugifyHeading(title: string): string {
   const slug = title
     .toLowerCase()
-    .replace(/[`*_~[\]()]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[`*_~[\]()]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
     .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-  return slug || 'section';
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+  return slug || "section";
 }
 
 /** Index of the nearest heading block at or before `blockIndex`, or -1. */
 function headingIndexFor(blocks: readonly Block[], blockIndex: number): number {
-  for (let i = blockIndex; i >= 0; i--) if (blocks[i]?.type === 'heading') return i;
+  for (let i = blockIndex; i >= 0; i--) if (blocks[i]?.type === "heading") return i;
   return -1;
 }
 
 /** Block index range `[start, end)` of the section headed by block `headingIndex`. */
-export function sectionRangeAt(blocks: readonly Block[], headingIndex: number): { start: number; end: number } {
+export function sectionRangeAt(
+  blocks: readonly Block[],
+  headingIndex: number,
+): { start: number; end: number } {
   const level = blocks[headingIndex]?.level ?? 1;
   let end = blocks.length;
   for (let i = headingIndex + 1; i < blocks.length; i++) {
     const block = blocks[i]!;
-    if (block.type === 'heading' && (block.level ?? 1) <= level) {
+    if (block.type === "heading" && (block.level ?? 1) <= level) {
       end = i;
       break;
     }
@@ -53,11 +56,14 @@ export function sectionRangeAt(blocks: readonly Block[], headingIndex: number): 
   return { start: headingIndex, end };
 }
 
-export function buildOutline(blocks: readonly Block[], annotations: readonly Annotation[]): OutlineEntry[] {
+export function buildOutline(
+  blocks: readonly Block[],
+  annotations: readonly Annotation[],
+): OutlineEntry[] {
   const seen = new Map<string, number>();
   const entries: OutlineEntry[] = [];
   blocks.forEach((block, index) => {
-    if (block.type !== 'heading') return;
+    if (block.type !== "heading") return;
     const base = slugifyHeading(block.content);
     const count = (seen.get(base) ?? 0) + 1;
     seen.set(base, count);
@@ -76,15 +82,24 @@ export function buildOutline(blocks: readonly Block[], annotations: readonly Ann
   return entries;
 }
 
-export function findSection(outline: readonly OutlineEntry[], sectionId: string): OutlineEntry | null {
+export function findSection(
+  outline: readonly OutlineEntry[],
+  sectionId: string,
+): OutlineEntry | null {
   const wanted = sectionId.trim();
-  return outline.find((entry) => entry.id === wanted || entry.blockId === wanted)
-    ?? outline.find((entry) => entry.title.trim().toLowerCase() === wanted.toLowerCase())
-    ?? null;
+  return (
+    outline.find((entry) => entry.id === wanted || entry.blockId === wanted) ??
+    outline.find((entry) => entry.title.trim().toLowerCase() === wanted.toLowerCase()) ??
+    null
+  );
 }
 
 /** The section (from the outline) containing `blockId`, or null for unanchored / document-level. */
-export function sectionForBlock(blocks: readonly Block[], outline: readonly OutlineEntry[], blockId: string | undefined): OutlineEntry | null {
+export function sectionForBlock(
+  blocks: readonly Block[],
+  outline: readonly OutlineEntry[],
+  blockId: string | undefined,
+): OutlineEntry | null {
   if (!blockId) return null;
   const index = blocks.findIndex((b) => b.id === blockId);
   if (index < 0) return null;
@@ -107,13 +122,20 @@ function offsetOfLine(offsets: number[], line: number, total: number): number {
 }
 
 /** The text of one section as a slice of the full document, with its absolute offset. */
-export function sectionSlice(text: string, blocks: readonly Block[], section: OutlineEntry): { text: string; offset: number } {
+export function sectionSlice(
+  text: string,
+  blocks: readonly Block[],
+  section: OutlineEntry,
+): { text: string; offset: number } {
   const headingIndex = blocks.findIndex((b) => b.id === section.blockId);
-  if (headingIndex < 0) return { text: '', offset: 0 };
+  if (headingIndex < 0) return { text: "", offset: 0 };
   const range = sectionRangeAt(blocks, headingIndex);
   const offsets = lineStartOffsets(text);
   const start = offsetOfLine(offsets, blocks[headingIndex]!.startLine, text.length);
-  const end = range.end < blocks.length ? offsetOfLine(offsets, blocks[range.end]!.startLine, text.length) : text.length;
+  const end =
+    range.end < blocks.length
+      ? offsetOfLine(offsets, blocks[range.end]!.startLine, text.length)
+      : text.length;
   return { text: text.slice(start, end), offset: start };
 }
 
@@ -132,11 +154,23 @@ export interface TextWindow {
  * block boundary (a block's first character) inside the budget when one
  * exists past the start, else hard-cutting.
  */
-export function windowText(text: string, blocks: readonly Block[], offset: number, maxChars: number, base = 0): TextWindow {
+export function windowText(
+  text: string,
+  blocks: readonly Block[],
+  offset: number,
+  maxChars: number,
+  base = 0,
+): TextWindow {
   const total = text.length;
   const start = Math.max(0, Math.min(offset, total));
   if (total - start <= maxChars) {
-    return { text: text.slice(start), offset: start, length: total - start, total, truncated: false };
+    return {
+      text: text.slice(start),
+      offset: start,
+      length: total - start,
+      total,
+      truncated: false,
+    };
   }
   const limit = start + maxChars;
   const offsets = lineStartOffsets(text);
@@ -147,7 +181,14 @@ export function windowText(text: string, blocks: readonly Block[], offset: numbe
     if (at > limit) break;
   }
   if (cut <= start) cut = limit;
-  return { text: text.slice(start, cut), offset: start, length: cut - start, total, truncated: true, nextOffset: cut };
+  return {
+    text: text.slice(start, cut),
+    offset: start,
+    length: cut - start,
+    total,
+    truncated: true,
+    nextOffset: cut,
+  };
 }
 
 export interface QuoteMatch {
@@ -162,14 +203,23 @@ export interface QuoteMatch {
 }
 
 export type QuoteResolution =
-  | { status: 'found'; match: QuoteMatch }
-  | { status: 'ambiguous'; candidates: QuoteMatch[] }
-  | { status: 'not_found' };
+  | { status: "found"; match: QuoteMatch }
+  | { status: "ambiguous"; candidates: QuoteMatch[] }
+  | { status: "not_found" };
 
-const SEARCHABLE: ReadonlySet<Block['type']> = new Set(['paragraph', 'heading', 'blockquote', 'list-item', 'code', 'table', 'directive', 'math']);
+const SEARCHABLE: ReadonlySet<Block["type"]> = new Set([
+  "paragraph",
+  "heading",
+  "blockquote",
+  "list-item",
+  "code",
+  "table",
+  "directive",
+  "math",
+]);
 
 function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function findInContent(content: string, quote: string): { start: number; end: number } | null {
@@ -177,18 +227,23 @@ function findInContent(content: string, quote: string): { start: number; end: nu
   if (exact >= 0) return { start: exact, end: exact + quote.length };
   const tokens = quote.trim().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return null;
-  const pattern = new RegExp(tokens.map(escapeRegex).join('\\s+'));
+  const pattern = new RegExp(tokens.map(escapeRegex).join("\\s+"));
   const loose = pattern.exec(content);
   if (!loose) return null;
   return { start: loose.index, end: loose.index + loose[0].length };
 }
 
-export function contextAround(content: string, start: number, end: number, radius = CONTEXT_RADIUS): string {
+export function contextAround(
+  content: string,
+  start: number,
+  end: number,
+  radius = CONTEXT_RADIUS,
+): string {
   const from = Math.max(0, start - radius);
   const to = Math.min(content.length, end + radius);
-  const before = from > 0 ? '…' : '';
-  const after = to < content.length ? '…' : '';
-  return `${before}${content.slice(from, to).replace(/\s+/g, ' ')}${after}`;
+  const before = from > 0 ? "…" : "";
+  const after = to < content.length ? "…" : "";
+  return `${before}${content.slice(from, to).replace(/\s+/g, " ")}${after}`;
 }
 
 /**
@@ -202,7 +257,7 @@ export function resolveQuote(
   section?: { blockId: string } | null,
 ): QuoteResolution {
   const trimmed = quote.trim();
-  if (!trimmed) return { status: 'not_found' };
+  if (!trimmed) return { status: "not_found" };
   let start = 0;
   let end = blocks.length;
   if (section) {
@@ -228,23 +283,26 @@ export function resolveQuote(
       context: contextAround(block.content, hit.start, hit.end),
     });
   }
-  if (matches.length === 0) return { status: 'not_found' };
-  if (matches.length === 1) return { status: 'found', match: matches[0]! };
-  return { status: 'ambiguous', candidates: matches };
+  if (matches.length === 0) return { status: "not_found" };
+  if (matches.length === 1) return { status: "found", match: matches[0]! };
+  return { status: "ambiguous", candidates: matches };
 }
 
 /** Context for an existing annotation: the block text around its quote, or the quote itself. */
 export function contextForAnnotation(blocks: readonly Block[], annotation: Annotation): string {
   const block = blocks.find((b) => b.id === annotation.blockId);
-  const quote = annotation.originalText ?? '';
-  if (!block || !quote) return quote.replace(/\s+/g, ' ');
+  const quote = annotation.originalText ?? "";
+  if (!block || !quote) return quote.replace(/\s+/g, " ");
   const hit = findInContent(block.content, quote.trim());
-  if (!hit) return quote.replace(/\s+/g, ' ');
+  if (!hit) return quote.replace(/\s+/g, " ");
   return contextAround(block.content, hit.start, hit.end);
 }
 
-export function capText(text: string | undefined, max = ANNOTATION_TEXT_MAX): { text: string; truncated: boolean } {
-  const value = text ?? '';
+export function capText(
+  text: string | undefined,
+  max = ANNOTATION_TEXT_MAX,
+): { text: string; truncated: boolean } {
+  const value = text ?? "";
   if (value.length <= max) return { text: value, truncated: false };
   return { text: value.slice(0, max), truncated: true };
 }
@@ -252,15 +310,15 @@ export function capText(text: string | undefined, max = ANNOTATION_TEXT_MAX): { 
 /** Plain text of an HTML document, for quote verification on raw-HTML surfaces. */
 export function htmlToPlainText(html: string): string {
   return html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, " ")
     .trim();
 }

@@ -13,11 +13,11 @@
  * palette's colours on the floor the moment a block was annotated or
  * re-themed.
  */
-import { AnnotationType } from '../types';
+import { AnnotationType } from "../types";
 
 export function codeBlockMarkClassName(type: AnnotationType): string {
   return `annotation-highlight ${
-    type === AnnotationType.DELETION ? 'deletion' : type === AnnotationType.COMMENT ? 'comment' : ''
+    type === AnnotationType.DELETION ? "deletion" : type === AnnotationType.COMMENT ? "comment" : ""
   }`.trim();
 }
 
@@ -28,12 +28,8 @@ export function codeBlockMarkClassName(type: AnnotationType): string {
  * annotation on the same block replaces the first (what has always happened)
  * instead of nesting inside it.
  */
-export function paintCodeBlockMark(
-  codeEl: Element,
-  id: string,
-  type: AnnotationType,
-): HTMLElement {
-  codeEl.querySelectorAll('mark[data-bind-id]').forEach((existing) => {
+export function paintCodeBlockMark(codeEl: Element, id: string, type: AnnotationType): HTMLElement {
+  codeEl.querySelectorAll("mark[data-bind-id]").forEach((existing) => {
     const parent = existing.parentNode;
     if (!parent) return;
     while (existing.firstChild) parent.insertBefore(existing.firstChild, existing);
@@ -41,7 +37,7 @@ export function paintCodeBlockMark(
   });
 
   const doc = codeEl.ownerDocument ?? document;
-  const wrapper = doc.createElement('mark');
+  const wrapper = doc.createElement("mark");
   wrapper.className = codeBlockMarkClassName(type);
   wrapper.dataset.bindId = id;
   while (codeEl.firstChild) wrapper.appendChild(codeEl.firstChild);

@@ -30,12 +30,12 @@ let extraExtensions: string[] = [];
  * so a hostile or malformed payload cannot inject regex or path fragments.
  */
 export function setExtraMarkdownExtensions(value: unknown): void {
-	extraExtensions = normalizeMarkdownExtensions(value);
+  extraExtensions = normalizeMarkdownExtensions(value);
 }
 
 /** The registered extra extensions (normalized, possibly empty). */
 export function getExtraMarkdownExtensions(): string[] {
-	return extraExtensions;
+  return extraExtensions;
 }
 
 /**
@@ -46,12 +46,12 @@ export function getExtraMarkdownExtensions(): string[] {
  * wiki-link targets do not.
  */
 export function hasLinkedDocExtension(
-	target: string,
-	options?: { allowFragment?: boolean },
+  target: string,
+  options?: { allowFragment?: boolean },
 ): boolean {
-	const trimmed = target.trim();
-	const path = options?.allowFragment ? trimmed.replace(/#.*$/, "") : trimmed;
-	if (BUILTIN_LINKED_DOC_REGEX.test(path)) return true;
-	const lower = path.toLowerCase();
-	return extraExtensions.some((ext) => lower.endsWith(ext));
+  const trimmed = target.trim();
+  const path = options?.allowFragment ? trimmed.replace(/#.*$/, "") : trimmed;
+  if (BUILTIN_LINKED_DOC_REGEX.test(path)) return true;
+  const lower = path.toLowerCase();
+  return extraExtensions.some((ext) => lower.endsWith(ext));
 }

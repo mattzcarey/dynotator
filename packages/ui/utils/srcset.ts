@@ -5,7 +5,8 @@ export interface SrcsetCandidate {
   descriptors: string;
 }
 
-const isSpace = (char: string) => char === ' ' || char === '\t' || char === '\n' || char === '\f' || char === '\r';
+const isSpace = (char: string) =>
+  char === " " || char === "\t" || char === "\n" || char === "\f" || char === "\r";
 
 /**
  * Split a `srcset` the way the HTML spec does ("parse a srcset attribute"):
@@ -19,24 +20,24 @@ export function parseSrcset(srcset: string): SrcsetCandidate[] {
   const n = srcset.length;
   let i = 0;
   while (i < n) {
-    while (i < n && (isSpace(srcset[i]!) || srcset[i] === ',')) i++;
+    while (i < n && (isSpace(srcset[i]!) || srcset[i] === ",")) i++;
     if (i >= n) break;
     let start = i;
     while (i < n && !isSpace(srcset[i]!)) i++;
     let url = srcset.slice(start, i);
-    let descriptors = '';
-    if (url.endsWith(',')) {
-      url = url.replace(/,+$/, '');
+    let descriptors = "";
+    if (url.endsWith(",")) {
+      url = url.replace(/,+$/, "");
     } else {
       start = i;
       let depth = 0;
       for (; i < n; i++) {
         const char = srcset[i];
-        if (char === '(') depth++;
-        else if (char === ')' && depth > 0) depth--;
-        else if (char === ',' && depth === 0) break;
+        if (char === "(") depth++;
+        else if (char === ")" && depth > 0) depth--;
+        else if (char === "," && depth === 0) break;
       }
-      descriptors = srcset.slice(start, i).trim().split(/\s+/).filter(Boolean).join(' ');
+      descriptors = srcset.slice(start, i).trim().split(/\s+/).filter(Boolean).join(" ");
     }
     if (url) candidates.push({ url, descriptors });
   }
@@ -47,5 +48,5 @@ export function parseSrcset(srcset: string): SrcsetCandidate[] {
 export function serializeSrcset(candidates: readonly SrcsetCandidate[]): string {
   return candidates
     .map(({ url, descriptors }) => (descriptors ? `${url} ${descriptors}` : url))
-    .join(', ');
+    .join(", ");
 }

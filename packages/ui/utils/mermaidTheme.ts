@@ -68,9 +68,9 @@
  * `muted-foreground`, so a palette with a near-invisible `border` still draws
  * node outlines.
  */
-import type { Mermaid, MermaidConfig } from 'mermaid';
-import { MERMAID_CONFIG } from './mermaid';
-import { readThemeTokenValues } from './themeTokens';
+import type { Mermaid, MermaidConfig } from "mermaid";
+import { MERMAID_CONFIG } from "./mermaid";
+import { readThemeTokenValues } from "./themeTokens";
 import {
   compositeOver,
   contrastRatio,
@@ -86,28 +86,28 @@ import {
   toHex,
   withOklchLightness,
   type RgbColor,
-} from './cssColor';
+} from "./cssColor";
 
-export type MermaidThemeMode = 'light' | 'dark';
+export type MermaidThemeMode = "light" | "dark";
 
 /** The custom properties the mapping reads (without the `--` prefix). */
 export const MERMAID_THEME_TOKEN_NAMES = [
-  'background',
-  'foreground',
-  'card',
-  'card-foreground',
-  'popover',
-  'border',
-  'muted',
-  'muted-foreground',
-  'primary',
-  'primary-foreground',
-  'secondary',
-  'accent',
-  'destructive',
-  'success',
-  'warning',
-  'font-sans',
+  "background",
+  "foreground",
+  "card",
+  "card-foreground",
+  "popover",
+  "border",
+  "muted",
+  "muted-foreground",
+  "primary",
+  "primary-foreground",
+  "secondary",
+  "accent",
+  "destructive",
+  "success",
+  "warning",
+  "font-sans",
 ] as const;
 
 export type MermaidThemeTokenName = (typeof MERMAID_THEME_TOKEN_NAMES)[number];
@@ -116,7 +116,7 @@ export type MermaidThemeTokenName = (typeof MERMAID_THEME_TOKEN_NAMES)[number];
 export type MermaidThemeTokens = Partial<Record<MermaidThemeTokenName, string>>;
 
 export interface MermaidThemeSpec {
-  theme: 'dark' | 'default';
+  theme: "dark" | "default";
   themeVariables: Record<string, unknown>;
   /** The node shadow amount baked into `themeVariables.dropShadow` (0..1). */
   shadowAmount: number;
@@ -141,11 +141,11 @@ export const DEFAULT_MERMAID_SHADOW_AMOUNT = 0.7;
 
 /** Mermaid 12's own node shadow, the colour included. Amount 1 reproduces
  *  this geometry; the colour is ours unless the palette yields nothing. */
-export const MERMAID_DEFAULT_SHADOW_COLOR = 'rgba(185, 185, 185, 1)';
+export const MERMAID_DEFAULT_SHADOW_COLOR = "rgba(185, 185, 185, 1)";
 
 /** Clamp an amount to 0..1 and round it, so it is stable in a cache key. */
 export function clampShadowAmount(amount: number | undefined): number {
-  if (typeof amount !== 'number' || !Number.isFinite(amount)) return DEFAULT_MERMAID_SHADOW_AMOUNT;
+  if (typeof amount !== "number" || !Number.isFinite(amount)) return DEFAULT_MERMAID_SHADOW_AMOUNT;
   return Math.round(Math.min(1, Math.max(0, amount)) * 1000) / 1000;
 }
 
@@ -184,7 +184,11 @@ const CANVAS_MUTED_ALPHA = 0.3;
  * is the signal to keep the static config.
  */
 export function readThemeTokens(el?: Element | null): MermaidThemeTokens | undefined {
-  const tokens: MermaidThemeTokens | undefined = readThemeTokenValues(MERMAID_THEME_TOKEN_NAMES, el, ['font-sans']);
+  const tokens: MermaidThemeTokens | undefined = readThemeTokenValues(
+    MERMAID_THEME_TOKEN_NAMES,
+    el,
+    ["font-sans"],
+  );
   if (!tokens?.background || !tokens.foreground) return undefined;
   return tokens;
 }
@@ -236,7 +240,7 @@ function resolvePalette(tokens: MermaidThemeTokens): Palette | null {
   // Plannotator (`bg-card` article); a host may place it straight on the page.
   const canvas = compositeOver({ ...muted, a: CANVAS_MUTED_ALPHA }, card);
   const canvasOnBackground = compositeOver({ ...muted, a: CANVAS_MUTED_ALPHA }, opaqueBackground);
-  const font = tokens['font-sans']?.trim();
+  const font = tokens["font-sans"]?.trim();
 
   return {
     canvas,
@@ -244,18 +248,18 @@ function resolvePalette(tokens: MermaidThemeTokens): Palette | null {
     background: opaqueBackground,
     foreground,
     card,
-    cardForeground: over(tokens['card-foreground'], foreground),
+    cardForeground: over(tokens["card-foreground"], foreground),
     popover: over(tokens.popover, card),
     border: over(tokens.border, towardFg(0.2)),
     muted,
-    mutedForeground: over(tokens['muted-foreground'], towardFg(0.7)),
+    mutedForeground: over(tokens["muted-foreground"], towardFg(0.7)),
     primary,
-    primaryForeground: over(tokens['primary-foreground'], opaqueBackground),
+    primaryForeground: over(tokens["primary-foreground"], opaqueBackground),
     secondary: over(tokens.secondary, muted),
     accent: over(tokens.accent, primary),
-    destructive: over(tokens.destructive, parseCssColor('#e5484d') as RgbColor),
-    success: over(tokens.success, parseCssColor('#3fb950') as RgbColor),
-    warning: over(tokens.warning, parseCssColor('#d29922') as RgbColor),
+    destructive: over(tokens.destructive, parseCssColor("#e5484d") as RgbColor),
+    success: over(tokens.success, parseCssColor("#3fb950") as RgbColor),
+    warning: over(tokens.warning, parseCssColor("#d29922") as RgbColor),
     fontFamily: font || undefined,
   };
 }
@@ -265,7 +269,12 @@ function resolvePalette(tokens: MermaidThemeTokens): Palette | null {
  * smallest OKLab step toward the first ink that can reach it (see the module
  * doc for the rule). Returns `color` unchanged when it already passes.
  */
-export function ensureContrast(color: RgbColor, against: RgbColor, min: number, inks: readonly RgbColor[]): RgbColor {
+export function ensureContrast(
+  color: RgbColor,
+  against: RgbColor,
+  min: number,
+  inks: readonly RgbColor[],
+): RgbColor {
   const start = quantize(color);
   const fill = quantize(against);
   if (contrastRatio(start, fill) >= min) return start;
@@ -371,7 +380,7 @@ export function buildMermaidShadow(ground: RgbColor | undefined, amount: number)
  */
 function fitFillForInk(fill: RgbColor, ink: RgbColor, polarity: MermaidThemeMode): RgbColor {
   let current = quantize(fill);
-  const step = polarity === 'dark' ? 0.02 : -0.02;
+  const step = polarity === "dark" ? 0.02 : -0.02;
   for (let i = 0; i < 24 && contrastRatio(ink, current) < MERMAID_TEXT_CONTRAST_MIN; i++) {
     const L = rgbToOklch(current).L + step;
     if (L < 0.05 || L > 0.98) break;
@@ -409,7 +418,9 @@ export function buildCategoricalScale(p: Palette, polarity: MermaidThemeMode): R
   }
   // A grey palette (no chromatic seed) still gets a scale: start from a
   // mid-chroma blue-violet so slices stay tellable apart.
-  const base: RgbColor = out.length ? out[0] : { ...withOklchLightness(parseCssColor('#7c7cff') as RgbColor, targetL), a: 1 };
+  const base: RgbColor = out.length
+    ? out[0]
+    : { ...withOklchLightness(parseCssColor("#7c7cff") as RgbColor, targetL), a: 1 };
   if (!out.length) push(base);
   for (let k = 1; out.length < CATEGORICAL_COUNT && k < 40; k++) {
     // Golden-angle-ish stepping spreads the rotations before wrapping.
@@ -435,7 +446,7 @@ export function buildMermaidThemeVariables(
   const shadowAmount = clampShadowAmount(options?.shadowAmount);
 
   // Base theme follows the mode; fill lightness and ink follow the measured page.
-  const polarity: MermaidThemeMode = isDarkBackground(p.background) ? 'dark' : 'light';
+  const polarity: MermaidThemeMode = isDarkBackground(p.background) ? "dark" : "light";
   const inks = [p.foreground, p.background] as const;
   const rowEven = mixOklab(p.card, p.muted, 0.6);
   // Every surface page-level text and lines can land on: the canvas (over the
@@ -446,11 +457,15 @@ export function buildMermaidThemeVariables(
   // and rounding differences between this arithmetic and a browser's.
   const textMin = MERMAID_TEXT_CONTRAST_MIN + GUARD_HEADROOM;
   const lineMin = MERMAID_LINE_CONTRAST_MIN + GUARD_HEADROOM;
-  const text = (color: RgbColor, fill: RgbColor): RgbColor => ensureContrast(color, fill, textMin, inks);
+  const text = (color: RgbColor, fill: RgbColor): RgbColor =>
+    ensureContrast(color, fill, textMin, inks);
   const textOnSurfaces = (color: RgbColor): RgbColor =>
     surfaces.reduce((c, surface) => ensureContrast(c, surface, textMin, inks), quantize(color));
   const line = (color: RgbColor): RgbColor =>
-    [p.canvas, p.canvasOnBackground, p.muted, p.card].reduce((c, surface) => ensureContrast(c, surface, lineMin, inks), quantize(color));
+    [p.canvas, p.canvasOnBackground, p.muted, p.card].reduce(
+      (c, surface) => ensureContrast(c, surface, lineMin, inks),
+      quantize(color),
+    );
   const stroke = (color: RgbColor): RgbColor =>
     ensureContrast(color, p.canvas, MERMAID_BORDER_CONTRAST_MIN, [p.mutedForeground, p.foreground]);
 
@@ -485,7 +500,7 @@ export function buildMermaidThemeVariables(
   // page's own ground, never Mermaid's fixed grey (see buildMermaidShadow).
   const shadow = buildMermaidShadow(p.background, shadowAmount);
   const vars: Record<string, unknown> = {
-    darkMode: mode === 'dark',
+    darkMode: mode === "dark",
     ...(p.fontFamily ? { fontFamily: p.fontFamily } : {}),
 
     // General
@@ -605,7 +620,13 @@ export function buildMermaidThemeVariables(
     doneTaskBkgColor: h(p.muted),
     doneTaskBorderColor: h(nodeBorder),
     critBorderColor: h(destructiveLine),
-    critBkgColor: h(fitFillForInk(withOklchLightness(p.destructive, CATEGORICAL_LIGHTNESS[polarity]), scaleInk, polarity)),
+    critBkgColor: h(
+      fitFillForInk(
+        withOklchLightness(p.destructive, CATEGORICAL_LIGHTNESS[polarity]),
+        scaleInk,
+        polarity,
+      ),
+    ),
     todayLineColor: h(destructiveLine),
     vertLineColor: h(primaryLine),
 
@@ -615,7 +636,7 @@ export function buildMermaidThemeVariables(
     pieLegendTextColor: h(fg),
     pieStrokeColor: h(canvas),
     pieOuterStrokeColor: h(nodeBorder),
-    pieOpacity: '1',
+    pieOpacity: "1",
 
     // Quadrant
     quadrant1Fill: h(p.card),
@@ -676,7 +697,7 @@ export function buildMermaidThemeVariables(
       yAxisLabelColor: h(fg),
       yAxisTickColor: h(lineColor),
       yAxisLineColor: h(lineColor),
-      plotColorPalette: scaleHex.join(','),
+      plotColorPalette: scaleHex.join(","),
     },
     packet: {
       startByteColor: h(fg),
@@ -712,8 +733,20 @@ export function buildMermaidThemeVariables(
       labelColor: h(fg),
       complexBg: scaleHex[0],
       complicatedBg: scaleHex[1] ?? scaleHex[0],
-      chaoticBg: h(fitFillForInk(withOklchLightness(p.destructive, CATEGORICAL_LIGHTNESS[polarity]), scaleInk, polarity)),
-      clearBg: h(fitFillForInk(withOklchLightness(p.success, CATEGORICAL_LIGHTNESS[polarity]), scaleInk, polarity)),
+      chaoticBg: h(
+        fitFillForInk(
+          withOklchLightness(p.destructive, CATEGORICAL_LIGHTNESS[polarity]),
+          scaleInk,
+          polarity,
+        ),
+      ),
+      clearBg: h(
+        fitFillForInk(
+          withOklchLightness(p.success, CATEGORICAL_LIGHTNESS[polarity]),
+          scaleInk,
+          polarity,
+        ),
+      ),
       confusionBg: scaleHex[2] ?? scaleHex[0],
     },
   };
@@ -732,7 +765,7 @@ export function buildMermaidThemeVariables(
     vars[`fillType${i}`] = scaleHex[i];
     vars[`venn${i + 1}`] = scaleHex[i];
   }
-  return { theme: mode === 'dark' ? 'dark' : 'default', themeVariables: vars, shadowAmount };
+  return { theme: mode === "dark" ? "dark" : "default", themeVariables: vars, shadowAmount };
 }
 
 /** The full Mermaid config for a spec: `MERMAID_CONFIG` with the theme swapped. */
@@ -763,7 +796,7 @@ export function mermaidThemeKey(
 }
 
 function modeFromKey(key: string): MermaidThemeMode {
-  return key.startsWith('light:') ? 'light' : 'dark';
+  return key.startsWith("light:") ? "light" : "dark";
 }
 
 /** The amount a key carries, the default when it carries none. */
@@ -772,11 +805,11 @@ export function shadowAmountFromKey(key: string): number {
   return match ? clampShadowAmount(Number(match[1])) : DEFAULT_MERMAID_SHADOW_AMOUNT;
 }
 
-export type MermaidThemeApplyResult = 'unchanged' | 'dynamic' | 'static';
+export type MermaidThemeApplyResult = "unchanged" | "dynamic" | "static";
 
-let appliedRuntime: Pick<Mermaid, 'initialize'> | null = null;
+let appliedRuntime: Pick<Mermaid, "initialize"> | null = null;
 let appliedKey: string | null = null;
-let appliedKind: 'dynamic' | 'static' | null = null;
+let appliedKind: "dynamic" | "static" | null = null;
 
 /**
  * Initialize `mermaid` for the `(palette, mode)` named by `key`, once per key
@@ -786,11 +819,11 @@ let appliedKind: 'dynamic' | 'static' | null = null;
  * which is the fallback contract for hosts.
  */
 export function applyMermaidTheme(
-  mermaid: Pick<Mermaid, 'initialize'>,
+  mermaid: Pick<Mermaid, "initialize">,
   key: string,
   root?: Element | null,
 ): MermaidThemeApplyResult {
-  if (appliedRuntime === mermaid && appliedKey === key) return 'unchanged';
+  if (appliedRuntime === mermaid && appliedKey === key) return "unchanged";
   const spec = buildMermaidThemeVariables(readThemeTokens(root), modeFromKey(key), {
     shadowAmount: shadowAmountFromKey(key),
   });
@@ -798,13 +831,13 @@ export function applyMermaidTheme(
   appliedRuntime = mermaid;
   appliedKey = key;
   if (!spec) {
-    if (sameRuntime && appliedKind === 'dynamic') mermaid.initialize(MERMAID_CONFIG);
-    appliedKind = 'static';
-    return 'static';
+    if (sameRuntime && appliedKind === "dynamic") mermaid.initialize(MERMAID_CONFIG);
+    appliedKind = "static";
+    return "static";
   }
   mermaid.initialize(buildMermaidConfig(spec));
-  appliedKind = 'dynamic';
-  return 'dynamic';
+  appliedKind = "dynamic";
+  return "dynamic";
 }
 
 /** Test hook: forget the last applied key so the next apply re-initializes. */

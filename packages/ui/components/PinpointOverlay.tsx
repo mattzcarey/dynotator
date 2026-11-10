@@ -1,8 +1,5 @@
-import React, { useLayoutEffect, useState, useRef } from 'react';
-import {
-  addScrollViewportListener,
-  useScrollViewport,
-} from '../hooks/useScrollViewport';
+import React, { useLayoutEffect, useState, useRef } from "react";
+import { addScrollViewportListener, useScrollViewport } from "../hooks/useScrollViewport";
 
 interface PinpointOverlayProps {
   target: { element: HTMLElement; label: string } | null;
@@ -50,7 +47,7 @@ export const PinpointOverlay: React.FC<PinpointOverlayProps> = ({ target, contai
     // viewport is ready yet. Register it unconditionally so the overlay
     // stays aligned during the brief window before OverlayScrollbars
     // delivers its viewport.
-    window.addEventListener('resize', handleUpdate, { passive: true });
+    window.addEventListener("resize", handleUpdate, { passive: true });
 
     // The shared viewport is the nested main element on desktop and the page
     // scroller on compact touch layouts. The helper binds the latter to the
@@ -61,7 +58,7 @@ export const PinpointOverlay: React.FC<PinpointOverlayProps> = ({ target, contai
 
     return () => {
       cancelAnimationFrame(rafRef.current);
-      window.removeEventListener('resize', handleUpdate);
+      window.removeEventListener("resize", handleUpdate);
       removeScrollListener?.();
     };
   }, [target, containerRef, scrollViewport]);
@@ -75,26 +72,27 @@ export const PinpointOverlay: React.FC<PinpointOverlayProps> = ({ target, contai
         data-pinpoint-overlay
         className="bg-primary/10 rounded-sm"
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: position.top,
           left: position.left,
           width: position.width,
           height: position.height,
-          pointerEvents: 'none',
+          pointerEvents: "none",
           zIndex: 20,
-          transition: 'top 100ms ease-out, left 100ms ease-out, width 100ms ease-out, height 100ms ease-out',
+          transition:
+            "top 100ms ease-out, left 100ms ease-out, width 100ms ease-out, height 100ms ease-out",
         }}
       />
       {/* Label badge */}
       <div
         data-pinpoint-label={target.label}
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: position.top - 22,
           left: position.left - 2,
-          pointerEvents: 'none',
+          pointerEvents: "none",
           zIndex: 21,
-          transition: 'all 100ms ease-out',
+          transition: "all 100ms ease-out",
         }}
       >
         <span className="inline-block text-[10px] leading-4 px-1.5 rounded-sm bg-primary text-primary-foreground font-mono whitespace-nowrap max-w-[220px] overflow-hidden text-ellipsis">

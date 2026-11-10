@@ -9,10 +9,7 @@
 import React, { useState } from "react";
 import type { PlanDiffBlock, PlanDiffStats } from "../../utils/planDiffEngine";
 import type { Annotation, EditorMode } from "../../types";
-import {
-  PlanDiffModeSwitcher,
-  type PlanDiffMode,
-} from "./PlanDiffModeSwitcher";
+import { PlanDiffModeSwitcher, type PlanDiffMode } from "./PlanDiffModeSwitcher";
 import { PlanCleanDiffView, type PlanDiffCodeDocument } from "./PlanCleanDiffView";
 import { PlanRawDiffView } from "./PlanRawDiffView";
 import { PlanDiffBadge } from "./PlanDiffBadge";
@@ -53,7 +50,7 @@ interface PlanDiffViewerProps {
 }
 
 const defaultOpenVscodeDiff = async (
-  baseVersion: number
+  baseVersion: number,
 ): Promise<{ ok?: boolean; error?: string }> => {
   try {
     const res = await fetch("/api/plan/vscode-diff", {
@@ -94,7 +91,7 @@ export const PlanDiffViewer: React.FC<PlanDiffViewerProps> = ({
   fillHeight = false,
   codeDocument,
 }) => {
-  const hideRepoOwner = useConfigValue('hideRepoOwner');
+  const hideRepoOwner = useConfigValue("hideRepoOwner");
   const [vscodeDiffLoading, setVscodeDiffLoading] = useState(false);
   const [vscodeDiffError, setVscodeDiffError] = useState<string | null>(null);
 
@@ -120,11 +117,14 @@ export const PlanDiffViewer: React.FC<PlanDiffViewerProps> = ({
 
   return (
     <div
-      className={`relative z-50 w-full${fillHeight ? ' flex flex-col print:block' : ''}`}
-      data-viewer-fill-height={fillHeight ? '' : undefined}
+      className={`relative z-50 w-full${fillHeight ? " flex flex-col print:block" : ""}`}
+      data-viewer-fill-height={fillHeight ? "" : undefined}
       style={maxWidth ? { maxWidth } : { maxWidth: 832 }}
     >
-      <article className={`w-full ${fillHeight ? 'flex-1 ' : ''}bg-card border border-border/50 rounded-xl shadow-xl p-5 md:p-8 lg:p-10 xl:p-12 relative`} data-doc-text-root="">
+      <article
+        className={`w-full ${fillHeight ? "flex-1 " : ""}bg-card border border-border/50 rounded-xl shadow-xl p-5 md:p-8 lg:p-10 xl:p-12 relative`}
+        data-doc-text-root=""
+      >
         {/* Top-left: repo info + diff badge — matches Viewer layout (flex-col) so badge doesn't jump position */}
         <div className="absolute top-3 left-3 md:top-4 md:left-5 flex flex-col items-start gap-1 text-[9px] text-muted-foreground/50 font-mono">
           {repoInfo && (
@@ -175,11 +175,7 @@ export const PlanDiffViewer: React.FC<PlanDiffViewerProps> = ({
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -188,9 +184,7 @@ export const PlanDiffViewer: React.FC<PlanDiffViewerProps> = ({
         <div className="mt-6 mb-6 flex items-center gap-3">
           <PlanDiffModeSwitcher mode={diffMode} onChange={onDiffModeChange} />
           {baseVersionLabel && (
-            <span className="text-[10px] text-muted-foreground">
-              vs {baseVersionLabel}
-            </span>
+            <span className="text-[10px] text-muted-foreground">vs {baseVersionLabel}</span>
           )}
           {canOpenVscodeDiff && (
             <button

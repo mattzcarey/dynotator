@@ -3,7 +3,7 @@ import {
   startCompletion,
   type Completion,
   type CompletionSource,
-} from '@codemirror/autocomplete';
+} from "@codemirror/autocomplete";
 import {
   EditorState,
   MapMode,
@@ -11,13 +11,13 @@ import {
   StateField,
   type Extension,
   type StateEffectType,
-} from '@codemirror/state';
-import type { EditorView } from '@codemirror/view';
-import type { SlashCommandItem } from '@plannotator/atomic-editor';
-import { planEmbedInsert } from '@dynotator/core/embed-insert';
+} from "@codemirror/state";
+import type { EditorView } from "@codemirror/view";
+import type { SlashCommandItem } from "@plannotator/atomic-editor";
+import { planEmbedInsert } from "@dynotator/core/embed-insert";
 
 /** What an embed can point at. The union grows as new media kinds ship. */
-export type EmbedKind = 'html';
+export type EmbedKind = "html";
 
 /** One embeddable target supplied by the host. */
 export interface EmbedTarget {
@@ -68,18 +68,18 @@ type UploadAnchor = {
 };
 
 type UploadState =
-  | { readonly _tag: 'idle' }
-  | { readonly _tag: 'uploading'; readonly anchor: UploadAnchor | null };
+  | { readonly _tag: "idle" }
+  | { readonly _tag: "uploading"; readonly anchor: UploadAnchor | null };
 
 type UploadStateEffect =
-  | { readonly _tag: 'start'; readonly anchor: UploadAnchor }
-  | { readonly _tag: 'finish' };
+  | { readonly _tag: "start"; readonly anchor: UploadAnchor }
+  | { readonly _tag: "finish" };
 
 type UploadStateEffectType = StateEffectType<UploadStateEffect>;
 
-const IDLE_UPLOAD_STATE: UploadState = { _tag: 'idle' };
-const EMBED_PREFIX = '/embed ';
-const HTML_KIND: EmbedKind = 'html';
+const IDLE_UPLOAD_STATE: UploadState = { _tag: "idle" };
+const EMBED_PREFIX = "/embed ";
+const HTML_KIND: EmbedKind = "html";
 
 // Framed `</>` for an HTML document rendered in place. This follows the
 // editor package convention: 16x16 viewBox, currentColor, 1.5 stroke.
@@ -99,8 +99,8 @@ const UPLOAD_ICON =
  */
 export function embedSlashItem(): SlashCommandItem {
   return {
-    label: 'Embed HTML',
-    detail: 'live preview',
+    label: "Embed HTML",
+    detail: "live preview",
     icon: EMBED_ICON,
     apply: (view, completion, from, to) => {
       view.dispatch({
@@ -128,11 +128,11 @@ export function embedPicker(config: EmbedPickerConfig): Extension {
     create: () => IDLE_UPLOAD_STATE,
     update: (current, transaction) => {
       let next = current;
-      if (next._tag === 'uploading' && next.anchor !== null && transaction.docChanged) {
+      if (next._tag === "uploading" && next.anchor !== null && transaction.docChanged) {
         const mappedFrom = transaction.changes.mapPos(next.anchor.from, 1, MapMode.TrackAfter);
         const mappedTo = transaction.changes.mapPos(next.anchor.to, -1, MapMode.TrackBefore);
         next = {
-          _tag: 'uploading',
+          _tag: "uploading",
           anchor:
             mappedFrom === null || mappedTo === null || mappedFrom > mappedTo
               ? null
@@ -143,8 +143,8 @@ export function embedPicker(config: EmbedPickerConfig): Extension {
       for (const effect of transaction.effects) {
         if (!effect.is(uploadStateEffect)) continue;
         next =
-          effect.value._tag === 'start'
-            ? { _tag: 'uploading', anchor: effect.value.anchor }
+          effect.value._tag === "start"
+            ? { _tag: "uploading", anchor: effect.value.anchor }
             : IDLE_UPLOAD_STATE;
       }
       return next;
@@ -169,7 +169,7 @@ function createEmbedPickerSource(
     const line = context.state.doc.lineAt(match.from);
     if (!/^\s*$/.test(line.text.slice(0, match.from - line.from))) return null;
 
-    const query = match.text.replace(/^\/embed +/, '');
+    const query = match.text.replace(/^\/embed +/, "");
     const targets = config.getTargets().filter((target) => target.kind === HTML_KIND);
     const matches = filterTargets(targets, query);
     const options: IconCompletion[] = [];
@@ -188,11 +188,11 @@ function createEmbedPickerSource(
       options.push({
         label:
           targets.length === 0
-            ? config.labels?.empty ?? 'No HTML files in this workspace'
-            : config.labels?.noMatch?.(query.trim()) ?? `No HTML files match “${query.trim()}”`,
+            ? (config.labels?.empty ?? "No HTML files in this workspace")
+            : (config.labels?.noMatch?.(query.trim()) ?? `No HTML files match “${query.trim()}”`),
         apply: (view, completion, _from, to) => {
           view.dispatch({
-            changes: { from: line.from, to, insert: '' },
+            changes: { from: line.from, to, insert: "" },
             annotations: pickedCompletion.of(completion),
           });
         },
@@ -213,16 +213,16 @@ function createEmbedPickerSource(
     if (uploadTarget !== undefined) {
       const uploadState = context.state.field(uploadStateField);
       options.push(
-        uploadState._tag === 'uploading'
+        uploadState._tag === "uploading"
           ? {
-              label: 'Uploading...',
+              label: "Uploading...",
               slashCommandIcon: UPLOAD_ICON,
               apply: () => {
                 // Inert while the existing host callback is still pending.
               },
             }
           : {
-              label: config.labels?.upload ?? 'Upload HTML...',
+              label: config.labels?.upload ?? "Upload HTML...",
               slashCommandIcon: UPLOAD_ICON,
               apply: (view, completion, from, to) => {
                 startUpload(
@@ -253,16 +253,16 @@ function createEmbedPickerSource(
 
 function filterTargets(targets: readonly EmbedTarget[], query: string): readonly EmbedTarget[] {
   const needle = query.trim().toLowerCase();
-  if (needle === '') return targets;
+  if (needle === "") return targets;
   return targets.filter((target) => {
-    const title = (target.title ?? '').toLowerCase();
+    const title = (target.title ?? "").toLowerCase();
     return title.includes(needle) || target.path.toLowerCase().includes(needle);
   });
 }
 
 function targetLabel(target: EmbedTarget): string {
-  const title = target.title ?? '';
-  return title.trim() === '' ? target.path : title;
+  const title = target.title ?? "";
+  return title.trim() === "" ? target.path : title;
 }
 
 function applyTargetInsert(
@@ -271,7 +271,7 @@ function applyTargetInsert(
   from: number,
   to: number,
   target: EmbedTarget,
-  buildInsertLine: EmbedPickerConfig['buildInsertLine'],
+  buildInsertLine: EmbedPickerConfig["buildInsertLine"],
 ): void {
   const body = view.state.doc.toString();
   const plan = planEmbedInsert(body, from, to, buildInsertLine(target));
@@ -289,12 +289,12 @@ function startUpload(
   from: number,
   to: number,
   config: EmbedPickerConfig,
-  uploadTarget: NonNullable<EmbedPickerConfig['uploadTarget']>,
+  uploadTarget: NonNullable<EmbedPickerConfig["uploadTarget"]>,
   uploadStateField: StateField<UploadState>,
   uploadStateEffect: UploadStateEffectType,
 ): void {
   const uploadState = view.state.field(uploadStateField, false);
-  if (uploadState?._tag === 'uploading') return;
+  if (uploadState?._tag === "uploading") return;
 
   const anchor: UploadAnchor = {
     from,
@@ -302,7 +302,7 @@ function startUpload(
     text: view.state.doc.sliceString(from, to),
   };
   view.dispatch({
-    effects: uploadStateEffect.of({ _tag: 'start', anchor }),
+    effects: uploadStateEffect.of({ _tag: "start", anchor }),
     annotations: pickedCompletion.of(completion),
   });
 
@@ -325,7 +325,7 @@ function finishUpload(
   uploadStateEffect: UploadStateEffectType,
 ): void {
   const uploadState = view.state.field(uploadStateField, false);
-  if (uploadState?._tag !== 'uploading') return;
+  if (uploadState?._tag !== "uploading") return;
 
   const anchor = uploadState.anchor;
   if (target === null || anchor === null || !isLiveAnchor(view, anchor)) {
@@ -339,7 +339,7 @@ function finishUpload(
     changes: { from: plan.from, to: plan.to, insert: plan.insert },
     selection: { anchor: plan.cursor },
     scrollIntoView: true,
-    effects: uploadStateEffect.of({ _tag: 'finish' }),
+    effects: uploadStateEffect.of({ _tag: "finish" }),
     annotations: pickedCompletion.of(completion),
   });
 }
@@ -357,6 +357,6 @@ function clearUpload(
   uploadStateEffect: UploadStateEffectType,
 ): void {
   const uploadState = view.state.field(uploadStateField, false);
-  if (uploadState?._tag !== 'uploading') return;
-  view.dispatch({ effects: uploadStateEffect.of({ _tag: 'finish' }) });
+  if (uploadState?._tag !== "uploading") return;
+  view.dispatch({ effects: uploadStateEffect.of({ _tag: "finish" }) });
 }

@@ -1,5 +1,14 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, type RefObject } from "react";
-import { AnnotationType, type Annotation, type EditorMode, type HostDraft, type HtmlAnnotationTarget, type HtmlElementAnchor, type HtmlElementContext, type ImageAttachment } from "../../types";
+import {
+  AnnotationType,
+  type Annotation,
+  type EditorMode,
+  type HostDraft,
+  type HtmlAnnotationTarget,
+  type HtmlElementAnchor,
+  type HtmlElementContext,
+  type ImageAttachment,
+} from "../../types";
 import { THUMBS_UP_LABEL, type QuickLabel } from "../../utils/quickLabels";
 import { getIdentity } from "../../utils/identity";
 import type {
@@ -189,7 +198,10 @@ export interface HtmlLiveSession {
 }
 
 /** The bridge's window behind `iframe`: the frame's own, or a nested live session's wrapper's only frame. */
-export function bridgeWindowOf(iframe: HTMLIFrameElement | null | undefined, live?: HtmlLiveSession | null): Window | null {
+export function bridgeWindowOf(
+  iframe: HTMLIFrameElement | null | undefined,
+  live?: HtmlLiveSession | null,
+): Window | null {
   const win = iframe?.contentWindow ?? null;
   if (!win || !live?.nested) return win;
   return win.frames[0] ?? null;
@@ -202,11 +214,7 @@ const LINK_CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
 
 /** True when a live-session message event fails the origin or token check.
  * Exported for protocol tests. */
-export function rejectsLiveMessage(
-  live: HtmlLiveSession,
-  origin: string,
-  data: unknown,
-): boolean {
+export function rejectsLiveMessage(live: HtmlLiveSession, origin: string, data: unknown): boolean {
   if (origin !== live.origin) return true;
   if (!isRecord(data) || data.token !== live.token) return true;
   return false;
@@ -255,7 +263,7 @@ export interface UseHtmlAnnotationOptions {
   onLinkClick?: (href: string) => void;
   /** scrollIntoView behavior for scroll-to (selecting an annotation).
    *  Absent: smooth, as before; pass 'auto' to honor reduced motion. */
-  scrollBehavior?: 'smooth' | 'auto';
+  scrollBehavior?: "smooth" | "auto";
   /** Where a host's own panel floats over the frame's right side, in frame
    *  pixels (the panel's left edge, top and bottom), read when an annotation
    *  is selected: a mark under it scrolls clear of it where the page can
@@ -322,10 +330,10 @@ function postToIframe(
 }
 
 function parseEditorMode(value: unknown): EditorMode | undefined {
-  return value === "selection"
-    || value === "comment"
-    || value === "redline"
-    || value === "quickLabel"
+  return value === "selection" ||
+    value === "comment" ||
+    value === "redline" ||
+    value === "quickLabel"
     ? value
     : undefined;
 }
@@ -373,8 +381,10 @@ function parseAnchorPoint(value: unknown): { x: number; y: number } | undefined 
   if (!isRecord(value)) return undefined;
   const { x, y } = value;
   if (
-    typeof x !== "number" || !Number.isFinite(x)
-    || typeof y !== "number" || !Number.isFinite(y)
+    typeof x !== "number" ||
+    !Number.isFinite(x) ||
+    typeof y !== "number" ||
+    !Number.isFinite(y)
   ) {
     return undefined;
   }
@@ -389,12 +399,12 @@ export function parseHtmlElementAnchor(value: unknown): HtmlElementAnchor | null
   if (!isRecord(value)) return null;
   const { selector, tagName, text } = value;
   if (
-    typeof selector !== "string"
-    || selector.length === 0
-    || selector.length > MAX_ANCHOR_SELECTOR_LENGTH
-    || typeof tagName !== "string"
-    || tagName.length === 0
-    || tagName.length > MAX_ANCHOR_TAG_LENGTH
+    typeof selector !== "string" ||
+    selector.length === 0 ||
+    selector.length > MAX_ANCHOR_SELECTOR_LENGTH ||
+    typeof tagName !== "string" ||
+    tagName.length === 0 ||
+    tagName.length > MAX_ANCHOR_TAG_LENGTH
   ) {
     return null;
   }
@@ -430,19 +440,19 @@ function parseTargetLabel(value: unknown): string | undefined {
 // Re-exported so `components/html-viewer` stays the one import site a host
 // needs for the parent trust boundary; the definitions live in
 // `@dynotator/core/html-anchor`, never mirrored here.
-export {
-  parseHtmlElementContext,
-  MAX_ELEMENT_CONTEXT_BYTES,
-  MAX_PAGE_URL_LENGTH,
-};
+export { parseHtmlElementContext, MAX_ELEMENT_CONTEXT_BYTES, MAX_PAGE_URL_LENGTH };
 
 function parseBridgeRect(value: unknown): BridgeRect | null {
   if (!isRecord(value)) return null;
   const { top, left, width, height } = value;
-  return typeof top === "number" && Number.isFinite(top)
-    && typeof left === "number" && Number.isFinite(left)
-    && typeof width === "number" && Number.isFinite(width)
-    && typeof height === "number" && Number.isFinite(height)
+  return typeof top === "number" &&
+    Number.isFinite(top) &&
+    typeof left === "number" &&
+    Number.isFinite(left) &&
+    typeof width === "number" &&
+    Number.isFinite(width) &&
+    typeof height === "number" &&
+    Number.isFinite(height)
     ? { top, left, width, height }
     : null;
 }
@@ -491,19 +501,26 @@ export function parseBridgeMessage(value: unknown): BridgeMessage | null {
       return key ? { type: value.type, key } : null;
     }
     case `${PREFIX}pointer`:
-      return typeof value.x === "number" && Number.isFinite(value.x)
-        && typeof value.y === "number" && Number.isFinite(value.y)
+      return typeof value.x === "number" &&
+        Number.isFinite(value.x) &&
+        typeof value.y === "number" &&
+        Number.isFinite(value.y)
         ? { type: value.type, x: value.x, y: value.y, shift: value.shift === true }
         : null;
     case `${PREFIX}selection-clear`:
       return { type: value.type };
     case `${PREFIX}rich-copy`: {
       // Oversized or malformed markup reads as none (plain text is copied).
-      if (typeof value.id !== "string" || value.id.length === 0 || value.id.length > 64) return null;
-      const text = typeof value.text === "string" && value.text.length <= MAX_RICH_CLIPBOARD_HTML_LENGTH
-        ? value.text : "";
-      const html = typeof value.html === "string" && value.html.length <= MAX_RICH_CLIPBOARD_HTML_LENGTH
-        ? value.html : "";
+      if (typeof value.id !== "string" || value.id.length === 0 || value.id.length > 64)
+        return null;
+      const text =
+        typeof value.text === "string" && value.text.length <= MAX_RICH_CLIPBOARD_HTML_LENGTH
+          ? value.text
+          : "";
+      const html =
+        typeof value.html === "string" && value.html.length <= MAX_RICH_CLIPBOARD_HTML_LENGTH
+          ? value.html
+          : "";
       return {
         type: value.type,
         id: value.id,
@@ -514,15 +531,15 @@ export function parseBridgeMessage(value: unknown): BridgeMessage | null {
       };
     }
     case `${PREFIX}pin-visibility`:
-      return typeof value.visible === 'boolean' ? { type: value.type, visible: value.visible } : null;
+      return typeof value.visible === "boolean"
+        ? { type: value.type, visible: value.visible }
+        : null;
     case `${PREFIX}selection-rect`: {
       const rect = parseBridgeRect(value.rect);
       return rect ? { type: value.type, rect } : null;
     }
     case `${PREFIX}keytype`:
-      return typeof value.key === "string"
-        ? { type: value.type, key: value.key }
-        : null;
+      return typeof value.key === "string" ? { type: value.type, key: value.key } : null;
     case `${PREFIX}mark-click`:
       // The id is page-controlled like every other bridge string: cap it like
       // the bridge's own sync validation does (256) so a hostile page cannot
@@ -548,13 +565,16 @@ export function parseBridgeMessage(value: unknown): BridgeMessage | null {
         : null;
     case `${PREFIX}content-width`: {
       const { width, viewport } = value;
-      const fits = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1_000_000;
+      const fits = (n: unknown): n is number =>
+        typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1_000_000;
       return fits(width) && fits(viewport) ? { type: value.type, width, viewport } : null;
     }
     case `${PREFIX}page-scroll-up`:
       return { type: value.type };
     case `${PREFIX}page-tap`:
-      return typeof value.y === "number" && Number.isFinite(value.y) && Math.abs(value.y) <= 1_000_000
+      return typeof value.y === "number" &&
+        Number.isFinite(value.y) &&
+        Math.abs(value.y) <= 1_000_000
         ? { type: value.type, y: value.y }
         : null;
     case `${PREFIX}link-click`: {
@@ -569,9 +589,9 @@ export function parseBridgeMessage(value: unknown): BridgeMessage | null {
     }
     case `${PREFIX}page-change`:
       // Live-mode SPA navigation report. Bounded like every bridge string.
-      return typeof value.pageUrl === "string"
-        && value.pageUrl.length > 0
-        && value.pageUrl.length <= MAX_PAGE_URL_LENGTH
+      return typeof value.pageUrl === "string" &&
+        value.pageUrl.length > 0 &&
+        value.pageUrl.length <= MAX_PAGE_URL_LENGTH
         ? { type: value.type, pageUrl: value.pageUrl }
         : null;
     default:
@@ -608,7 +628,12 @@ export function useHtmlAnnotation({
   onPageTap,
 }: UseHtmlAnnotationOptions): Omit<
   UseAnnotationHighlighterReturn,
-  "highlighterRef" | "highlightRange" | "highlightMathElement" | "commentDrafts" | "reopenCommentDraft" | "reopenComment"
+  | "highlighterRef"
+  | "highlightRange"
+  | "highlightMathElement"
+  | "commentDrafts"
+  | "reopenCommentDraft"
+  | "reopenComment"
 > & {
   /** Whether any pinned draft target is still displayed by the page. Always
    *  true while no composer is open. */
@@ -723,7 +748,12 @@ export function useHtmlAnnotation({
   const anchorRef = useRef<HTMLDivElement | null>(null);
   // The bridge's whole selection rect (frame coordinates), for the touch
   // toolbar, which goes below it; the anchor div marks only its top.
-  const selectionRectRef = useRef<{ top: number; left: number; width: number; height: number } | null>(null);
+  const selectionRectRef = useRef<{
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  } | null>(null);
   /** Rich-text Copy requests waiting for the bridge's markup, by id. An
    *  answer with an id not in here (unsolicited, or after its timeout) is ignored. */
   const richCopyRequestsRef = useRef(new Map<string, (answer: BridgeRichCopyMessage) => void>());
@@ -830,18 +860,18 @@ export function useHtmlAnnotation({
       const type = message.type;
 
       if (
-        !enabledRef.current
-        && type !== `${PREFIX}mark-click`
-        && type !== `${PREFIX}unanchored`
-        && type !== `${PREFIX}resize`
-        && type !== `${PREFIX}content-width`
+        !enabledRef.current &&
+        type !== `${PREFIX}mark-click` &&
+        type !== `${PREFIX}unanchored` &&
+        type !== `${PREFIX}resize` &&
+        type !== `${PREFIX}content-width` &&
         // Scrolling and tapping are reading, reported for a host's own controls.
-        && type !== `${PREFIX}page-scroll-up`
-        && type !== `${PREFIX}page-tap`
+        type !== `${PREFIX}page-scroll-up` &&
+        type !== `${PREFIX}page-tap` &&
         // Page identity is navigation state, not an annotation mutation.
-        && type !== `${PREFIX}page-change`
+        type !== `${PREFIX}page-change` &&
         // Following a link is a read action; a read-only document still navigates.
-        && type !== `${PREFIX}link-click`
+        type !== `${PREFIX}link-click`
       ) {
         return;
       }
@@ -871,7 +901,10 @@ export function useHtmlAnnotation({
         pendingAnchorRef.current = message.anchor ?? null;
         pendingContextRef.current = message.context ?? null;
         setDraftTargets([]); // a new selection always starts a fresh draft
-        const reopen = message.restoreId && reopenRef.current?.id === message.restoreId ? reopenRef.current : null;
+        const reopen =
+          message.restoreId && reopenRef.current?.id === message.restoreId
+            ? reopenRef.current
+            : null;
         if (reopen) reopenRef.current = null;
         const reportDraft = onHostDraftRef.current;
         if (reportDraft) {
@@ -923,12 +956,12 @@ export function useHtmlAnnotation({
             : requestedMode;
 
         if (
-          currentMode === "comment"
+          currentMode === "comment" ||
           // Pinpoint click-to-pin: the click already chose the target, so skip
           // the intermediate toolbar and go straight to the comment composer.
-          || (message.pinpoint && currentMode === "selection")
+          (message.pinpoint && currentMode === "selection") ||
           // A host's reopenComment: the comment was being written, so it opens again.
-          || reopen
+          reopen
         ) {
           // Release iframe focus so the popover's textarea autofocus lands in the
           // parent (otherwise the iframe keeps focus and swallows further keys).
@@ -940,7 +973,9 @@ export function useHtmlAnnotation({
             // A reopened comment holds the host's words, under its own key so
             // no older draft of the same pin and quote takes their place.
             ...(reopen ? { initialText: reopen.text } : {}),
-            draftKey: htmlCommentDraftKey(message.text, message.anchor, message.targetKey) + (reopen ? `:reopen:${reopen.id}` : ""),
+            draftKey:
+              htmlCommentDraftKey(message.text, message.anchor, message.targetKey) +
+              (reopen ? `:reopen:${reopen.id}` : ""),
           });
           // Pinpoint drafts arm shift-click multi-select: the clicked element
           // becomes the primary target of the (single) draft comment. The
@@ -975,37 +1010,49 @@ export function useHtmlAnnotation({
               const f = iframe.getBoundingClientRect();
               // The bridge measures in the page's pixels; a scaled frame shows them smaller.
               const s = frameScaleRef.current;
-              return { top: f.top + r.top * s, bottom: f.top + (r.top + r.height) * s, left: f.left + r.left * s, right: f.left + (r.left + r.width) * s };
+              return {
+                top: f.top + r.top * s,
+                bottom: f.top + (r.top + r.height) * s,
+                left: f.left + r.left * s,
+                right: f.left + (r.left + r.width) * s,
+              };
             },
             // The markup is built only when Copy is pressed: ask
             // the bridge for the pending range's HTML and wait a moment.
-            ...(message.richCopy ? {
-              getRichCopy: () => new Promise<RichCopySource>((resolve) => {
-                const id = `rc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-                const requests = richCopyRequestsRef.current;
-                // Without an answer only the quote is here: plain text, marked
-                // as cut when the bridge cut it.
-                const quote = { html: "", text: message.text, truncated: message.textCut === true };
-                requests.set(id, (answer) => {
-                  const text = answer.text || quote.text;
-                  const truncated = answer.text ? answer.truncated : quote.truncated;
-                  if (answer.tooLarge) {
-                    resolve({ tooLarge: true, text, truncated });
-                    return;
-                  }
-                  const html = answer.html ? sanitizeRichHtml(answer.html) : null;
-                  if (html && html.length > MAX_RICH_CLIPBOARD_OUTPUT_LENGTH) {
-                    resolve({ tooLarge: true, text, truncated });
-                    return;
-                  }
-                  resolve({ html: html ?? "", text, truncated });
-                });
-                window.setTimeout(() => {
-                  if (requests.delete(id)) resolve(quote);
-                }, RICH_COPY_TIMEOUT_MS);
-                post({ type: `${PREFIX}rich-copy-request`, id });
-              }),
-            } : {}),
+            ...(message.richCopy
+              ? {
+                  getRichCopy: () =>
+                    new Promise<RichCopySource>((resolve) => {
+                      const id = `rc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+                      const requests = richCopyRequestsRef.current;
+                      // Without an answer only the quote is here: plain text, marked
+                      // as cut when the bridge cut it.
+                      const quote = {
+                        html: "",
+                        text: message.text,
+                        truncated: message.textCut === true,
+                      };
+                      requests.set(id, (answer) => {
+                        const text = answer.text || quote.text;
+                        const truncated = answer.text ? answer.truncated : quote.truncated;
+                        if (answer.tooLarge) {
+                          resolve({ tooLarge: true, text, truncated });
+                          return;
+                        }
+                        const html = answer.html ? sanitizeRichHtml(answer.html) : null;
+                        if (html && html.length > MAX_RICH_CLIPBOARD_OUTPUT_LENGTH) {
+                          resolve({ tooLarge: true, text, truncated });
+                          return;
+                        }
+                        resolve({ html: html ?? "", text, truncated });
+                      });
+                      window.setTimeout(() => {
+                        if (requests.delete(id)) resolve(quote);
+                      }, RICH_COPY_TIMEOUT_MS);
+                      post({ type: `${PREFIX}rich-copy-request`, id });
+                    }),
+                }
+              : {}),
           });
         }
       }
@@ -1025,10 +1072,10 @@ export function useHtmlAnnotation({
         // grow the draft past MAX_ADDITIONAL_TARGETS extra targets.
         const targets = draftTargetsRef.current;
         if (
-          commentPopoverRef.current
-          && targets.length > 0
-          && targets.length < 1 + maxTargetsRef.current
-          && !targets.some((t) => t.key === message.key)
+          commentPopoverRef.current &&
+          targets.length > 0 &&
+          targets.length < 1 + maxTargetsRef.current &&
+          !targets.some((t) => t.key === message.key)
         ) {
           setDraftTargets([
             ...targets,
@@ -1182,7 +1229,10 @@ export function useHtmlAnnotation({
       const measured = scrollClearRef.current?.() ?? null;
       // Measured in the parent: a scaled frame's page pixels are larger.
       const s = frameScaleRef.current;
-      const clear = measured && s !== 1 ? { left: measured.left / s, top: measured.top / s, bottom: measured.bottom / s } : measured;
+      const clear =
+        measured && s !== 1
+          ? { left: measured.left / s, top: measured.top / s, bottom: measured.bottom / s }
+          : measured;
       post({
         type: `${PREFIX}scroll-to`,
         id: selectedAnnotationId,
@@ -1413,21 +1463,24 @@ export function useHtmlAnnotation({
    * words for the composer it opens. Null when there is nothing to reopen it
    * on. A request still waiting is replaced, and told it found nothing.
    */
-  const prepareReopen = useCallback((annotation: Annotation, onMissing?: () => void): Record<string, unknown> | null => {
-    if (!enabledRef.current || annotation.type !== AnnotationType.COMMENT) return null;
-    const quote = annotation.originalText || "";
-    if (!annotation.htmlAnchor && !quote) return null;
-    const previous = reopenRef.current;
-    const id = `reopen-${Date.now().toString(36)}-${(htmlReopenSeq++).toString(36)}`;
-    reopenRef.current = { id, text: annotation.text ?? "", onMissing };
-    previous?.onMissing?.();
-    return {
-      type: `${PREFIX}restore-draft`,
-      id,
-      text: quote,
-      ...(annotation.htmlAnchor ? { anchor: annotation.htmlAnchor } : {}),
-    };
-  }, []);
+  const prepareReopen = useCallback(
+    (annotation: Annotation, onMissing?: () => void): Record<string, unknown> | null => {
+      if (!enabledRef.current || annotation.type !== AnnotationType.COMMENT) return null;
+      const quote = annotation.originalText || "";
+      if (!annotation.htmlAnchor && !quote) return null;
+      const previous = reopenRef.current;
+      const id = `reopen-${Date.now().toString(36)}-${(htmlReopenSeq++).toString(36)}`;
+      reopenRef.current = { id, text: annotation.text ?? "", onMissing };
+      previous?.onMissing?.();
+      return {
+        type: `${PREFIX}restore-draft`,
+        id,
+        text: quote,
+        ...(annotation.htmlAnchor ? { anchor: annotation.htmlAnchor } : {}),
+      };
+    },
+    [],
+  );
 
   /** The comment being written, as `commitComposerDraft` would add it (its words empty), touching nothing. */
   const peekComment = useCallback((): Annotation | null => {

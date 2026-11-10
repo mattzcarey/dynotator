@@ -22,14 +22,11 @@ export interface ThemedTokenish {
 }
 
 export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 export function tokenStyle(token: ThemedTokenish): string {
-  if (typeof token.htmlStyle === 'string') return token.htmlStyle;
+  if (typeof token.htmlStyle === "string") return token.htmlStyle;
   const parts: string[] = [];
   if (token.htmlStyle) {
     for (const [prop, value] of Object.entries(token.htmlStyle)) parts.push(`${prop}:${value}`);
@@ -38,14 +35,14 @@ export function tokenStyle(token: ThemedTokenish): string {
   if (token.bgColor) parts.push(`background-color:${token.bgColor}`);
   const fontStyle = token.fontStyle ?? 0;
   if (fontStyle > 0) {
-    if (fontStyle & FONT_STYLE_ITALIC) parts.push('font-style:italic');
-    if (fontStyle & FONT_STYLE_BOLD) parts.push('font-weight:bold');
+    if (fontStyle & FONT_STYLE_ITALIC) parts.push("font-style:italic");
+    if (fontStyle & FONT_STYLE_BOLD) parts.push("font-weight:bold");
     const decorations: string[] = [];
-    if (fontStyle & FONT_STYLE_UNDERLINE) decorations.push('underline');
-    if (fontStyle & FONT_STYLE_STRIKETHROUGH) decorations.push('line-through');
-    if (decorations.length) parts.push(`text-decoration:${decorations.join(' ')}`);
+    if (fontStyle & FONT_STYLE_UNDERLINE) decorations.push("underline");
+    if (fontStyle & FONT_STYLE_STRIKETHROUGH) decorations.push("line-through");
+    if (decorations.length) parts.push(`text-decoration:${decorations.join(" ")}`);
   }
-  return parts.join(';');
+  return parts.join(";");
 }
 
 /**
@@ -57,18 +54,23 @@ export function tokenStyle(token: ThemedTokenish): string {
  * normalised line endings (or dropped a trailing newline) would silently
  * misplace every highlight in the block. Bail to plain text instead.
  */
-export function themedLinesToHtml(lines: readonly (readonly ThemedTokenish[])[], code: string): string | null {
-  let html = '';
-  let plain = '';
+export function themedLinesToHtml(
+  lines: readonly (readonly ThemedTokenish[])[],
+  code: string,
+): string | null {
+  let html = "";
+  let plain = "";
   for (let i = 0; i < lines.length; i++) {
     if (i > 0) {
-      html += '\n';
-      plain += '\n';
+      html += "\n";
+      plain += "\n";
     }
     for (const token of lines[i]!) {
       plain += token.content;
       const style = tokenStyle(token);
-      html += style ? `<span style="${style}">${escapeHtml(token.content)}</span>` : escapeHtml(token.content);
+      html += style
+        ? `<span style="${style}">${escapeHtml(token.content)}</span>`
+        : escapeHtml(token.content);
     }
   }
   return plain === code ? html : null;

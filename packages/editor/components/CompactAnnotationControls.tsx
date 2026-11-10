@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import type { InputMethod } from '@dynotator/ui/types';
+import React, { useState } from "react";
+import type { InputMethod } from "@dynotator/ui/types";
 
 interface CompactAnnotationControlsProps {
   inputMethod: InputMethod;
@@ -32,7 +32,7 @@ export const CompactAnnotationControls: React.FC<CompactAnnotationControlsProps>
         <span>Annotate</span>
         <span className="text-muted-foreground">·</span>
         <span className="truncate text-muted-foreground">
-          {inputMethod === 'pinpoint' ? 'Pinpoint' : 'Select text'}
+          {inputMethod === "pinpoint" ? "Pinpoint" : "Select text"}
         </span>
         <ChevronIcon />
       </button>
@@ -52,18 +52,18 @@ export const CompactAnnotationControls: React.FC<CompactAnnotationControlsProps>
       aria-label="Choose how to annotate"
     >
       <MethodButton
-        selected={inputMethod === 'drag'}
+        selected={inputMethod === "drag"}
         label="Select text"
         description="Drag over text"
         icon={<SelectIcon />}
-        onClick={() => choose('drag')}
+        onClick={() => choose("drag")}
       />
       <MethodButton
-        selected={inputMethod === 'pinpoint'}
+        selected={inputMethod === "pinpoint"}
         label="Pinpoint"
         description="Tap one block"
         icon={<PinpointIcon />}
-        onClick={() => choose('pinpoint')}
+        onClick={() => choose("pinpoint")}
       />
     </div>
   );
@@ -89,26 +89,48 @@ const MethodButton = ({
     onClick={onClick}
     className={`flex min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60 ${
       selected
-        ? 'bg-background text-foreground shadow-sm'
-        : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+        ? "bg-background text-foreground shadow-sm"
+        : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
     }`}
   >
     <span className="shrink-0">{icon}</span>
     <span className="min-w-0">
       <span className="block text-sm font-medium leading-4">{label}</span>
-      <span className="block truncate text-[11px] leading-4 text-muted-foreground">{description}</span>
+      <span className="block truncate text-[11px] leading-4 text-muted-foreground">
+        {description}
+      </span>
     </span>
   </button>
 );
 
 const MarkupIcon = () => (
-  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+  <svg
+    className="h-4 w-4 shrink-0"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    aria-hidden="true"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+    />
   </svg>
 );
 
 const SelectIcon = () => (
-  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    className="h-4 w-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M12 20h-1a2 2 0 0 1-2-2 2 2 0 0 1-2 2H6" />
     <path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7" />
     <path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1" />
@@ -118,7 +140,16 @@ const SelectIcon = () => (
 );
 
 const PinpointIcon = () => (
-  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    className="h-4 w-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <circle cx="12" cy="12" r="9" />
     <circle cx="12" cy="12" r="3" />
     <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
@@ -126,7 +157,14 @@ const PinpointIcon = () => (
 );
 
 const ChevronIcon = () => (
-  <svg className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+  <svg
+    className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    aria-hidden="true"
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
   </svg>
 );

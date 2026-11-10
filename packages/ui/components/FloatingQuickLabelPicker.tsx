@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { type QuickLabel, getQuickLabels, quickLabelIndexForDigit } from '../utils/quickLabels';
-import { QuickLabelDropdown } from './QuickLabelDropdown';
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { type QuickLabel, getQuickLabels, quickLabelIndexForDigit } from "../utils/quickLabels";
+import { QuickLabelDropdown } from "./QuickLabelDropdown";
 
 interface FloatingQuickLabelPickerProps {
   anchorEl: HTMLElement;
@@ -38,7 +38,10 @@ function computePosition(
   }
 
   // Clamp to viewport
-  left = Math.max(VIEWPORT_PADDING, Math.min(left, window.innerWidth - PICKER_WIDTH - VIEWPORT_PADDING));
+  left = Math.max(
+    VIEWPORT_PADDING,
+    Math.min(left, window.innerWidth - PICKER_WIDTH - VIEWPORT_PADDING),
+  );
 
   return { top, left, flipAbove };
 }
@@ -49,7 +52,11 @@ export const FloatingQuickLabelPicker: React.FC<FloatingQuickLabelPickerProps> =
   onSelect,
   onDismiss,
 }) => {
-  const [position, setPosition] = useState<{ top: number; left: number; flipAbove: boolean } | null>(null);
+  const [position, setPosition] = useState<{
+    top: number;
+    left: number;
+    flipAbove: boolean;
+  } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const quickLabels = useMemo(() => getQuickLabels(), []);
 
@@ -57,24 +64,24 @@ export const FloatingQuickLabelPicker: React.FC<FloatingQuickLabelPickerProps> =
   useEffect(() => {
     const update = () => setPosition(computePosition(anchorEl, cursorHint));
     update();
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
     };
   }, [anchorEl, cursorHint]);
 
   // Keyboard: 1-9/0 or Alt+1-9/0 to apply label, Escape to dismiss
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.preventDefault();
         onDismiss();
         return;
       }
       // Accept bare digit or Alt+digit — picker is open so digits mean labels
-      const isDigit = (e.code >= 'Digit1' && e.code <= 'Digit9') || e.code === 'Digit0';
+      const isDigit = (e.code >= "Digit1" && e.code <= "Digit9") || e.code === "Digit0";
       if (isDigit && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         const digit = parseInt(e.code.slice(5), 10);
@@ -84,8 +91,8 @@ export const FloatingQuickLabelPicker: React.FC<FloatingQuickLabelPickerProps> =
         }
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onDismiss, onSelect, quickLabels]);
 
   // Click outside to dismiss. Deliberately NOT useDismissablePopover: this
@@ -100,17 +107,17 @@ export const FloatingQuickLabelPicker: React.FC<FloatingQuickLabelPickerProps> =
     };
     // Defer to avoid catching the triggering click
     const timer = setTimeout(() => {
-      document.addEventListener('pointerdown', handlePointerDown, true);
+      document.addEventListener("pointerdown", handlePointerDown, true);
     }, 0);
     return () => {
       clearTimeout(timer);
-      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
     };
   }, [onDismiss]);
 
   if (!position) return null;
 
-  const animName = position.flipAbove ? 'qlp-in-above' : 'qlp-in-below';
+  const animName = position.flipAbove ? "qlp-in-above" : "qlp-in-below";
 
   return createPortal(
     <div
@@ -122,7 +129,7 @@ export const FloatingQuickLabelPicker: React.FC<FloatingQuickLabelPickerProps> =
         top: position.top,
         left: position.left,
         width: PICKER_WIDTH,
-        ...(position.flipAbove ? { transform: 'translateY(-100%)' } : {}),
+        ...(position.flipAbove ? { transform: "translateY(-100%)" } : {}),
         animation: `${animName} 0.12s ease-out`,
       }}
       onMouseDown={(e) => e.stopPropagation()}
@@ -142,6 +149,6 @@ export const FloatingQuickLabelPicker: React.FC<FloatingQuickLabelPickerProps> =
         <QuickLabelDropdown labels={quickLabels} onSelect={onSelect} animate />
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };

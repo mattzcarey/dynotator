@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Annotation } from '../types';
-import { AnnotationType } from '../types';
-import type { ViewerHandle } from '../components/Viewer';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Annotation } from "../types";
+import { AnnotationType } from "../types";
+import type { ViewerHandle } from "../components/Viewer";
 
 /**
  * Bridges SSE-delivered external annotations into the Viewer's imperative
@@ -54,25 +54,25 @@ export function useExternalAnnotationHighlights(params: {
     if (!viewer) return;
 
     const eligible = externalAnnotations.filter(
-      a => a.type !== AnnotationType.GLOBAL_COMMENT && !a.diffContext && a.originalText,
+      (a) => a.type !== AnnotationType.GLOBAL_COMMENT && !a.diffContext && a.originalText,
     );
     const applied = appliedRef.current;
 
     // Removals: previously applied but no longer present, or fingerprint changed.
     const toRemove: string[] = [];
     for (const [id, fp] of applied) {
-      const match = eligible.find(a => a.id === id);
+      const match = eligible.find((a) => a.id === id);
       if (!match || fingerprint(match) !== fp) {
         toRemove.push(id);
       }
     }
-    toRemove.forEach(id => {
+    toRemove.forEach((id) => {
       viewer.removeHighlight(id);
       applied.delete(id);
     });
 
     // Additions: eligible but not yet applied (includes re-adds from updates).
-    const toAdd = eligible.filter(a => !applied.has(a.id));
+    const toAdd = eligible.filter((a) => !applied.has(a.id));
     if (toAdd.length === 0) return;
 
     // Paint delay matches the existing draft/share restore pattern —
@@ -81,7 +81,7 @@ export function useExternalAnnotationHighlights(params: {
       const v = viewerRef.current;
       if (!v) return;
       v.applySharedAnnotations(toAdd);
-      toAdd.forEach(a => applied.set(a.id, fingerprint(a)));
+      toAdd.forEach((a) => applied.set(a.id, fingerprint(a)));
     }, 100);
 
     return () => clearTimeout(timer);
@@ -94,7 +94,7 @@ export function useExternalAnnotationHighlights(params: {
   // import) so live externals get repainted.
   const reset = useCallback(() => {
     appliedRef.current.clear();
-    setResetCount(c => c + 1);
+    setResetCount((c) => c + 1);
   }, []);
 
   return { reset };

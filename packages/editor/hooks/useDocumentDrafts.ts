@@ -22,12 +22,16 @@
  * Inert unless the server advertised `documentDrafts` on /api/plan.
  */
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import type { Annotation, ImageAttachment } from '@dynotator/ui/types';
-import type { FeedbackDocuments } from '@dynotator/ui/hooks/useLinkedDoc';
-import type { ViewerHandle } from '@dynotator/ui/components/Viewer';
-import { documentDraftAdditions, planDocumentDraftWrites, type DocumentDraftState } from '../documentDrafts';
-import { annotationOwnsHighlight } from '@dynotator/ui/utils/annotationOwnsHighlight';
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import type { Annotation, ImageAttachment } from "@dynotator/ui/types";
+import type { FeedbackDocuments } from "@dynotator/ui/hooks/useLinkedDoc";
+import type { ViewerHandle } from "@dynotator/ui/components/Viewer";
+import {
+  documentDraftAdditions,
+  planDocumentDraftWrites,
+  type DocumentDraftState,
+} from "../documentDrafts";
+import { annotationOwnsHighlight } from "@dynotator/ui/utils/annotationOwnsHighlight";
 
 const DEBOUNCE_MS = 500;
 const HIGHLIGHT_REAPPLY_DELAY = 100;
@@ -47,7 +51,10 @@ export interface UseDocumentDraftsOptions {
   globalAttachments: ImageAttachment[];
   setAnnotations: (annotations: Annotation[]) => void;
   setGlobalAttachments: (attachments: ImageAttachment[]) => void;
-  updateStoredAnnotations: (filepath: string, update: (annotations: Annotation[]) => Annotation[]) => boolean;
+  updateStoredAnnotations: (
+    filepath: string,
+    update: (annotations: Annotation[]) => Annotation[],
+  ) => boolean;
   viewerRef: RefObject<ViewerHandle | null>;
   /** Called before saved comments are merged into the open document. */
   onBeforeMerge?: () => void;
@@ -107,39 +114,48 @@ export function useDocumentDrafts(options: UseDocumentDraftsOptions): UseDocumen
   const canWriteRef = useRef(canWrite);
   canWriteRef.current = canWrite;
 
-  const mergeSaved = useCallback((path: string, saved: { annotations: unknown; globalAttachments: unknown }) => {
-    const current = latest.current;
-    if (current.activePath === path) {
-      const additions = documentDraftAdditions(
-        { annotations: current.annotations, globalAttachments: current.globalAttachments },
-        saved,
-      );
-      const count = additions.annotations.length + additions.globalAttachments.length;
-      if (count === 0) return;
-      current.onBeforeMerge?.();
-      const merged = [...current.annotations, ...additions.annotations];
-      current.setAnnotations(merged);
-      if (additions.globalAttachments.length > 0) {
-        current.setGlobalAttachments([...current.globalAttachments, ...additions.globalAttachments]);
+  const mergeSaved = useCallback(
+    (path: string, saved: { annotations: unknown; globalAttachments: unknown }) => {
+      const current = latest.current;
+      if (current.activePath === path) {
+        const additions = documentDraftAdditions(
+          { annotations: current.annotations, globalAttachments: current.globalAttachments },
+          saved,
+        );
+        const count = additions.annotations.length + additions.globalAttachments.length;
+        if (count === 0) return;
+        current.onBeforeMerge?.();
+        const merged = [...current.annotations, ...additions.annotations];
+        current.setAnnotations(merged);
+        if (additions.globalAttachments.length > 0) {
+          current.setGlobalAttachments([
+            ...current.globalAttachments,
+            ...additions.globalAttachments,
+          ]);
+        }
+        setTimeout(() => {
+          current.viewerRef.current?.clearAllHighlights();
+          current.viewerRef.current?.applySharedAnnotations(merged.filter(annotationOwnsHighlight));
+        }, HIGHLIGHT_REAPPLY_DELAY);
+        current.onRestored?.(path, count);
+        return;
       }
-      setTimeout(() => {
-        current.viewerRef.current?.clearAllHighlights();
-        current.viewerRef.current?.applySharedAnnotations(merged.filter(annotationOwnsHighlight));
-      }, HIGHLIGHT_REAPPLY_DELAY);
-      current.onRestored?.(path, count);
-      return;
-    }
-    // The reviewer moved on before the copy arrived: merge into the stored
-    // document instead (attachments of a stored document are not editable
-    // from here, so only comments merge on this path).
-    let added = 0;
-    current.updateStoredAnnotations(path, (held) => {
-      const additions = documentDraftAdditions({ annotations: held, globalAttachments: [] }, saved);
-      added = additions.annotations.length;
-      return added > 0 ? [...held, ...additions.annotations] : held;
-    });
-    if (added > 0) current.onRestored?.(path, added);
-  }, []);
+      // The reviewer moved on before the copy arrived: merge into the stored
+      // document instead (attachments of a stored document are not editable
+      // from here, so only comments merge on this path).
+      let added = 0;
+      current.updateStoredAnnotations(path, (held) => {
+        const additions = documentDraftAdditions(
+          { annotations: held, globalAttachments: [] },
+          saved,
+        );
+        added = additions.annotations.length;
+        return added > 0 ? [...held, ...additions.annotations] : held;
+      });
+      if (added > 0) current.onRestored?.(path, added);
+    },
+    [],
+  );
 
   // Read a document's saved copy the first time it is opened.
   useEffect(() => {
@@ -160,16 +176,25 @@ export function useDocumentDrafts(options: UseDocumentDraftsOptions): UseDocumen
           return;
         }
         if (!res.ok) return; // retried the next time the document opens
-        const body = (await res.json().catch(() => null)) as { annotations?: unknown; globalAttachments?: unknown } | null;
+        const body = (await res.json().catch(() => null)) as {
+          annotations?: unknown;
+          globalAttachments?: unknown;
+        } | null;
         if (!body) return;
         loadedRef.current.add(path);
         // The copy is what the server holds now: sending it back unchanged is
         // pointless, and anything the merge adds still differs from it.
-        lastSentRef.current.set(path, JSON.stringify([
-          Array.isArray(body.annotations) ? body.annotations : [],
-          Array.isArray(body.globalAttachments) ? body.globalAttachments : [],
-        ]));
-        mergeSaved(path, { annotations: body.annotations, globalAttachments: body.globalAttachments });
+        lastSentRef.current.set(
+          path,
+          JSON.stringify([
+            Array.isArray(body.annotations) ? body.annotations : [],
+            Array.isArray(body.globalAttachments) ? body.globalAttachments : [],
+          ]),
+        );
+        mergeSaved(path, {
+          annotations: body.annotations,
+          globalAttachments: body.globalAttachments,
+        });
       })
       .catch(() => {})
       .finally(() => {
@@ -187,7 +212,10 @@ export function useDocumentDrafts(options: UseDocumentDraftsOptions): UseDocumen
     const { documents } = current.getFeedbackDocuments();
     const states = new Map<string, DocumentDraftState>();
     for (const [path, state] of documents) {
-      states.set(path, { annotations: state.annotations, globalAttachments: state.globalAttachments });
+      states.set(path, {
+        annotations: state.annotations,
+        globalAttachments: state.globalAttachments,
+      });
     }
     const { writes, sent } = planDocumentDraftWrites({
       documents: states,
@@ -198,8 +226,8 @@ export function useDocumentDrafts(options: UseDocumentDraftsOptions): UseDocumen
     if (writes.length === 0) return;
     writingRef.current = true;
     fetch(`/api/draft/document?${clientRef.current}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ documents: writes }),
       keepalive,
     })
@@ -245,13 +273,13 @@ export function useDocumentDrafts(options: UseDocumentDraftsOptions): UseDocumen
       writeNow(true);
     };
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') flush();
+      if (document.visibilityState === "hidden") flush();
     };
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pagehide', flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
     return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('pagehide', flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [writeNow]);
@@ -263,24 +291,33 @@ export function useDocumentDrafts(options: UseDocumentDraftsOptions): UseDocumen
     writeNow(false);
   }, [writeNow]);
 
-  const adoptRestoredCopies = useCallback((documents: ReadonlyArray<DocumentDraftState & { path: string }>) => {
-    for (const doc of documents) {
-      loadedRef.current.add(doc.path);
-      lastSentRef.current.set(doc.path, JSON.stringify([doc.annotations, doc.globalAttachments]));
-      // The session draft's load names no page: read the copy under this
-      // page's id so this page's decision clears it.
-      fetch(`/api/draft/document?path=${encodeURIComponent(doc.path)}&${clientRef.current}`).catch(() => {});
-    }
-  }, []);
+  const adoptRestoredCopies = useCallback(
+    (documents: ReadonlyArray<DocumentDraftState & { path: string }>) => {
+      for (const doc of documents) {
+        loadedRef.current.add(doc.path);
+        lastSentRef.current.set(doc.path, JSON.stringify([doc.annotations, doc.globalAttachments]));
+        // The session draft's load names no page: read the copy under this
+        // page's id so this page's decision clears it.
+        fetch(
+          `/api/draft/document?path=${encodeURIComponent(doc.path)}&${clientRef.current}`,
+        ).catch(() => {});
+      }
+    },
+    [],
+  );
 
   const discardCopies = useCallback((paths: readonly string[]) => {
     if (!canWriteRef.current || closedRef.current) return;
-    const unread = paths.filter((path) => !loadedRef.current.has(path) && !inFlightRef.current.has(path));
+    const unread = paths.filter(
+      (path) => !loadedRef.current.has(path) && !inFlightRef.current.has(path),
+    );
     if (unread.length === 0) return;
     fetch(`/api/draft/document?${clientRef.current}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ documents: unread.map((path) => ({ path, annotations: [], globalAttachments: [] })) }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        documents: unread.map((path) => ({ path, annotations: [], globalAttachments: [] })),
+      }),
     }).catch(() => {});
   }, []);
 

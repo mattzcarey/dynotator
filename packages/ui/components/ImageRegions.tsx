@@ -1,9 +1,14 @@
-import React, { useMemo } from 'react';
-import { imageRegionFileName, imageRegionSize, parseImageRegion, type ImageRegion } from '@dynotator/core/image-region';
-import type { Annotation } from '../types';
-import type { NaturalBox, StageRect, ZoomSize, ZoomViewport } from './imageZoom';
-import { naturalBoxToStage } from './imageZoom';
-import { getImageSrc } from './ImageThumbnail';
+import React, { useMemo } from "react";
+import {
+  imageRegionFileName,
+  imageRegionSize,
+  parseImageRegion,
+  type ImageRegion,
+} from "@dynotator/core/image-region";
+import type { Annotation } from "../types";
+import type { NaturalBox, StageRect, ZoomSize, ZoomViewport } from "./imageZoom";
+import { naturalBoxToStage } from "./imageZoom";
+import { getImageSrc } from "./ImageThumbnail";
 
 /**
  * The URL a markdown image's src (as written) loads from, the way the
@@ -23,7 +28,7 @@ export function loadableImageSrc(src: string, baseDir?: string): string {
  */
 
 /** The validated region of an annotation, or null (a malformed region is no region). */
-export function regionOf(annotation: Pick<Annotation, 'imageRegion'>): ImageRegion | null {
+export function regionOf(annotation: Pick<Annotation, "imageRegion">): ImageRegion | null {
   return annotation.imageRegion == null ? null : parseImageRegion(annotation.imageRegion);
 }
 
@@ -47,7 +52,15 @@ export function imageRegionNumbers(annotations: readonly Annotation[]): Map<stri
   return out;
 }
 
-const ICON = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
+const ICON = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
 
 export const HandIcon: React.FC<{ size?: number }> = ({ size = 15 }) => (
   <svg {...ICON} width={size} height={size}>
@@ -100,10 +113,14 @@ export const RegionThumb: React.FC<{
 };
 
 /** The number badge of a region (the same number the box on the image carries). */
-export const RegionNumber: React.FC<{ n: number; selected?: boolean; className?: string }> = ({ n, selected = false, className = '' }) => (
+export const RegionNumber: React.FC<{ n: number; selected?: boolean; className?: string }> = ({
+  n,
+  selected = false,
+  className = "",
+}) => (
   <span
     aria-hidden="true"
-    className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9.5px] font-bold tabular-nums text-white ${selected ? 'bg-primary' : 'bg-annotation-comment'} ${className}`}
+    className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9.5px] font-bold tabular-nums text-white ${selected ? "bg-primary" : "bg-annotation-comment"} ${className}`}
   >
     {n}
   </span>
@@ -113,7 +130,10 @@ export const RegionNumber: React.FC<{ n: number; selected?: boolean; className?:
  * What a region card shows in place of a quote: the crop, the file, the
  * box's size in the image's own pixels and the image's line.
  */
-export const RegionCardInfo: React.FC<{ region: ImageRegion; thumbSrc?: string | null }> = ({ region, thumbSrc }) => (
+export const RegionCardInfo: React.FC<{ region: ImageRegion; thumbSrc?: string | null }> = ({
+  region,
+  thumbSrc,
+}) => (
   <div className="mb-1.5 flex items-center gap-2.5" data-region-card-info="">
     {thumbSrc && <RegionThumb src={thumbSrc} region={region} />}
     <div className="min-w-0 font-mono text-[10.5px] leading-normal text-muted-foreground">
@@ -136,12 +156,14 @@ export interface RegionBoxItem {
 }
 
 const boxStyle = (rect: StageRect, eased: boolean): React.CSSProperties => ({
-  position: 'absolute',
+  position: "absolute",
   left: rect.left,
   top: rect.top,
   width: rect.width,
   height: rect.height,
-  transition: eased ? 'left 180ms cubic-bezier(0.2, 0, 0, 1), top 180ms cubic-bezier(0.2, 0, 0, 1), width 180ms cubic-bezier(0.2, 0, 0, 1), height 180ms cubic-bezier(0.2, 0, 0, 1), opacity 150ms' : 'opacity 150ms',
+  transition: eased
+    ? "left 180ms cubic-bezier(0.2, 0, 0, 1), top 180ms cubic-bezier(0.2, 0, 0, 1), width 180ms cubic-bezier(0.2, 0, 0, 1), height 180ms cubic-bezier(0.2, 0, 0, 1), opacity 150ms"
+    : "opacity 150ms",
 });
 
 /**
@@ -166,10 +188,22 @@ export const RegionBoxLayer: React.FC<{
   onPick: (id: string) => void;
   /** The pending box's element, the comment box's anchor. */
   pendingRef?: React.Ref<HTMLDivElement>;
-}> = ({ view, stage, eased, regions, selectedId, draft, pending, interactive, onPick, pendingRef }) => {
+}> = ({
+  view,
+  stage,
+  eased,
+  regions,
+  selectedId,
+  draft,
+  pending,
+  interactive,
+  onPick,
+  pendingRef,
+}) => {
   if (!view || !stage) return null;
   const anySelected = selectedId !== null && regions.some((r) => r.id === selectedId);
-  const badge = 'absolute -left-3 -top-3 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[11.5px] font-bold tabular-nums text-white shadow-[0_0_0_2px_var(--background),0_2px_6px_-2px_rgb(0_0_0/0.4)]';
+  const badge =
+    "absolute -left-3 -top-3 flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[11.5px] font-bold tabular-nums text-white shadow-[0_0_0_2px_var(--background),0_2px_6px_-2px_rgb(0_0_0/0.4)]";
   return (
     <div className="pointer-events-none absolute inset-0" data-region-layer="">
       {regions.map((r) => {
@@ -179,50 +213,76 @@ export const RegionBoxLayer: React.FC<{
           <div
             key={r.id}
             data-region-box={r.id}
-            data-region-selected={selected ? '' : undefined}
+            data-region-selected={selected ? "" : undefined}
             aria-hidden="true"
             onPointerDown={interactive ? (e) => e.stopPropagation() : undefined}
-            onClick={interactive ? (e) => { e.stopPropagation(); onPick(r.id); } : undefined}
+            onClick={
+              interactive
+                ? (e) => {
+                    e.stopPropagation();
+                    onPick(r.id);
+                  }
+                : undefined
+            }
             className={
               selected
-                ? 'rounded-[3px] border-[3px] border-primary shadow-[0_0_0_9999px_rgb(15_20_30/0.3),0_0_0_6px_color-mix(in_oklch,var(--primary)_30%,transparent)]'
-                : `rounded-[3px] border-2 border-annotation-comment bg-annotation-comment/10 ${anySelected ? 'opacity-35' : ''}`
+                ? "rounded-[3px] border-[3px] border-primary shadow-[0_0_0_9999px_rgb(15_20_30/0.3),0_0_0_6px_color-mix(in_oklch,var(--primary)_30%,transparent)]"
+                : `rounded-[3px] border-2 border-annotation-comment bg-annotation-comment/10 ${anySelected ? "opacity-35" : ""}`
             }
-            style={{ ...boxStyle(rect, eased), pointerEvents: interactive ? 'auto' : 'none', cursor: interactive ? 'pointer' : undefined }}
+            style={{
+              ...boxStyle(rect, eased),
+              pointerEvents: interactive ? "auto" : "none",
+              cursor: interactive ? "pointer" : undefined,
+            }}
           >
-            <span className={`${badge} ${selected ? 'bg-primary' : 'bg-annotation-comment'}`}>{r.n}</span>
+            <span className={`${badge} ${selected ? "bg-primary" : "bg-annotation-comment"}`}>
+              {r.n}
+            </span>
           </div>
         );
       })}
-      {pending && (() => {
-        const rect = naturalBoxToStage(view, pending.box);
-        return (
-          <div ref={pendingRef} data-region-pending="" aria-hidden="true" className="rounded-[3px] border-2 border-primary bg-primary/[0.07]" style={boxStyle(rect, eased)}>
-            <span className={`${badge} bg-primary`}>{pending.n}</span>
-          </div>
-        );
-      })()}
-      {draft && (() => {
-        const rect = naturalBoxToStage(view, draft);
-        const below = rect.top + rect.height + 30 <= stage.height;
-        return (
-          <>
-            <div data-region-draft="" aria-hidden="true" className="rounded-[3px] border-2 border-dashed border-primary bg-primary/[0.07]" style={boxStyle(rect, false)} />
+      {pending &&
+        (() => {
+          const rect = naturalBoxToStage(view, pending.box);
+          return (
             <div
-              data-region-size=""
+              ref={pendingRef}
+              data-region-pending=""
               aria-hidden="true"
-              className="absolute whitespace-nowrap rounded-[5px] bg-[rgb(28_32_42/0.88)] px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-white"
-              style={{
-                left: Math.max(4, rect.left + rect.width - 2),
-                top: below ? rect.top + rect.height + 8 : Math.max(4, rect.top - 26),
-                transform: 'translateX(-100%)',
-              }}
+              className="rounded-[3px] border-2 border-primary bg-primary/[0.07]"
+              style={boxStyle(rect, eased)}
             >
-              {draft.w} × {draft.h}
+              <span className={`${badge} bg-primary`}>{pending.n}</span>
             </div>
-          </>
-        );
-      })()}
+          );
+        })()}
+      {draft &&
+        (() => {
+          const rect = naturalBoxToStage(view, draft);
+          const below = rect.top + rect.height + 30 <= stage.height;
+          return (
+            <>
+              <div
+                data-region-draft=""
+                aria-hidden="true"
+                className="rounded-[3px] border-2 border-dashed border-primary bg-primary/[0.07]"
+                style={boxStyle(rect, false)}
+              />
+              <div
+                data-region-size=""
+                aria-hidden="true"
+                className="absolute whitespace-nowrap rounded-[5px] bg-[rgb(28_32_42/0.88)] px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-white"
+                style={{
+                  left: Math.max(4, rect.left + rect.width - 2),
+                  top: below ? rect.top + rect.height + 8 : Math.max(4, rect.top - 26),
+                  transform: "translateX(-100%)",
+                }}
+              >
+                {draft.w} × {draft.h}
+              </div>
+            </>
+          );
+        })()}
     </div>
   );
 };
@@ -234,8 +294,8 @@ export const RegionBoxLayer: React.FC<{
  * the count opens the drawer of this image's region comments.
  */
 export const RegionToolStrip: React.FC<{
-  tool: 'move' | 'region';
-  onToolChange: (tool: 'move' | 'region') => void;
+  tool: "move" | "region";
+  onToolChange: (tool: "move" | "region") => void;
   /** False on a read-only document: only the count shows. */
   canDraw: boolean;
   count: number;
@@ -244,30 +304,45 @@ export const RegionToolStrip: React.FC<{
   drawerId: string;
   phone: boolean;
   countRef?: React.Ref<HTMLButtonElement>;
-}> = ({ tool, onToolChange, canDraw, count, drawerOpen, onToggleDrawer, drawerId, phone, countRef }) => {
+}> = ({
+  tool,
+  onToolChange,
+  canDraw,
+  count,
+  drawerOpen,
+  onToggleDrawer,
+  drawerId,
+  phone,
+  countRef,
+}) => {
   const moveRef = React.useRef<HTMLButtonElement>(null);
   const regionRef = React.useRef<HTMLButtonElement>(null);
-  const seg = phone ? 'h-10 px-3.5 text-[13px]' : 'h-7 px-2.5 text-[12px]';
-  const choose = (next: 'move' | 'region') => {
+  const seg = phone ? "h-10 px-3.5 text-[13px]" : "h-7 px-2.5 text-[12px]";
+  const choose = (next: "move" | "region") => {
     onToolChange(next);
-    (next === 'move' ? moveRef : regionRef).current?.focus();
+    (next === "move" ? moveRef : regionRef).current?.focus();
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
-      choose(tool === 'move' ? 'region' : 'move');
-    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      choose(tool === "move" ? "region" : "move");
+    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
-      choose(tool === 'move' ? 'region' : 'move');
-    } else if (e.key === 'Home') {
+      choose(tool === "move" ? "region" : "move");
+    } else if (e.key === "Home") {
       e.preventDefault();
-      choose('move');
-    } else if (e.key === 'End') {
+      choose("move");
+    } else if (e.key === "End") {
       e.preventDefault();
-      choose('region');
+      choose("region");
     }
   };
-  const radio = (value: 'move' | 'region', label: string, icon: React.ReactNode, ref: React.Ref<HTMLButtonElement>) => {
+  const radio = (
+    value: "move" | "region",
+    label: string,
+    icon: React.ReactNode,
+    ref: React.Ref<HTMLButtonElement>,
+  ) => {
     const on = tool === value;
     return (
       <button
@@ -279,7 +354,9 @@ export const RegionToolStrip: React.FC<{
         data-region-tool={value}
         onClick={() => onToolChange(value)}
         className={`inline-flex items-center gap-1.5 rounded-[7px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${seg} ${
-          on ? `bg-card shadow-[0_1px_2px_rgb(0_0_0/0.2)] ${value === 'region' ? 'text-primary' : 'text-foreground'}` : 'text-muted-foreground hover:text-foreground'
+          on
+            ? `bg-card shadow-[0_1px_2px_rgb(0_0_0/0.2)] ${value === "region" ? "text-primary" : "text-foreground"}`
+            : "text-muted-foreground hover:text-foreground"
         }`}
       >
         {icon}
@@ -301,8 +378,8 @@ export const RegionToolStrip: React.FC<{
             onKeyDown={onKeyDown}
             className="inline-flex gap-0.5 rounded-[9px] border border-border/30 bg-muted/50 p-0.5"
           >
-            {radio('move', 'Move', <HandIcon size={phone ? 17 : 15} />, moveRef)}
-            {radio('region', 'Region', <RegionIcon size={phone ? 17 : 15} />, regionRef)}
+            {radio("move", "Move", <HandIcon size={phone ? 17 : 15} />, moveRef)}
+            {radio("region", "Region", <RegionIcon size={phone ? 17 : 15} />, regionRef)}
           </div>
           <span className="h-5 w-px bg-border" aria-hidden="true" />
         </>
@@ -313,10 +390,10 @@ export const RegionToolStrip: React.FC<{
         data-region-count=""
         aria-expanded={drawerOpen}
         aria-controls={drawerId}
-        aria-label={`${count} ${count === 1 ? 'comment' : 'comments'} on this image`}
+        aria-label={`${count} ${count === 1 ? "comment" : "comments"} on this image`}
         onClick={onToggleDrawer}
         className={`inline-flex items-center gap-1.5 rounded-[7px] font-medium tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${seg} ${
-          drawerOpen ? 'bg-primary/12 text-primary' : 'text-muted-foreground hover:text-foreground'
+          drawerOpen ? "bg-primary/12 text-primary" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         <ChatIcon size={phone ? 17 : 15} />
@@ -327,7 +404,10 @@ export const RegionToolStrip: React.FC<{
 };
 
 /** The annotations among `all` that are region comments on the image `src` (as written). */
-export function useImageRegionAnnotations(all: readonly Annotation[], src: string | null | undefined): Annotation[] {
+export function useImageRegionAnnotations(
+  all: readonly Annotation[],
+  src: string | null | undefined,
+): Annotation[] {
   return useMemo(() => {
     if (!src) return [];
     return all.filter((ann) => regionOf(ann)?.src === src).sort((a, b) => a.createdA - b.createdA);
@@ -340,8 +420,11 @@ export function useImageRegionAnnotations(all: readonly Annotation[], src: strin
  * table, a quote's own markdown). The block's first line when the reference
  * cannot be found; null when the block has no line.
  */
-export function imageSourceLine(block: { content: string; startLine?: number }, src: string): number | null {
-  if (typeof block.startLine !== 'number' || block.startLine < 1) return null;
+export function imageSourceLine(
+  block: { content: string; startLine?: number },
+  src: string,
+): number | null {
+  if (typeof block.startLine !== "number" || block.startLine < 1) return null;
   let at = imageReferenceIndex(block.content, src);
   if (at < 0) at = block.content.indexOf(src);
   if (at < 0) return block.startLine;
@@ -361,7 +444,7 @@ export function imageReferenceIndex(text: string, src: string): number {
       const at = text.indexOf(opener, from);
       if (at < 0) break;
       const next = text.charAt(at + opener.length);
-      if (next === ')' || /\s/.test(next)) return at;
+      if (next === ")" || /\s/.test(next)) return at;
       from = at + 1;
     }
   }

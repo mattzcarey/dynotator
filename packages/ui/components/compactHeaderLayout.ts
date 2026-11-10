@@ -1,5 +1,5 @@
 /** Responsive presentation chosen for a measured compact document header. */
-export type CompactHeaderLayout = 'wide' | 'tight' | 'narrow';
+export type CompactHeaderLayout = "wide" | "tight" | "narrow";
 
 /** Measurements used to place a compact leading lane beside trailing actions. */
 export interface CompactHeaderMeasurements {
@@ -42,11 +42,12 @@ export function resolveCompactHeaderGeometry({
 }: CompactHeaderMeasurements): CompactHeaderGeometry {
   const measured = containerWidth > 0 && trailingWidth > 0;
   const availableForLeading = containerWidth - leadingInset - trailingWidth - CLUSTER_GAP;
-  const layout = !measured || availableForLeading >= WIDE_LEADING_WIDTH
-    ? 'wide'
-    : availableForLeading >= MIN_LEADING_WIDTH
-      ? 'tight'
-      : 'narrow';
+  const layout =
+    !measured || availableForLeading >= WIDE_LEADING_WIDTH
+      ? "wide"
+      : availableForLeading >= MIN_LEADING_WIDTH
+        ? "tight"
+        : "narrow";
 
   return { availableForLeading, layout, measured };
 }

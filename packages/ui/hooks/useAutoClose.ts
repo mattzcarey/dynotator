@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getAutoCloseDelay, setAutoCloseDelay } from '../utils/storage';
+import { useState, useEffect, useCallback } from "react";
+import { getAutoCloseDelay, setAutoCloseDelay } from "../utils/storage";
 
 /**
  * Phases of the auto-close lifecycle after a form submission.
@@ -11,11 +11,11 @@ import { getAutoCloseDelay, setAutoCloseDelay } from '../utils/storage';
  * - closeFailed: window.close() was blocked by the browser
  */
 type AutoClosePhase =
-  | { phase: 'idle' }
-  | { phase: 'counting'; remaining: number }
-  | { phase: 'prompt' }
-  | { phase: 'closed' }
-  | { phase: 'closeFailed' };
+  | { phase: "idle" }
+  | { phase: "counting"; remaining: number }
+  | { phase: "prompt" }
+  | { phase: "closed" }
+  | { phase: "closeFailed" };
 
 interface UseAutoCloseReturn {
   state: AutoClosePhase;
@@ -31,13 +31,13 @@ type GlimpseWindow = Window & {
 
 function requestGlimpseClose(): boolean {
   const glimpseClose = (window as GlimpseWindow).glimpse?.close;
-  if (typeof glimpseClose === 'function') {
+  if (typeof glimpseClose === "function") {
     glimpseClose();
     return true;
   }
 
   if (window.parent && window.parent !== window) {
-    window.parent.postMessage({ __plannotator_glimpse_close: true }, '*');
+    window.parent.postMessage({ __plannotator_glimpse_close: true }, "*");
     return true;
   }
 
@@ -64,40 +64,43 @@ function tryClose(onFail: () => void): void {
  * @param active - pass `true` once the overlay should appear (i.e. form was submitted)
  */
 export function useAutoClose(active: boolean): UseAutoCloseReturn {
-  const [state, setState] = useState<AutoClosePhase>({ phase: 'idle' });
+  const [state, setState] = useState<AutoClosePhase>({ phase: "idle" });
 
   // On activation, read persisted delay and transition to the right phase.
   useEffect(() => {
     if (!active) return;
 
     const delay = getAutoCloseDelay();
-    if (delay === '0') {
-      tryClose(() => setState({ phase: 'closeFailed' }));
-      setState({ phase: 'closed' });
-    } else if (delay !== 'off') {
-      setState({ phase: 'counting', remaining: Number(delay) });
+    if (delay === "0") {
+      tryClose(() => setState({ phase: "closeFailed" }));
+      setState({ phase: "closed" });
+    } else if (delay !== "off") {
+      setState({ phase: "counting", remaining: Number(delay) });
     } else {
-      setState({ phase: 'prompt' });
+      setState({ phase: "prompt" });
     }
   }, [active]);
 
   // Tick the countdown once per second.
   useEffect(() => {
-    if (state.phase !== 'counting') return;
+    if (state.phase !== "counting") return;
     if (state.remaining <= 0) {
-      tryClose(() => setState({ phase: 'closeFailed' }));
+      tryClose(() => setState({ phase: "closeFailed" }));
       return;
     }
     const timer = setTimeout(
-      () => setState((prev) => (prev.phase === 'counting' ? { phase: 'counting', remaining: prev.remaining - 1 } : prev)),
+      () =>
+        setState((prev) =>
+          prev.phase === "counting" ? { phase: "counting", remaining: prev.remaining - 1 } : prev,
+        ),
       1000,
     );
     return () => clearTimeout(timer);
   }, [state]);
 
   const enableAndStart = useCallback(() => {
-    setAutoCloseDelay('3');
-    setState({ phase: 'counting', remaining: 3 });
+    setAutoCloseDelay("3");
+    setState({ phase: "counting", remaining: 3 });
   }, []);
 
   return { state, enableAndStart };

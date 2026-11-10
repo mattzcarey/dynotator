@@ -1,6 +1,6 @@
 /// <reference path="../globals.d.ts" />
-import React from 'react';
-import spriteSheet from '../sprite_package_pulluphang/sprite.png';
+import React from "react";
+import spriteSheet from "../sprite_package_pulluphang/sprite.png";
 
 // Sprite specs: 96x96 native, 24 frames, 3 seconds
 const NATIVE_SIZE = 96;
@@ -20,8 +20,8 @@ export const TaterSpritePullup: React.FC = () => {
         height: DISPLAY_SIZE,
         backgroundImage: `url(${spriteSheet})`,
         backgroundSize: `${TOTAL_WIDTH}px ${DISPLAY_SIZE}px`,
-        animation: 'tater-pullup 3.5s steps(24) infinite',
-        imageRendering: 'pixelated',
+        animation: "tater-pullup 3.5s steps(24) infinite",
+        imageRendering: "pixelated",
       }}
     >
       <style>{`

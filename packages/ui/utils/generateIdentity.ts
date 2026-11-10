@@ -22,13 +22,41 @@
 export type IdentityGenerator = () => string;
 
 const FALLBACK_ADJECTIVES = [
-  'swift', 'gentle', 'brave', 'calm', 'clever', 'bright', 'quiet', 'bold',
-  'eager', 'kind', 'lucky', 'merry', 'nimble', 'proud', 'sunny', 'witty',
+  "swift",
+  "gentle",
+  "brave",
+  "calm",
+  "clever",
+  "bright",
+  "quiet",
+  "bold",
+  "eager",
+  "kind",
+  "lucky",
+  "merry",
+  "nimble",
+  "proud",
+  "sunny",
+  "witty",
 ] as const;
 
 const FALLBACK_NOUNS = [
-  'falcon', 'crystal', 'river', 'meadow', 'harbor', 'comet', 'maple', 'otter',
-  'summit', 'lantern', 'willow', 'ember', 'pebble', 'breeze', 'orchid', 'canyon',
+  "falcon",
+  "crystal",
+  "river",
+  "meadow",
+  "harbor",
+  "comet",
+  "maple",
+  "otter",
+  "summit",
+  "lantern",
+  "willow",
+  "ember",
+  "pebble",
+  "breeze",
+  "orchid",
+  "canyon",
 ] as const;
 
 /** Pool words: exported for tests only. */

@@ -13,22 +13,22 @@ import {
   type ModelContextLike,
   type ModelContextToolAnnotations,
   type ModelContextToolDescriptor,
-} from './modelContext';
-import { validateAgainstSchema, type JsonSchema } from './schema';
-import { recordToolCall } from './activity';
+} from "./modelContext";
+import { validateAgainstSchema, type JsonSchema } from "./schema";
+import { recordToolCall } from "./activity";
 
 // ---------------------------------------------------------------------------
 // Envelope
 // ---------------------------------------------------------------------------
 
 export type ToolErrorCode =
-  | 'invalid_input'
-  | 'not_found'
-  | 'ambiguous'
-  | 'forbidden'
-  | 'not_available'
-  | 'conflict'
-  | 'failed';
+  | "invalid_input"
+  | "not_found"
+  | "ambiguous"
+  | "forbidden"
+  | "not_available"
+  | "conflict"
+  | "failed";
 
 export interface ToolError {
   code: ToolErrorCode;
@@ -39,18 +39,18 @@ export interface ToolError {
 }
 
 export type NudgeCode =
-  | 'annotations_new'
-  | 'annotations_removed'
-  | 'replies_new'
-  | 'composer_open'
-  | 'source_stale'
-  | 'document_edited'
-  | 'comment_only_surface'
-  | 'page_changed'
-  | 'other_document_active'
-  | 'pending_unsent'
-  | 'session_decided'
-  | 'truncated';
+  | "annotations_new"
+  | "annotations_removed"
+  | "replies_new"
+  | "composer_open"
+  | "source_stale"
+  | "document_edited"
+  | "comment_only_surface"
+  | "page_changed"
+  | "other_document_active"
+  | "pending_unsent"
+  | "session_decided"
+  | "truncated";
 
 export interface Nudge {
   /** Machine-readable, stable. */
@@ -81,7 +81,11 @@ export function ok<T>(data: T, cursor?: string): ToolResult<T> {
   return cursor === undefined ? { ok: true, data } : { ok: true, data, cursor };
 }
 
-export function fail(code: ToolErrorCode, message: string, extra?: { hint?: string; candidates?: string[] }): ToolResult<never> {
+export function fail(
+  code: ToolErrorCode,
+  message: string,
+  extra?: { hint?: string; candidates?: string[] },
+): ToolResult<never> {
   const error: ToolError = { code, message };
   if (extra?.hint) error.hint = extra.hint;
   if (extra?.candidates) error.candidates = extra.candidates;
@@ -99,7 +103,10 @@ export interface ToolSpec<I = unknown, T = unknown> {
   description: string;
   inputSchema?: JsonSchema;
   annotations?: ModelContextToolAnnotations;
-  execute: (input: I, context: ModelContextExecuteContext) => ToolResult<T> | Promise<ToolResult<T>>;
+  execute: (
+    input: I,
+    context: ModelContextExecuteContext,
+  ) => ToolResult<T> | Promise<ToolResult<T>>;
 }
 
 /** Spec-level limits the catalog tests pin. */
@@ -134,8 +141,8 @@ export interface ToolsetHooks {
 
 function describeError(error: unknown): string {
   if (error instanceof Error) return error.message || error.name;
-  if (typeof error === 'string') return error;
-  return 'unexpected failure';
+  if (typeof error === "string") return error;
+  return "unexpected failure";
 }
 
 /**
@@ -158,16 +165,18 @@ export async function runTool(
     const input = rawInput === undefined || rawInput === null ? {} : rawInput;
     const problem = validateAgainstSchema(spec.inputSchema, input);
     if (problem) {
-      result = fail('invalid_input', problem);
+      result = fail("invalid_input", problem);
     } else {
       const returned = await spec.execute(input, context);
       result =
-        returned && typeof returned === 'object' && typeof (returned as ToolResult<unknown>).ok === 'boolean'
+        returned &&
+        typeof returned === "object" &&
+        typeof (returned as ToolResult<unknown>).ok === "boolean"
           ? returned
-          : fail('failed', 'the tool produced no result');
+          : fail("failed", "the tool produced no result");
     }
   } catch (error) {
-    result = fail('failed', describeError(error));
+    result = fail("failed", describeError(error));
   }
 
   let nudges: Nudge[] = [];
@@ -191,7 +200,11 @@ export async function runTool(
     // Strip `undefined` members and prove serializability in one pass.
     response = JSON.parse(JSON.stringify(response)) as ToolResponse;
   } catch (error) {
-    response = { ok: false, error: { code: 'failed', message: `unserializable result: ${describeError(error)}` }, nudges: [] };
+    response = {
+      ok: false,
+      error: { code: "failed", message: `unserializable result: ${describeError(error)}` },
+      nudges: [],
+    };
   }
 
   try {
@@ -227,7 +240,12 @@ interface LiveEntry {
 }
 
 function signatureOf(spec: ToolSpec<unknown, unknown>): string {
-  return JSON.stringify([spec.title ?? null, spec.description, spec.inputSchema ?? null, spec.annotations ?? null]);
+  return JSON.stringify([
+    spec.title ?? null,
+    spec.description,
+    spec.inputSchema ?? null,
+    spec.annotations ?? null,
+  ]);
 }
 
 export interface CreateToolRegistryOptions {
@@ -236,7 +254,10 @@ export interface CreateToolRegistryOptions {
   warn?: (message: string) => void;
 }
 
-export function createToolRegistry(ctx: ModelContextLike, options: CreateToolRegistryOptions): ToolRegistry {
+export function createToolRegistry(
+  ctx: ModelContextLike,
+  options: CreateToolRegistryOptions,
+): ToolRegistry {
   const live = new Map<string, LiveEntry>();
   const warnedNames = new Set<string>();
   const warn = options.warn ?? ((message: string) => console.warn(message));
@@ -247,9 +268,19 @@ export function createToolRegistry(ctx: ModelContextLike, options: CreateToolReg
     warn(message);
   };
 
-  const register = (name: string, setId: string, spec: ToolSpec<unknown, unknown>, hooks: ToolsetHooks) => {
+  const register = (
+    name: string,
+    setId: string,
+    spec: ToolSpec<unknown, unknown>,
+    hooks: ToolsetHooks,
+  ) => {
     const controller = new AbortController();
-    const entry: LiveEntry = { setId, controller, signature: signatureOf(spec), current: { spec, hooks } };
+    const entry: LiveEntry = {
+      setId,
+      controller,
+      signature: signatureOf(spec),
+      current: { spec, hooks },
+    };
     live.set(name, entry);
     const descriptor: ModelContextToolDescriptor = {
       name,
@@ -294,7 +325,10 @@ export function createToolRegistry(ctx: ModelContextLike, options: CreateToolReg
         wanted.add(name);
         const existing = live.get(name);
         if (existing && existing.setId !== setId) {
-          warnOnce(name, `webmcp: tool "${name}" is already registered by "${existing.setId}"; skipping the copy from "${setId}"`);
+          warnOnce(
+            name,
+            `webmcp: tool "${name}" is already registered by "${existing.setId}"; skipping the copy from "${setId}"`,
+          );
           continue;
         }
         if (existing) {
@@ -327,7 +361,10 @@ const registries = new WeakMap<object, ToolRegistry>();
  * One registry per ModelContext (which is one per Document): registration is
  * document-scoped and the name space is flat.
  */
-export function getRegistryFor(ctx: ModelContextLike, options: CreateToolRegistryOptions): ToolRegistry {
+export function getRegistryFor(
+  ctx: ModelContextLike,
+  options: CreateToolRegistryOptions,
+): ToolRegistry {
   let registry = registries.get(ctx);
   if (!registry) {
     registry = createToolRegistry(ctx, options);

@@ -1,5 +1,5 @@
-import React from 'react';
-import { type QuickLabel, getLabelColors, quickLabelShortcutDigit } from '../utils/quickLabels';
+import React from "react";
+import { type QuickLabel, getLabelColors, quickLabelShortcutDigit } from "../utils/quickLabels";
 
 /**
  * Shared vertical label list used by both FloatingQuickLabelPicker
@@ -35,13 +35,17 @@ export const QuickLabelDropdown: React.FC<{
             key={index}
             onClick={() => onSelect(label)}
             className="group w-full flex items-center gap-2 px-2 py-[5px] text-left transition-colors hover:bg-muted/60 active:bg-muted"
-            style={animate ? {
-              animationDelay: `${index * 18}ms`,
-              animationName: 'qld-row-in',
-              animationDuration: '0.1s',
-              animationFillMode: 'both',
-              animationTimingFunction: 'ease-out',
-            } : undefined}
+            style={
+              animate
+                ? {
+                    animationDelay: `${index * 18}ms`,
+                    animationName: "qld-row-in",
+                    animationDuration: "0.1s",
+                    animationFillMode: "both",
+                    animationTimingFunction: "ease-out",
+                  }
+                : undefined
+            }
           >
             {/* Color accent bar */}
             <span
