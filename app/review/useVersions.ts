@@ -1,42 +1,54 @@
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import { diffPlans } from "./diff";
 
-export interface VersionEntry {
-  version: number;
-  timestamp: string;
+export interface ChangedFile {
+  path: string;
+  status: "added" | "modified" | "deleted";
 }
 
+type Changes =
+  | { status: "loading" }
+  | { status: "ready"; files: ChangedFile[] }
+  | { status: "error"; message: string };
+
 /**
- * The plan's version history (`/api/plan/versions`) and the diff of the plan
- * on screen against a chosen earlier version (the previous one by default).
+ * The version on screen against a chosen earlier one (the previous by default): whether the
+ * changes are shown, and which files changed (`/api/changes`), fetched when first shown.
  */
-export function useVersions(current: string, version: number, previousPlan: string | null) {
-  const [base, setBase] = useState<{ version: number; plan: string } | null>(
-    previousPlan === null ? null : { version: version - 1, plan: previousPlan },
+export function useVersions(version: number, versions: readonly { version: number }[]) {
+  const [base, setBase] = useState<number | null>(() =>
+    versions.some((v) => v.version === version - 1) ? version - 1 : null,
   );
-  const [versions, setVersions] = useState<VersionEntry[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [active, setActive] = useState(false);
+  const [loaded, setLoaded] = useState<ReadonlyMap<number, Changes>>(new Map());
+  const requested = useRef(new Set<number>());
 
-  const loadVersions = useCallback(async () => {
-    if (versions || loading) return;
-    setLoading(true);
-    try {
-      const res = await fetch(api("/api/plan/versions"));
-      if (res.ok) setVersions(((await res.json()) as { versions: VersionEntry[] }).versions);
-    } finally {
-      setLoading(false);
-    }
-  }, [loading, versions]);
+  useEffect(() => {
+    if (!active || base === null || requested.current.has(base)) return;
+    requested.current.add(base);
+    const settle = (changes: Changes) => setLoaded((prev) => new Map(prev).set(base, changes));
+    fetch(api(`/api/changes?from=${base}&to=${version}`))
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Could not load the changes (${res.status}).`);
+        const { files } = (await res.json()) as { files: ChangedFile[] };
+        settle({ status: "ready", files });
+      })
+      .catch((error: unknown) => {
+        // Asked again the next time the changes are shown.
+        requested.current.delete(base);
+        settle({
+          status: "error",
+          message: error instanceof Error ? error.message : "Could not load the changes.",
+        });
+      });
+  }, [active, base, version]);
 
-  const selectBase = useCallback(async (v: number) => {
-    const res = await fetch(api(`/api/plan/version?v=${v}`));
-    if (!res.ok) return;
-    const data = (await res.json()) as { plan: string; version: number };
-    setBase({ version: data.version, plan: data.plan });
-  }, []);
-
-  const diff = useMemo(() => (base ? diffPlans(base.plan, current) : null), [base, current]);
-
-  return { base: base?.version ?? null, diff, versions, loadVersions, selectBase };
+  const changes: Changes = (base !== null && loaded.get(base)) || { status: "loading" };
+  return {
+    base,
+    active: active && base !== null,
+    changes,
+    selectBase: setBase,
+    show: setActive,
+  };
 }

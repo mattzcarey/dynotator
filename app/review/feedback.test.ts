@@ -101,7 +101,12 @@ and roll
   });
 
   test("answers only: no comment section", () => {
-    const out = buildFeedback({ mode: "plan", files, questions, annotations: answer("PLAN.md", ["Redis"]) });
+    const out = buildFeedback({
+      mode: "plan",
+      files,
+      questions,
+      annotations: answer("PLAN.md", ["Redis"]),
+    });
     expect(out).toContain("Answer: Redis (your recommendation)");
     expect(out).not.toContain("I've reviewed");
     expect(out.endsWith("---\n")).toBe(true);
@@ -117,7 +122,12 @@ describe("several files", () => {
 
   test("a heading per file in tree order, line references, quoted selections", () => {
     const annotations = [
-      note({ path: "README.md", lines: { start: 3, end: 3 }, originalText: "Intro", text: "Shorter." }),
+      note({
+        path: "README.md",
+        lines: { start: 3, end: 3 },
+        originalText: "Intro",
+        text: "Shorter.",
+      }),
       note({
         path: "worker/api.ts",
         lines: { start: 48, end: 50 },
@@ -125,9 +135,15 @@ describe("several files", () => {
         originalText: "if (x) {\n  run(`a`);\n}",
       }),
       globalComment("Overall fine."),
-      note({ path: "worker/api.ts", lines: { start: 42, end: 42 }, originalText: "export", text: "Why\nexported?" }),
+      note({
+        path: "worker/api.ts",
+        lines: { start: 42, end: 42 },
+        originalText: "export",
+        text: "Why\nexported?",
+      }),
     ];
-    expect(buildFeedback({ mode: "annotate", files, questions: [], annotations })).toBe(`# Review Feedback
+    expect(buildFeedback({ mode: "annotate", files, questions: [], annotations }))
+      .toBe(`# Review Feedback
 
 I've reviewed these files and have 4 pieces of feedback:
 
@@ -168,11 +184,18 @@ Intro
     const out = buildFeedback({ mode: "plan", files, questions: twin, annotations });
     expect(out).toContain("2 of 2 questions answered.");
     expect(out).toContain("### Q1. Which store? (docs/PLAN.md, line 9)\nAnswer: Postgres\n");
-    expect(out).toContain("### Q1. Which store? (README.md, line 9)\nAnswer: Redis (your recommendation)\n");
+    expect(out).toContain(
+      "### Q1. Which store? (README.md, line 9)\nAnswer: Redis (your recommendation)\n",
+    );
   });
 
   test("an unanswered question names its file", () => {
-    const out = buildFeedback({ mode: "plan", files, questions: twin, annotations: answer("README.md", ["Redis"]) });
+    const out = buildFeedback({
+      mode: "plan",
+      files,
+      questions: twin,
+      annotations: answer("README.md", ["Redis"]),
+    });
     expect(out).toContain("### Unanswered\n- Q1. Which store? (docs/PLAN.md, line 9)\n");
   });
 

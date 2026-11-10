@@ -11,7 +11,13 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": ["bun"]
+    "types": ["node"]
   },
-  "include": [".", "../vite.config.ts", "../session/**/*.test.ts", "../worker/**/*.test.ts"]
+  "include": [
+    ".",
+    "../vite.config.ts",
+    "../session/**/*.test.ts",
+    "../worker/**/*.test.ts",
+    "../examples/**/*.test.ts"
+  ]
 }

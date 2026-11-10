@@ -284,13 +284,16 @@ describe("revise and versions", () => {
     await call("POST", "/api/deny", { feedback: "no" });
     expect(await server.revise(V2)).toEqual({ version: 2, unchanged: false });
     expect(server.decision()).toBeNull();
-    expect((await call("GET", "/api/review")).json).toMatchObject({ version: 2, open: "README.md" });
+    expect((await call("GET", "/api/review")).json).toMatchObject({
+      version: 2,
+      open: "README.md",
+    });
     expect((await call("GET", "/api/revision")).json).toEqual({ revision: 2 });
     const versions = (await call("GET", "/api/review")).json.versions;
     expect(versions.map((v: { version: number }) => v.version)).toEqual([1, 2]);
-    expect((await call("GET", "/api/files")).json.files.map((f: { path: string }) => f.path)).toEqual(
-      ["README.md", "src/a.ts", "src/c.ts"],
-    );
+    expect(
+      (await call("GET", "/api/files")).json.files.map((f: { path: string }) => f.path),
+    ).toEqual(["README.md", "src/a.ts", "src/c.ts"]);
     expect((await call("GET", "/api/file?path=README.md")).json.content).toBe("# v2");
     expect((await call("GET", "/api/file?path=README.md&v=1")).json.content).toBe("# v1");
     expect((await call("GET", "/api/file?path=src/deep/b.ts")).status).toBe(404);
@@ -339,9 +342,9 @@ describe("revise and versions", () => {
   test("an unchanged snapshot adds no version and leaves the decision standing", async () => {
     const { call, server, fs } = await session();
     await call("POST", "/api/deny", {});
-    expect(await server.revise({ "src/deep/b.ts": "b", "README.md": "# v1", "src/a.ts": "a" })).toEqual(
-      { version: 1, unchanged: true },
-    );
+    expect(
+      await server.revise({ "src/deep/b.ts": "b", "README.md": "# v1", "src/a.ts": "a" }),
+    ).toEqual({ version: 1, unchanged: true });
     expect(server.decision()).toMatchObject({ approved: false, version: 1 });
     expect((await call("GET", "/api/review")).json.versions).toHaveLength(1);
     expect([...fs.files.keys()].every((p) => p.startsWith("/v/1/"))).toBe(true);

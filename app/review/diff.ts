@@ -114,7 +114,8 @@ export function diffLines(oldText: string, newText: string): LineEntry[] {
   while (i < a.length || j < b.length) {
     while (i < a.length && !keptA[i]) out.push({ change: "removed", text: a[i], oldLine: ++i });
     while (j < b.length && !keptB[j]) out.push({ change: "added", text: b[j], newLine: ++j });
-    if (i < a.length && j < b.length) out.push({ change: "unchanged", text: b[j], oldLine: ++i, newLine: ++j });
+    if (i < a.length && j < b.length)
+      out.push({ change: "unchanged", text: b[j], oldLine: ++i, newLine: ++j });
   }
   return out;
 }

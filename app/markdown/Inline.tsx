@@ -114,7 +114,12 @@ export const InlineMarkdown: React.FC<{
     take(
       length,
       internal ? (
-        <a key={key++} href={internal} onClick={() => followInternal(internal)} className={LINK_CLASS}>
+        <a
+          key={key++}
+          href={internal}
+          onClick={() => followInternal(internal)}
+          className={LINK_CLASS}
+        >
           {children}
         </a>
       ) : (

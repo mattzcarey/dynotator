@@ -35,7 +35,9 @@ export default {
 
 async function createForDev(request: Request, ctx: ExecutionContext, origin: string) {
   try {
-    const review = await ctx.exports.Dynotator({ props: { origin } }).createReview(await request.json());
+    const review = await ctx.exports
+      .Dynotator({ props: { origin } })
+      .createReview(await request.json());
     return Response.json(review, { status: 201 });
   } catch (err) {
     return Response.json(

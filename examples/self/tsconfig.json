@@ -1,0 +1,11 @@
+{
+  "extends": "../../worker/tsconfig.json",
+  "include": [
+    ".",
+    "../../worker",
+    "../../session",
+    "../../cloudflare.config.ts",
+    "../../.cloudflare/types/index.d.ts"
+  ],
+  "exclude": ["../../**/*.test.ts"]
+}

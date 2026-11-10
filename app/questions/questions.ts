@@ -544,7 +544,8 @@ function formatAnswerLines(
   return out;
 }
 
-const where = ({ path, line }: IndexedQuestion) => (path ? `${path}, line ${line}` : `line ${line}`);
+const where = ({ path, line }: IndexedQuestion) =>
+  path ? `${path}, line ${line}` : `line ${line}`;
 
 const settledLabels = (q: Question) => q.choices.filter((c) => c.settled).map((c) => c.label);
 

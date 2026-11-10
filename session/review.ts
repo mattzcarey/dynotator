@@ -63,7 +63,9 @@ export function getManifest(store: Store, v: number): Manifest | undefined {
 
 /** The path the browser opens first: the requested one while it exists, else the default. */
 export function openPath(meta: ReviewMeta, manifest: Manifest): string | undefined {
-  return meta.open !== undefined && manifest.has(meta.open) ? meta.open : defaultOpen(manifest.keys());
+  return meta.open !== undefined && manifest.has(meta.open)
+    ? meta.open
+    : defaultOpen(manifest.keys());
 }
 
 export async function initReview(store: Store, fs: Fs, { files, ...meta }: ReviewInit) {

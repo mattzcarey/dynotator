@@ -47,31 +47,28 @@ const stateOf = (path: string | null, version: number): FileState => {
  */
 export function useFile(path: string | null, version: number): [FileState, () => void] {
   const [state, setState] = useState(() => ({ path, version, file: stateOf(path, version) }));
-  const [attempt, setAttempt] = useState(0);
-  // A new file shows its cached text, or loading, at once rather than the old file's.
+  // Results are kept with their file, so a late answer for another one is never shown here.
   const current =
-    state.path === path && state.version === version
-      ? state.file
-      : stateOf(path, version);
+    state.path === path && state.version === version ? state.file : stateOf(path, version);
+  const settle = (file: FileState) => setState({ path, version, file });
   useEffect(() => {
-    if (path === null) return;
-    let live = true;
-    const settle = (file: FileState) => live && setState({ path, version, file });
-    loadFile(path, version).then(
-      (content) => settle({ status: "ready", content }),
-      (error: unknown) =>
-        settle({
-          status: "error",
-          message: error instanceof Error ? error.message : "Could not load the file.",
-        }),
-    );
-    return () => {
-      live = false;
-    };
-  }, [path, version, attempt]);
+    if (path !== null) read(path, version, (file) => setState({ path, version, file }));
+  }, [path, version]);
   const retry = () => {
-    setState({ path, version, file: { status: "loading" } });
-    setAttempt((n) => n + 1);
+    if (path === null) return;
+    settle({ status: "loading" });
+    read(path, version, settle);
   };
   return [current, retry];
+}
+
+function read(path: string, version: number, settle: (file: FileState) => void): void {
+  loadFile(path, version).then(
+    (content) => settle({ status: "ready", content }),
+    (error: unknown) =>
+      settle({
+        status: "error",
+        message: error instanceof Error ? error.message : "Could not load the file.",
+      }),
+  );
 }

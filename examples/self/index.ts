@@ -14,7 +14,9 @@ const sources = import.meta.glob<string>(
   ],
   { query: "?raw", import: "default", eager: true },
 );
-const files = Object.fromEntries(Object.entries(sources).map(([path, text]) => [path.slice(1), text]));
+const files = Object.fromEntries(
+  Object.entries(sources).map(([path, text]) => [path.slice(1), text]),
+);
 
 /** Dynotator, plus `GET /`: open a review of this repository and go to it. */
 export default {

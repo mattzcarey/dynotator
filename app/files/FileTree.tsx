@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { ancestorDirs, visibleRows, type TreeDir, type TreeNode } from "./tree";
 
 const keyOf = (node: TreeNode) => `${node.kind === "dir" ? "d" : "f"}:${node.path}`;
@@ -21,16 +21,16 @@ export function FileTree({
 }) {
   const [expanded, setExpanded] = useState(() => new Set(ancestorDirs(current)));
   const [focused, setFocused] = useState(`f:${current}`);
+  const [shown, setShown] = useState(current);
   const listRef = useRef<HTMLUListElement>(null);
 
   // Opening a file elsewhere (a link, an annotation) reveals it.
-  useEffect(() => {
-    setExpanded((prev) => {
-      const missing = ancestorDirs(current).filter((dir) => !prev.has(dir));
-      return missing.length === 0 ? prev : new Set([...prev, ...missing]);
-    });
+  if (shown !== current) {
+    setShown(current);
     setFocused(`f:${current}`);
-  }, [current]);
+    const missing = ancestorDirs(current).filter((dir) => !expanded.has(dir));
+    if (missing.length > 0) setExpanded(new Set([...expanded, ...missing]));
+  }
 
   const rows = useMemo(() => visibleRows(root, expanded), [root, expanded]);
   const focusIndex = Math.max(
@@ -120,10 +120,14 @@ export function FileTree({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
                 </svg>
               ) : (
-                <span className={`h-1 w-1 rounded-full ${active ? "bg-primary" : "bg-border-strong"}`} />
+                <span
+                  className={`h-1 w-1 rounded-full ${active ? "bg-primary" : "bg-border-strong"}`}
+                />
               )}
             </span>
-            <span className={`min-w-0 flex-1 truncate ${dir ? "font-medium text-foreground/85" : ""}`}>
+            <span
+              className={`min-w-0 flex-1 truncate ${dir ? "font-medium text-foreground/85" : ""}`}
+            >
               {node.name}
             </span>
             {count > 0 && (

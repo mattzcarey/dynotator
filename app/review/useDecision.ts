@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { api } from "../api";
+import type { Annotation } from "./annotations";
 import { buildFeedback, type FeedbackInput } from "./feedback";
 import type { Notify } from "./Notices";
 
@@ -31,12 +32,15 @@ const reload = () => window.location.reload();
 
 /** Approve / request changes (plan) and send feedback / close (annotate). */
 export function useDecision({
-  planRevision,
+  revision,
+  getFeedback,
   getDraftGeneration,
   onDecided,
   notify,
 }: {
-  planRevision: number | null;
+  revision: number;
+  /** The feedback input as of now; it may first read the files that answered questions sit in. */
+  getFeedback: (annotations: Annotation[]) => Promise<FeedbackInput>;
   getDraftGeneration: () => number;
   onDecided: () => void;
   notify: Notify;
@@ -58,9 +62,9 @@ export function useDecision({
       if (error instanceof Refused && error.code === "already_decided") {
         onDecided();
         setOutcome("taken");
-      } else if (error instanceof Refused && error.code === "plan_revised") {
+      } else if (error instanceof Refused && error.code === "revised") {
         notify("decision", {
-          text: "The plan was revised. Nothing was sent: load the new version, then decide again.",
+          text: "The agent put up a new version. Nothing was sent: load it, then decide again.",
           actions: [{ label: "Load", onClick: reload }],
         });
       } else {
@@ -78,38 +82,33 @@ export function useDecision({
     }
   }
 
-  const common = () => ({
-    ...(planRevision !== null && { planRevision }),
-    draftGeneration: getDraftGeneration(),
-  });
+  const common = () => ({ revision, draftGeneration: getDraftGeneration() });
 
-  const approve = (input: FeedbackInput) =>
+  const approve = (annotations: Annotation[]) =>
     run(async () => {
-      await post("/api/approve", {
-        ...(input.annotations.length > 0 && { feedback: buildFeedback(input) }),
-        ...common(),
-      });
+      const feedback = annotations.length > 0 && buildFeedback(await getFeedback(annotations));
+      await post("/api/approve", { ...(feedback && { feedback }), ...common() });
       return "approved";
     });
 
-  const requestChanges = (input: FeedbackInput, answersOnly: boolean) =>
+  const requestChanges = (annotations: Annotation[], answersOnly: boolean) =>
     run(async () => {
       await post("/api/deny", {
-        feedback: buildFeedback(input),
+        feedback: buildFeedback(await getFeedback(annotations)),
         ...(answersOnly && { answersOnly: true }),
         ...common(),
       });
       return "changes";
     });
 
-  const sendFeedback = (input: FeedbackInput) =>
+  const sendFeedback = (annotations: Annotation[]) =>
     run(async () => {
       await post("/api/feedback", {
-        feedback: buildFeedback(input),
-        annotations: input.annotations,
+        feedback: buildFeedback(await getFeedback(annotations)),
+        annotations,
         ...common(),
       });
-      return input.annotations.length === 0 ? "done" : "sent";
+      return annotations.length === 0 ? "done" : "sent";
     });
 
   const close = () =>

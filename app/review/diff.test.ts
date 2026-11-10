@@ -35,7 +35,8 @@ test("a block's kind is part of its identity", () => {
 
 const lines = (oldText: string, newText: string) =>
   diffLines(oldText, newText).map(
-    (e) => `${{ unchanged: " ", added: "+", removed: "-" }[e.change]}${e.oldLine ?? "_"}:${e.newLine ?? "_"} ${e.text}`,
+    (e) =>
+      `${{ unchanged: " ", added: "+", removed: "-" }[e.change]}${e.oldLine ?? "_"}:${e.newLine ?? "_"} ${e.text}`,
   );
 
 describe("diffLines", () => {
@@ -73,16 +74,31 @@ describe("foldUnchanged", () => {
     Array.from({ length: 20 }, (_, i) => `l${i + 1}`).join("\n"),
     Array.from({ length: 20 }, (_, i) => (i === 9 ? "changed" : `l${i + 1}`)).join("\n"),
   );
-  const shape = foldUnchanged(entries).map((row) =>
+  const folded = foldUnchanged(entries).map((row) =>
     "hidden" in row ? `[${row.hidden.length}]` : `${row.change[0]}${row.text}`,
   );
 
   test("three lines of context, the rest folded", () => {
-    expect(shape).toEqual(["[6]", "ul7", "ul8", "ul9", "rl10", "achanged", "ul11", "ul12", "ul13", "[7]"]);
+    expect(folded).toEqual([
+      "[6]",
+      "ul7",
+      "ul8",
+      "ul9",
+      "rl10",
+      "achanged",
+      "ul11",
+      "ul12",
+      "ul13",
+      "[7]",
+    ]);
   });
 
   test("a fold of two lines or fewer stays open; no changes folds everything", () => {
-    expect(foldUnchanged(diffLines("a\nb\nc\nd\ne", "a\nb\nX\nd\ne"), 1).some((r) => "hidden" in r)).toBe(false);
-    expect(foldUnchanged(diffLines("a\nb\nc\nd", "a\nb\nc\nd"))).toEqual([{ hidden: diffLines("a\nb\nc\nd", "a\nb\nc\nd") }]);
+    expect(
+      foldUnchanged(diffLines("a\nb\nc\nd\ne", "a\nb\nX\nd\ne"), 1).some((r) => "hidden" in r),
+    ).toBe(false);
+    expect(foldUnchanged(diffLines("a\nb\nc\nd", "a\nb\nc\nd"))).toEqual([
+      { hidden: diffLines("a\nb\nc\nd", "a\nb\nc\nd") },
+    ]);
   });
 });

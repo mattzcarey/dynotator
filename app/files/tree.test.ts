@@ -18,7 +18,16 @@ const shape = (dir: TreeDir): unknown[] =>
 describe("buildTree", () => {
   test("directories first, then files, each by name ignoring case", () => {
     const tree = buildTree(
-      files("README.md", "worker/api.ts", "app/z.ts", "app/A.ts", "Zeta.ts", "app/review/x.ts", "a-b/c.ts", "b.ts"),
+      files(
+        "README.md",
+        "worker/api.ts",
+        "app/z.ts",
+        "app/A.ts",
+        "Zeta.ts",
+        "app/review/x.ts",
+        "a-b/c.ts",
+        "b.ts",
+      ),
     );
     expect(shape(tree)).toEqual([
       { "a-b/": ["c.ts"] },
@@ -82,5 +91,10 @@ test("ancestorDirs and countByPath", () => {
       ["e.ts", 0],
     ]),
   );
-  expect(Object.fromEntries(counts)).toEqual({ "f:a/b/c.ts": 2, "d:a": 3, "d:a/b": 2, "f:a/d.ts": 1 });
+  expect(Object.fromEntries(counts)).toEqual({
+    "f:a/b/c.ts": 2,
+    "d:a": 3,
+    "d:a/b": 2,
+    "f:a/d.ts": 1,
+  });
 });

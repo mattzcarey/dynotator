@@ -2,7 +2,13 @@ import { describe, expect, test } from "vitest";
 import { formatHash, isMarkdown, languageFor, parseHash, resolveLink } from "./paths";
 
 describe("resolveLink", () => {
-  const tree = new Set(["README.md", "docs/a.md", "docs/guide/b.md", "worker/api.ts", "docs/README.md"]);
+  const tree = new Set([
+    "README.md",
+    "docs/a.md",
+    "docs/guide/b.md",
+    "worker/api.ts",
+    "docs/README.md",
+  ]);
   const has = (path: string) => tree.has(path);
   const from = (file: string, href: string) => resolveLink(file, href, has);
 
@@ -15,13 +21,19 @@ describe("resolveLink", () => {
   });
 
   test("anchors, line anchors and query strings", () => {
-    expect(from("docs/a.md", "../README.md#set-up")).toEqual({ path: "README.md", anchor: "set-up" });
+    expect(from("docs/a.md", "../README.md#set-up")).toEqual({
+      path: "README.md",
+      anchor: "set-up",
+    });
     expect(from("docs/a.md", "#usage")).toEqual({ path: "docs/a.md", anchor: "usage" });
     expect(from("README.md", "worker/api.ts#L10-L20")).toEqual({
       path: "worker/api.ts",
       lines: { start: 10, end: 20 },
     });
-    expect(from("README.md", "worker/api.ts#L7")).toEqual({ path: "worker/api.ts", lines: { start: 7, end: 7 } });
+    expect(from("README.md", "worker/api.ts#L7")).toEqual({
+      path: "worker/api.ts",
+      lines: { start: 7, end: 7 },
+    });
     expect(from("README.md", "docs/a.md?plain=1")).toEqual({ path: "docs/a.md" });
   });
 
@@ -42,14 +54,23 @@ describe("resolveLink", () => {
   });
 });
 
-describe("hash", () => {
-  const round = (hash: string) => formatHash(parseHash(hash)!);
+const round = (hash: string) => formatHash(parseHash(hash)!);
 
+describe("hash", () => {
   test("parse", () => {
     expect(parseHash("#/worker/api.ts")).toEqual({ path: "worker/api.ts" });
-    expect(parseHash("#/worker/api.ts:L42")).toEqual({ path: "worker/api.ts", lines: { start: 42, end: 42 } });
-    expect(parseHash("#/worker/api.ts:L48-42")).toEqual({ path: "worker/api.ts", lines: { start: 42, end: 48 } });
-    expect(parseHash("#/worker/api.ts:L42-L48")).toEqual({ path: "worker/api.ts", lines: { start: 42, end: 48 } });
+    expect(parseHash("#/worker/api.ts:L42")).toEqual({
+      path: "worker/api.ts",
+      lines: { start: 42, end: 42 },
+    });
+    expect(parseHash("#/worker/api.ts:L48-42")).toEqual({
+      path: "worker/api.ts",
+      lines: { start: 42, end: 48 },
+    });
+    expect(parseHash("#/worker/api.ts:L42-L48")).toEqual({
+      path: "worker/api.ts",
+      lines: { start: 42, end: 48 },
+    });
     expect(parseHash("#/docs/a.md#set-up")).toEqual({ path: "docs/a.md", anchor: "set-up" });
     expect(parseHash("#/a%20b%23c.md")).toEqual({ path: "a b#c.md" });
     expect(parseHash("#/bad%E0.md")).toEqual({ path: "bad%E0.md" });
@@ -64,7 +85,9 @@ describe("hash", () => {
   });
 
   test("format round-trips", () => {
-    expect(formatHash({ path: "worker/api.ts", lines: { start: 42, end: 48 } })).toBe("#/worker/api.ts:L42-48");
+    expect(formatHash({ path: "worker/api.ts", lines: { start: 42, end: 48 } })).toBe(
+      "#/worker/api.ts:L42-48",
+    );
     expect(formatHash({ path: "a.ts", lines: { start: 3, end: 3 } })).toBe("#/a.ts:L3");
     expect(formatHash({ path: "a b#?.md", anchor: "é x" })).toBe("#/a%20b%23%3F.md#%C3%A9%20x");
     for (const hash of ["#/worker/api.ts", "#/worker/api.ts:L42", "#/a.ts:L1-9", "#/docs/a.md#x-y"])

@@ -1,4 +1,5 @@
-import { bindings, defineConfig, exports } from "cf/config";
+import { type WorkerConfig, bindings, defineConfig, exports } from "cf/config";
+import self from "./examples/self/cloudflare.config.ts";
 import * as entrypoint from "./worker/index.ts" with { type: "cf-worker" };
 
 // Evaluated by the cf CLI under Node; the Worker program has no Node types.
@@ -23,11 +24,9 @@ export const dynotator = {
     Dynotator: exports.worker(),
     SessionSupervisor: exports.durableObject({ storage: "sqlite" }),
   },
-} as const;
+} satisfies Omit<WorkerConfig, "name">;
 
 // `--mode self` builds and runs examples/self instead, against the same SPA and Vite config.
-export default defineConfig(async ({ mode }) =>
-  mode === "self"
-    ? (await import("./examples/self/cloudflare.config.ts")).default
-    : { worker: { name: "dynotator", entrypoint, ...dynotator } },
+export default defineConfig(({ mode }) =>
+  mode === "self" ? self : { worker: { name: "dynotator", entrypoint, ...dynotator } },
 );

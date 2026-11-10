@@ -103,7 +103,7 @@ function HtmlBlockImpl({ block }: { block: Block }) {
       const internal = resolve?.(href);
       if (internal) {
         a.setAttribute("href", internal);
-        a.onclick = () => followInternal(internal);
+        a.addEventListener("click", () => followInternal(internal));
       } else if (/^(https?:|\/\/)/i.test(href)) {
         a.target = "_blank";
         a.rel = "noopener noreferrer";

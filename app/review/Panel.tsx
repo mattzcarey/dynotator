@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AnnotationType, type Annotation } from "./annotations";
 import type { QuestionRow } from "../questions/answers";
 
@@ -8,29 +8,87 @@ const LABEL: Record<AnnotationType, string> = {
   [AnnotationType.GLOBAL_COMMENT]: "General",
 };
 
-/** The review's annotations, in the order they were made, and the questions' progress. */
+export interface PanelQuestion extends QuestionRow {
+  path: string;
+}
+
+const lineLabel = ({ start, end }: { start: number; end: number }) =>
+  end > start ? `L${start}-${end}` : `L${start}`;
+
+const groupLabel =
+  "flex w-full items-center gap-2 px-1 pt-2 pb-1 text-left font-mono text-[11px] tracking-[0.04em] text-muted-foreground";
+
+/**
+ * The review's annotations and the questions' progress. With one file, in the order they were
+ * made; with several, grouped by file: the open one first, then the tree's order, then the
+ * general comments.
+ */
 export function Panel({
   annotations,
   questions,
+  files,
+  current,
   selectedId,
   readOnly,
   onSelect,
+  onOpenFile,
   onDelete,
   onEdit,
   onSelectQuestion,
   onGlobalComment,
 }: {
   annotations: Annotation[];
-  questions: QuestionRow[];
+  questions: PanelQuestion[];
+  /** Every file, in tree order; one for a single-file review. */
+  files: readonly string[];
+  current: string;
   selectedId: string | null;
   readOnly: boolean;
-  onSelect: (id: string) => void;
+  onSelect: (annotation: Annotation) => void;
+  onOpenFile: (path: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, text: string) => void;
-  onSelectQuestion: (key: string) => void;
+  onSelectQuestion: (question: PanelQuestion) => void;
   onGlobalComment: () => void;
 }) {
-  const comments = annotations.filter((a) => a.questionAnswer == null);
+  const comments = useMemo(
+    () => annotations.filter((a) => a.questionAnswer == null),
+    [annotations],
+  );
+  const single = files.length <= 1;
+  const groups = useMemo(() => {
+    if (single) return [{ path: null, items: comments }];
+    const byPath = new Map<string, Annotation[]>();
+    for (const a of comments) byPath.set(a.path, [...(byPath.get(a.path) ?? []), a]);
+    const rank = new Map(files.map((path, i) => [path, i]));
+    const order = [...byPath.keys()].toSorted(
+      (a, b) =>
+        Number(b === current) - Number(a === current) ||
+        Number(a === "") - Number(b === "") ||
+        (rank.get(a) ?? files.length) - (rank.get(b) ?? files.length) ||
+        a.localeCompare(b),
+    );
+    return order.map((path) => ({
+      path,
+      items: (byPath.get(path) ?? []).toSorted(
+        (a, b) => (a.lines?.start ?? 0) - (b.lines?.start ?? 0),
+      ),
+    }));
+  }, [comments, current, files, single]);
+
+  const card = (annotation: Annotation) => (
+    <Card
+      key={annotation.id}
+      annotation={annotation}
+      where={!single && annotation.lines ? lineLabel(annotation.lines) : null}
+      selected={annotation.id === selectedId}
+      readOnly={readOnly}
+      onSelect={() => onSelect(annotation)}
+      onDelete={() => onDelete(annotation.id)}
+      onEdit={(text) => onEdit(annotation.id, text)}
+    />
+  );
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
@@ -56,11 +114,18 @@ export function Panel({
             {questions.map((row) => (
               <button
                 type="button"
-                key={row.key}
-                onClick={() => onSelectQuestion(row.key)}
+                key={`${row.path}\n${row.key}`}
+                onClick={() => onSelectQuestion(row)}
                 className="flex w-full justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted"
               >
-                <span className="truncate">{row.prompt}</span>
+                <span className="min-w-0">
+                  <span className="block truncate">{row.prompt}</span>
+                  {!single && (
+                    <span className="block truncate font-mono text-[10.5px] text-muted-foreground">
+                      {row.path}
+                    </span>
+                  )}
+                </span>
                 <span className="shrink-0 text-muted-foreground">{row.status}</span>
               </button>
             ))}
@@ -68,20 +133,37 @@ export function Panel({
         )}
         {comments.length === 0 ? (
           <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
-            Select text in the document to comment on it.
+            Select text in {single ? "the document" : "a file"} to comment on it.
           </p>
         ) : (
-          comments.map((annotation) => (
-            <Card
-              key={annotation.id}
-              annotation={annotation}
-              selected={annotation.id === selectedId}
-              readOnly={readOnly}
-              onSelect={() => onSelect(annotation.id)}
-              onDelete={() => onDelete(annotation.id)}
-              onEdit={(text) => onEdit(annotation.id, text)}
-            />
-          ))
+          groups.map(({ path, items }) =>
+            path === null ? (
+              items.map(card)
+            ) : (
+              <section key={path || "general"} className="flex flex-col gap-1.5">
+                {path ? (
+                  <button
+                    type="button"
+                    title={path}
+                    onClick={() => onOpenFile(path)}
+                    className={`${groupLabel} hover:text-foreground`}
+                  >
+                    <span
+                      className={`min-w-0 truncate ${path === current ? "text-foreground" : ""}`}
+                    >
+                      {path}
+                    </span>
+                    <span className="ml-auto shrink-0">{items.length}</span>
+                  </button>
+                ) : (
+                  <h3 className={groupLabel}>
+                    General<span className="ml-auto shrink-0">{items.length}</span>
+                  </h3>
+                )}
+                {items.map(card)}
+              </section>
+            ),
+          )
         )}
       </div>
     </div>
@@ -90,6 +172,7 @@ export function Panel({
 
 function Card({
   annotation,
+  where,
   selected,
   readOnly,
   onSelect,
@@ -97,6 +180,8 @@ function Card({
   onEdit,
 }: {
   annotation: Annotation;
+  /** The lines it is about, in a review of several files. */
+  where: string | null;
   selected: boolean;
   readOnly: boolean;
   onSelect: () => void;
@@ -116,6 +201,7 @@ function Card({
         >
           {LABEL[annotation.type]}
         </span>
+        {where && <span className="font-mono text-[11px] text-muted-foreground">{where}</span>}
         {!readOnly && (
           <span className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
             {!isDeletion && (

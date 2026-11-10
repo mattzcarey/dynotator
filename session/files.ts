@@ -54,7 +54,8 @@ export function parseFiles(files: unknown): Files {
     if (size > MAX_FILE_BYTES) throw new RangeError(`${path} exceeds ${MAX_FILE_BYTES} bytes`);
     total += size;
   }
-  if (total > MAX_TOTAL_BYTES) throw new RangeError(`files exceed ${MAX_TOTAL_BYTES} bytes in total`);
+  if (total > MAX_TOTAL_BYTES)
+    throw new RangeError(`files exceed ${MAX_TOTAL_BYTES} bytes in total`);
   // A path that is also another path's directory cannot exist in one tree.
   const paths = new Set(entries.map(([path]) => path));
   for (const path of paths) {

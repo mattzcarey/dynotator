@@ -51,40 +51,62 @@ export function Annotator({
   const rootRef = useRef<HTMLElement>(null);
   const highlighterRef = useRef<Highlighter | null>(null);
   const paintedRef = useRef(new Set<string>());
+  const selectedRef = useRef(selectedId);
+  const focusedRef = useRef<string | null>(null);
   const scrolledRef = useRef<string | null>(null);
   const select = useEffectEvent((id: string) => onSelect(id));
   const [pending, setPending] = useState<Pending | null>(null);
-  // Bumped by each paint, so the focused annotation is found once it is on the page.
-  const [painted, setPainted] = useState(0);
 
-  // Paint what is stored (draft restore, a new annotation) and drop what is gone.
-  const paint = useCallback((list: Annotation[]) => {
+  // Mark the selected annotation, and bring it into view the first time it is on the page:
+  // after selecting it, or after the paint that put it there (the file just opened).
+  const focus = useCallback(() => {
     const highlighter = highlighterRef.current;
     if (!highlighter) return;
-    const live = new Set<string>();
-    for (const ann of list) {
-      if (!ann.startMeta || !ann.endMeta) continue;
-      live.add(ann.id);
-      if (paintedRef.current.has(ann.id)) {
-        if (highlighter.getDoms(ann.id).length > 0) continue;
-        highlighter.remove(ann.id);
-        paintedRef.current.delete(ann.id);
-      }
-      try {
-        if (!highlighter.fromStore(ann.startMeta, ann.endMeta, ann.originalText, ann.id)) continue;
-        highlighter.addClass(classFor(ann.type), ann.id);
-        paintedRef.current.add(ann.id);
-      } catch {
-        // The text moved (a revision): the annotation stays listed, unpainted.
-      }
+    const id = selectedRef.current;
+    if (focusedRef.current && focusedRef.current !== id) {
+      highlighter.removeClass("focused", focusedRef.current);
+      focusedRef.current = null;
     }
-    for (const id of paintedRef.current) {
-      if (live.has(id)) continue;
-      highlighter.remove(id);
-      paintedRef.current.delete(id);
-    }
-    setPainted((n) => n + 1);
+    if (!id || !paintedRef.current.has(id)) return;
+    highlighter.addClass("focused", id);
+    focusedRef.current = id;
+    if (scrolledRef.current === id) return;
+    scrolledRef.current = id;
+    highlighter.getDoms(id)[0]?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
+
+  // Paint what is stored (draft restore, a new annotation) and drop what is gone.
+  const paint = useCallback(
+    (list: Annotation[]) => {
+      const highlighter = highlighterRef.current;
+      if (!highlighter) return;
+      const live = new Set<string>();
+      for (const ann of list) {
+        if (!ann.startMeta || !ann.endMeta) continue;
+        live.add(ann.id);
+        if (paintedRef.current.has(ann.id)) {
+          if (highlighter.getDoms(ann.id).length > 0) continue;
+          highlighter.remove(ann.id);
+          paintedRef.current.delete(ann.id);
+        }
+        try {
+          if (!highlighter.fromStore(ann.startMeta, ann.endMeta, ann.originalText, ann.id))
+            continue;
+          highlighter.addClass(classFor(ann.type), ann.id);
+          paintedRef.current.add(ann.id);
+        } catch {
+          // The text moved (a revision): the annotation stays listed, unpainted.
+        }
+      }
+      for (const id of paintedRef.current) {
+        if (live.has(id)) continue;
+        highlighter.remove(id);
+        paintedRef.current.delete(id);
+      }
+      focus();
+    },
+    [focus],
+  );
   // Highlighting code replaced its markup, and any marks in it.
   const repaint = useEffectEvent(() => paint(annotations));
 
@@ -113,15 +135,9 @@ export function Annotator({
   useEffect(() => paint(annotations), [annotations, paint]);
 
   useEffect(() => {
-    const highlighter = highlighterRef.current;
-    if (!highlighter || !selectedId || !paintedRef.current.has(selectedId)) return;
-    highlighter.addClass("focused", selectedId);
-    if (scrolledRef.current !== selectedId) {
-      scrolledRef.current = selectedId;
-      highlighter.getDoms(selectedId)[0]?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-    return () => highlighter.removeClass("focused", selectedId);
-  }, [selectedId, painted]);
+    selectedRef.current = selectedId;
+    focus();
+  }, [focus, selectedId]);
 
   const onPointerUp = useCallback(() => {
     if (readOnly) return;
@@ -174,12 +190,7 @@ export function Annotator({
 
   return (
     <>
-      <article
-        ref={rootRef}
-        onMouseUp={onPointerUp}
-        onTouchEnd={onPointerUp}
-        className={className}
-      >
+      <article ref={rootRef} onMouseUp={onPointerUp} onTouchEnd={onPointerUp} className={className}>
         {children}
       </article>
 

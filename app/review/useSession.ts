@@ -1,25 +1,31 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import type { FileEntry } from "../files/tree";
 
-/** `GET /api/plan`. */
-interface PlanResponse {
-  plan: string;
+export interface VersionEntry {
+  version: number;
+  timestamp: string;
+}
+
+/** `GET /api/review`. */
+interface ReviewResponse {
   mode: "plan" | "annotate";
   title?: string;
-  previousPlan: string | null;
-  versionInfo: { version: number; totalVersions: number };
-  /** Plan mode: the version on screen, echoed on decisions so a stale one is refused. */
-  planRevision?: number;
+  open: string;
+  version: number;
+  versions: VersionEntry[];
 }
 
 export interface Session {
   mode: "plan" | "annotate";
-  markdown: string;
   title: string | null;
-  previousPlan: string | null;
+  /** The file to show first. */
+  open: string;
+  /** The version on screen, echoed on decisions so a stale one is refused. */
   version: number;
-  totalVersions: number;
-  planRevision: number | null;
+  versions: VersionEntry[];
+  /** The files of this version, sorted by path. */
+  files: FileEntry[];
 }
 
 type SessionState =
@@ -27,20 +33,25 @@ type SessionState =
   | { status: "ready"; session: Session }
   | { status: "error"; message: string };
 
-async function loadSession(): Promise<Session> {
-  const res = await fetch(api("/api/plan"));
+async function getJson<T>(path: `/api/${string}`): Promise<T> {
+  const res = await fetch(api(path));
   if (res.status === 404) throw new Error("This review session does not exist or expired.");
   if (!res.ok) throw new Error(`Could not load the review (${res.status}).`);
-  const data = (await res.json()) as PlanResponse;
+  return (await res.json()) as T;
+}
+
+async function loadSession(): Promise<Session> {
+  const review = await getJson<ReviewResponse>("/api/review");
+  // The list of the version just read, not of one a revision put up in between.
+  const { files } = await getJson<{ files: FileEntry[] }>(`/api/files?v=${review.version}`);
+  const open = files.some((f) => f.path === review.open) ? review.open : (files[0]?.path ?? "");
   return {
-    mode: data.mode,
-    // Versions and anchors compare text line by line: one line ending.
-    markdown: data.plan.replace(/\r\n?/g, "\n"),
-    title: data.title || null,
-    previousPlan: data.previousPlan,
-    version: data.versionInfo.version,
-    totalVersions: data.versionInfo.totalVersions,
-    planRevision: data.planRevision ?? null,
+    mode: review.mode,
+    title: review.title || null,
+    open,
+    version: review.version,
+    versions: review.versions,
+    files,
   };
 }
 
