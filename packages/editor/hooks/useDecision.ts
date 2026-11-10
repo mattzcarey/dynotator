@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Annotation } from "@dynotator/ui/types";
 import { buildFeedback, type FeedbackInput } from "../feedback";
@@ -41,38 +41,35 @@ export function useDecision({
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
 
-  const run = useCallback(
-    async (send: () => Promise<Outcome>) => {
-      if (busyRef.current) return;
-      busyRef.current = true;
-      setBusy(true);
-      try {
-        const result = await send();
+  async function run(send: () => Promise<Outcome>): Promise<void> {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      const result = await send();
+      onDecided();
+      setOutcome(result);
+    } catch (error) {
+      if (error instanceof Refused && error.code === "plan_revised") {
+        toast("The plan was revised", {
+          description: "Nothing was sent. Load the new version, then decide again.",
+          duration: Infinity,
+          action: reload,
+        });
+      } else if (error instanceof Refused && error.code === "already_decided") {
         onDecided();
-        setOutcome(result);
-      } catch (error) {
-        if (error instanceof Refused && error.code === "plan_revised") {
-          toast("The plan was revised", {
-            description: "Nothing was sent. Load the new version, then decide again.",
-            duration: Infinity,
-            action: reload,
-          });
-        } else if (error instanceof Refused && error.code === "already_decided") {
-          onDecided();
-          setOutcome("taken");
-        } else {
-          toast.error("Could not send", {
-            description: error instanceof Error ? error.message : undefined,
-            action: { label: "Retry", onClick: () => void run(send) },
-          });
-        }
-      } finally {
-        busyRef.current = false;
-        setBusy(false);
+        setOutcome("taken");
+      } else {
+        toast.error("Could not send", {
+          description: error instanceof Error ? error.message : undefined,
+          action: { label: "Retry", onClick: () => void run(send) },
+        });
       }
-    },
-    [onDecided],
-  );
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
 
   const revision = () => (planRevision === null ? {} : { planRevision });
   const draftGeneration = () => ({ draftGeneration: getDraftGeneration() });

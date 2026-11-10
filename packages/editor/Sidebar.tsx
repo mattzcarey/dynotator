@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Block } from "@dynotator/ui/types";
-import { tocHeadings } from "@dynotator/ui/utils/annotationHelpers";
 import { buildHeadingSlugMap } from "@dynotator/ui/utils/slugify";
 import type { VersionEntry } from "./hooks/useVersions";
 
@@ -32,7 +31,10 @@ export function Sidebar({
   onNavigate: () => void;
 }) {
   const [view, setView] = useState<"toc" | "versions">("toc");
-  const headings = useMemo(() => tocHeadings(blocks), [blocks]);
+  const headings = useMemo(
+    () => blocks.filter((b) => b.type === "heading" && (b.level ?? 0) <= 3),
+    [blocks],
+  );
   const slugs = useMemo(() => buildHeadingSlugMap(blocks), [blocks]);
   useEffect(() => {
     if (view === "versions") onLoadVersions();

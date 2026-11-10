@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Annotation } from "@dynotator/ui/types";
 
 const DEBOUNCE_MS = 500;
@@ -39,17 +39,14 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
   /** A draft exists on the server (loaded or saved), so emptying it deletes it. */
   const storedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestRef = useRef(draft);
-  latestRef.current = draft;
-  const enabledRef = useRef(enabled);
-  enabledRef.current = enabled;
 
   useEffect(() => {
     fetch("/api/draft")
       .then(async (res) => {
         const data = (await res.json().catch(() => null)) as StoredDraft | null;
         const generation = generationOf(data?.draftGeneration);
-        if (generation !== null) generationRef.current = Math.max(generationRef.current, generation);
+        if (generation !== null)
+          generationRef.current = Math.max(generationRef.current, generation);
         if (!res.ok || !data || !Array.isArray(data.annotations)) return;
         const restored: Draft = { annotations: data.annotations };
         const count = restored.annotations.length;
@@ -64,51 +61,40 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
       });
   }, []);
 
-  const persist = useCallback((keepalive: boolean, retried = false): void => {
-    if (!enabledRef.current) return;
-    const { annotations } = latestRef.current;
-    const generation = ++generationRef.current;
-    if (annotations.length === 0) {
-      if (!storedRef.current) return;
-      storedRef.current = false;
-      void fetch(`/api/draft?generation=${generation}`, { method: "DELETE", keepalive }).catch(
-        () => {},
-      );
-      return;
-    }
-    storedRef.current = true;
-    const body: StoredDraft = {
-      annotations,
-      draftGeneration: generation,
-      ts: Date.now(),
-    };
-    void fetch("/api/draft", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      keepalive,
-    })
-      .then(async (res) => {
-        if (res.status !== 409 || retried) return;
-        // Another tab saved ahead of this one: adopt its generation and save again.
-        const data = (await res.json().catch(() => null)) as StoredDraft & { decided?: boolean };
-        const stale = generationOf(data?.draftGeneration);
-        if (data?.decided || stale === null || generationRef.current !== generation) return;
-        generationRef.current = Math.max(generationRef.current, stale);
-        persist(false, true);
+  const persist = useEffectEvent((keepalive: boolean): void => {
+    if (!enabled) return;
+    const { annotations } = draft;
+    const save = (retried: boolean) => {
+      const generation = ++generationRef.current;
+      if (annotations.length === 0) {
+        if (!storedRef.current) return;
+        storedRef.current = false;
+        void fetch(`/api/draft?generation=${generation}`, { method: "DELETE", keepalive }).catch(
+          () => {},
+        );
+        return;
+      }
+      storedRef.current = true;
+      const body: StoredDraft = { annotations, draftGeneration: generation, ts: Date.now() };
+      void fetch("/api/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        keepalive,
       })
-      .catch(() => {});
-  }, []);
-
-  const flush = useCallback(
-    (keepalive: boolean) => {
-      if (timerRef.current === null) return;
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-      persist(keepalive);
-    },
-    [persist],
-  );
+        .then(async (res) => {
+          if (res.status !== 409 || retried) return;
+          // Another tab saved ahead of this one: adopt its generation and save again.
+          const data = (await res.json().catch(() => null)) as StoredDraft & { decided?: boolean };
+          const stale = generationOf(data?.draftGeneration);
+          if (data?.decided || stale === null || generationRef.current !== generation) return;
+          generationRef.current = Math.max(generationRef.current, stale);
+          save(true);
+        })
+        .catch(() => {});
+    };
+    save(false);
+  });
 
   useEffect(() => {
     if (!enabled || !loadedRef.current) return;
@@ -117,10 +103,15 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
       timerRef.current = null;
       persist(false);
     }, DEBOUNCE_MS);
-  }, [draft.annotations, enabled, persist]);
+  }, [draft.annotations, enabled]);
 
   useEffect(() => {
-    const onHide = () => flush(true);
+    const onHide = () => {
+      if (timerRef.current === null) return;
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+      persist(true);
+    };
     const onVisibility = () => document.visibilityState === "hidden" && onHide();
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onHide);
@@ -129,7 +120,7 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
       window.removeEventListener("pagehide", onHide);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [flush]);
+  }, []);
 
   const restore = useCallback((): Draft | null => {
     const restored = offeredRef.current;

@@ -27,8 +27,7 @@ export interface VersionInfo {
   totalVersions: number;
 }
 
-const str = (value: unknown): string | null =>
-  typeof value === "string" && value ? value : null;
+const str = (value: unknown): string | null => (typeof value === "string" && value ? value : null);
 
 function parseVersionInfo(value: unknown): VersionInfo | null {
   const info = value as Partial<VersionInfo> | null;

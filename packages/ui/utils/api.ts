@@ -10,6 +10,7 @@ export function sessionBase(pathname: string = location.pathname): string {
   return match ? `/s/${match[1]}` : "";
 }
 
+/** `/api/...` under the current session's base. */
 export function apiUrl(path: string): string {
   return path.startsWith("/api/") || path === "/api" ? `${sessionBase()}${path}` : path;
 }
@@ -26,7 +27,7 @@ function rewrite(url: string): string {
   }
 }
 
-/** Route `fetch` and `EventSource` calls to `/api/...` through the session base. */
+/** Route `fetch` calls to `/api/...` through the session base. */
 export function installApiShim(): void {
   if (!sessionBase()) return;
   const nativeFetch = window.fetch.bind(window);
@@ -36,12 +37,4 @@ export function installApiShim(): void {
     const next = rewrite(input.url);
     return nativeFetch(next === input.url ? input : new Request(next, input), init);
   };
-  const NativeEventSource = window.EventSource;
-  if (NativeEventSource) {
-    window.EventSource = class extends NativeEventSource {
-      constructor(url: string | URL, init?: EventSourceInit) {
-        super(rewrite(String(url)), init);
-      }
-    };
-  }
 }

@@ -1,11 +1,21 @@
-import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Highlighter from "@plannotator/web-highlighter";
 import { AnnotationType, type Annotation, type Block } from "@dynotator/ui/types";
 import { BlockRenderer } from "@dynotator/ui/components/BlockRenderer";
 import { computeListIndices, groupBlocks } from "@dynotator/ui/utils/parser";
 import { buildHeadingSlugMap } from "@dynotator/ui/utils/slugify";
-import { resolveQuestionAnswers } from "@dynotator/ui/utils/questionAnswers";
+import { collectQuestionAnswers } from "@dynotator/ui/utils/questionAnswers";
 import { generateId } from "@dynotator/ui/utils/generateId";
+import { HIGHLIGHT_EVENT } from "@dynotator/ui/utils/codeHighlight";
 import { indexQuestionBlocks, type QuestionAnswer } from "@dynotator/shared/question-block";
 import { Composer } from "./Composer";
 
@@ -58,16 +68,17 @@ export function Document({
   const rootRef = useRef<HTMLElement>(null);
   const highlighterRef = useRef<Highlighter | null>(null);
   const paintedRef = useRef(new Set<string>());
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
+  const select = useEffectEvent((id: string) => onSelect(id));
   const [pending, setPending] = useState<Pending | null>(null);
+  // Bumped when a code block's highlighting replaced its markup (and any marks in it).
+  const [repaint, setRepaint] = useState(0);
 
   const slugs = useMemo(() => buildHeadingSlugMap(blocks), [blocks]);
   const questions = useMemo(() => {
     const list = indexQuestionBlocks(blocks);
     return { byBlock: new Map(list.map((q) => [q.blockId, q])), total: list.length };
   }, [blocks]);
-  const answers = useMemo(() => resolveQuestionAnswers(annotations), [annotations]);
+  const answers = useMemo(() => collectQuestionAnswers(annotations), [annotations]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -78,10 +89,13 @@ export function Document({
       wrapTag: "mark",
       style: { className: "annotation-highlight" },
     });
-    highlighter.on(Highlighter.event.CLICK, ({ id }: { id: string }) => onSelectRef.current(id));
+    highlighter.on(Highlighter.event.CLICK, ({ id }: { id: string }) => select(id));
     highlighterRef.current = highlighter;
     const painted = paintedRef.current;
+    const onHighlighted = () => setRepaint((n) => n + 1);
+    root.addEventListener(HIGHLIGHT_EVENT, onHighlighted);
     return () => {
+      root.removeEventListener(HIGHLIGHT_EVENT, onHighlighted);
       highlighter.dispose();
       highlighterRef.current = null;
       painted.clear();
@@ -96,7 +110,10 @@ export function Document({
     for (const ann of annotations) {
       if (!ann.startMeta || !ann.endMeta) continue;
       live.add(ann.id);
-      if (paintedRef.current.has(ann.id)) continue;
+      if (paintedRef.current.has(ann.id)) {
+        if (highlighter.getDoms(ann.id).length > 0) continue;
+        highlighter.remove(ann.id);
+      }
       try {
         highlighter.fromStore(ann.startMeta, ann.endMeta, ann.originalText, ann.id);
         highlighter.addClass(classFor(ann.type), ann.id);
@@ -110,7 +127,7 @@ export function Document({
       highlighter.remove(id);
       paintedRef.current.delete(id);
     }
-  }, [annotations]);
+  }, [annotations, repaint]);
 
   useEffect(() => {
     const highlighter = highlighterRef.current;
@@ -150,15 +167,18 @@ export function Document({
     highlighter.off(Highlighter.event.CREATE, capture);
     window.getSelection()?.removeAllRanges();
     setPending(null);
-    const source = created as { id: string; text: string; startMeta: unknown; endMeta: unknown } | null;
+    const source = created as {
+      id: string;
+      text: string;
+      startMeta: unknown;
+      endMeta: unknown;
+    } | null;
     if (!source) return;
     highlighter.addClass(classFor(type), source.id);
     paintedRef.current.add(source.id);
     onAdd({
       id: source.id,
       blockId: blockIdOf(pending.range.startContainer),
-      startOffset: 0,
-      endOffset: 0,
       type,
       text,
       originalText: source.text,
@@ -196,7 +216,10 @@ export function Document({
           const block = group.block;
           if (block.type === "code" && MERMAID_LANGUAGES.has(block.language ?? "")) {
             return (
-              <Suspense key={block.id} fallback={<pre className="my-5 text-xs">{block.content}</pre>}>
+              <Suspense
+                key={block.id}
+                fallback={<pre className="my-5 text-xs">{block.content}</pre>}
+              >
                 <Mermaid block={block} />
               </Suspense>
             );
@@ -250,8 +273,6 @@ export function globalComment(text: string): Annotation {
   return {
     id: generateId("global"),
     blockId: "",
-    startOffset: 0,
-    endOffset: 0,
     type: AnnotationType.GLOBAL_COMMENT,
     text,
     originalText: "",
@@ -275,8 +296,7 @@ function SelectionToolbar({
   }, [onClose]);
   const top = Math.max(8, rect.top - 44);
   const left = Math.min(Math.max(8, rect.left + rect.width / 2 - 120), window.innerWidth - 248);
-  const button =
-    "h-8 rounded-full px-3 text-xs font-medium transition-colors hover:bg-muted";
+  const button = "h-8 rounded-full px-3 text-xs font-medium transition-colors hover:bg-muted";
   return (
     <div
       role="toolbar"
@@ -285,7 +305,11 @@ function SelectionToolbar({
       style={{ top, left }}
       onMouseDown={(e) => e.preventDefault()}
     >
-      <button type="button" className={`${button} text-primary`} onClick={() => onAction("comment")}>
+      <button
+        type="button"
+        className={`${button} text-primary`}
+        onClick={() => onAction("comment")}
+      >
         Comment
       </button>
       <button

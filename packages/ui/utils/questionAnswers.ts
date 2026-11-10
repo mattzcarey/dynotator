@@ -1,10 +1,7 @@
 /**
- * Glue between `:::question` answers (`@dynotator/core/question-block`)
- * and the UI's `Annotation` list. An answer is ONE annotation carrying
- * `questionAnswer`, id `ann-question-<key>`, so drafts, reload, the panel and
- * host persistence carry it with no second store. These helpers are pure; a
- * host (or Plannotator's editor) calls `upsertQuestionAnswerAnnotation` from
- * the Viewer's `onAnswerQuestion` and stores the returned list.
+ * Glue between `:::question` answers and the `Annotation` list. An answer is
+ * one annotation carrying `questionAnswer` (id `ann-question-<key>`), so
+ * drafts and the decision carry it with no second store.
  */
 import {
   buildQuestionAnswerAnnotation,
@@ -45,33 +42,6 @@ export const collectQuestionAnswers = (
   return out;
 };
 
-/** The answers the cards draw, keyed by question key. A host that keeps its
- *  answers itself passes them (a Map or a plain object keyed by the
- *  de-duplicated question key) and they replace the annotation-derived ones
- *  outright; each entry is validated like any other reader, so a malformed
- *  one is dropped. Without host answers this is `collectQuestionAnswers`. */
-export const resolveQuestionAnswers = (
-  annotations: ReadonlyArray<Annotation>,
-  hostAnswers?:
-    | ReadonlyMap<string, QuestionAnswer>
-    | Readonly<Record<string, QuestionAnswer>>
-    | null,
-): Map<string, QuestionAnswer> => {
-  if (!hostAnswers) return collectQuestionAnswers(annotations);
-  const entries: Array<[string, unknown]> =
-    hostAnswers instanceof Map ? [...hostAnswers.entries()] : Object.entries(hostAnswers);
-  const out = new Map<string, QuestionAnswer>();
-  for (const [key, value] of entries) {
-    const answer = parseQuestionAnswer(value);
-    if (answer) out.set(key, answer);
-  }
-  return out;
-};
-
-/** Whether an annotation is a question answer (validated). */
-export const isQuestionAnswerAnnotation = (ann: Pick<Annotation, "questionAnswer">): boolean =>
-  ann.questionAnswer != null && parseQuestionAnswer(ann.questionAnswer) !== null;
-
 /**
  * Apply one `onAnswerQuestion(blockId, answer, key)` call to an annotation
  * list: replace the question's answer annotation in place (keeping its
@@ -93,7 +63,6 @@ export const upsertQuestionAnswerAnnotation = (
   }
   const existing = index === -1 ? undefined : annotations[index];
   const next = questionAnswerToAnnotation(blockId, valid, existing?.createdA);
-  if (existing?.author) next.author = existing.author;
   if (index === -1) return [...annotations, next];
   const copy = annotations.slice();
   copy[index] = next;
@@ -127,7 +96,7 @@ export interface QuestionPanelRow {
 const oneLine = (value: string): string => value.replace(/\s+/g, " ").trim();
 
 const answerSummary = (answer: QuestionAnswer): string => {
-  const parts = [...answer.selected.map(oneLine)];
+  const parts = answer.selected.map(oneLine);
   if (answer.other?.trim()) parts.push(`Other: ${oneLine(answer.other)}`);
   if (answer.text?.trim()) parts.push(oneLine(answer.text));
   return parts.join("; ");
@@ -194,37 +163,6 @@ export const buildQuestionPanelRows = (
     });
   }
   return rows;
-};
-
-/** Progress over the document's questions (orphaned answers excluded):
- *  `done` counts answered and settled questions, `total` every question. */
-export const questionProgress = (
-  rows: ReadonlyArray<QuestionPanelRow>,
-): { done: number; total: number } => {
-  const live = rows.filter((r) => !r.orphaned);
-  return {
-    done: live.filter((r) => r.status === "answered" || r.status === "settled").length,
-    total: live.length,
-  };
-};
-
-/**
- * The key of the next open question after `afterKey` in document order,
- * wrapping around; the first open question when `afterKey` is absent or not
- * a question. Null when no question is open (answered, settled and skipped
- * questions are not open).
- */
-export const nextOpenQuestionKey = (
-  rows: ReadonlyArray<QuestionPanelRow>,
-  afterKey?: string | null,
-): string | null => {
-  const live = rows.filter((r) => !r.orphaned);
-  const start = afterKey ? live.findIndex((r) => r.key === afterKey) : -1;
-  for (let step = 1; step <= live.length; step++) {
-    const row = live[(start + step) % live.length];
-    if (row.status === "open") return row.key;
-  }
-  return null;
 };
 
 /** Scroll a question card into view and focus its first control (the

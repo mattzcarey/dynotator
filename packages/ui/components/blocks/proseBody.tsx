@@ -20,11 +20,7 @@ export function renderProseBody(args: {
     listClassName = "text-[15px] leading-relaxed text-foreground/90",
   } = args;
 
-  const inline = (text: string) => (
-    <InlineMarkdown
-      text={text}
-    />
-  );
+  const inline = (text: string) => <InlineMarkdown text={text} />;
 
   const lines = body.split("\n");
   const out: React.ReactNode[] = [];

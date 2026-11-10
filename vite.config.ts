@@ -22,10 +22,6 @@ export default defineConfig({
         find: "shiki/wasm",
         replacement: path.resolve(import.meta.dirname, "app/shiki-wasm-stub.ts"),
       },
-      {
-        find: "@dynotator/ui/theme-modes",
-        replacement: path.join(pkgDir("ui"), "components/themeModes.tsx"),
-      },
       { find: /^@dynotator\/editor$/, replacement: path.join(pkgDir("editor"), "App.tsx") },
       {
         find: /^@dynotator\/(ui|core|shared|editor)\//,

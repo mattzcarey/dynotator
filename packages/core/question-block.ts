@@ -539,10 +539,6 @@ const hash8 = (value: string): string => {
   return (h >>> 0).toString(16).padStart(8, "0");
 };
 
-/** The same FNV-1a hash the question keys use, for a host's own block keys
- *  (the Plannotator Inbox's `:::action`, `a-` + 8 hex). */
-export const blockKeyHash8 = (value: string): string => hash8(value);
-
 /** `q-` + hash8(kind + "\n" + normalized prompt). Stable across plan versions
  *  while the prompt is unchanged and independent of block ids; a reworded
  *  prompt is a new question. */
@@ -897,28 +893,6 @@ export const questionLabelWithoutImage = (label: string): string | null => {
     .trim();
   const plain = rest || m[1].trim();
   return plain && plain !== label ? plain : null;
-};
-
-/**
- * A task-list choice's text (what follows `- [ ] `) read as this parser reads
- * it: the label split from the description (never inside an image), then
- * the picture taken out. The Plannotator Inbox reads a record stored by an
- * older parser through it: a dash inside an image's alt text used to split
- * the label there (`![Drawer A - closest](a.png) Drawer A` was stored as the
- * label `![Drawer A`).
- */
-export const parseQuestionChoiceText = (
-  raw: string,
-): { label: string; description?: string; image?: QuestionChoiceImage } => {
-  const split = splitLabel(raw);
-  const choice: QuestionChoice = { ...split, settled: false, recommended: false };
-  const picture = split.label ? pictureChoice(choice) : null;
-  const out = picture ?? choice;
-  return {
-    label: out.label,
-    ...(out.description ? { description: out.description } : {}),
-    ...(out.image ? { image: out.image } : {}),
-  };
 };
 
 /** A choice read as a picture choice: its first image (in the label first,
@@ -1633,29 +1607,6 @@ export const findDirectiveBlocks = (
   return out;
 };
 
-/**
- * Every top-level line of a markdown document that the block splitter reads
- * as an ordinary line: not inside a code fence, display math, a directive's
- * body or a raw HTML block, and not a directive's opener (the walk
- * `findDirectiveBlocks` makes, so the two cannot differ). `lineNumber` is
- * the line's 1-based line in `markdown`. For a host that checks lines the
- * parser leaves as text (the Plannotator Inbox's `:::question {#x}` warning).
- *
- * `line` is the parser's processed text, not the source line: link
- * references are resolved, and after a display math block that closes
- * mid-line it is only the text after the close. Read the source line by
- * `lineNumber` when the exact text matters.
- *
- * @internal Not part of the published grammar; it may change with the walk.
- */
-export const forEachTopLevelLine = (
-  markdown: string,
-  options: { frontmatter?: boolean } = {},
-  visit: (line: string, lineNumber: number) => void,
-): void => {
-  walkTopLevelLines(markdown, options, { line: visit });
-};
-
 /** The block splitter's top-level walk: directives to `directive`, every other line it reads as one line to `line`. */
 function walkTopLevelLines(
   markdown: string,
@@ -2039,7 +1990,7 @@ export const formatQuestionAnswerLines = (
         ? `Answer (already settled in the document):\n${labels.map((l) => `- ${l}\n`).join("")}`
         : `Answer: ${labels[0]} (already settled in the document)\n`;
   }
-  const picks = [...answer.selected.map(oneLine)];
+  const picks = answer.selected.map(oneLine);
   if (answer.other?.trim()) picks.push(`Other: ${oneLine(answer.other)}`);
   if (answer.text?.trim()) {
     out += `Answer${rec}:\n> ${answer.text.trim().replace(/\r?\n/g, "\n> ")}\n`;
@@ -2233,42 +2184,3 @@ export const buildQuestionAnswerAnnotation = (
   createdA,
   questionAnswer: answer,
 });
-
-// ───────────────────────── Authoring guide ─────────────────────────
-
-/**
- * The syntax reference as one string, for a host's agent prompts. Plannotator
- * writes its own skill text from this same source.
- */
-export const QUESTION_AUTHORING_GUIDE = `## Asking the reviewer questions
-
-Ask what only the reviewer can decide as a question block. Answers come back at the top of their feedback ("Answers to your questions", then "Unanswered").
-
-\`\`\`markdown
-:::question
-Where should we keep the edit that loses a sync conflict?
-
-When two devices edit one note offline, the later save wins and the other is lost. Local storage keeps it with no server work.
-
-- [ ] Nowhere — silent loss, as today
-- [ ] Local only, purged after 30 days — cheap
-- [ ] Server-side per user — survives reinstall, needs a retention policy
-
-Recommended: Local only, purged after 30 days
-:::
-\`\`\`
-
-- \`:::question\` picks one choice, \`:::question-multi\` any number, \`:::question-text\` free text (so does a block with no choices).
-- The first line is the question; the lines after it are context. Never send a bare question: the reviewer switches in cold, thinks at the level of the product, and does not know what you know.
-  - Say what the choice affects, what you know or tried, and why you recommend it, so they can decide without opening anything else.
-  - Be terse: one to three short sentences, plain words, no jargon or internal names.
-  - Add a screenshot (\`![alt](path)\`) for anything visual.
-  - Link a file that shows it better (a plan, a mock): \`[the mock](mock.html)\`. In the Inbox, attach it too; the link opens it beside the thread.
-- Choices: \`- [ ] label\`, optionally \`- [ ] label — why\`, in natural order. The reviewer can also answer "Other", add a note, or skip.
-- \`Recommended: <label>\` marks yours (\`A, B and C\` on \`:::question-multi\`); other text is one more answer, tagged Recommended. Never move yours first.
-- Ask only what you cannot decide alone, about 8 a round. Do not ask rhetorical questions or questions the codebase answers.
-- \`- [x]\` marks a settled choice. On resubmit, check the chosen answer, or drop the block and state the decision in prose.
-- Leave blank lines between the parts so the block reads well on GitHub.
-- Each answer comes back under its question (\`### Q2. <question> (line N)\`) as \`Answer: <choice>\`, marked \`(your recommendation)\` when the reviewer took yours, or as \`Other: …\`, free text in a quote, or \`Skipped\`, plus any \`Note:\`. A question you marked \`- [x]\` is settled and only comes back if the reviewer changed it or added a note.
-- In the Inbox, withdraw your own questions that are still open (read_thread state \`open\` or \`picked\`) as the thread moves on: when a newer message replaces them, makes them moot or follows up on them, or the person's reply settled them in words, name them in \`supersedes\` (or a \`Replaces:\` line) so they stop keeping the thread at the top of the person's list.
-`;

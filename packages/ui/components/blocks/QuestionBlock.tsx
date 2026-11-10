@@ -99,7 +99,6 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   const contextId = `q-context-${uid}`;
   const [noteToggled, setNoteToggled] = useState<boolean | null>(null);
   const noteOpen = noteToggled ?? !!answer?.note?.trim();
-  const [tradeoffsOpen, setTradeoffsOpen] = useState(false);
   const [otherFocused, setOtherFocused] = useState(false);
   const pressRef = useRef<{ x: number; y: number; touch: boolean } | null>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -143,7 +142,9 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
     if (multi) {
       const order = question.choices.map((c) => c.label);
       const next = (
-        checked ? [...selected.filter((l) => l !== label), label] : selected.filter((l) => l !== label)
+        checked
+          ? [...selected.filter((l) => l !== label), label]
+          : selected.filter((l) => l !== label)
       ).sort((a, b) => order.indexOf(a) - order.indexOf(b));
       commit({ ...rest, selected: next });
     } else if (checked) {
@@ -215,8 +216,6 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   const eyebrow = `Question${number > 0 ? ` ${number} of ${total}` : ""}${multi ? " · pick any" : ""}`;
   const groupName = `question-${uid}`;
   const inputType = multi ? "checkbox" : "radio";
-  const hasTradeoffs =
-    question.kind !== "text" && question.choices.some((c) => c.pros?.length || c.cons?.length);
 
   return (
     <fieldset
@@ -368,7 +367,10 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
           )}
           {(!readOnly || other.trim()) && (
             <div className="flex items-center gap-2.5 rounded-[7px] px-[9px] py-[5px]">
-              <span aria-hidden="true" className="annotation-exclude w-[15px] text-center text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className="annotation-exclude w-[15px] text-center text-muted-foreground"
+              >
                 +
               </span>
               <input
@@ -394,39 +396,6 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
           </span>{" "}
           {inline(question.why)}
         </p>
-      )}
-
-      {hasTradeoffs && (
-        <div className="annotation-exclude">
-          <button
-            type="button"
-            className="-ml-1.5 mt-1.5 rounded-lg px-1.5 py-[3px] text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-expanded={tradeoffsOpen}
-            onClick={() => setTradeoffsOpen((open) => !open)}
-          >
-            {tradeoffsOpen ? "▾" : "▸"} Trade-offs
-          </button>
-          {tradeoffsOpen && (
-            <table className="mt-1 w-full text-left text-[12.5px] leading-[1.45]">
-              <thead>
-                <tr className="text-foreground/85">
-                  <th className="pr-3 font-semibold">Option</th>
-                  <th className="pr-3 font-semibold">Pros</th>
-                  <th className="font-semibold">Cons</th>
-                </tr>
-              </thead>
-              <tbody className="align-top text-muted-foreground">
-                {question.choices.map((c, i) => (
-                  <tr key={`${i}:${c.label}`}>
-                    <td className="pr-3 font-[550] text-foreground">{inline(c.label)}</td>
-                    <td className="pr-3">{c.pros?.length ? inline(c.pros.join("; ")) : "-"}</td>
-                    <td>{c.cons?.length ? inline(c.cons.join("; ")) : "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
       )}
 
       {noteOpen && (!readOnly || !!answer?.note?.trim()) && (

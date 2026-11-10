@@ -199,7 +199,7 @@ function buildTagCloseIndex(lines: string[], tagName: string): TagCloseIndex {
   const openRe = new RegExp(`<${tagName}(?:\\s|>|/|$)`, "gi");
   const closeRe = new RegExp(`</${tagName}\\s*>`, "gi");
   const n = lines.length;
-  const augmented = new Array<number>(n + 1);
+  const augmented = Array.from<number>({ length: n + 1 });
   augmented[0] = 0;
   let running = 0;
   for (let k = 0; k < n; k++) {
@@ -207,7 +207,7 @@ function buildTagCloseIndex(lines: string[], tagName: string): TagCloseIndex {
     running -= (lines[k].match(closeRe) || []).length;
     augmented[k + 1] = running;
   }
-  const nextAtOrBelow = new Array<number>(n + 1).fill(-1);
+  const nextAtOrBelow = Array.from<number>({ length: n + 1 }).fill(-1);
   const stack: number[] = [];
   for (let m = n; m >= 0; m--) {
     while (stack.length && augmented[stack[stack.length - 1]] > augmented[m]) stack.pop();
@@ -276,7 +276,7 @@ export function findHtmlBlockEnd(
 }
 
 export const markProtectedLines = (lines: string[]): boolean[] => {
-  const isProtected = new Array<boolean>(lines.length).fill(false);
+  const isProtected = Array.from<boolean>({ length: lines.length }).fill(false);
   let fenceLen = 0; // 0 = not currently inside a fence
   const closeCache = new Map<string, TagCloseIndex>();
   for (let i = 0; i < lines.length; i++) {
@@ -488,7 +488,7 @@ export const resolveReferenceLinks = (markdown: string): string => {
   // The normalized label a definition-shaped line defines, or null if the
   // line isn't a definition (or is a footnote definition, which is never
   // collected/blanked).
-  const defLabelByLine = new Array<string | null>(lines.length).fill(null);
+  const defLabelByLine = Array.from<string | null>({ length: lines.length }).fill(null);
   // A definition cannot interrupt a paragraph (CommonMark 4.7): a line matching
   // the definition shape is only a definition when it can start a block, i.e.
   // the previous line is the document start, blank, a protected code/HTML

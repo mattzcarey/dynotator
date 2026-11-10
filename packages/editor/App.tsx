@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { Toaster } from "sonner";
 import type { Annotation } from "@dynotator/ui/types";
 import { parseMarkdownToBlocks } from "@dynotator/ui/utils/parser";
@@ -108,18 +108,15 @@ function Review({ session }: { session: Session }) {
   };
 
   // Mod+Enter: the primary decision.
-  const primary = plan
-    ? () => decision.approve(feedback)
-    : () => decision.sendFeedback(feedback);
-  const primaryRef = React.useRef(primary);
-  primaryRef.current = primary;
+  const primary = plan ? () => decision.approve(feedback) : () => decision.sendFeedback(feedback);
+  const onPrimaryKey = useEffectEvent(primary);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey) || e.defaultPrevented) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest("textarea, input, [contenteditable='true']")) return;
       e.preventDefault();
-      primaryRef.current();
+      onPrimaryKey();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -137,7 +134,13 @@ function Review({ session }: { session: Session }) {
           onClick={() => setSidebarOpen((open) => !open)}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <svg
+            className="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h10" />
           </svg>
         </button>
@@ -171,7 +174,14 @@ function Review({ session }: { session: Session }) {
               onClick={() => setComposer("changes")}
               className={`${button} border border-border hover:bg-muted`}
             >
-              {answersOnly ? "Send answers" : "Request changes"}
+              {answersOnly ? (
+                "Send answers"
+              ) : (
+                <>
+                  <span className="sm:hidden">Changes</span>
+                  <span className="hidden sm:inline">Request changes</span>
+                </>
+              )}
             </button>
             <button
               type="button"
@@ -205,6 +215,19 @@ function Review({ session }: { session: Session }) {
       </header>
 
       <div className="relative flex min-h-0 flex-1">
+        {(sidebarOpen || panelOpen) && (
+          // Narrow screens: the open sidebar or panel covers the page; a tap beside it closes it.
+          <button
+            type="button"
+            aria-label="Dismiss"
+            tabIndex={-1}
+            className={`absolute inset-0 z-20 bg-black/20 ${sidebarOpen ? "xl:hidden" : "lg:hidden"}`}
+            onClick={() => {
+              if (window.innerWidth < 1280) setSidebarOpen(false);
+              if (window.innerWidth < 1024) setPanelOpen(false);
+            }}
+          />
+        )}
         {sidebarOpen && (
           <aside className="absolute inset-y-0 left-0 z-30 w-72 border-r border-border bg-card shadow-xl xl:static xl:w-64 xl:shadow-none">
             <Sidebar
@@ -224,7 +247,7 @@ function Review({ session }: { session: Session }) {
         <main className="min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[860px] px-2 py-3 md:px-6 md:py-8">
             {diffActive && versions.diff && versions.base !== null ? (
-              <DiffView blocks={versions.diff.blocks} baseVersion={versions.base} />
+              <DiffView entries={versions.diff} baseVersion={versions.base} />
             ) : (
               <Document
                 blocks={blocks}
@@ -292,8 +315,8 @@ function Review({ session }: { session: Session }) {
       {draft.offer && (
         <div className="fixed inset-x-0 bottom-4 z-[95] mx-auto flex w-[min(28rem,calc(100%-1rem))] items-center gap-3 rounded-xl border border-border bg-popover p-3 shadow-xl">
           <p className="flex-1 text-xs">
-            {draft.offer.count} unsent {draft.offer.count === 1 ? "annotation" : "annotations"}{" "}
-            from {draft.offer.timeAgo}.
+            {draft.offer.count} unsent {draft.offer.count === 1 ? "annotation" : "annotations"} from{" "}
+            {draft.offer.timeAgo}.
           </p>
           <button type="button" onClick={draft.dismiss} className={`${button} hover:bg-muted`}>
             Discard

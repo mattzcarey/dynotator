@@ -70,7 +70,7 @@ export interface BlockquoteBlockProps {
  * QuestionContext rule). A `:::question` written inside a quote is not a
  * question block (`findQuestionBlocks` agrees): it renders as a callout.
  */
-export const BlockquoteBlock: React.FC<BlockquoteBlockProps> = ({ block, ...inlineProps }) => {
+export const BlockquoteBlock: React.FC<BlockquoteBlockProps> = ({ block }) => {
   const depth = useContext(QuoteDepthContext);
   // Past the cap the content is not parsed again: it renders as prose text,
   // its remaining `>` markers included.
@@ -90,7 +90,7 @@ export const BlockquoteBlock: React.FC<BlockquoteBlockProps> = ({ block, ...inli
       <blockquote className={BLOCKQUOTE_CLASS_NAME} data-block-id={block.id}>
         {paragraphs.map((para, i) => (
           <p key={i} className={i > 0 ? "mt-2" : ""}>
-            <InlineMarkdown text={para} {...inlineProps} />
+            <InlineMarkdown text={para} />
           </p>
         ))}
       </blockquote>
@@ -100,11 +100,11 @@ export const BlockquoteBlock: React.FC<BlockquoteBlockProps> = ({ block, ...inli
   return (
     <blockquote className={`${BLOCKQUOTE_CLASS_NAME} pn-quote-body`} data-block-id={block.id}>
       {/* React hoists this into <head> once for every quote. */}
-      <style href="plannotator-quote-body" precedence="default">
+      <style href="dynotator-quote-body" precedence="default">
         {QUOTE_BODY_CSS}
       </style>
       <QuoteDepthContext.Provider value={depth + 1}>
-        <QuoteBody inner={inner} {...inlineProps} />
+        <QuoteBody inner={inner} />
       </QuoteDepthContext.Provider>
     </blockquote>
   );
@@ -116,7 +116,6 @@ const anonymous = (block: Block): Block => ({ ...block, id: undefined as unknown
 
 const QuoteBody: React.FC<Omit<BlockquoteBlockProps, "block"> & { inner: Block[] }> = ({
   inner,
-  ...inlineProps
 }) => (
   <>
     {groupBlocks(inner).map((group, i) => {
@@ -125,12 +124,7 @@ const QuoteBody: React.FC<Omit<BlockquoteBlockProps, "block"> & { inner: Block[]
         return (
           <div key={`l-${i}`} data-quote-list="">
             {group.blocks.map((block, j) => (
-              <BlockRenderer
-                key={j}
-                block={anonymous(block)}
-                orderedIndex={indices[j]}
-                {...inlineProps}
-              />
+              <BlockRenderer key={j} block={anonymous(block)} orderedIndex={indices[j]} />
             ))}
           </div>
         );
@@ -141,7 +135,7 @@ const QuoteBody: React.FC<Omit<BlockquoteBlockProps, "block"> & { inner: Block[]
         // without a fence beside it.
         return (
           <p key={`b-${i}`}>
-            <InlineMarkdown text={block.content} {...inlineProps} />
+            <InlineMarkdown text={block.content} />
           </p>
         );
       }
@@ -156,11 +150,10 @@ const QuoteBody: React.FC<Omit<BlockquoteBlockProps, "block"> & { inner: Block[]
             containerClassName={`directive directive-${kind} my-4 px-4 py-3 rounded-md border`}
             blockType="directive"
             kindAttribute={kind}
-            {...inlineProps}
           />
         );
       }
-      return <BlockRenderer key={`b-${i}`} block={anonymous(block)} {...inlineProps} />;
+      return <BlockRenderer key={`b-${i}`} block={anonymous(block)} />;
     })}
   </>
 );
@@ -176,15 +169,15 @@ export const calloutNeedsBlocks = (inner: readonly Block[]): boolean =>
  */
 export const CalloutBlocks: React.FC<
   Omit<BlockquoteBlockProps, "block"> & { inner: Block[]; className?: string }
-> = ({ inner, className, ...inlineProps }) => {
+> = ({ inner, className }) => {
   const depth = useContext(QuoteDepthContext);
   return (
     <div className={className ? `pn-quote-body ${className}` : "pn-quote-body"}>
-      <style href="plannotator-quote-body" precedence="default">
+      <style href="dynotator-quote-body" precedence="default">
         {QUOTE_BODY_CSS}
       </style>
       <QuoteDepthContext.Provider value={depth + 1}>
-        <QuoteBody inner={inner} {...inlineProps} />
+        <QuoteBody inner={inner} />
       </QuoteDepthContext.Provider>
     </div>
   );

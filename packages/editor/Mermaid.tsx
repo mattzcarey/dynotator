@@ -22,6 +22,9 @@ export default function Mermaid({ block }: { block: Block }) {
       mermaid.initialize({
         startOnLoad: false,
         securityLevel: "strict",
+        // Labels as SVG text: the sanitizer below drops HTML inside foreignObject.
+        htmlLabels: false,
+        flowchart: { htmlLabels: false },
         theme: resolvedMode === "dark" ? "dark" : "neutral",
       });
       initializedFor = resolvedMode;
@@ -34,7 +37,8 @@ export default function Mermaid({ block }: { block: Block }) {
         setError(null);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not draw the diagram.");
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : "Could not draw the diagram.");
       });
     return () => {
       cancelled = true;

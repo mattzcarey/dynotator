@@ -36,9 +36,3 @@ export function sliceText(text: string, max: number): string {
   const last = text.charCodeAt(max - 1);
   return text.slice(0, last >= 0xd800 && last <= 0xdbff ? max - 1 : max);
 }
-
-/** `text` when it fits in `max` code units, else its start and "…", together at most `max`, never ending inside a character. */
-export function cutText(text: string, max: number, ellipsis = "…"): string {
-  if (text.length <= max) return text;
-  return `${sliceText(text, max - ellipsis.length)}${ellipsis}`;
-}

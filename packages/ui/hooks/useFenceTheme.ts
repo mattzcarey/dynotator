@@ -1,7 +1,6 @@
 import { useTheme } from "../components/ThemeProvider";
-import { SYNTAX_THEME } from "../utils/syntaxTheme";
 
-/** The Shiki theme code snippets render in right now; re-renders on a mode change. */
+/** The Shiki theme code fences render in, one per mode. */
 export function useFenceTheme(): string {
-  return SYNTAX_THEME[useTheme().resolvedMode];
+  return useTheme().resolvedMode === "dark" ? "vitesse-dark" : "vitesse-light";
 }

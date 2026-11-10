@@ -41,7 +41,7 @@ const QUESTION_CONTEXT_CSS = `
 export const QuestionContext: React.FC<{
   id: string;
   markdown: string;
-}> = ({ id, markdown, ...inlineProps }) => {
+}> = ({ id, markdown }) => {
   const groups = useMemo((): Array<
     { list: Block[]; indices: (number | null)[] } | { block: Block }
   > => {
@@ -62,23 +62,18 @@ export const QuestionContext: React.FC<{
       data-question-part="context"
     >
       {/* React hoists this into <head> once for every card. */}
-      <style href="plannotator-question-context" precedence="default">
+      <style href="dynotator-question-context" precedence="default">
         {QUESTION_CONTEXT_CSS}
       </style>
       {groups.map((group, i) =>
         "list" in group ? (
           <div key={`l-${i}`} data-question-context-list="">
             {group.list.map((block, j) => (
-              <BlockRenderer
-                key={j}
-                block={block}
-                orderedIndex={group.indices[j]}
-                {...inlineProps}
-              />
+              <BlockRenderer key={j} block={block} orderedIndex={group.indices[j]} />
             ))}
           </div>
         ) : (
-          <BlockRenderer key={`b-${i}`} block={group.block} {...inlineProps} />
+          <BlockRenderer key={`b-${i}`} block={group.block} />
         ),
       )}
     </div>

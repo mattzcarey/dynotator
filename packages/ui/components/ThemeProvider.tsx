@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { storage } from "../utils/storage";
 import { parseThemeMode, type Mode } from "./themeModes";
 
 export type { Mode } from "./themeModes";
@@ -8,6 +7,15 @@ export type { Mode } from "./themeModes";
 export const THEME_STORAGE_KEY = "dynotator-theme";
 
 type ResolvedMode = "dark" | "light";
+
+function readCookie(): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${THEME_STORAGE_KEY}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function writeCookie(value: string): void {
+  document.cookie = `${THEME_STORAGE_KEY}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
+}
 
 type ThemeProviderState = {
   mode: Mode;
@@ -50,9 +58,7 @@ function enableTransitionsSoon(): void {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<Mode>(() =>
-    parseThemeMode(storage.getItem(THEME_STORAGE_KEY), "system"),
-  );
+  const [mode, setModeState] = useState<Mode>(() => parseThemeMode(readCookie(), "system"));
   const [system, setSystem] = useState<ResolvedMode>(systemMode);
 
   useEffect(enableTransitionsSoon, []);
@@ -70,7 +76,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   if (typeof document !== "undefined") applyMode(resolvedMode);
 
   const setMode = useCallback((next: Mode) => {
-    storage.setItem(THEME_STORAGE_KEY, next);
+    writeCookie(next);
     setModeState(next);
   }, []);
 

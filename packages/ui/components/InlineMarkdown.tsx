@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo } from "react";
+import React, { createContext, useContext } from "react";
 import { transformPlainText } from "../utils/inlineTransforms";
 
 const DANGEROUS_PROTOCOL = /^\s*(javascript|data|vbscript|file)\s*:/i;
@@ -164,7 +164,6 @@ function emitPlainTextWithBareUrls(
   }
 }
 
-
 /**
  * Forge comment text (a GitHub issue, PR or comment body) shows every newline
  * as a line break. Provided by `RenderedMarkdown`'s `softLineBreaks` prop;
@@ -230,7 +229,7 @@ export const InlineMarkdown: React.FC<{
     }
 
     // Backslash escaping: \. \* \_ \` \[ \~ \$ etc. — emit literal char, hide backslash
-    match = remaining.match(/^\\([\\*_`\[\]~!.()\-#>+|{}&$])/);
+    match = remaining.match(/^\\([\\*_`[\]~!.()\-#>+|{}&$])/);
     if (match) {
       parts.push(match[1]);
       remaining = remaining.slice(2);
@@ -350,9 +349,7 @@ export const InlineMarkdown: React.FC<{
     if (match) {
       parts.push(
         <del key={key++}>
-          <InlineMarkdown
-            text={match[1]}
-          />
+          <InlineMarkdown text={match[1]} />
         </del>,
       );
       remaining = remaining.slice(match[0].length);
@@ -366,9 +363,7 @@ export const InlineMarkdown: React.FC<{
       parts.push(
         <strong key={key++} className="font-semibold">
           <em>
-            <InlineMarkdown
-              text={match[1]}
-            />
+            <InlineMarkdown text={match[1]} />
           </em>
         </strong>,
       );
@@ -382,9 +377,7 @@ export const InlineMarkdown: React.FC<{
     if (match) {
       parts.push(
         <strong key={key++} className="font-semibold">
-          <InlineMarkdown
-            text={match[1]}
-          />
+          <InlineMarkdown text={match[1]} />
         </strong>,
       );
       remaining = remaining.slice(match[0].length);
@@ -397,9 +390,7 @@ export const InlineMarkdown: React.FC<{
     if (match) {
       parts.push(
         <em key={key++}>
-          <InlineMarkdown
-            text={match[1]}
-          />
+          <InlineMarkdown text={match[1]} />
         </em>,
       );
       remaining = remaining.slice(match[0].length);
@@ -413,9 +404,7 @@ export const InlineMarkdown: React.FC<{
     if (match) {
       parts.push(
         <em key={key++}>
-          <InlineMarkdown
-            text={match[1]}
-          />
+          <InlineMarkdown text={match[1]} />
         </em>,
       );
       remaining = remaining.slice(match[0].length);
@@ -628,12 +617,7 @@ export const InlineMarkdown: React.FC<{
     if (match && match.index !== undefined) {
       const before = remaining.slice(0, match.index);
       if (before) {
-        parts.push(
-          <InlineMarkdown
-            key={key++}
-            text={before}
-          />,
-        );
+        parts.push(<InlineMarkdown key={key++} text={before} />);
       }
       parts.push(<br key={key++} />);
       remaining = remaining.slice(match.index + match[0].length);
@@ -648,7 +632,7 @@ export const InlineMarkdown: React.FC<{
     // detected inline via emitPlainTextWithBareUrls() below.
     const nextSpecial = remaining
       .slice(1)
-      .search(softLineBreaks ? /[\*_`\[!~\\<#@$\n]/ : /[\*_`\[!~\\<#@$]/);
+      .search(softLineBreaks ? /[*_`[!~\\<#@$\n]/ : /[*_`[!~\\<#@$]/);
     // A bare URL that starts inside this plain-text chunk and runs past its
     // end would be cut there, and `_`, `~`, `#`, `@`, `$` and `!` all end a
     // chunk (`…/w/ws_01…` rendered a link to `…/w/ws`). Stop the chunk where

@@ -34,7 +34,15 @@ export const BlockRenderer: React.FC<{
   questionTotal?: number;
   questionAnswer?: QuestionAnswer;
   onAnswerQuestion?: QuestionBlockProps["onAnswer"];
-}> = ({ block, orderedIndex, headingAnchorId, question, questionTotal, questionAnswer, onAnswerQuestion }) => {
+}> = ({
+  block,
+  orderedIndex,
+  headingAnchorId,
+  question,
+  questionTotal,
+  questionAnswer,
+  onAnswerQuestion,
+}) => {
   switch (block.type) {
     case "heading": {
       const Tag = `h${block.level || 1}` as React.ElementType;
@@ -51,30 +59,18 @@ export const BlockRenderer: React.FC<{
           data-block-id={block.id}
           data-block-type="heading"
         >
-          <InlineMarkdown
-            text={block.content}
-          />
+          <InlineMarkdown text={block.content} />
         </Tag>
       );
     }
 
     case "blockquote": {
       if (block.alertKind) {
-        return (
-          <AlertBlock
-            blockId={block.id}
-            kind={block.alertKind}
-            body={block.content}
-          />
-        );
+        return <AlertBlock blockId={block.id} kind={block.alertKind} body={block.content} />;
       }
       // One quote whatever it holds: its content is the quote's own markdown
       // (paragraphs, code fences, lists, nested quotes), see BlockquoteBlock.
-      return (
-        <BlockquoteBlock
-          block={block}
-        />
-      );
+      return <BlockquoteBlock block={block} />;
     }
 
     case "list-item": {
@@ -103,14 +99,10 @@ export const BlockRenderer: React.FC<{
     }
 
     case "code":
-      return <CodeBlock block={block} isHovered={false} />;
+      return <CodeBlock block={block} />;
 
     case "table":
-      return (
-        <TableBlock
-          block={block}
-        />
-      );
+      return <TableBlock block={block} />;
 
     case "math":
       return (
@@ -128,9 +120,7 @@ export const BlockRenderer: React.FC<{
       );
 
     case "html":
-      return (
-        <HtmlBlock block={block} />
-      );
+      return <HtmlBlock block={block} />;
 
     case "directive": {
       const kind = block.directiveKind || "note";
@@ -163,17 +153,8 @@ export const BlockRenderer: React.FC<{
 
     default:
       return (
-        <p
-          className="mb-4 leading-relaxed text-foreground/90 text-[15px]"
-          data-block-id={block.id}
-          // Blank lines the person typed (parse option keepBlankLines): N lines in all. This margin collapses with the
-          // previous block's bottom margin (mb-4), so the gap is max(the two), i.e. N lines, not N lines plus 1rem.
-          style={block.blankLinesBefore ? { marginTop: `${block.blankLinesBefore}lh` } : undefined}
-          data-blank-lines={block.blankLinesBefore}
-        >
-          <InlineMarkdown
-            text={block.content}
-          />
+        <p className="mb-4 leading-relaxed text-foreground/90 text-[15px]" data-block-id={block.id}>
+          <InlineMarkdown text={block.content} />
         </p>
       );
   }

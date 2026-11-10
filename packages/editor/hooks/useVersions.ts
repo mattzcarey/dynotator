@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { computePlanDiff } from "@dynotator/ui/utils/planDiffEngine";
+import { diffPlans } from "../planDiff";
 
 export interface VersionEntry {
   version: number;
@@ -35,10 +35,7 @@ export function useVersions(current: string, version: number, previousPlan: stri
     setBase({ version: data.version, plan: data.plan });
   }, []);
 
-  const diff = useMemo(
-    () => (base ? computePlanDiff(base.plan, current) : null),
-    [base, current],
-  );
+  const diff = useMemo(() => (base ? diffPlans(base.plan, current) : null), [base, current]);
 
   return { base: base?.version ?? null, diff, versions, loadVersions, selectBase };
 }
