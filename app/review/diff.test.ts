@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from "vitest";
 import { diffPlans } from "./diff";
 
 const shape = (oldText: string, newText: string) =>
