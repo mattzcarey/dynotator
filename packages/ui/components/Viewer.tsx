@@ -119,7 +119,7 @@ import { isMermaidLanguage } from "./diagramLanguages";
 import { getIdentity } from "../utils/identity";
 import { type QuickLabel } from "../utils/quickLabels";
 import type { MentionSource } from "../utils/mentions";
-import { DocBadges, type DocBadgesProps, type LinkedDocBadgeInfo } from "./DocBadges";
+import { DocBadges, type DocBadgesProps } from "./DocBadges";
 import { legacyBadgesMaxWidth } from "./docBadgesWidth";
 import { PinpointOverlay } from "./PinpointOverlay";
 import { usePinpoint } from "../hooks/usePinpoint";

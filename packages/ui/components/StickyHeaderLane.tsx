@@ -66,7 +66,6 @@ export interface StickyHeaderLaneProps {
   sticky?: boolean;
 
   // Badge state
-  repoInfo?: { display: string; branch?: string } | null;
   planDiffStats?: PlanDiffStats | null;
   isPlanDiffActive?: boolean;
   hasPreviousVersion?: boolean;
@@ -74,11 +73,6 @@ export interface StickyHeaderLaneProps {
   /** Baseline suffix + tooltip for the plan-diff badge (see DocBadges). */
   planDiffBaselineLabel?: string;
   planDiffBaselineTooltip?: string;
-  archiveInfo?: {
-    status: "approved" | "denied" | "unknown";
-    timestamp: string;
-    title: string;
-  } | null;
 
   // Layout
   maxWidth?: number | null;
@@ -266,14 +260,12 @@ export const StickyHeaderLane: React.FC<StickyHeaderLaneProps> = ({
           </div>
           <DocBadges
             layout="row"
-            repoInfo={repoInfo}
             planDiffStats={planDiffStats}
             isPlanDiffActive={isPlanDiffActive}
             hasPreviousVersion={hasPreviousVersion}
             onPlanDiffToggle={onPlanDiffToggle}
             planDiffBaselineLabel={planDiffBaselineLabel}
             planDiffBaselineTooltip={planDiffBaselineTooltip}
-            archiveInfo={archiveInfo}
           />
         </div>
       </div>
