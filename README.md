@@ -32,12 +32,12 @@ if (decision && !decision.approved) {
 }
 ```
 
-| Method                                     | Returns                                                                                                  |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| `createReview({ mode, markdown, title? })` | `{ id, url }`. `mode` is `"plan"` (approve or request changes) or `"annotate"` (send feedback or close). |
-| `getDecision(id)`                          | The decision, or `null` while the review is open.                                                        |
-| `waitForDecision(id, seconds?)`            | Same, waiting up to `seconds` (default 25, at most 55).                                                  |
-| `revise(id, markdown)`                     | Adds a version and reopens the decision. Refused once a review is approved or closed.                    |
+| Method                                     | Returns                                                                                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createReview({ mode, markdown, title? })` | `{ id, url }`. `mode` is `"plan"` (approve or request changes) or `"annotate"` (send feedback or close).                                   |
+| `getDecision(id)`                          | The decision, or `null` while the review is open.                                                                                          |
+| `waitForDecision(id, seconds?)`            | Same, waiting up to `seconds` (default 25, at most 55).                                                                                    |
+| `revise(id, markdown)`                     | `{ version, unchanged }`. Adds a version and reopens the decision; unchanged text is ignored. Refused once a review is approved or closed. |
 
 A decision is `{ approved, feedback?, answersOnly?, annotations?, exit?, version, decidedAt }`.
 The types are exported from this package (`import type { Dynotator, Decision } from "dynotator"`).

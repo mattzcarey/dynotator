@@ -3,10 +3,8 @@ import bundle from "virtual:session-server";
 import type { Decision, Revision } from "../session/decision";
 import type { SessionServer } from "../session/index";
 import type { SessionInit } from "../session/plan";
-import { BASE_URL_HEADER } from "../session/router";
 
 interface SupervisorMeta {
-  createdAt: number;
   expiresAt: number;
 }
 
@@ -19,18 +17,17 @@ const FACET = "server";
 export class SessionSupervisor extends DurableObject<Env> {
   async create(init: SessionInit, ttlSeconds: number): Promise<void> {
     if (this.ctx.storage.kv.get("meta")) throw new Error("Session id collision");
-    const now = Date.now();
-    const meta: SupervisorMeta = { createdAt: now, expiresAt: now + ttlSeconds * 1000 };
+    const meta: SupervisorMeta = { expiresAt: Date.now() + ttlSeconds * 1000 };
     this.ctx.storage.kv.put("meta", meta);
     await this.ctx.storage.setAlarm(meta.expiresAt);
     await this.server().init(init);
   }
 
   exists(): boolean {
-    return this.live() !== undefined;
+    return this.live();
   }
 
-  // Pass-throughs for the host's RPC entrypoint: a facet stub cannot leave this object.
+  // Pass-throughs for the RPC entrypoint: a facet stub cannot be returned out of this object.
 
   decision(): Promise<Decision | null> {
     return this.session().decision();
@@ -44,19 +41,10 @@ export class SessionSupervisor extends DurableObject<Env> {
     return this.session().revise(markdown);
   }
 
-  private session() {
-    if (!this.live()) throw new Error("This review does not exist or has expired");
-    return this.server();
-  }
-
+  /** The browser's API, with the `/s/:id` prefix already stripped by the host. */
   async fetch(request: Request): Promise<Response> {
     if (!this.live()) return Response.json({ error: "Session not found" }, { status: 404 });
-    const url = new URL(request.url);
-    const m = /^\/s\/([^/]+)(\/.*)$/.exec(url.pathname);
-    if (!m) return Response.json({ error: "Not found" }, { status: 404 });
-    const forwarded = new Request(new URL(m[2] + url.search, url.origin), request);
-    forwarded.headers.set(BASE_URL_HEADER, `${url.origin}/s/${m[1]}`);
-    return this.server().fetch(forwarded);
+    return this.server().fetch(request);
   }
 
   async alarm(): Promise<void> {
@@ -69,9 +57,14 @@ export class SessionSupervisor extends DurableObject<Env> {
     await this.ctx.storage.deleteAll();
   }
 
-  private live(): SupervisorMeta | undefined {
+  private live(): boolean {
     const meta = this.ctx.storage.kv.get<SupervisorMeta>("meta");
-    return meta && meta.expiresAt > Date.now() ? meta : undefined;
+    return meta !== undefined && meta.expiresAt > Date.now();
+  }
+
+  private session() {
+    if (!this.live()) throw new Error("This review does not exist or has expired");
+    return this.server();
   }
 
   private server() {

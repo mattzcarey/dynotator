@@ -8,7 +8,7 @@ export interface Store {
 
 /** An in-memory `Store` with the same semantics, for tests. */
 export class MemoryStore implements Store {
-  readonly data = new Map<string, unknown>();
+  private readonly data = new Map<string, unknown>();
 
   get<T>(key: string): T | undefined {
     return structuredClone(this.data.get(key)) as T | undefined;

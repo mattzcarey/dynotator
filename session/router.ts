@@ -1,37 +1,8 @@
-import {
-  Waiters,
-  allowsDecision,
-  getDecision,
-  parseWaitSeconds,
-  revise,
-  settle,
-  type DecisionKind,
-} from "./decision";
+import { DECISION_KINDS, type Decision, type DecisionKind, getDecision, settle } from "./decision";
 import { deleteDraft, loadDraft, parseGeneration, saveDraft } from "./drafts";
 import { HttpError, error, json, readJsonObject } from "./http";
-import {
-  currentRevision,
-  currentVersion,
-  getMeta,
-  getVersion,
-  listVersions,
-  parseMarkdown,
-  planPayload,
-  type SessionMeta,
-} from "./plan";
+import { currentVersion, getMeta, getVersion, listVersions, type SessionMeta } from "./plan";
 import type { Store } from "./store";
-import { MAX_IMAGE_BYTES, imageHeaders, loadUpload, saveUpload } from "./uploads";
-
-/** Set by the supervisor on every forwarded request: `<origin>/s/<id>`. */
-export const BASE_URL_HEADER = "x-dynotator-base";
-
-const MAX_CONFIG_BYTES = 64 * 1024;
-
-export interface SessionContext {
-  store: Store;
-  waiters: Waiters;
-  now?: () => Date;
-}
 
 const DECISION_ROUTES: Record<string, DecisionKind> = {
   "/api/approve": "approve",
@@ -40,15 +11,22 @@ const DECISION_ROUTES: Record<string, DecisionKind> = {
   "/api/exit": "exit",
 };
 
-export async function handleRequest(req: Request, ctx: SessionContext): Promise<Response> {
+/** The browser's API. `onDecision` hears every decision recorded here. */
+export async function handleRequest(
+  req: Request,
+  store: Store,
+  onDecision: (decision: Decision) => void,
+): Promise<Response> {
   const url = new URL(req.url);
-  if (!url.pathname.startsWith("/api/")) return error(404, "Not found", { path: url.pathname });
-  const meta = getMeta(ctx.store);
+  const meta = getMeta(store);
   if (!meta) return error(404, "Session not found");
   try {
-    return (await route(req, url, meta, ctx)) ?? error(404, "Not found", { path: url.pathname });
+    return (
+      (await route(req, url, meta, store, onDecision)) ??
+      error(404, "Not found", { path: url.pathname })
+    );
   } catch (err) {
-    if (err instanceof HttpError) return error(err.status, err.message);
+    if (err instanceof HttpError) return error(err.status, err.message, err.extra);
     throw err;
   }
 }
@@ -57,23 +35,30 @@ async function route(
   req: Request,
   url: URL,
   meta: SessionMeta,
-  ctx: SessionContext,
+  store: Store,
+  onDecision: (decision: Decision) => void,
 ): Promise<Response | undefined> {
-  const { store } = ctx;
-  const now = ctx.now?.() ?? new Date();
-  const method = req.method;
+  const { method } = req;
   const path = url.pathname;
+  const version = currentVersion(store);
 
-  if (path === "/api/plan" && method === "GET") {
-    return json(planPayload(store, meta, readConfig(store)));
+  if (method === "GET" && path === "/api/plan") {
+    return json({
+      plan: getVersion(store, version),
+      mode: meta.mode,
+      ...(meta.title && { title: meta.title }),
+      previousPlan: getVersion(store, version - 1) ?? null,
+      versionInfo: { version, totalVersions: version },
+      ...(meta.mode === "plan" && { planRevision: version }),
+    });
   }
-  if (path === "/api/plan/revision" && method === "GET" && meta.mode === "plan") {
-    return json({ revision: currentRevision(store), decided: getDecision(store) !== undefined });
+  if (method === "GET" && path === "/api/plan/revision" && meta.mode === "plan") {
+    return json({ revision: version });
   }
-  if (path === "/api/plan/versions" && method === "GET") {
-    return json({ project: meta.project ?? "", slug: "", versions: listVersions(store) });
+  if (method === "GET" && path === "/api/plan/versions") {
+    return json({ versions: listVersions(store) });
   }
-  if (path === "/api/plan/version" && method === "GET") {
+  if (method === "GET" && path === "/api/plan/version") {
     const v = Number(url.searchParams.get("v"));
     if (!Number.isInteger(v) || v < 1) return error(400, "Invalid version number");
     const plan = getVersion(store, v);
@@ -81,87 +66,35 @@ async function route(
   }
 
   const kind = DECISION_ROUTES[path];
-  if (kind && method === "POST" && allowsDecision(meta.mode, kind)) {
-    // Exit posts carry no body; the draft generation rides the query string.
+  if (method === "POST" && kind && DECISION_KINDS[meta.mode].includes(kind)) {
+    // Exit is a bare POST; its draft generation rides the query string.
     const body = kind === "exit" ? {} : await readJsonObject(req);
-    const result = settle(store, meta, kind, body, now);
-    if (!result.ok) return json(result.body, result.status);
-    const generation =
-      typeof body.draftGeneration === "number"
-        ? parseGeneration(String(body.draftGeneration))
-        : parseGeneration(url.searchParams.get("draftGeneration"));
-    deleteDraft(store, result.decision.version, generation);
-    ctx.waiters.resolveAll(result.decision);
+    const decision = settle(store, kind, body);
+    deleteDraft(
+      store,
+      version,
+      parseGeneration(body.draftGeneration ?? url.searchParams.get("draftGeneration")),
+    );
+    onDecision(decision);
     return json({ ok: true });
   }
 
-  if (path === "/api/wait" && method === "GET") {
-    const existing = getDecision(store);
-    if (existing) return json({ status: "decided", decision: existing });
-    const decision = await ctx.waiters.wait(parseWaitSeconds(url.searchParams.get("timeout")));
-    return json(decision ? { status: "decided", decision } : { status: "pending" });
-  }
-
-  if (path === "/api/revise" && method === "POST") {
-    const markdown = parseMarkdown((await readJsonObject(req)).markdown);
-    return json({ ok: true, ...revise(store, markdown, now) });
-  }
-
   if (path === "/api/draft") {
-    const version = currentVersion(store);
-    if (method === "GET") return reply(loadDraft(store, version));
+    if (method === "GET") return json(loadDraft(store, version));
     if (method === "POST") {
-      const body = await readJsonObject(req);
-      return reply(saveDraft(store, version, body, getDecision(store) !== undefined));
-    }
-    if (method === "DELETE") {
-      deleteDraft(store, version, parseGeneration(url.searchParams.get("generation")));
+      if (getDecision(store)) {
+        return error(409, "This review has already been decided.", { decided: true });
+      }
+      saveDraft(store, version, await readJsonObject(req));
       return json({ ok: true });
     }
-  }
-
-  if (path === "/api/upload" && method === "POST") {
-    if (Number(req.headers.get("content-length") ?? "0") > MAX_IMAGE_BYTES + 64 * 1024) {
-      return error(413, `Images are limited to ${MAX_IMAGE_BYTES} bytes`);
-    }
-    let file;
-    try {
-      file = (await req.formData()).get("file");
-    } catch {
-      return error(400, "Expected multipart form data");
-    }
-    if (!file || typeof file === "string") return error(400, "No file provided");
-    const id = saveUpload(store, new Uint8Array(await file.arrayBuffer()), file.name);
-    const base = req.headers.get(BASE_URL_HEADER);
-    const ref = base ? `${base}/api/image?path=${id}` : id;
-    return json({ path: ref, originalName: file.name });
-  }
-
-  if (path === "/api/image" && method === "GET") {
-    const image = loadUpload(store, url.searchParams.get("path") ?? "");
-    if (!image) {
-      return new Response("Image not found", { status: 404, headers: imageHeaders("text/plain") });
-    }
-    return new Response(image.bytes, { headers: imageHeaders(image.type) });
-  }
-
-  if (path === "/api/config") {
-    if (method === "GET") return json(readConfig(store));
-    if (method === "POST") {
-      const merged = { ...readConfig(store), ...(await readJsonObject(req, MAX_CONFIG_BYTES)) };
-      if (JSON.stringify(merged).length > MAX_CONFIG_BYTES) return error(413, "Config too large");
-      store.put("config", merged);
+    if (method === "DELETE") {
+      const generation = parseGeneration(url.searchParams.get("generation"));
+      if (generation === undefined) return error(400, "generation must be an integer >= 0");
+      deleteDraft(store, version, generation);
       return json({ ok: true });
     }
   }
 
   return undefined;
-}
-
-function readConfig(store: Store): Record<string, unknown> {
-  return store.get<Record<string, unknown>>("config") ?? {};
-}
-
-function reply(r: { status: number; body: unknown }): Response {
-  return json(r.body, r.status);
 }

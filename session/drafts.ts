@@ -1,85 +1,73 @@
+import { HttpError } from "./http";
 import type { Store } from "./store";
 
 /**
- * Upstream's draft protocol: the client stamps each save with an increasing `draftGeneration`;
- * a delete records the generation it cleared, so a late save from before the delete cannot
- * resurrect sent comments. Drafts are kept per plan version, as upstream keys them by the plan's
- * content hash.
+ * Unsent annotations, kept per version. The browser stamps every save and delete with a growing
+ * `draftGeneration`, and a delete leaves a tombstone with its generation, so a save that was in
+ * flight when the draft was deleted (by the reviewer or by a decision) cannot bring it back.
  */
-export type DraftResult = { status: number; body: unknown };
+interface Draft {
+  annotations: unknown[];
+  draftGeneration: number;
+  ts?: number;
+}
 
 const draftKey = (version: number) => `draft:${version}`;
 const deletedKey = (version: number) => `draft-deleted:${version}`;
 
-function generationOf(value: unknown): number | null {
-  const g = (value as { draftGeneration?: unknown } | null | undefined)?.draftGeneration;
-  return typeof g === "number" && Number.isInteger(g) && g >= 0 ? g : null;
-}
-
-function knownGeneration(store: Store, version: number): number | null {
-  const known = [
-    generationOf(store.get(draftKey(version))),
-    store.get<number>(deletedKey(version)) ?? null,
-  ].filter((g): g is number => g !== null);
-  return known.length ? Math.max(...known) : null;
-}
-
-export function loadDraft(store: Store, version: number): DraftResult {
-  const draft = store.get(draftKey(version));
+/** The highest generation seen for this version, or `undefined` if none. */
+function latestGeneration(store: Store, version: number): number | undefined {
+  const saved = store.get<Draft>(draftKey(version))?.draftGeneration;
   const deleted = store.get<number>(deletedKey(version));
-  const generation = generationOf(draft);
-  if (draft && !(generation !== null && deleted !== undefined && generation <= deleted)) {
-    return { status: 200, body: draft };
-  }
-  const known = knownGeneration(store, version);
-  return {
-    status: 404,
-    body: { found: false, ...(known !== null ? { draftGeneration: known } : {}) },
-  };
+  return saved === undefined ? deleted : deleted === undefined ? saved : Math.max(saved, deleted);
 }
 
-export function saveDraft(
-  store: Store,
-  version: number,
-  body: Record<string, unknown>,
-  decided: boolean,
-): DraftResult {
-  if (decided) {
-    return {
-      status: 409,
-      body: { error: "This review session has already been decided.", decided: true },
-    };
-  }
-  const generation = generationOf(body);
+/** The draft, or just the latest generation (so a fresh tab continues from it) when there is none. */
+export function loadDraft(store: Store, version: number): Draft | { draftGeneration?: number } {
+  const draft = store.get<Draft>(draftKey(version));
+  if (draft) return draft;
   const deleted = store.get<number>(deletedKey(version));
-  const stored = generationOf(store.get(draftKey(version)));
+  return deleted === undefined ? {} : { draftGeneration: deleted };
+}
+
+export function saveDraft(store: Store, version: number, body: Record<string, unknown>): void {
+  const generation = parseGeneration(body.draftGeneration);
+  if (generation === undefined) throw new HttpError(400, "draftGeneration must be an integer >= 0");
+  if (!Array.isArray(body.annotations)) throw new HttpError(400, "annotations must be an array");
+  if (body.ts !== undefined && typeof body.ts !== "number") {
+    throw new HttpError(400, "ts must be a number");
+  }
+  const deleted = store.get<number>(deletedKey(version));
+  const saved = store.get<Draft>(draftKey(version))?.draftGeneration;
   if (
-    generation !== null &&
-    ((deleted !== undefined && generation <= deleted) || (stored !== null && generation < stored))
+    (deleted !== undefined && generation <= deleted) ||
+    (saved !== undefined && generation < saved)
   ) {
-    return {
-      status: 409,
-      body: { error: "Stale draft", draftGeneration: knownGeneration(store, version) },
-    };
+    throw new HttpError(409, "Stale draft", { draftGeneration: latestGeneration(store, version) });
   }
-  store.put(draftKey(version), body);
-  if (generation === null) store.delete(deletedKey(version));
-  return { status: 200, body: { ok: true } };
+  store.put<Draft>(draftKey(version), {
+    annotations: body.annotations,
+    draftGeneration: generation,
+    ...(body.ts !== undefined && { ts: body.ts }),
+  });
 }
 
-export function deleteDraft(store: Store, version: number, generation: number | null): void {
-  if (generation !== null) {
-    const known = knownGeneration(store, version);
-    if (known !== null && generation < known) return;
-    store.put(deletedKey(version), generation);
-  } else {
-    store.delete(deletedKey(version));
+/**
+ * Deletes the draft and records `generation` as its tombstone, unless a newer save has already
+ * replaced what the caller meant to delete. Without a generation it just deletes the draft.
+ */
+export function deleteDraft(store: Store, version: number, generation?: number): void {
+  if (generation === undefined) {
+    store.delete(draftKey(version));
+    return;
   }
+  const latest = latestGeneration(store, version);
+  if (latest !== undefined && generation < latest) return;
+  store.put(deletedKey(version), generation);
   store.delete(draftKey(version));
 }
 
-export function parseGeneration(raw: string | null): number | null {
-  if (raw === null) return null;
-  const n = Number(raw);
-  return Number.isInteger(n) && n >= 0 ? n : null;
+export function parseGeneration(value: unknown): number | undefined {
+  const n = typeof value === "string" && value !== "" ? Number(value) : value;
+  return typeof n === "number" && Number.isInteger(n) && n >= 0 ? n : undefined;
 }

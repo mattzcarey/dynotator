@@ -1,7 +1,7 @@
 const ID_BYTES = 20;
 const ID_PATTERN = /^[A-Za-z0-9_-]{27}$/;
 
-/** A 160-bit, URL-safe session id. Knowing it is the capability for the whole session. */
+/** A 160-bit, URL-safe session id. Knowing it is the capability for the whole review. */
 export function newSessionId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(ID_BYTES));
   return btoa(String.fromCharCode(...bytes))
@@ -27,15 +27,15 @@ export function matchRoute(method: string, pathname: string): HostRoute {
   if (pathname.startsWith("/api/")) return { kind: "api-not-found" };
   const m = /^\/s\/([^/]+)(\/.*)?$/.exec(pathname);
   if (!m) return { kind: "asset" };
-  const rest = m[2] ?? "";
+  const [, id, rest = ""] = m;
   const api = rest.startsWith("/api/");
-  if (!isSessionId(m[1])) return { kind: api ? "api-not-found" : "page-not-found" };
-  if (rest === "" || rest === "/") return { kind: "page", id: m[1] };
-  if (api) return { kind: "session-api", id: m[1], path: rest };
+  if (!isSessionId(id)) return { kind: api ? "api-not-found" : "page-not-found" };
+  if (rest === "" || rest === "/") return { kind: "page", id };
+  if (api) return { kind: "session-api", id, path: rest };
   return { kind: "asset" };
 }
 
-export const DEFAULT_TTL_SECONDS = 7 * 24 * 60 * 60;
+const DEFAULT_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 export function ttlSeconds(raw: string | undefined): number {
   const n = Number(raw);
