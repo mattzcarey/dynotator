@@ -95,7 +95,10 @@ export const AppHeader = React.memo<AppHeaderProps>(
           )
         ) : (
           <>
-            <span className="text-sm font-semibold tracking-tight">Dynotator</span>
+            <span className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+              <img src="/favicon.svg" alt="" className="size-5" />
+              Dynotator
+            </span>
             <HeaderDocumentName {...documentName} />
           </>
         )}
