@@ -29,11 +29,12 @@
  *   Text that names no choice is offered as one more answer. Without that line, a choice
  *   whose label ends in `(Recommended)` is the recommendation.
  * - The reviewer can pick, answer "Other", add a note, or skip.
- * - The feedback starts with `## Answers to your questions`, then per answered question
+ * - The feedback opens (under its title) with `## Answers to your questions`, then per question
  *   `### Q<n>. <question> (line <n>)` and `Answer: <label>` (`(your recommendation)` when it
  *   is yours), a list for several picks, `Other: …`, free text as a quote, or `Skipped`, and
  *   any `Note: …`; unanswered questions are listed last. A settled question the reviewer
- *   left alone is not reported.
+ *   left alone is not reported. When the reviewer only answered, a plan's denial says
+ *   `answersOnly: true`.
  * - A `:::question` inside a code fence, a quote or another block is not a question.
  */
 
@@ -211,7 +212,11 @@ const matchRecommendation = (text: string, names: string[][], multi: boolean): n
     const target = normalize(candidate);
     return target
       ? unique((name) => {
-          const folded = name.replace(/[*_`]+/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+          const folded = name
+            .replace(/[*_`]+/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase();
           return folded.startsWith(target) && LABEL_HEAD_SEP_RE.test(folded.slice(target.length));
         })
       : -1;
@@ -289,7 +294,11 @@ export function parseQuestion(directiveKind: string | undefined, body: string): 
       openBullet.text += ` ${line.trim()}`;
       openBullet.contextLines.push(context.length);
     } else if (bullet?.[1].trim()) {
-      openBullet = { text: bullet[1].trim(), contextLines: [context.length], indent: indentWidth(line) };
+      openBullet = {
+        text: bullet[1].trim(),
+        contextLines: [context.length],
+        indent: indentWidth(line),
+      };
       bullets.push(openBullet);
     } else {
       openBullet = null;
@@ -302,7 +311,11 @@ export function parseQuestion(directiveKind: string | undefined, body: string): 
   let raws = tasks.map((task) => task.raw);
   if (choices.length === 0 && declared !== "text" && bullets.length > 0) {
     const used = bullets.slice(0, MAX_CHOICES);
-    choices = used.map((bullet) => ({ ...splitBullet(bullet.text), settled: false, recommended: false }));
+    choices = used.map((bullet) => ({
+      ...splitBullet(bullet.text),
+      settled: false,
+      recommended: false,
+    }));
     raws = used.map((bullet) => bullet.text);
     const drop = new Set(used.flatMap((bullet) => bullet.contextLines));
     for (let i = context.length - 1; i >= 0; i--) if (drop.has(i)) context.splice(i, 1);
@@ -317,7 +330,9 @@ export function parseQuestion(directiveKind: string | undefined, body: string): 
     const bare = withoutMarker(choice);
     if (!bare) return choice;
     marked.push(i);
-    const twin = choices.some((other, j) => j !== i && normalize(other.label) === normalize(bare.label));
+    const twin = choices.some(
+      (other, j) => j !== i && normalize(other.label) === normalize(bare.label),
+    );
     return twin ? choice : bare;
   });
   if (!recommendationLine && (marked.length === 1 || (kind === "multi" && marked.length > 0))) {
@@ -327,7 +342,8 @@ export function parseQuestion(directiveKind: string | undefined, body: string): 
   let suggestedText: string | undefined;
   if (recommendation) {
     const names = choices.map((choice, i) => [choice.label, raws[i]]);
-    const hits = kind === "text" ? [] : matchRecommendation(recommendation, names, kind === "multi");
+    const hits =
+      kind === "text" ? [] : matchRecommendation(recommendation, names, kind === "multi");
     for (const hit of hits) choices[hit].recommended = true;
     if (hits.length === 0) suggestedText = recommendation;
   }
@@ -335,7 +351,9 @@ export function parseQuestion(directiveKind: string | undefined, body: string): 
   // Context keeps its own indentation (nested lists, fences) less what every line shares.
   const shared = Math.min(...context.filter((l) => l !== "").map(indentWidth));
   const text = context
-    .map((l) => (shared > 0 && Number.isFinite(shared) ? l.replace(/\t/g, "    ").slice(shared) : l))
+    .map((l) =>
+      shared > 0 && Number.isFinite(shared) ? l.replace(/\t/g, "    ").slice(shared) : l,
+    )
     .join("\n")
     .trim();
 
@@ -475,7 +493,9 @@ export function isRecommendedAnswer(question: Question, answer: QuestionAnswer):
   if (answer.kind === "text") return !!suggested && normalize(answer.text ?? "") === suggested;
   const labels = recommendedLabels(question);
   if (labels.length === 0) {
-    return !!suggested && answer.selected.length === 0 && normalize(answer.other ?? "") === suggested;
+    return (
+      !!suggested && answer.selected.length === 0 && normalize(answer.other ?? "") === suggested
+    );
   }
   if (answer.other?.trim()) return false;
   const want = new Set(labels.map(normalize));
@@ -497,7 +517,11 @@ export function formatAnswerText(answer: QuestionAnswer): string {
   return out;
 }
 
-function formatAnswerLines(answer: QuestionAnswer, recommended: boolean, settled: string[]): string {
+function formatAnswerLines(
+  answer: QuestionAnswer,
+  recommended: boolean,
+  settled: string[],
+): string {
   const rec = recommended ? " (your recommendation)" : "";
   let out = "";
   if (settled.length > 0) {
@@ -517,6 +541,8 @@ function formatAnswerLines(answer: QuestionAnswer, recommended: boolean, settled
   return out;
 }
 
+const settledLabels = (q: Question) => q.choices.filter((c) => c.settled).map((c) => c.label);
+
 export const ANSWERS_HEADING = "## Answers to your questions";
 
 /**
@@ -535,7 +561,6 @@ export function formatAnswersSection(
   }
   if (byKey.size === 0) return "";
 
-  const settledLabels = (q: Question) => q.choices.filter((c) => c.settled).map((c) => c.label);
   const asked = questions.filter(
     ({ question }) => settledLabels(question).length === 0 || byKey.has(question.key),
   );

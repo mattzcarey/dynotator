@@ -1,14 +1,16 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import type { Block } from "./blocks";
 import { InlineMarkdown } from "./Inline";
 import { CodeBlock } from "./CodeBlock";
-import { HtmlBlock } from "./HtmlBlock";
 import { Alert, Blockquote, NestedBlocks } from "./Nested";
 import { QuestionCard, type QuestionCardProps } from "../questions/QuestionCard";
 import { indexQuestions, isQuestionDirective, type IndexedQuestion } from "../questions/questions";
 
 /** `data-block-id` for document blocks; nested blocks ("" ids) carry none and belong to their parent. */
 export const blockId = (block: Block): string | undefined => block.id || undefined;
+
+// Raw HTML is rare; its markdown parser and sanitizer load with the first block that has some.
+const HtmlBlock = lazy(() => import("./HtmlBlock"));
 
 const HEADING_TAGS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
 const HEADING_CLASS: Record<number, string> = {
@@ -28,7 +30,15 @@ export const BlockRenderer: React.FC<{
   questionTotal?: number;
   questionAnswer?: QuestionCardProps["answer"];
   onAnswerQuestion?: QuestionCardProps["onAnswer"];
-}> = ({ block, orderedIndex, headingId, question, questionTotal, questionAnswer, onAnswerQuestion }) => {
+}> = ({
+  block,
+  orderedIndex,
+  headingId,
+  question,
+  questionTotal,
+  questionAnswer,
+  onAnswerQuestion,
+}) => {
   const id = blockId(block);
   switch (block.type) {
     case "heading": {
@@ -56,7 +66,11 @@ export const BlockRenderer: React.FC<{
     case "hr":
       return <hr className="my-10 border-dashed border-border-strong/70" data-block-id={id} />;
     case "html":
-      return <HtmlBlock block={block} />;
+      return (
+        <Suspense fallback={<div className="my-4" data-block-id={id} />}>
+          <HtmlBlock block={block} />
+        </Suspense>
+      );
     case "directive": {
       const indexed =
         block.id && isQuestionDirective(block.directiveKind)
@@ -76,7 +90,10 @@ export const BlockRenderer: React.FC<{
       }
       const kind = block.directiveKind ?? "note";
       return (
-        <div className={`directive directive-${kind} my-4 rounded-md border px-4 py-3`} data-block-id={id}>
+        <div
+          className={`directive directive-${kind} my-4 rounded-md border px-4 py-3`}
+          data-block-id={id}
+        >
           <div className="directive-title mb-1 text-xs font-semibold tracking-wide uppercase">
             {kind}
           </div>
@@ -164,7 +181,10 @@ function Table({ block }: { block: Block }) {
   const [header = "", ...body] = block.content.split("\n").filter((line) => line.trim());
   const rows = body.filter((line) => !/^[|\-:\s]+$/.test(line.trim())).map(tableRow);
   return (
-    <div className="my-5 overflow-x-auto rounded-md border border-border" data-block-id={blockId(block)}>
+    <div
+      className="my-5 overflow-x-auto rounded-md border border-border"
+      data-block-id={blockId(block)}
+    >
       <table className="min-w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border bg-surface-0">

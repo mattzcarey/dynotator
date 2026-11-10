@@ -12,19 +12,19 @@ containers, no local server, no CLI.
 
 ## Layout
 
-| Path                                 | What                                                                                                 |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `worker/`                            | Host Worker: `Dynotator` RPC entrypoint (`api.ts`), HTTP router, `SessionSupervisor` Durable Object. |
-| `session/`                           | The per-review server. Bundled to a JS string and loaded as a Dynamic Worker.                        |
-| `index.html`, `app/`                 | Vite entry for the browser SPA.                                                                      |
-| `packages/editor/`                   | The review app. Forked from upstream `packages/editor`.                                              |
-| `packages/ui/`                       | Components, hooks, utils, theme. Forked from upstream `packages/ui`.                                 |
-| `packages/core/`, `packages/shared/` | Framework-free shared logic and types.                                                               |
-| `cloudflare.config.ts`               | Worker config for the `cf` CLI (bindings, exports, assets).                                          |
-| `scripts/build-session.ts`           | Vite plugin that bundles `session/` into `virtual:session-server`.                                   |
+| Path                       | What                                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `worker/`                  | Host Worker: `Dynotator` RPC entrypoint (`api.ts`), HTTP router, `SessionSupervisor` Durable Object. |
+| `session/`                 | The per-review server. Bundled to a JS string and loaded as a Dynamic Worker.                        |
+| `index.html`, `app/`       | The browser review app (Vite entry `app/index.tsx`, styles and theme tokens in `app/theme.css`).     |
+| `app/review/`              | The review: document, annotations panel, sidebar, drafts, decisions, version diff, feedback text.    |
+| `app/markdown/`            | Markdown to blocks (`blocks.ts`) and the block and inline renderers, code highlighting, Mermaid.     |
+| `app/questions/`           | `:::question` blocks: grammar and answer export (`questions.ts`, the authoring reference), the card. |
+| `cloudflare.config.ts`     | Worker config for the `cf` CLI (bindings, exports, assets).                                          |
+| `scripts/build-session.ts` | Vite plugin that bundles `session/` into `virtual:session-server`.                                   |
 
-Imports use `@dynotator/{ui,core,shared,editor}/...` (tsconfig `paths` + Vite aliases). npm
-packages still published under `@plannotator/*` are upstream dependencies, not this repo.
+Imports are relative; there are no path aliases. npm packages still published under `@plannotator/*`
+are upstream dependencies, not this repo.
 
 ## Architecture
 
@@ -62,9 +62,8 @@ Rules that follow from this:
 
 ### Browser side
 
-The SPA is served at `/s/:id` and its API lives at `/s/:id/api`. Forked UI code calls `/api/...`;
-`packages/ui/utils/api.ts` exports `apiUrl(path)` that prefixes the review base, and
-`app/index.tsx` installs a `fetch` shim that applies it to same-origin `/api/` URLs.
+The SPA is served at `/s/:id` and its API lives at `/s/:id/api`. `app/api.ts` exports
+`api(path)`, which prefixes `/api/...` with the review base; every request goes through it.
 
 ## What the browser app is
 
@@ -99,7 +98,7 @@ and return a decision to an agent. Product features belong in the projects that 
   parity with upstream. Delete dead code, dead props and dead settings outright; no compatibility
   shims, no "removed in fork" comments, no feature flags for things that are gone.
 - Comments say why, not what, and are rare.
-- UI styling follows the Cloudflare Workers look (see `packages/ui/theme.css`): white and warm
+- UI styling follows the Cloudflare Workers look (see `app/theme.css`): white and warm
   off-white surfaces, near-black text, `#ff5e1f` orange accent, pill buttons, hairline and dashed
   borders, a mono face for labels. One light and one dark theme. The logo is the emoji pair
   🦖🥔. Never use Cloudflare's logo or wordmark.

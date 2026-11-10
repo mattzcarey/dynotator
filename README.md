@@ -44,6 +44,35 @@ The types are exported from this package (`import type { Dynotator, Decision } f
 
 Reviews cannot be created over HTTP in production: the service binding is the authorisation.
 
+## Asking the reviewer questions
+
+A document can carry questions for the reviewer. They render as cards, and the answers come back
+at the top of `decision.feedback`.
+
+```markdown
+:::question
+Where should we keep the edit that loses a sync conflict?
+
+When two devices edit one note offline, the later save wins and the other is lost.
+
+- [ ] Nowhere — silent loss, as today
+- [ ] Local only, purged after 30 days — cheap, no server change
+- [ ] Server-side per user — survives reinstall, needs a retention policy
+
+Recommended: Local only, purged after 30 days
+:::
+```
+
+- `:::question` picks one choice, `:::question-multi` any number, `:::question-text` takes free
+  text (so does a block with no choices). The block ends at the first `:::` line.
+- The first line is the question. Every other line is context, shown under it as markdown.
+- Choices are `- [ ] label` or `- [ ] label — description`. `- [x] label` marks a choice as
+  already settled.
+- `Recommended: <label>` marks your recommendation (`A, B and C` on `:::question-multi`).
+- The reviewer can pick, answer "Other", add a note, or skip. The feedback opens with
+  `## Answers to your questions`, one `### Q<n>. <question>` section each. When the reviewer only
+  answered and left no other feedback, a plan's decision has `answersOnly: true`.
+
 ## Deploy
 
 ```sh

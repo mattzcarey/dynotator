@@ -1,24 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2023",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "skipLibCheck": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["vite/client"],
-    "paths": {
-      "@dynotator/ui/*": ["./packages/ui/*"],
-      "@dynotator/core/*": ["./packages/core/*"],
-      "@dynotator/shared/*": ["./packages/shared/*"],
-      "@dynotator/editor": ["./packages/editor/App.tsx"],
-      "@dynotator/editor/*": ["./packages/editor/*"]
-    }
+    "types": ["vite/client", "bun"]
   },
-  "include": ["app", "packages"]
+  "include": ["app"]
 }

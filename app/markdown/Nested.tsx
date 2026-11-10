@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { computeListIndices, groupBlocks, parseNested, type AlertKind } from "./blocks";
 import { InlineMarkdown } from "./Inline";
 // BlockRenderer renders these and these render BlockRenderer: the cycle only meets at render
@@ -16,7 +16,13 @@ const Depth = createContext(0);
  * Markdown inside a quote, alert, callout or question context, drawn with the document's
  * renderers. Its blocks carry no `data-block-id`, so a selection inside resolves to the parent.
  */
-export function NestedBlocks({ markdown, className = "" }: { markdown: string; className?: string }) {
+export function NestedBlocks({
+  markdown,
+  className = "",
+}: {
+  markdown: string;
+  className?: string;
+}) {
   const depth = useContext(Depth);
   const capped = depth + 1 >= MAX_DEPTH;
   const blocks = useMemo(() => (capped ? [] : parseNested(markdown)), [capped, markdown]);
@@ -59,7 +65,10 @@ export function NestedBlocks({ markdown, className = "" }: { markdown: string; c
 
 export function Blockquote({ id, markdown }: { id?: string; markdown: string }) {
   return (
-    <blockquote className="my-5 border-l-2 border-primary pl-4 text-muted-foreground" data-block-id={id}>
+    <blockquote
+      className="my-5 border-l-2 border-primary pl-4 text-muted-foreground"
+      data-block-id={id}
+    >
       <NestedBlocks markdown={markdown} />
     </blockquote>
   );

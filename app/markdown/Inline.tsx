@@ -6,8 +6,8 @@ const CODE_CLASS = "rounded border border-border bg-surface-0 px-1 py-px font-mo
 
 const DANGEROUS_PROTOCOL = /^\s*(javascript|data|vbscript|file)\s*:/i;
 const BARE_URL_RE = /^https?:\/\/[^\s<>"']+/;
-/** Where the next bare URL starts at a word boundary, past the first character. */
-const NEXT_URL_RE = /(?<!\w)https?:\/\//g;
+/** The next bare URL at a word boundary, past the first character. */
+const NEXT_URL_RE = /(?<=\W)https?:\/\//;
 /** Characters that may start inline syntax. */
 const SPECIAL_RE = /[*_`[!~\\<]/;
 
@@ -152,11 +152,17 @@ export const InlineMarkdown: React.FC<{
     );
     if (emphasis?.[0]) {
       const [match, render] = emphasis;
-      take(match[0].length, render(<InlineMarkdown text={match[1]} linkLabel={linkLabel} />, key++));
+      take(
+        match[0].length,
+        render(<InlineMarkdown text={match[1]} linkLabel={linkLabel} />, key++),
+      );
       continue;
     }
     if (!/\w/.test(previous) && (m = /^_([^_\s](?:[\s\S]*?[^_\s])?)_(?!\w)/.exec(rest))) {
-      take(m[0].length, <em key={key++}>{<InlineMarkdown text={m[1]} linkLabel={linkLabel} />}</em>);
+      take(
+        m[0].length,
+        <em key={key++}>{<InlineMarkdown text={m[1]} linkLabel={linkLabel} />}</em>,
+      );
       continue;
     }
     if (rest[0] === "`") {
@@ -192,7 +198,8 @@ export const InlineMarkdown: React.FC<{
     const parsed = linkLabel ? null : matchLink(rest);
     if (parsed) {
       const label = <InlineMarkdown text={parsed.label} linkLabel />;
-      if (DANGEROUS_PROTOCOL.test(parsed.url)) take(parsed.length, <span key={key++}>{label}</span>);
+      if (DANGEROUS_PROTOCOL.test(parsed.url))
+        take(parsed.length, <span key={key++}>{label}</span>);
       else link(parsed.url, label, parsed.length);
       continue;
     }
@@ -206,11 +213,8 @@ export const InlineMarkdown: React.FC<{
 
     // Plain text up to the next character that may start syntax, or the next bare URL.
     let end = rest.slice(1).search(SPECIAL_RE) + 1 || rest.length;
-    if (!linkLabel) {
-      NEXT_URL_RE.lastIndex = 1;
-      const url = NEXT_URL_RE.exec(rest);
-      if (url && url.index < end) end = url.index;
-    }
+    const url = linkLabel ? -1 : rest.search(NEXT_URL_RE);
+    if (url !== -1 && url < end) end = url;
     take(end, rest.slice(0, end));
   }
 
