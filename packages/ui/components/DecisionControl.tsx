@@ -92,7 +92,6 @@ function toneButtonVariant(tone: Exclude<DecisionTone, "destructive">): "success
 
 function itemToneClass(tone: DecisionTone): string | undefined {
   if (tone === "destructive") return "text-destructive";
-  if (tone === "success") return "text-success";
   return undefined;
 }
 
@@ -246,9 +245,9 @@ export const DecisionNoteDialog: React.FC<{
         data-decision-note-composer="dialog"
         // Opening the sheet must not raise the touch keyboard on its own.
         initialFocus={isCompactTouchLayout ? false : undefined}
-        className="max-w-md rounded-xl bg-card p-4 text-foreground"
+        className="max-w-md rounded-lg bg-card p-5 text-foreground"
       >
-        <DialogTitle className="font-semibold mb-1">{composer.title}</DialogTitle>
+        <DialogTitle className="font-medium tracking-tight mb-1">{composer.title}</DialogTitle>
         {subtitle ? (
           <DialogDescription className="text-sm text-muted-foreground mb-3">
             {subtitle}
@@ -513,7 +512,7 @@ export const DecisionControl: React.FC<DecisionControlProps> = ({
         ) : undefined
       }
       className={cn(
-        "rounded-r-none border-r-0",
+        "rounded-r-none border-r-0 pl-3.5 pr-3",
         // One control with its caret, which stays live: quiet words on the same fill, never half of a coloured pill.
         spec.primary.muted &&
           "cursor-not-allowed bg-muted text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted",
@@ -577,7 +576,7 @@ export const DecisionControl: React.FC<DecisionControlProps> = ({
         aria-label="More decisions"
         data-decision-caret="true"
         className={cn(
-          "rounded-l-none px-1.5",
+          "rounded-l-none border-l border-l-black/10 pl-1.5 pr-2",
           spec.primary.muted &&
             "bg-muted text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted/70",
         )}
@@ -597,7 +596,7 @@ export const DecisionControl: React.FC<DecisionControlProps> = ({
           data-decision-popover={popover}
           data-pn-dismissable-popover="true"
           onKeyDown={handlePopoverKeyDown}
-          className="absolute right-0 top-full z-[70] mt-1.5 w-[22rem] max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-popover shadow-xl"
+          className="absolute right-0 top-full z-[70] mt-2 w-[22rem] max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-popover shadow-lg"
         >
           {popover === "menu" ? (
             <div className="py-1">

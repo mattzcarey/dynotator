@@ -16,7 +16,7 @@ const DialogOverlay = React.forwardRef<
     ref={ref}
     data-slot="dialog-overlay"
     className={cn(
-      "fixed inset-0 z-[110] bg-black/55 backdrop-blur-[2px]",
+      "fixed inset-0 z-[110] bg-[rgb(21_20_20/0.45)]",
       "transition-opacity duration-200",
       "data-starting-style:opacity-0 data-ending-style:opacity-0",
       className,
@@ -44,8 +44,7 @@ const DialogContent = React.forwardRef<
           "relative pointer-events-auto z-[110] w-full min-h-0",
           "max-w-4xl max-h-[min(640px,85vh,100%)]",
           "flex flex-col overflow-hidden",
-          "rounded-2xl border border-border bg-popover text-popover-foreground",
-          "shadow-[0_24px_80px_-36px_rgba(15,23,42,0.5)]",
+          "rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
           "transition-[opacity,scale] duration-200",
           "data-starting-style:opacity-0 data-starting-style:scale-95",
           "data-ending-style:opacity-0 data-ending-style:scale-95",
@@ -58,7 +57,7 @@ const DialogContent = React.forwardRef<
           <DialogPrimitive.Close
             data-pn-touch-target="true"
             data-pn-touch-target-icon="true"
-            className="absolute top-3.5 right-3.5 inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
+            className="absolute top-3.5 right-3.5 inline-flex items-center justify-center rounded-full p-1.5 text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted [@media(hover:hover)_and_(pointer:fine)]:hover:text-foreground"
           >
             <X className="size-4" />
             <span className="sr-only">Close</span>
@@ -85,7 +84,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-base font-semibold tracking-tight", className)}
+    className={cn("text-base font-medium tracking-tight", className)}
     {...props}
   />
 ));

@@ -65,7 +65,7 @@ export const ListMarker: React.FC<ListMarkerProps> = ({
     >
       {showNumeral && (
         <span
-          className="text-primary/60 tabular-nums text-right"
+          className="font-mono text-[0.8em] leading-[1.9] text-muted-foreground tabular-nums text-right"
           style={{ minWidth: "1.5rem" }}
           data-list-numeral=""
         >
@@ -76,7 +76,7 @@ export const ListMarker: React.FC<ListMarkerProps> = ({
         checked ? (
           <svg
             data-list-check=""
-            className="w-4 h-4 text-success mt-[3px]"
+            className="w-4 h-4 text-primary mt-[3px]"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

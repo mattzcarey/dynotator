@@ -2,9 +2,9 @@ import React from "react";
 import {
   formatShortcutBindingTokens,
   listScopeShortcuts,
+  historyShortcuts,
   resolveShortcutBindings,
-  reviewExplorerShortcuts,
-  reviewMarkdownPreviewShortcuts,
+  sidebarShortcuts,
   vimSelectionShortcuts,
   type ShortcutScopeDefinition,
 } from "../shortcuts";
@@ -104,22 +104,6 @@ const inputMethodShortcuts: ShortcutSection = {
   ],
 };
 
-const documentViewShortcuts: ShortcutSection = {
-  title: "View",
-  shortcuts: [
-    {
-      keys: [modKey, "."],
-      desc: "Toggle focus mode",
-      hint: "Collapses the Contents sidebar and the right-hand panel together; press again to restore whatever was open before. Markdown documents only; HTML pages keep their own layout.",
-    },
-    {
-      keys: [modKey, "E"],
-      desc: "Toggle edit mode",
-      hint: "Opens the markdown source editor in place, keeping your scroll position; press again to commit your edits and return to annotating. Markdown documents only; a source-backed document with unsaved changes keeps its two-step discard.",
-    },
-  ],
-};
-
 const annotationShortcuts: ShortcutSection = {
   title: "Annotations",
   shortcuts: [
@@ -157,7 +141,6 @@ const imageAnnotatorShortcuts: ShortcutSection = {
 };
 
 const sharedPlanEditorShortcuts: ShortcutSection[] = [
-  documentViewShortcuts,
   inputMethodShortcuts,
   annotationShortcuts,
   imageAnnotatorShortcuts,
@@ -200,134 +183,35 @@ function scopeSections(scope: ShortcutScopeDefinition<any>): ShortcutSection[] {
   return Array.from(sections, ([title, shortcuts]) => ({ title, shortcuts }));
 }
 
-const planActionShortcuts: ShortcutSection = {
+const actionShortcuts = (submit: string, print: string): ShortcutSection => ({
   title: "Actions",
   shortcuts: [
-    { keys: [modKey, enter], desc: "Submit / Approve" },
-    { keys: [modKey, "S"], desc: "Save to notes app" },
-    { keys: [modKey, "P"], desc: "Print plan" },
+    { keys: [modKey, enter], desc: submit },
+    { keys: [modKey, "P"], desc: print },
     { keys: ["Esc"], desc: "Close dialog" },
   ],
-};
+});
 
-const annotateActionShortcuts: ShortcutSection = {
-  title: "Actions",
-  shortcuts: [
-    { keys: [modKey, enter], desc: "Send annotations" },
-    { keys: [modKey, "S"], desc: "Save to notes app" },
-    { keys: [modKey, "P"], desc: "Print document" },
-  ],
-};
-
-const annotateSidebarShortcuts: ShortcutSection = {
-  title: "Sidebar",
-  shortcuts: [
-    { keys: [modKey, "B"], desc: "Toggle Contents sidebar" },
-    {
-      keys: [modKey, shiftKey, "B"],
-      desc: "Toggle Files sidebar",
-      hint: "Available when the Files tab is shown.",
-    },
-    {
-      keys: [shiftKey, shiftKey],
-      desc: "Toggle Agent TUI sidebar",
-      hint: "Available when the Agent control is shown.",
-    },
-  ],
-};
-
-const planShortcuts: ShortcutSection[] = [planActionShortcuts, ...sharedPlanEditorShortcuts];
-
-const annotateShortcuts: ShortcutSection[] = [
-  annotateActionShortcuts,
-  annotateSidebarShortcuts,
+const commonSections = (): ShortcutSection[] => [
+  ...scopeSections(sidebarShortcuts),
+  ...scopeSections(historyShortcuts),
   ...sharedPlanEditorShortcuts,
-];
-
-const reviewShortcuts: ShortcutSection[] = [
-  {
-    title: "Actions",
-    shortcuts: [
-      { keys: [modKey, enter], desc: "Approve / Send feedback" },
-      {
-        keys: [modKey, shiftKey, "Y"],
-        desc: "Copy feedback",
-        hint: "Copies the same feedback that gets submitted",
-      },
-      {
-        keys: [altKey, altKey],
-        desc: "Toggle destination",
-        hint: "Double-tap to switch between GitHub and Agent in PR review mode",
-      },
-      { keys: [modKey, "B"], desc: "Toggle file tree" },
-      { keys: [modKey, "."], desc: "Toggle sidebar" },
-      { keys: ["Esc"], desc: "Collapse sidebar" },
-    ],
-  },
-  {
-    title: "File Navigation",
-    shortcuts: [
-      { keys: ["J"], desc: "Next file" },
-      { keys: ["K"], desc: "Previous file" },
-      {
-        keys: ["["],
-        desc: "Scroll to previous file",
-        hint: "In all-files view, scrolls the viewport to the previous file",
-      },
-      {
-        keys: ["]"],
-        desc: "Scroll to next file",
-        hint: "In all-files view, scrolls the viewport to the next file",
-      },
-      { keys: ["Home"], desc: "First file" },
-      { keys: ["End"], desc: "Last file" },
-    ],
-  },
-  {
-    title: "File Actions",
-    shortcuts: [
-      { keys: ["V"], desc: "Toggle viewed", hint: "In all-files view, also collapses the file" },
-      { keys: ["A"], desc: "Toggle git add / stage" },
-      {
-        keys: ["C"],
-        desc: "File comment",
-        hint: "In all-files view, opens the comment popover for the focused file",
-      },
-      {
-        keys: ["X"],
-        desc: "Collapse / expand file",
-        hint: "In all-files view, toggles the focused file",
-      },
-      {
-        keys: ["Z"],
-        desc: "Undo collapse",
-        hint: "Reopens the last collapsed file and scrolls to it",
-      },
-    ],
-  },
-  ...scopeSections(reviewExplorerShortcuts),
-  ...scopeSections(reviewMarkdownPreviewShortcuts),
-  {
-    title: "Annotations",
-    shortcuts: [
-      { keys: [modKey, enter], desc: "Submit comment" },
-      { keys: ["Tab"], desc: "Indent in editor" },
-      { keys: ["Esc"], desc: "Close toolbar / Cancel" },
-    ],
-  },
 ];
 
 /* ─── Exported panel ─── */
 
 /** Render the surface shortcut reference, including opt-in Vim commands. */
 export const KeyboardShortcuts: React.FC<{
-  mode: "plan" | "annotate" | "review";
+  mode: "plan" | "annotate";
   vimModeEnabled?: boolean;
 }> = ({ mode, vimModeEnabled = false }) => {
-  const baseSections =
-    mode === "review" ? reviewShortcuts : mode === "annotate" ? annotateShortcuts : planShortcuts;
-  const sections =
-    vimModeEnabled && mode !== "review" ? [...vimShortcuts, ...baseSections] : baseSections;
+  const baseSections = [
+    mode === "annotate"
+      ? actionShortcuts("Send feedback", "Print document")
+      : actionShortcuts("Approve / Send feedback", "Print plan"),
+    ...commonSections(),
+  ];
+  const sections = vimModeEnabled ? [...vimShortcuts, ...baseSections] : baseSections;
 
   return (
     <div className="space-y-4">

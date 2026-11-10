@@ -5,39 +5,36 @@ import type * as React from "react";
 import { cn } from "../../lib/utils";
 
 /**
- * Button — the canonical action primitive (shared by the frontend shell and the
- * embedded plan/review apps). cva variants + sizes, optional `iconLeft`/`iconRight`
- * slots, and Base UI's `render` prop for polymorphism (e.g. `render={<a href=... />}`).
- *
- * `success` (solid, token-driven green) covers the plan app's Approve action; the
- * Feedback action uses `outline`. (No `accent` variant — `text-accent` on `bg-accent`
- * has no contrast in neutral-accent themes.)
+ * Button: the canonical action primitive. Full pills in the Workers look: `default` and `success`
+ * (Approve) are the solid orange CTA, `outline` the white pill with a hairline border. Labels on
+ * orange are near-black (#1f1f1f, 5.4:1); white on #ff5e1f is only 3.1:1.
  */
+const solidPrimary =
+  "bg-primary text-primary-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[var(--primary-hover)] active:bg-[var(--primary-pressed)] active:text-white";
+
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-[13px] font-medium transition-[color,background-color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-[13px] font-medium tracking-[-0.005em] transition-[color,background-color,border-color] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-invalid:border-destructive",
   {
     variants: {
       variant: {
-        default:
-          "bg-primary text-primary-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/90",
+        default: solidPrimary,
+        success: solidPrimary,
         destructive:
-          "bg-destructive text-white shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
-        success:
-          "bg-success text-success-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-success/90",
+          "bg-destructive text-destructive-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-destructive/90",
         outline:
-          "border border-input bg-background shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-accent [@media(hover:hover)_and_(pointer:fine)]:hover:text-accent-foreground",
+          "border border-border bg-background text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:border-border-strong [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-0",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-xs [@media(hover:hover)_and_(pointer:fine)]:hover:bg-secondary/80",
+          "bg-muted text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2",
         ghost:
-          "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-accent [@media(hover:hover)_and_(pointer:fine)]:hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 [@media(hover:hover)_and_(pointer:fine)]:hover:underline",
+          "text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted",
+        link: "text-primary-ink underline underline-offset-4 decoration-1 [@media(hover:hover)_and_(pointer:fine)]:hover:decoration-2",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        xxs: "h-6 rounded-md gap-1.5 px-2.5",
-        xs: "h-7 rounded-md gap-1.5 px-2.5",
-        sm: "h-8 rounded-md gap-1.5 px-3",
-        lg: "h-10 rounded-md px-6",
+        default: "h-9 px-4",
+        xxs: "h-6 gap-1.5 px-2.5 text-xs",
+        xs: "h-7 gap-1.5 px-3",
+        sm: "h-8 gap-1.5 px-3.5",
+        lg: "h-10 px-6 text-sm",
         icon: "size-9",
       },
     },

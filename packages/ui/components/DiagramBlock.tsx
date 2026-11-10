@@ -156,24 +156,18 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
   const [retryToken, setRetryToken] = useState(0);
   const [renderState, setRenderState] = useState<DiagramRenderState | null>(null);
 
-  // The (palette, mode) the diagram must follow: the same resolution the
-  // code fences use (see useFenceTheme). Outside a ThemeProvider the default
-  // context yields the Plannotator dark pair, and with no theme tokens on the
-  // document the renderer keeps the static config, so a host without the
-  // provider renders exactly as before. A key change re-runs the render,
-  // which is what re-themes an already rendered diagram.
-  const { colorTheme, resolvedMode } = useTheme();
+  // A key change re-runs the render, which is what re-themes an already rendered diagram.
+  const { resolvedMode } = useTheme();
   // The node shadow reaches the renderer the same way the palette does: as
   // part of the theme key, so changing it re-initializes Mermaid and re-renders
   // every mounted diagram.
   const diagramShadow = useConfigValue("diagramShadow");
   const theme = useMemo<DiagramTheme>(
     () => ({
-      colorTheme,
       mode: resolvedMode === "light" ? "light" : "dark",
       shadowAmount: diagramShadowAmount(diagramShadow),
     }),
-    [colorTheme, resolvedMode, diagramShadow],
+    [resolvedMode, diagramShadow],
   );
 
   // A sibling's Retry re-attempts this block too, but only while its own

@@ -32,7 +32,10 @@ export function loadDraft(store: Store, version: number): DraftResult {
     return { status: 200, body: draft };
   }
   const known = knownGeneration(store, version);
-  return { status: 404, body: { found: false, ...(known !== null ? { draftGeneration: known } : {}) } };
+  return {
+    status: 404,
+    body: { found: false, ...(known !== null ? { draftGeneration: known } : {}) },
+  };
 }
 
 export function saveDraft(

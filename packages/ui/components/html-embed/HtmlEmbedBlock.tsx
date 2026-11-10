@@ -60,7 +60,7 @@ const EMBED_FIRST_HEIGHT = 120;
 
 /** The host's theme, read from the page's tokens once they have applied. */
 function useEmbedTheme(): EmbedTheme {
-  const { colorTheme, resolvedMode } = useTheme();
+  const { resolvedMode } = useTheme();
   const read = useCallback((): EmbedTheme => {
     const style = getComputedStyle(document.documentElement);
     const vars: Record<string, string> = {};
@@ -75,7 +75,7 @@ function useEmbedTheme(): EmbedTheme {
     // The provider writes the tokens in its own effect, after this one: read on the next frame.
     const frame = requestAnimationFrame(() => setTheme(read()));
     return () => cancelAnimationFrame(frame);
-  }, [colorTheme, read]);
+  }, [read]);
   return theme;
 }
 

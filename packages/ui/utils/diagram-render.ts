@@ -47,15 +47,12 @@ export type { DiagramKind } from "@dynotator/core/diagram-anchor";
 type Mermaid = Awaited<ReturnType<typeof loadMermaidRuntime>>;
 
 /**
- * The (palette, mode) a render is for: the same pair `useTheme()` resolves
- * for code fences, plus the node shadow amount the user chose. The mermaid
- * entry passes them to `applyMermaidTheme`, which runs the global `initialize`
- * once per key; the graphviz entry recolors its defaults onto CSS tokens and
- * needs neither. A host without ThemeProvider passes any palette id with the
- * mode it renders in.
+ * The mode a render is for, plus the node shadow amount the user chose. The
+ * mermaid entry passes them to `applyMermaidTheme`, which runs the global
+ * `initialize` once per key; the graphviz entry recolors its defaults onto CSS
+ * tokens and needs neither.
  */
 export interface DiagramTheme {
-  readonly colorTheme: string;
   readonly mode: MermaidThemeMode;
   /**
    * Node drop shadow strength, 0..1 (see `mermaidTheme.buildMermaidShadow`).
@@ -551,7 +548,7 @@ const mermaidRenderer: DiagramRenderer = {
     // themed on its first render and re-initialized only when one changes.
     // With no tokens on the page it is a no-op and the static
     // MERMAID_CONFIG (securityLevel strict) applies.
-    applyMermaidTheme(runtime, mermaidThemeKey(theme.colorTheme, theme.mode, theme.shadowAmount));
+    applyMermaidTheme(runtime, mermaidThemeKey(theme.mode, theme.shadowAmount));
     return renderMermaid(runtime, renderId, source);
   },
 };

@@ -57,9 +57,6 @@ import { CodeBlock } from "./blocks/CodeBlock";
 import { TableBlock } from "./blocks/TableBlock";
 import { TableToolbar } from "./blocks/TableToolbar";
 import { TablePopout } from "./blocks/TablePopout";
-import { CodePathValidationContext } from "./CodePathValidationContext";
-import { LocalLinkContext, type LocalLinkResolver } from "./LocalLinkContext";
-import { useValidatedCodePaths } from "../hooks/useValidatedCodePaths";
 import { AnnotationToolbar } from "./AnnotationToolbar";
 import { FloatingQuickLabelPicker } from "./FloatingQuickLabelPicker";
 
@@ -75,26 +72,6 @@ import { FloatingQuickLabelPicker } from "./FloatingQuickLabelPicker";
  * source fence paints once and the two waits read as one.
  */
 const MermaidBlock = lazy(async () => ({ default: (await import("./MermaidBlock")).MermaidBlock }));
-const GraphvizBlock = lazy(async () => ({
-  default: (await import("./GraphvizBlock")).GraphvizBlock,
-}));
-/** ```html and ```svg fences drawn, for a host that opts in (`htmlEmbeds`); loaded only then. */
-const HtmlEmbedBlock = lazy(async () => ({
-  default: (await import("./html-embed/HtmlEmbedBlock")).HtmlEmbedBlock,
-}));
-const SvgFenceBlock = lazy(async () => ({
-  default: (await import("./html-embed/SvgFenceBlock")).SvgFenceBlock,
-}));
-/**
- * Each lazy block sits in a `LazyBlockBoundary`: when its chunk cannot load,
- * the block shows its source and a Reload notice, and the document stays.
- */
-const embedFallback = (block: Block) => (notice: React.ReactNode) => (
-  <div className="my-5 [&>[data-block-id]]:my-0">
-    {notice}
-    <CodeBlock block={block} isHovered={false} />
-  </div>
-);
 
 // Debug error boundary to catch silent toolbar crashes
 class ToolbarErrorBoundary extends React.Component<
@@ -134,17 +111,13 @@ class ToolbarErrorBoundary extends React.Component<
 
 import { CommentPopover, hasCommentDraft, type CommentAskAIHandler } from "./CommentPopover";
 import { AttachmentsButton } from "./AttachmentsButton";
-import { MessagesIcon } from "./icons/MessagesIcon";
 import { DiagramAnchorClaims, DiagramAnchorClaimsContext } from "./diagram/anchorClaims";
 import { DiagramBlockPending } from "./diagram/DiagramPending";
 import type { DiagramReopenRequest } from "./diagram/reopen";
 import { LazyBlockBoundary } from "./LazyBlockBoundary";
-import { isGraphvizLanguage, isMermaidLanguage } from "./diagramLanguages";
-import { isHtmlEmbedLanguage, isSvgFenceLanguage } from "./html-embed/languages";
-import type { HtmlEmbedHost } from "./html-embed/HtmlEmbedBlock";
+import { isMermaidLanguage } from "./diagramLanguages";
 import { getIdentity } from "../utils/identity";
 import { type QuickLabel } from "../utils/quickLabels";
-import type { SelectionAction, SelectionActionContext } from "../utils/selectionActions";
 import type { MentionSource } from "../utils/mentions";
 import { DocBadges, type DocBadgesProps, type LinkedDocBadgeInfo } from "./DocBadges";
 import { legacyBadgesMaxWidth } from "./docBadgesWidth";
@@ -188,39 +161,11 @@ export interface ViewerAnnotationHeaderConfig {
 /** Public properties for the Markdown document Viewer. */
 export interface ViewerProps {
   /**
-   * Opt-in host capability, passed straight through to the selection
-   * toolbars: the host's own commands for the current selection, rendered as
-   * one wand button that opens the package's dropdown. Absent → unchanged.
-   */
-  selectionActions?: SelectionAction[];
-  /** Opt-in host capability: the glyph on the `selectionActions` button on
-   *  both toolbars. Absent → the package's own wand. */
-  selectionActionsIcon?: React.ReactNode;
-  /**
-   * Opt-in host capability, passed to the text-selection toolbar only: its
-   * "Side" button, which hands the host the selected text and its context
-   * (AnnotationToolbar `onSide`). Absent → no button: unchanged.
-   */
-  onSide?: (text: string, context: SelectionActionContext) => void;
-  /**
-   * Opt-in host capability: how that button is drawn (AnnotationToolbar
-   * `sideButton`: an icon-only button with the host's glyph and tooltip).
-   * Absent → the two bubbles and the word "Side": unchanged.
-   */
-  sideButton?: { icon?: React.ReactNode; label: string };
-  /**
    * Whether the package's quick labels are offered on the selection toolbars
    * (default true). `false` hides the Zap picker and the Alt+digit label
    * shortcuts; the 👍 button is unaffected.
    */
   quickLabels?: boolean;
-  /**
-   * Opt-in host capability, forwarded to BOTH comment composers this viewer
-   * mounts (the text-selection composer and the global / code-block one): the
-   * `@` mention source for the composer's picker. The picked ids ride onto the
-   * created annotation as `Annotation.mentions`. Absent → unchanged.
-   */
-  mentionSource?: MentionSource;
   blocks: Block[];
   markdown: string;
   frontmatter?: Frontmatter | null;
@@ -236,18 +181,9 @@ export interface ViewerProps {
    * wins over that.
    */
   clickAWord?: boolean;
-  taterMode?: boolean;
   globalAttachments?: ImageAttachment[];
   onAddGlobalAttachment?: (image: ImageAttachment) => void;
   onRemoveGlobalAttachment?: (path: string) => void;
-  repoInfo?: { display: string; branch?: string; host?: string } | null;
-  /**
-   * The repository bare `#123` / `@user` refs link into, WITHOUT the repo
-   * badge `repoInfo` also draws (a host that renders many small documents,
-   * such as the Inbox's messages). Wins over `repoInfo` for links only;
-   * `null` and absent both fall back to `repoInfo`, as before.
-   */
-  refRepo?: { display: string; host?: string } | null;
   stickyActions?: boolean;
   /**
    * Render compact annotation controls and the existing document actions in
@@ -267,16 +203,6 @@ export interface ViewerProps {
    * content.
    */
   fillHeight?: boolean;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
-  /**
-   * Opt-in host capability: decide what a link to a local path does
-   * (`[the mock](mock.html)`, markdown and raw-HTML `<a href>` alike; never
-   * `#anchors`, `//host` or a URL with a scheme). Return `{ kind: 'open' }`
-   * to open it yourself, `{ kind: 'unavailable', title }` to draw it as
-   * inert text, or null for the default. Absent → unchanged.
-   */
-  resolveLocalLink?: LocalLinkResolver;
   imageBaseDir?: string;
   /**
    * A click on an image in the document. Given: the host handles it (the
@@ -303,14 +229,6 @@ export interface ViewerProps {
    *  `imageRegionComments`). Absent: the drawer's cards are read-only. */
   onDeleteAnnotation?: (id: string) => void;
   onEditAnnotation?: (id: string, updates: Partial<Annotation>) => void;
-  /** Directory the active document lives in — used by the code-path validator
-   *  so out-of-tree relative references (e.g. `../foo.ts` in a linked doc)
-   *  resolve against the doc's own directory rather than only cwd. */
-  codePathBaseDir?: string;
-  /** Opt out of `/api/doc/exists` code-path validation (host without that
-   *  endpoint). Default undefined for Plannotator => validation stays on. */
-  disableCodePathValidation?: boolean;
-  linkedDocInfo?: LinkedDocBadgeInfo | null;
   // Plan diff props
   planDiffStats?: { additions: number; deletions: number; modifications: number } | null;
   isPlanDiffActive?: boolean;
@@ -320,8 +238,6 @@ export interface ViewerProps {
    *  annotate/folder sessions pass "since last review"; plan review omits. */
   planDiffBaselineLabel?: string;
   planDiffBaselineTooltip?: string;
-  /** Show amber "Demo" badge (portal mode, no shared content loaded) */
-  showDemoBadge?: boolean;
   /** Max width in px for the plan card; null removes the cap entirely. */
   maxWidth?: number | null;
   /** Label for the copy button (default: "Copy plan") */
@@ -332,22 +248,6 @@ export interface ViewerProps {
    * callers that don't measure plan-area width.
    */
   actionsLabelMode?: ActionsLabelMode;
-  archiveInfo?: {
-    status: "approved" | "denied" | "unknown";
-    timestamp: string;
-    title: string;
-  } | null;
-  /** Source attribution for HTML/URL annotations (e.g. URL or filename) */
-  sourceInfo?: string;
-  /** Absolute path of the annotated source file for the Open-in-app control. */
-  openInAppPath?: string | null;
-  /**
-   * Message picker affordance — annotate-last mode only. Shown as a button in
-   * the sticky-top action bar so the user can switch to a different recent
-   * assistant message. Clicking opens the full picker in the left sidebar's
-   * Messages tab.
-   */
-  messagePickerInfo?: { current: number; total: number; onOpen: () => void };
   // Checkbox toggle props
   onToggleCheckbox?: (blockId: string, checked: boolean) => void;
   checkboxOverrides?: Map<string, boolean>;
@@ -488,7 +388,6 @@ export interface ViewerProps {
    *  block's `data-block-id`; `undefined` keeps the callout. Absent: every
    *  such block draws as today. */
   renderDirectiveBlock?: (block: Block) => React.ReactNode | undefined;
-  onAskAI?: CommentAskAIHandler;
   /** Whether comment popovers offer image attachments. Hosts without an
    *  uploadTransport pass false so the attach affordance never dead-ends.
    *  Default true — today's behavior. */
@@ -508,14 +407,6 @@ export interface ViewerProps {
    * blocks and no comments on its text. Absent → unchanged.
    */
   answerOnly?: boolean;
-  /**
-   * Opt-in host capability (approval "inbox-inline-html"): a host that serves
-   * embed documents (see `HtmlEmbedHost`, @dynotator/core/html-embed) draws
-   * a ```html fence as a live, sandboxed page and a ```svg fence as an
-   * image, each with a Code button for the source. Absent → both stay code,
-   * unchanged (plan review, annotate and code review pass nothing).
-   */
-  htmlEmbeds?: HtmlEmbedHost;
   /**
    * Opt-in host capability, with `answerOnly`: the reader may comment on the
    * text. A text selection opens the selection toolbar, comment-only
@@ -955,17 +846,10 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
       mode,
       inputMethod = "drag",
       clickAWord: clickAWordProp,
-      selectionActions,
-      selectionActionsIcon,
-      onSide,
-      sideButton,
       quickLabels,
-      mentionSource,
       globalAttachments = [],
       onAddGlobalAttachment,
       onRemoveGlobalAttachment,
-      repoInfo,
-      refRepo,
       stickyActions = true,
       annotationHeader,
       gridEnabled = false,
@@ -976,27 +860,16 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
       hasPreviousVersion,
       planDiffBaselineLabel,
       planDiffBaselineTooltip,
-      showDemoBadge,
       maxWidth,
-      onOpenLinkedDoc,
-      onOpenCodeFile,
-      resolveLocalLink,
-      linkedDocInfo,
       imageBaseDir,
       onImageClick: hostImageClick,
       imageLightboxStepping = false,
       imageRegionComments = false,
       onDeleteAnnotation,
       onEditAnnotation,
-      codePathBaseDir,
-      disableCodePathValidation,
       onRestoreReport,
       copyLabel,
       actionsLabelMode = "full",
-      archiveInfo,
-      sourceInfo,
-      openInAppPath,
-      messagePickerInfo,
       onToggleCheckbox,
       checkboxOverrides,
       onAnswerQuestion,
@@ -1023,11 +896,9 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
       renderQuestionCard,
       renderDirectiveBlock,
       renderQuestionBelowPrompt,
-      onAskAI,
       allowImages = true,
       readOnly = false,
       answerOnly = false,
-      htmlEmbeds,
       textComments = false,
       textDeletions = false,
       suggestComment,
@@ -1051,8 +922,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
     const hostComposes = onHostDraft !== undefined && !authoringOff;
     const viewerAnnotationHeader = authoringOff ? undefined : annotationHeader;
     const hasViewerAnnotationHeader = viewerAnnotationHeader !== undefined;
-    // Where `#123` / `@user` link: `refRepo` when the host gave one, else `repoInfo`.
-    const linkRepo = refRepo ?? repoInfo;
     const [copied, setCopied] = useState(false);
     const [lightbox, setLightboxState] = useState<{
       src: string;
@@ -1159,14 +1028,8 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
     }, [
       hasViewerAnnotationHeader,
       stickyActions,
-      repoInfo,
       hasPreviousVersion,
-      showDemoBadge,
-      linkedDocInfo,
-      archiveInfo,
-      sourceInfo,
       planDiffStats,
-      openInAppPath,
     ]);
 
     // Per-doc heading slug map with dedup — computed once per blocks array so
@@ -1988,37 +1851,11 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
       setViewerCommentPopover(null);
     }, []);
 
-    const commentDraftScope = linkedDocInfo?.filepath ?? sourceInfo ?? markdown.slice(0, 120);
+    const commentDraftScope = markdown.slice(0, 120);
     draftScopeRef.current = commentDraftScope;
-
-    const codePathValidation = useValidatedCodePaths(
-      markdown,
-      codePathBaseDir,
-      disableCodePathValidation,
-    );
 
     const documentActions = (
       <>
-        {messagePickerInfo && (
-          <button
-            onClick={messagePickerInfo.onOpen}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
-            title="Pick a different message to annotate"
-          >
-            <MessagesIcon />
-            {actionsLabelMode === "full" && (
-              <span>
-                Message {messagePickerInfo.current} of {messagePickerInfo.total}
-              </span>
-            )}
-            {actionsLabelMode === "short" && (
-              <span>
-                {messagePickerInfo.current}/{messagePickerInfo.total}
-              </span>
-            )}
-          </button>
-        )}
-
         {!authoringOff && onAddGlobalAttachment && onRemoveGlobalAttachment && (
           <AttachmentsButton
             images={globalAttachments}
@@ -2041,7 +1878,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                 isGlobal: true,
               });
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
+            className="flex items-center gap-1.5 h-7 px-3 text-xs font-medium text-foreground/80 hover:text-foreground border border-border bg-background hover:border-border-strong hover:bg-surface-0 rounded-full transition-colors"
             title="Add global comment"
           >
             <svg
@@ -2064,8 +1901,8 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
 
         <button
           onClick={handleCopyPlan}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted rounded-md transition-colors"
-          title={copied ? "Copied!" : copyLabel || (linkedDocInfo ? "Copy file" : "Copy plan")}
+          className="flex items-center gap-1.5 h-7 px-3 text-xs font-medium text-foreground/80 hover:text-foreground border border-border bg-background hover:border-border-strong hover:bg-surface-0 rounded-full transition-colors"
+          title={copied ? "Copied!" : copyLabel || "Copy plan"}
         >
           {copied ? (
             <>
@@ -2096,7 +1933,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                 />
               </svg>
               {actionsLabelMode === "full" && (
-                <span>{copyLabel || (linkedDocInfo ? "Copy file" : "Copy plan")}</span>
+                <span>{copyLabel || "Copy plan"}</span>
               )}
               {actionsLabelMode === "short" && <span>Copy</span>}
             </>
@@ -2118,17 +1955,13 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
         onDelete: authoringOff ? undefined : onDeleteAnnotation,
         onEdit: authoringOff ? undefined : onEditAnnotation,
         focusId: lightbox?.focusId ?? null,
-        onAskAI: authoringOff ? undefined : onAskAI,
-        mentionSource,
       };
     }, [
       annotations,
       authoringOff,
       imageRegionComments,
       lightbox?.focusId,
-      mentionSource,
       onAddAnnotation,
-      onAskAI,
       onDeleteAnnotation,
       onEditAnnotation,
     ]);
@@ -2187,7 +2020,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
     const diagramBlockKey = blocks
       .filter(
         (b) =>
-          b.type === "code" && (isMermaidLanguage(b.language) || isGraphvizLanguage(b.language)),
+          b.type === "code" && isMermaidLanguage(b.language),
       )
       .map((b) => b.id)
       .join("\n");
@@ -2232,8 +2065,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
     };
 
     return (
-      <CodePathValidationContext.Provider value={codePathValidation}>
-        <LocalLinkContext.Provider value={resolveLocalLink ?? null}>
           <DiagramAnchorClaimsContext.Provider value={diagramClaims}>
             <CommentDraftScopeContext.Provider value={commentDraftScope}>
               <div
@@ -2262,14 +2093,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                     } as React.CSSProperties
                   }
                 >
-                  {!viewerAnnotationHeader &&
-                    (repoInfo ||
-                      hasPreviousVersion ||
-                      showDemoBadge ||
-                      linkedDocInfo ||
-                      archiveInfo ||
-                      sourceInfo ||
-                      openInAppPath) && (
+                  {!viewerAnnotationHeader && hasPreviousVersion && (
                       <div
                         ref={docBadgesRef}
                         data-print-hide
@@ -2278,18 +2102,12 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                       >
                         <DocBadges
                           layout="column"
-                          repoInfo={repoInfo}
                           planDiffStats={planDiffStats}
                           isPlanDiffActive={isPlanDiffActive}
                           hasPreviousVersion={hasPreviousVersion}
                           onPlanDiffToggle={onPlanDiffToggle}
                           planDiffBaselineLabel={planDiffBaselineLabel}
                           planDiffBaselineTooltip={planDiffBaselineTooltip}
-                          showDemoBadge={showDemoBadge}
-                          archiveInfo={archiveInfo}
-                          linkedDocInfo={linkedDocInfo}
-                          sourceInfo={sourceInfo}
-                          openInAppPath={openInAppPath}
                         />
                       </div>
                     )}
@@ -2303,18 +2121,12 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                       stuck={isStuck}
                       sentinelRef={stickySentinelRef}
                       badges={{
-                        repoInfo,
                         planDiffStats,
                         isPlanDiffActive,
                         hasPreviousVersion,
                         onPlanDiffToggle,
                         planDiffBaselineLabel,
                         planDiffBaselineTooltip,
-                        showDemoBadge,
-                        archiveInfo,
-                        linkedDocInfo,
-                        sourceInfo,
-                        openInAppPath,
                       }}
                       actions={documentActions}
                     />
@@ -2378,12 +2190,8 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                                   key={block.id}
                                   block={block}
                                   orderedIndex={indices[i]}
-                                  onOpenLinkedDoc={onOpenLinkedDoc}
-                                  onOpenCodeFile={onOpenCodeFile}
                                   onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
                                   checkboxOverrides={checkboxOverrides}
-                                  githubRepo={linkRepo?.display}
-                                  repoHost={linkRepo?.host}
                                   headingAnchorId={headingSlugMap.get(block.id)}
                                   onNavigateAnchor={scrollToAnchor}
                                 />
@@ -2391,28 +2199,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                             </div>
                           );
                         })()
-                      ) : htmlEmbeds &&
-                        group.block.type === "code" &&
-                        isHtmlEmbedLanguage(group.block.language) ? (
-                        <LazyBlockBoundary
-                          key={group.block.id}
-                          fallback={embedFallback(group.block)}
-                        >
-                          <Suspense fallback={<CodeBlock block={group.block} isHovered={false} />}>
-                            <HtmlEmbedBlock block={group.block} host={htmlEmbeds} />
-                          </Suspense>
-                        </LazyBlockBoundary>
-                      ) : htmlEmbeds &&
-                        group.block.type === "code" &&
-                        isSvgFenceLanguage(group.block.language) ? (
-                        <LazyBlockBoundary
-                          key={group.block.id}
-                          fallback={embedFallback(group.block)}
-                        >
-                          <Suspense fallback={<CodeBlock block={group.block} isHovered={false} />}>
-                            <SvgFenceBlock block={group.block} />
-                          </Suspense>
-                        </LazyBlockBoundary>
                       ) : group.block.type === "code" && isMermaidLanguage(group.block.language) ? (
                         <LazyBlockBoundary
                           key={group.block.id}
@@ -2441,42 +2227,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                               onAddAnnotation={selectionCommentsOn ? onAddAnnotation : undefined}
                               readOnly={!selectionCommentsOn}
                               onRestoreReport={onRestoreReport}
-                              onAskAI={selectionCommentsOn ? onAskAI : undefined}
-                              askAISourcePath={linkedDocInfo?.filepath ?? sourceInfo}
-                            />
-                          </Suspense>
-                        </LazyBlockBoundary>
-                      ) : group.block.type === "code" &&
-                        isGraphvizLanguage(group.block.language) ? (
-                        <LazyBlockBoundary
-                          key={group.block.id}
-                          fallback={(notice) => (
-                            <DiagramBlockPending
-                              block={group.block}
-                              kind="graphviz"
-                              notice={notice}
-                            />
-                          )}
-                        >
-                          <Suspense
-                            fallback={<DiagramBlockPending block={group.block} kind="graphviz" />}
-                          >
-                            <GraphvizBlock
-                              block={group.block}
-                              annotations={annotations}
-                              reopenComment={
-                                diagramReopen?.blockId === group.block.id
-                                  ? diagramReopen.request
-                                  : undefined
-                              }
-                              onComposerAnchor={onDiagramComposer}
-                              selectedAnnotationId={selectedAnnotationId}
-                              onSelectAnnotation={onSelectAnnotation}
-                              onAddAnnotation={selectionCommentsOn ? onAddAnnotation : undefined}
-                              readOnly={!selectionCommentsOn}
-                              onRestoreReport={onRestoreReport}
-                              onAskAI={selectionCommentsOn ? onAskAI : undefined}
-                              askAISourcePath={linkedDocInfo?.filepath ?? sourceInfo}
                             />
                           </Suspense>
                         </LazyBlockBoundary>
@@ -2486,10 +2236,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                           block={group.block}
                           imageBaseDir={imageBaseDir}
                           onImageClick={(src, alt) => setLightbox({ src, alt })}
-                          onOpenLinkedDoc={onOpenLinkedDoc}
-                          onOpenCodeFile={onOpenCodeFile}
-                          githubRepo={linkRepo?.display}
-                          repoHost={linkRepo?.host}
                           onNavigateAnchor={scrollToAnchor}
                           onHover={(element) => {
                             if (tableHoverTimeoutRef.current) {
@@ -2595,13 +2341,9 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                               onImageClick={(src, alt) => setLightbox({ src, alt })}
                               key={group.block.id}
                               block={group.block}
-                              onOpenLinkedDoc={onOpenLinkedDoc}
-                              onOpenCodeFile={onOpenCodeFile}
                               onNavigateAnchor={scrollToAnchor}
                               onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
                               checkboxOverrides={checkboxOverrides}
-                              githubRepo={linkRepo?.display}
-                              repoHost={linkRepo?.host}
                               headingAnchorId={headingSlugMap.get(group.block.id)}
                               question={question}
                               questionTotal={questionIndex.total}
@@ -2683,10 +2425,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                         onClose={handleToolbarClose}
                         onRequestComment={handleRequestComment}
                         onQuickLabel={handleQuickLabel}
-                        selectionActions={selectionActions}
-                        selectionActionsIcon={selectionActionsIcon}
-                        onSide={onSide}
-                        sideButton={sideButton}
                         quickLabels={quickLabels}
                         copyText={toolbarState.selectionText}
                         getRichCopy={getRichCopyEnabled() ? toolbarState.getRichCopy : undefined}
@@ -2744,8 +2482,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                           onClose={handleCodeBlockToolbarClose}
                           onRequestComment={handleCodeBlockRequestComment}
                           onQuickLabel={handleCodeBlockQuickLabel}
-                          selectionActions={selectionActions}
-                          selectionActionsIcon={selectionActionsIcon}
                           quickLabels={quickLabels}
                           isExiting={isCodeBlockToolbarExiting}
                           onMouseEnter={() => {
@@ -2779,10 +2515,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                       container={containerRef.current}
                       imageBaseDir={imageBaseDir}
                       onImageClick={(src, alt) => setLightbox({ src, alt })}
-                      onOpenLinkedDoc={onOpenLinkedDoc}
-                      onOpenCodeFile={onOpenCodeFile}
-                      githubRepo={linkRepo?.display}
-                      repoHost={linkRepo?.host}
                       onNavigateAnchor={scrollToAnchor}
                     />
                   )}
@@ -2826,22 +2558,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                       draftKey={`plan:${commentDraftScope}:${hookCommentPopover.draftKey}`}
                       onSubmit={hookCommentSubmit}
                       onClose={hookCommentClose}
-                      mentionSource={mentionSource}
                       allowImages={allowImages}
-                      skillReferences
-                      onAskAI={onAskAI}
-                      askAIContext={{
-                        kind: "selection",
-                        label: "Selected text",
-                        text: hookCommentPopover.selectedText ?? hookCommentPopover.contextText,
-                        sourcePath: linkedDocInfo?.filepath ?? sourceInfo,
-                        ...selectionSourceLines(
-                          blocks,
-                          hookCommentPopover.blockIds ?? [],
-                          hookCommentPopover.selectedText,
-                          hookCommentPopover.startOffset,
-                        ),
-                      }}
                     />
                   )}
                   {!authoringOff && viewerCommentPopover && (
@@ -2857,19 +2574,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                       }`}
                       onSubmit={handleViewerCommentSubmit}
                       onClose={handleViewerCommentClose}
-                      mentionSource={mentionSource}
                       allowImages={allowImages}
-                      skillReferences
-                      onAskAI={onAskAI}
-                      askAIContext={{
-                        kind: viewerCommentPopover.isGlobal ? "general" : "selection",
-                        label: viewerCommentPopover.isGlobal ? "Document" : "Code block",
-                        text: viewerCommentPopover.selectedText,
-                        sourcePath: linkedDocInfo?.filepath ?? sourceInfo,
-                        ...(!viewerCommentPopover.isGlobal && viewerCommentPopover.codeBlock
-                          ? selectionSourceLines(blocks, [viewerCommentPopover.codeBlock.block.id])
-                          : null),
-                      }}
                     />
                   )}
 
@@ -2934,8 +2639,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
               </div>
             </CommentDraftScopeContext.Provider>
           </DiagramAnchorClaimsContext.Provider>
-        </LocalLinkContext.Provider>
-      </CodePathValidationContext.Provider>
     );
   },
 );

@@ -10,7 +10,7 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import type Highlighter from "@plannotator/web-highlighter";
 import type { CommentPopoverState } from "../hooks/useAnnotationHighlighter";
-import { Icon } from "./inbox-thread/icons";
+import { Icon } from "./Icon";
 
 /** How far the badge's start sits back from the words' end, and how far it rises into the line gap. */
 const BACK = 10;

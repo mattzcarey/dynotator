@@ -8,15 +8,17 @@ into a **Dynamic Worker** and run as a **Durable Object Facet**. No containers, 
 
 ## Layout
 
-| Path | What |
-| --- | --- |
-| `app/` | Vite entry for the browser SPA (`index.html`, `index.tsx`). Built to `dist/app`. |
-| `packages/editor/` | The review app (`App.tsx`). Forked from upstream `packages/editor`. |
-| `packages/ui/` | Components, hooks, utils, theme. Forked from upstream `packages/ui`. |
-| `packages/core/`, `packages/shared/` | Framework-free shared logic and types. |
-| `worker/` | Host Worker: router, static assets, `SessionSupervisor` Durable Object, Worker Loader. |
-| `session/` | The per-session server. Bundled to a JS string and loaded as a Dynamic Worker. |
-| `cli/` | `dynotator` CLI: the agent-side client (Claude Code hook, `annotate`). |
+| Path                                 | What                                                                                   |
+| ------------------------------------ | -------------------------------------------------------------------------------------- |
+| `index.html`, `app/`                 | Vite entry for the browser SPA.                                                        |
+| `packages/editor/`                   | The review app (`App.tsx`). Forked from upstream `packages/editor`.                    |
+| `packages/ui/`                       | Components, hooks, utils, theme. Forked from upstream `packages/ui`.                   |
+| `packages/core/`, `packages/shared/` | Framework-free shared logic and types.                                                 |
+| `worker/`                            | Host Worker: router, static assets, `SessionSupervisor` Durable Object, Worker Loader. |
+| `session/`                           | The per-session server. Bundled to a JS string and loaded as a Dynamic Worker.         |
+| `cloudflare.config.ts`               | Worker config for the `cf` CLI (bindings, Durable Object export, assets).              |
+| `scripts/build-session.ts`           | Vite plugin that bundles `session/` into `virtual:session-server`.                     |
+| `cli/`                               | `dynotator` CLI: the agent-side client (Claude Code hook, `annotate`).                 |
 
 Imports use `@dynotator/{ui,core,shared,editor}/...` (tsconfig `paths` + Vite aliases). The npm
 packages still published under `@plannotator/*` (`atomic-editor`, `markdown-editor`,
@@ -31,7 +33,7 @@ browser ─/s/:id/api/*──────▶ host Worker ──▶ SessionSuperv
 agent ──GET /s/:id/api/wait▶ (long poll for the decision)                 (Dynamic Worker, own SQLite)
 ```
 
-- **Host Worker** (`worker/`): owns routing, auth on session creation, and serves `dist/app`.
+- **Host Worker** (`worker/`): owns routing, auth on session creation, and serves the SPA assets.
 - **SessionSupervisor** (Durable Object, SQLite): named by session id. Stores only session
   metadata and expiry. Loads the session-server bundle with `env.LOADER.get(bundleId, …)`
   (`globalOutbound: null`), gets its `SessionServer` class via `getDurableObjectClass`, and runs it
@@ -92,8 +94,10 @@ local agent process, an LLM provider, or another Plannotator product surface.
 - Runtime and package manager: `bun`. TypeScript only (no containers, no Python, no shell glue).
 - `bun run fmt` (oxfmt), `bun run lint` (oxlint), `bun run typecheck` (tsrs, the Rust port of
   the TypeScript 7 compiler), `bun test`, `bun run build`, `bun run check` (all of them).
-- `bun run dev` builds and runs `wrangler dev` (Dynamic Workers and facets work locally in
-  Miniflare). `bun run deploy` deploys.
+- Cloudflare tooling is the `cf` CLI with `cloudflare.config.ts` and the Cloudflare Vite plugin;
+  there is no Wrangler config. `bun run dev` is `cf dev` (port 3000: SPA with HMR plus the real
+  Worker, Dynamic Workers and facets included), `bun run build` is `cf build` (one Vite build for
+  the SPA and the Worker, output in `.cloudflare/`), `bun run deploy` is `cf deploy`.
 - Everything committed must be formatted with oxfmt and must not add tsrs errors or oxlint
   errors. Prefer deleting code to suppressing a diagnostic.
 

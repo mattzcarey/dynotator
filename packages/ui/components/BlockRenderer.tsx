@@ -119,10 +119,10 @@ export const BlockRenderer: React.FC<{
       const Tag = `h${block.level || 1}` as React.ElementType;
       const styles =
         {
-          1: "text-2xl font-bold mb-4 mt-6 first:mt-0 tracking-tight",
-          2: "text-xl font-semibold mb-3 mt-8 text-foreground/90",
-          3: "text-base font-semibold mb-2 mt-6 text-foreground/80",
-        }[block.level || 1] || "text-base font-semibold mb-2 mt-4";
+          1: "text-[1.75rem] leading-[1.15] font-medium tracking-[-0.025em] mb-5 mt-6 first:mt-0",
+          2: "text-xl font-medium tracking-[-0.02em] mb-3 mt-10",
+          3: "text-base font-medium tracking-[-0.01em] mb-2 mt-7",
+        }[block.level || 1] || "text-[15px] font-medium mb-2 mt-5 text-foreground/90";
       return (
         <Tag
           id={headingAnchorId}
@@ -240,7 +240,7 @@ export const BlockRenderer: React.FC<{
       return <MathBlock block={block} />;
 
     case "hr":
-      return <hr className="border-border/30 my-8" data-block-id={block.id} />;
+      return <hr className="border-dashed border-border-strong/70 my-10" data-block-id={block.id} />;
 
     case "html":
       return (

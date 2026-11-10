@@ -24,7 +24,7 @@ export class MemoryStore implements Store {
 
   *list<T>(options?: { prefix?: string }): Iterable<[string, T]> {
     const prefix = options?.prefix ?? "";
-    for (const key of [...this.data.keys()].sort()) {
+    for (const key of [...this.data.keys()].toSorted()) {
       if (key.startsWith(prefix)) yield [key, structuredClone(this.data.get(key)) as T];
     }
   }

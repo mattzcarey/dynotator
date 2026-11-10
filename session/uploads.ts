@@ -65,7 +65,10 @@ export function saveUpload(store: Store, bytes: Uint8Array, name: string): strin
   return id;
 }
 
-export function loadUpload(store: Store, id: string): { type: string; bytes: Uint8Array } | null {
+export function loadUpload(
+  store: Store,
+  id: string,
+): { type: string; bytes: Uint8Array<ArrayBuffer> } | null {
   if (!/^[0-9a-f-]{36}$/.test(id)) return null;
   const meta = store.get<UploadMeta>(metaKey(id));
   if (!meta) return null;

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Dynotator</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#ffffff" />
+    <script>
+      // Same cookie and classes as ThemeProvider, set before first paint so a dark page never flashes white.
+      (function () {
+        var m = document.cookie.match(/(?:^|; )dynotator-theme=([^;]*)/);
+        var mode = m ? decodeURIComponent(m[1]) : "system";
+        if (mode !== "light" && mode !== "dark")
+          mode = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        var root = document.documentElement;
+        root.classList.add(mode);
+        root.style.colorScheme = mode;
+        if (mode === "dark")
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#151414");
+      })();
+    </script>
+  </head>
+  <body class="overflow-hidden overscroll-none antialiased">
+    <div id="root" class="h-full overflow-hidden"></div>
+    <script type="module" src="/app/index.tsx"></script>
+  </body>
+</html>

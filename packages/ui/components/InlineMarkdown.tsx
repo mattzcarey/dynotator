@@ -134,7 +134,7 @@ const CodeFileLink: React.FC<{
   const handleMouseLeave = hover.onLeave;
 
   if (gate.render === "plain") {
-    return <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">{display}</code>;
+    return <code className="px-1 py-px rounded border border-border bg-surface-0 text-[0.84em] font-mono">{display}</code>;
   }
 
   const isAmbiguous = gate.render === "ambiguous-link";
@@ -170,7 +170,7 @@ const CodeFileLink: React.FC<{
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="code-file-link px-1.5 py-0.5 rounded bg-muted text-sm font-mono cursor-pointer hover:text-primary inline-flex items-center gap-1 transition-colors"
+        className="code-file-link px-1 py-px rounded border border-border bg-surface-0 text-[0.84em] font-mono cursor-pointer hover:text-primary inline-flex items-center gap-1 transition-colors"
         title={isAmbiguous ? `${display} — multiple matches` : `View: ${display}`}
       >
         {display}
@@ -422,7 +422,7 @@ function emitPlainTextWithBareUrls(
           href={span.value}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary underline underline-offset-2 hover:text-primary/80"
+          className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
         >
           {span.value}
         </a>,
@@ -747,7 +747,7 @@ export const InlineMarkdown: React.FC<{
               href={safe}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2 hover:text-primary/80"
+              className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
             >
               {url}
             </a>,
@@ -798,7 +798,7 @@ export const InlineMarkdown: React.FC<{
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary underline underline-offset-2 hover:text-primary/80"
+          className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
         >
           {url}
         </a>,
@@ -814,7 +814,7 @@ export const InlineMarkdown: React.FC<{
         <a
           key={key++}
           href={`mailto:${email}`}
-          className="text-primary underline underline-offset-2 hover:text-primary/80"
+          className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
         >
           {email}
         </a>,
@@ -980,7 +980,7 @@ export const InlineMarkdown: React.FC<{
       } else {
         parts.push(
           <CodeSpan key={key++} text={codeContent}>
-            <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">{codeContent}</code>
+            <code className="px-1 py-px rounded border border-border bg-surface-0 text-[0.84em] font-mono">{codeContent}</code>
           </CodeSpan>,
         );
       }
@@ -1018,7 +1018,7 @@ export const InlineMarkdown: React.FC<{
             style={{ backgroundColor: hex }}
             title={hex}
           />
-          <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">{hex}</code>
+          <code className="px-1 py-px rounded border border-border bg-surface-0 text-[0.84em] font-mono">{hex}</code>
         </span>,
       );
       remaining = remaining.slice(match[0].length);
@@ -1120,7 +1120,7 @@ export const InlineMarkdown: React.FC<{
               e.preventDefault();
               onOpenLinkedDoc(targetPath);
             }}
-            className="text-primary underline underline-offset-2 hover:text-primary/80 inline-flex items-center gap-1 cursor-pointer"
+            className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary inline-flex items-center gap-1 cursor-pointer"
             title={`Open: ${target}`}
           >
             {display}
@@ -1308,7 +1308,7 @@ export const InlineMarkdown: React.FC<{
               }}
               // Without it, a middle click would open the path on the host's own origin.
               onAuxClick={hostHref ? undefined : (e) => e.preventDefault()}
-              className="text-primary underline underline-offset-2 hover:text-primary/80 inline-flex items-center gap-1 cursor-pointer"
+              className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary inline-flex items-center gap-1 cursor-pointer"
               data-local-link="open"
             >
               {label}
@@ -1362,7 +1362,7 @@ export const InlineMarkdown: React.FC<{
                   }
                 : undefined
             }
-            className="text-primary underline underline-offset-2 hover:text-primary/80"
+            className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
           >
             {label}
           </a>,
@@ -1376,7 +1376,7 @@ export const InlineMarkdown: React.FC<{
               e.preventDefault();
               onOpenLinkedDoc(linkedDocPath);
             }}
-            className="text-primary underline underline-offset-2 hover:text-primary/80 inline-flex items-center gap-1 cursor-pointer"
+            className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary inline-flex items-center gap-1 cursor-pointer"
             title={`Open: ${linkUrl}`}
           >
             {label}
@@ -1405,7 +1405,7 @@ export const InlineMarkdown: React.FC<{
               e.preventDefault();
               onOpenCodeFile(codeFilePath);
             }}
-            className="text-primary underline underline-offset-2 hover:text-primary/80 inline-flex items-center gap-1 cursor-pointer"
+            className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary inline-flex items-center gap-1 cursor-pointer"
             title={`View: ${linkUrl}`}
           >
             {label}
@@ -1418,7 +1418,7 @@ export const InlineMarkdown: React.FC<{
           <a
             key={key++}
             href={safeLinkUrl}
-            className="text-primary underline underline-offset-2 hover:text-primary/80"
+            className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
           >
             {label}
           </a>,
@@ -1430,7 +1430,7 @@ export const InlineMarkdown: React.FC<{
             href={safeLinkUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary underline underline-offset-2 hover:text-primary/80"
+            className="text-foreground underline decoration-primary/70 decoration-1 underline-offset-[3px] hover:text-primary-ink hover:decoration-primary"
           >
             {label}
           </a>,

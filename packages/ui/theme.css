@@ -1,64 +1,224 @@
-/* Plannotator Theme System — imports all themes, provides Tailwind bridge + base styles */
+/* Dynotator theme: one light and one dark palette in the Cloudflare Workers look. ThemeProvider puts
+ * `light` or `dark` on <html> (app/index.html does it before first paint); every colour below is a
+ * token keyed off that class, and Tailwind reads them through the @theme bridge. */
 
 @import "katex/dist/katex.min.css";
-
-/* Theme files — each defines .theme-{name} (dark) and .theme-{name}.light */
-@import "./themes/plannotator.css";
-@import "./themes/plannotator-graphite.css";
-@import "./themes/plannotator-modern.css";
-@import "./themes/claude-plus.css";
-@import "./themes/soft-pop.css";
-@import "./themes/adwaita.css";
-@import "./themes/caffeine.css";
-@import "./themes/synthwave-84.css";
-@import "./themes/catppuccin.css";
-@import "./themes/rose-pine.css";
-@import "./themes/monokai-pro.css";
-@import "./themes/doom-64.css";
-@import "./themes/dracula.css";
-@import "./themes/gruvbox.css";
-@import "./themes/kanagawa-dragon.css";
-@import "./themes/kanagawa-lotus.css";
-@import "./themes/kanagawa-wave.css";
-@import "./themes/paulmillr.css";
-@import "./themes/quantum-rose.css";
-@import "./themes/solar-dusk.css";
-@import "./themes/terminal.css";
-@import "./themes/tokyo-night.css";
-@import "./themes/tokyo-night-moon.css";
-@import "./themes/tinacious.css";
-@import "./themes/cursor.css";
-@import "./themes/cursor-hc.css";
-@import "./themes/cursor-midnight.css";
-@import "./themes/colorblind.css";
-@import "./themes/everforest.css";
-@import "./themes/everforest-hard.css";
-@import "./themes/everforest-soft.css";
-@import "./themes/nord.css";
-@import "./themes/solarized.css";
-@import "./themes/github.css";
-@import "./themes/one-dark-pro.css";
-@import "./themes/night-owl.css";
-@import "./themes/ayu-dark.css";
-@import "./themes/poimandres.css";
-@import "./themes/material.css";
-@import "./themes/vitesse.css";
-@import "./themes/vesper.css";
-@import "./themes/andromeeda.css";
-@import "./themes/aurora-x.css";
-@import "./themes/dark-plus.css";
-@import "./themes/houston.css";
-@import "./themes/laserwave.css";
-@import "./themes/min.css";
-@import "./themes/one-light.css";
-@import "./themes/plastic.css";
-@import "./themes/red.css";
-@import "./themes/slack.css";
-@import "./themes/snazzy-light.css";
-@import "./themes/vitesse-black.css";
-@import "./themes/simple.css";
-@import "./themes/neutral.css";
 @import "./print.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root,
+.light {
+  --background: #ffffff;
+  --foreground: #262626;
+  --card: #ffffff;
+  --card-foreground: #262626;
+  --popover: #ffffff;
+  --popover-foreground: #262626;
+  --primary: #ff5e1f;
+  --primary-hover: #ff7038;
+  --primary-pressed: #d63c01;
+  /* Orange as text on white needs the deeper shade for 4.5:1. */
+  --primary-ink: #d63c01;
+  /* #262626-ish on #ff5e1f is 5.4:1; white would be 3.1:1. */
+  --primary-foreground: #1f1f1f;
+  --secondary: #0a95ff;
+  --secondary-foreground: #ffffff;
+  --muted: #f9f7f6;
+  --muted-foreground: #707070;
+  --accent: #ff5e1f;
+  --accent-foreground: #1f1f1f;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #15803d;
+  --success-foreground: #ffffff;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --border: #ebebeb;
+  --border-strong: #cccccc;
+  --input: #dcdcdc;
+  --ring: #ff5e1f;
+  --surface-0: #fdfdfc;
+  --surface-1: #f9f7f6;
+  --surface-2: #efedeb;
+  --cream: #fffbf5;
+  --node-border: #e9d1bb;
+  --code-bg: #fbfaf9;
+  --focus-highlight: #0a95ff;
+  --annotation-comment: var(--accent);
+  --grid-dot: #e6e3e0;
+  --float-shadow: 0 1px 2px rgb(38 38 38 / 0.04), 0 8px 24px -6px rgb(38 38 38 / 0.12);
+  --card-shadow: none;
+}
+
+.dark {
+  --background: #151414;
+  --foreground: #f0e3de;
+  --card: #1a1a1a;
+  --card-foreground: #f0e3de;
+  --popover: #1f1e1d;
+  --popover-foreground: #f0e3de;
+  --primary: #ff5e1f;
+  --primary-hover: #ff7038;
+  --primary-pressed: #d63c01;
+  --primary-ink: #ff7038;
+  --primary-foreground: #1f1f1f;
+  --secondary: #3aa9ff;
+  --secondary-foreground: #151414;
+  --muted: #2a2927;
+  --muted-foreground: #9a918c;
+  --accent: #ff7038;
+  --accent-foreground: #1f1f1f;
+  --destructive: #ff6b5e;
+  --destructive-foreground: #151414;
+  --success: #4ade80;
+  --success-foreground: #151414;
+  --warning: #fbbf24;
+  --warning-foreground: #151414;
+  --border: rgb(240 227 222 / 0.125);
+  --border-strong: rgb(240 227 222 / 0.25);
+  --input: rgb(240 227 222 / 0.2);
+  --ring: #ff7038;
+  --surface-0: #191817;
+  --surface-1: #2a2927;
+  --surface-2: #35332f;
+  --cream: #1d1a17;
+  --node-border: #3d2e1f;
+  --code-bg: #1d1c1b;
+  --focus-highlight: #3aa9ff;
+  --grid-dot: #2a2826;
+  --float-shadow: 0 0 0 1px rgb(240 227 222 / 0.06), 0 12px 32px -8px rgb(0 0 0 / 0.6);
+}
+
+:root {
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  --radius: 0.5rem;
+  --sidebar: var(--surface-0);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  /* Mobile browser environment. Safe areas are available before React mounts; the observed
+   * viewport values are written by useViewportEnvironment and fall back cleanly below. */
+  --pn-safe-top: env(safe-area-inset-top, 0px);
+  --pn-safe-right: env(safe-area-inset-right, 0px);
+  --pn-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --pn-safe-left: env(safe-area-inset-left, 0px);
+  --pn-touch-target: 2.75rem;
+}
+
+/* Tailwind bridge: maps the tokens to utility classes. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-ink: var(--primary-ink);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-cream: var(--cream);
+  --color-annotation-comment: var(--annotation-comment);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: var(--float-shadow);
+  --shadow-lg: var(--float-shadow);
+  --shadow-xl: var(--float-shadow);
+  --shadow-2xl: var(--float-shadow);
+}
+
+@theme {
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 1rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.45;
+  --text-xl: 1.1875rem;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 1.375rem;
+  --text-2xl--line-height: 1.3;
+  --text-3xl: 1.625rem;
+  --text-3xl--line-height: 1.2;
+  --text-4xl: 1.875rem;
+  --text-4xl--line-height: 1.15;
+  --text-5xl: 2rem;
+  --text-5xl--line-height: 1.1;
+  --tracking-tight: -0.025em;
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.06em;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--background);
+    color: var(--foreground);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    letter-spacing: -0.02em;
+  }
+
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Orange as text on white needs the deeper shade; fills keep the brand orange. */
+.light :is(.text-primary, .text-primary\/80, .text-primary\/70, .text-primary\/60) {
+  color: var(--primary-ink);
+}
+
 
 /* Skill-reference composer input (CommentPopover). The textarea's own glyphs
  * are transparent — a mirrored aria-hidden overlay behind it paints the text,
@@ -632,203 +792,6 @@
   }
 }
 
-/* Tailwind bridge — maps CSS vars to utility classes */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-surface-0: var(--surface-0);
-  --color-surface-1: var(--surface-1);
-  --color-surface-2: var(--surface-2);
-  /* Comment-annotation indicator color. Defaults to each theme's --accent
-   * (see :root below); a theme whose accent is a low-contrast neutral (e.g.
-   * "simple") overrides --annotation-comment directly. */
-  --color-annotation-comment: var(--annotation-comment);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
-/* Type scale — fonts excluded on purpose (themes own --font-sans/--font-mono) */
-@theme {
-  --text-sm: 0.875rem; --text-sm--line-height: 1.45;
-  --text-base: 1rem; --text-base--line-height: 1.55;
-  --text-lg: 1.0625rem; --text-lg--line-height: 1.45;
-  --text-xl: 1.1875rem; --text-xl--line-height: 1.4;
-  --text-2xl: 1.375rem; --text-2xl--line-height: 1.3;
-  --text-3xl: 1.625rem; --text-3xl--line-height: 1.2;
-  --text-4xl: 1.875rem; --text-4xl--line-height: 1.15;
-  --text-5xl: 2rem; --text-5xl--line-height: 1.1;
-}
-
-/* Base styles — apply regardless of theme */
-@layer base {
-  /* Extended tokens — derived from Plannotator's theme vars so they adapt to
-   * all themes. These cover gaps between Plannotator's base token set and what
-   * the surface/sidebar-aware components expect. Themes that pin explicit
-   * values (e.g. "simple") override these. */
-  :root {
-    /* Mobile browser environment. Safe areas are CSS-owned because they are
-     * available before React mounts; the observed viewport values are written
-     * by useViewportEnvironment and fall back cleanly in the utilities below. */
-    --pn-safe-top: env(safe-area-inset-top, 0px);
-    --pn-safe-right: env(safe-area-inset-right, 0px);
-    --pn-safe-bottom: env(safe-area-inset-bottom, 0px);
-    --pn-safe-left: env(safe-area-inset-left, 0px);
-    --pn-touch-target: 2.75rem;
-    --surface-0: color-mix(in oklch, var(--muted) 40%, var(--background));
-    --surface-1: var(--muted);
-    --surface-2: color-mix(in oklch, var(--muted) 70%, var(--foreground));
-    --sidebar: var(--card);
-    --sidebar-foreground: var(--foreground);
-    --sidebar-primary: var(--primary);
-    --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: var(--muted);
-    --sidebar-accent-foreground: var(--foreground);
-    --sidebar-border: var(--border);
-    --sidebar-ring: var(--ring);
-    /* Comment-annotation color follows the theme's accent unless the theme
-     * overrides it (neutral themes whose accent is an illegible gray). */
-    --annotation-comment: var(--accent);
-    /* Sensible amber default so a "warning" color utility exists even for
-     * themes that don't define --warning. Matches the plannotator theme;
-     * per-theme files override these. */
-    --warning: oklch(0.75 0.15 85);
-    --warning-foreground: oklch(0.20 0.02 260);
-    --card-ring: rgba(255, 255, 255, 0.08);
-    --card-shadow:
-      0 0 0 1px var(--card-ring), 0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 2px 8px -2px rgba(0, 0, 0, 0.3);
-    /* Floating surfaces with no border (the tooltip): a faint ring in the
-     * shadow plus a soft drop. The ink is the background taken toward black in
-     * its own hue (the Inbox's Soft float shadow, same formula). Hosts override
-     * --float-shadow to restyle every borderless float at once. */
-    --float-shadow-ink: var(--background);
-    --float-shadow:
-      0 0 0 1px color-mix(in oklch, var(--foreground) 8%, transparent),
-      0 16px 40px -10px color-mix(in oklch, var(--float-shadow-ink) 70%, transparent);
-  }
-
-  html {
-    --terminal-background: var(--card);
-    --terminal-foreground: var(--foreground);
-    --terminal-cursor: var(--primary);
-    --terminal-cursor-accent: var(--terminal-background);
-    --terminal-selection-background: color-mix(in oklab, var(--primary) 32%, var(--terminal-background));
-    --terminal-selection-foreground: var(--foreground);
-    --terminal-selection-inactive-background: var(--border);
-    --terminal-black: var(--terminal-background);
-    --terminal-red: var(--destructive);
-    --terminal-green: var(--success);
-    --terminal-yellow: var(--warning);
-    --terminal-blue: var(--primary);
-    --terminal-magenta: var(--accent);
-    --terminal-cyan: var(--secondary);
-    --terminal-white: var(--foreground);
-    --terminal-bright-black: var(--muted-foreground);
-    --terminal-bright-red: color-mix(in oklab, var(--destructive) 80%, white);
-    --terminal-bright-green: color-mix(in oklab, var(--success) 80%, white);
-    --terminal-bright-yellow: color-mix(in oklab, var(--warning) 80%, white);
-    --terminal-bright-blue: color-mix(in oklab, var(--primary) 80%, white);
-    --terminal-bright-magenta: color-mix(in oklab, var(--accent) 80%, white);
-    --terminal-bright-cyan: color-mix(in oklab, var(--secondary) 80%, white);
-    --terminal-bright-white: var(--foreground);
-  }
-
-  .light {
-    --warning: oklch(0.55 0.18 85);
-    --warning-foreground: oklch(0.18 0.02 260);
-    --terminal-bright-red: color-mix(in oklab, var(--destructive) 84%, black);
-    --terminal-bright-green: color-mix(in oklab, var(--success) 84%, black);
-    --terminal-bright-yellow: color-mix(in oklab, var(--warning) 84%, black);
-    --terminal-bright-blue: color-mix(in oklab, var(--primary) 84%, black);
-    --terminal-bright-magenta: color-mix(in oklab, var(--accent) 84%, black);
-    --terminal-bright-cyan: color-mix(in oklab, var(--secondary) 84%, black);
-    --card-ring: rgba(0, 0, 0, 0.06);
-    --card-shadow:
-      0 0 0 1px var(--card-ring), 0 1px 3px 0 rgba(0, 0, 0, 0.04),
-      0 2px 8px -2px rgba(0, 0, 0, 0.06);
-    --float-shadow-ink: var(--foreground);
-    --float-shadow:
-      0 0 0 1px color-mix(in oklch, var(--border) 70%, transparent),
-      0 12px 32px -8px color-mix(in oklch, var(--float-shadow-ink) 22%, transparent);
-  }
-
-  @supports (color: oklch(from red l c h)) {
-    :root:not(.light) {
-      --float-shadow-ink: oklch(from var(--background) calc(l * 0.2) calc(c * 0.5) h);
-    }
-  }
-
-  * {
-    border-color: var(--border);
-  }
-}
-
-/* Inter's stylistic sets: ss01 (open digits), ss02 (disambiguation: I, l, 0)
- * and cv01 (alternate one), set on body with font-feature-settings. That
- * property is inherited by every font on the page, and feature tags mean
- * different things in each font. On macOS, iOS and Windows that is the look
- * users know (SF Pro, the system-ui themes' font, draws an open 4 and
- * straight 6 and 9 with them), so it stays. On desktop Linux, Ubuntu Mono, the
- * monospace fallback that code review diffs and gutters reach, draws ss02 as
- * superscript digits (#1961). There (`pn-os-linux`, put on <html> before the
- * first paint by ThemeProvider: see markRootPlatform in utils/platform.ts) the
- * sets are named for Inter's families and applied with
- * font-variant-alternates instead: a named value applies only to text a listed
- * family renders, so monospace text, Pierre's diffs (inside their shadow
- * roots), system-ui themes and any fallback font get none of them. */
-@font-feature-values "Inter Variable", "Inter", "InterVariable" {
-  @styleset {
-    pn-inter: 1 2;
-  }
-  @character-variant {
-    pn-inter-one: 1;
-  }
-}
-
-body {
-  font-family: var(--font-sans);
-  background: var(--background);
-  color: var(--foreground);
-  font-feature-settings: "ss01", "ss02", "cv01";
-}
-
-:root.pn-os-linux body {
-  font-feature-settings: normal;
-  font-variant-alternates: styleset(pn-inter) character-variant(pn-inter-one);
-}
-
 /* Safari extends the page canvas beneath its floating browser controls. The
  * plan document is a card-colored nested scroller, so leaving the outer canvas
  * on `--background` produces an opaque dark band around those controls. Match
@@ -1048,6 +1011,7 @@ html:has([data-pn-compact-touch-layout='true'])
  * that wraps rather than run off a narrow screen. AnnotationToolbar places it
  * from its measured size (utils/touchToolbarPlacement). */
 .annotation-toolbar[data-pn-annotation-toolbar-touch] {
+  border-radius: 1.25rem;
   /* Its width never depends on where it sits, so one measurement places it.
    * The inline max-width (the visible screen less margins and safe areas)
    * makes the row wrap only when the buttons cannot fit at all. */
@@ -1153,21 +1117,128 @@ html:has([data-pn-compact-touch-layout='true'])
   text-align: center;
 }
 
-/* Subtle grid background */
+
+/* Dotted grid, the Workers diagram ground. */
 .bg-grid {
-  background-image:
-    linear-gradient(to right, oklch(0.32 0.02 260 / 0.5) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.32 0.02 260 / 0.5) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(var(--grid-dot) 1px, transparent 1.2px);
+  background-size: 16px 16px;
 }
 
-.light .bg-grid {
-  background-image:
-    linear-gradient(to right, oklch(0.90 0.01 260 / 0.6) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.90 0.01 260 / 0.6) 1px, transparent 1px);
+/* Mono metadata label: badges, section labels, key hints. */
+.pn-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
+/* Square corner markers, the Workers diagram motif. Use on one deliberate element at a time. */
+.pn-corners {
+  position: relative;
+}
+.pn-corners::before,
+.pn-corners::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--border-strong);
+  background: var(--background);
+  pointer-events: none;
+}
+.pn-corners::before {
+  top: -3px;
+  left: -3px;
+}
+.pn-corners::after {
+  right: -3px;
+  bottom: -3px;
+}
 
+/* Scrollbars: thin, warm grey, no track. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+::selection {
+  background: rgb(10 149 255 / 0.22);
+}
+
+/* Suppress colour transitions until the app has mounted and the theme is stable;
+ * ThemeProvider adds .transitions-ready after mount and drops it during a mode swap. */
+html:not(.transitions-ready) * {
+  transition-duration: 0s !important;
+}
+
+/* Only colour properties: transform/opacity are handled per component so scrolling stays smooth. */
+* {
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Annotation highlights: orange wash for comments, red strike for deletions, blue for the focused one. */
+/* A <mark>: without a type class it is the pending selection, tinted like ::selection. */
+.annotation-highlight {
+  border-radius: 2px;
+  padding: 0 2px;
+  margin: 0 -2px;
+  color: inherit;
+  background: rgb(10 149 255 / 0.18);
+}
+
+.annotation-highlight.math-inline-annotation {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.annotation-highlight.math-block-annotation {
+  display: block;
+}
+
+.annotation-highlight.comment {
+  background: rgb(255 94 31 / 0.14);
+  border-bottom: 2px solid var(--annotation-comment);
+}
+
+.dark .annotation-highlight.comment {
+  background: rgb(255 112 56 / 0.2);
+}
+
+.annotation-highlight.deletion {
+  background: rgb(220 38 38 / 0.1);
+  text-decoration: line-through;
+  text-decoration-color: var(--destructive);
+  text-decoration-thickness: 2px;
+}
+
+.dark .annotation-highlight.deletion {
+  background: rgb(255 107 94 / 0.18);
+}
+
+.annotation-highlight.focused {
+  background: color-mix(in srgb, var(--focus-highlight) 20%, transparent) !important;
+  border-bottom: 2px solid var(--focus-highlight);
+  box-shadow: none;
+  filter: none;
+}
+
+.annotation-highlight:hover {
+  filter: brightness(0.97) saturate(1.2);
+  cursor: pointer;
+}
+
+.dark .annotation-highlight:hover {
+  filter: brightness(1.15);
+}
 /* Glow effects */
 .glow-primary {
   box-shadow: 0 0 20px oklch(from var(--primary) l c h / 0.15), 0 0 40px oklch(from var(--primary) l c h / 0.05);
@@ -1281,26 +1352,6 @@ html:has([data-pn-compact-touch-layout='true'])
   border-bottom-right-radius: 0;
 }
 
-/* ------------------------------------------------------------------ */
-/* Scrollbars                                                         */
-/* ------------------------------------------------------------------ */
-/*
- * All scroll containers use NATIVE OS scrollbars (the overlayscrollbars library
- * was removed). <OverlayScrollArea> is now a thin native wrapper; everything is
- * styled by the standard rule below.
- *
- * Note: transform/opacity were removed from global transitions in abc952f to
- * prevent scroll jank. DO NOT re-add them.
- */
-
-/* Native OS scrollbars — thin + themed via the standard properties (cross-browser:
- * Chrome 121+, Safari 18.2+, Firefox). Deliberately NO `::-webkit-scrollbar { width }`
- * override: the old 6px rail was the "can't grab the scrollbar" bug (#354); the
- * standard `thin` stays grabbable. (Replaced the overlayscrollbars os-theme.) */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
 /* Except a diff: Pierre (@pierre/diffs) draws its own bar at the bottom of each file's code with ::-webkit-scrollbar,
  * sized to the room its layout keeps. scrollbar-color is inherited into its shadow root, and Chrome drops
  * ::-webkit-scrollbar styles under it (a 15px classic bar the layout does not count, cut off at the file's edge). */
@@ -1329,49 +1380,6 @@ diffs-container {
 .pn-diff-bottom-bar::-webkit-scrollbar-thumb { background-color: var(--pn-diff-bar-thumb); border-radius: 3px; }
 @supports (-moz-appearance: none) {
   .pn-diff-bottom-bar { scrollbar-width: thin; scrollbar-color: var(--pn-diff-bar-thumb) transparent; }
-}
-
-/* Selection */
-::selection {
-  background: oklch(from var(--primary) l c h / 0.3);
-}
-
-/* Suppress all color transitions until the app has mounted and the theme
-   is stable. Without this, the global * transition below fires on initial
-   load — className reassignments during React mount trigger a 150ms
-   transition from browser-default black to themed white, causing a visible
-   flash. ThemeProvider adds .transitions-ready after mount. */
-html:not(.transitions-ready) * {
-  transition-duration: 0s !important;
-}
-
-/* Smooth transitions for theme switching and hover states.
-   Only color properties — transform/opacity are handled per-component
-   to avoid interfering with scroll compositing. */
-* {
-  transition-property: color, background-color, border-color, box-shadow;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-/* A theme switch lands in one frame. ThemeProvider holds .pn-theme-switching
-   on <html> from the moment it swaps the theme classes until two frames after
-   the redraw commits. Without it, the rule above starts a colour transition on
-   every element at once, which froze the page before it faded. Only timing
-   changes here: a transition already running (a sheet sliding, a menu fading)
-   keeps going, and hover fades come back with the class gone. */
-html.pn-theme-switching,
-html.pn-theme-switching *,
-html.pn-theme-switching *::before,
-html.pn-theme-switching *::after {
-  transition-duration: 0s !important;
-  transition-delay: 0s !important;
-}
-
-/* Focus states */
-:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
 }
 
 .file-browser-filter-input {
@@ -1500,51 +1508,6 @@ html.pn-theme-switching *::after {
   background-color: color-mix(in oklab, var(--destructive) 20%, var(--muted));
 }
 
-/* Annotation highlights */
-.annotation-highlight {
-  border-radius: 2px;
-  padding: 0 2px;
-  margin: 0 -2px;
-}
-
-.annotation-highlight.deletion {
-  background: oklch(from var(--destructive) l c h / 0.35);
-  text-decoration: line-through;
-  text-decoration-color: var(--destructive);
-  text-decoration-thickness: 2px;
-}
-
-.annotation-highlight.comment {
-  background: oklch(0.70 0.18 60 / 0.3);
-  border-bottom: 2px solid var(--accent);
-}
-
-/* Light mode: softer highlights */
-.light .annotation-highlight.deletion {
-  background: oklch(0.65 0.22 25 / 0.2);
-}
-
-.light .annotation-highlight.comment {
-  background: oklch(0.70 0.20 60 / 0.15);
-}
-
-.annotation-highlight.focused {
-  background: oklch(from var(--focus-highlight) l c h / 0.45) !important;
-  box-shadow: 0 0 8px oklch(from var(--focus-highlight) l c h / 0.4);
-  border-bottom: 2px solid var(--focus-highlight);
-  filter: none;
-}
-
-.light .annotation-highlight.focused {
-  background: oklch(0.70 0.22 200 / 0.3) !important;
-  box-shadow: 0 0 6px oklch(0.60 0.20 200 / 0.3);
-}
-
-.annotation-highlight:hover {
-  filter: brightness(1.2);
-  cursor: pointer;
-}
-
 /* ========================================
    Plan Diff Styles
    ======================================== */
@@ -1557,9 +1520,6 @@ html.pn-theme-switching *::after {
   border-radius: 0 0.25rem 0.25rem 0;
   margin: 0.25rem 0;
 }
-.light .plan-diff-added {
-  background: oklch(from var(--success) l c h / 0.06);
-}
 
 /* Clean diff view - removed content */
 .plan-diff-removed {
@@ -1568,9 +1528,6 @@ html.pn-theme-switching *::after {
   padding-left: 0.75rem;
   border-radius: 0 0.25rem 0.25rem 0;
   margin: 0.25rem 0;
-}
-.light .plan-diff-removed {
-  background: oklch(from var(--destructive) l c h / 0.06);
 }
 
 /* Clean diff view - modified content (mix of additions and deletions in one
@@ -1692,29 +1649,16 @@ body:has([data-popout="true"]) [data-sidebar-tabs="true"] {
 }
 
 /* GitHub-style alerts: > [!NOTE] / [!TIP] / [!WARNING] / [!CAUTION] / [!IMPORTANT] */
-.alert-note      { border-left-color: #0969da; }
-.alert-note      .alert-title { color: #0969da; }
-.alert-tip       { border-left-color: #1a7f37; }
-.alert-tip       .alert-title { color: #1a7f37; }
-.alert-warning   { border-left-color: #9a6700; }
-.alert-warning   .alert-title { color: #9a6700; }
-.alert-caution   { border-left-color: #cf222e; }
-.alert-caution   .alert-title { color: #cf222e; }
-.alert-important { border-left-color: #8250df; }
-.alert-important .alert-title { color: #8250df; }
-
-@media (prefers-color-scheme: dark) {
-  .alert-note      { border-left-color: #4493f8; }
-  .alert-note      .alert-title { color: #4493f8; }
-  .alert-tip       { border-left-color: #3fb950; }
-  .alert-tip       .alert-title { color: #3fb950; }
-  .alert-warning   { border-left-color: #d29922; }
-  .alert-warning   .alert-title { color: #d29922; }
-  .alert-caution   { border-left-color: #f85149; }
-  .alert-caution   .alert-title { color: #f85149; }
-  .alert-important { border-left-color: #ab7df8; }
-  .alert-important .alert-title { color: #ab7df8; }
-}
+.alert-note { border-left-color: var(--secondary); }
+.alert-note .alert-title { color: var(--secondary); }
+.alert-tip { border-left-color: var(--success); }
+.alert-tip .alert-title { color: var(--success); }
+.alert-warning { border-left-color: var(--warning); }
+.alert-warning .alert-title { color: var(--warning); }
+.alert-caution { border-left-color: var(--destructive); }
+.alert-caution .alert-title { color: var(--destructive); }
+.alert-important { border-left-color: var(--primary); }
+.alert-important .alert-title { color: var(--primary-ink); }
 
 /* Directive containers: :::kind ... ::: */
 .directive { border-color: var(--border); background: color-mix(in srgb, var(--muted) 50%, transparent); }
@@ -1838,65 +1782,6 @@ body:has([data-popout="true"]) [data-sidebar-tabs="true"] {
 .ai-markdown th[align="right"],
 .ai-markdown td[align="right"] { text-align: right; }
 
-/* Annotation highlights — shared by the plan editor and the code-review
-   description annotations. (Moved here from packages/editor/index.css so both
-   surfaces render web-highlighter marks identically.) */
-.annotation-highlight {
-  border-radius: 2px;
-  padding: 0 2px;
-  margin: 0 -2px;
-}
-
-/* Math annotations style the rendered formula element directly rather than
-   wrapping text in a <mark>, so they need their own display handling. */
-.annotation-highlight.math-inline-annotation {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1;
-}
-
-.annotation-highlight.math-block-annotation {
-  display: block;
-}
-
-.annotation-highlight.deletion {
-  background: oklch(from var(--destructive) l c h / 0.35);
-  text-decoration: line-through;
-  text-decoration-color: var(--destructive);
-  text-decoration-thickness: 2px;
-}
-
-.annotation-highlight.comment {
-  background: oklch(0.70 0.18 60 / 0.3);
-  border-bottom: 2px solid var(--accent);
-}
-
-/* Light mode: softer highlights */
-.light .annotation-highlight.deletion {
-  background: oklch(0.65 0.22 25 / 0.2);
-}
-
-.light .annotation-highlight.comment {
-  background: oklch(0.70 0.20 60 / 0.15);
-}
-
-.annotation-highlight.focused {
-  background: oklch(from var(--focus-highlight) l c h / 0.45) !important;
-  box-shadow: 0 0 8px oklch(from var(--focus-highlight) l c h / 0.4);
-  border-bottom: 2px solid var(--focus-highlight);
-  filter: none;
-}
-
-.light .annotation-highlight.focused {
-  background: oklch(0.70 0.22 200 / 0.3) !important;
-  box-shadow: 0 0 6px oklch(0.60 0.20 200 / 0.3);
-}
-
-.annotation-highlight:hover {
-  filter: brightness(1.2);
-  cursor: pointer;
-}
-
 /* Document text size (Settings → Display → Text size, #2066; see
    utils/documentTextSize). The app sets data-doc-text-size and
    --doc-text-scale (size / 15) on the document element only away from the
@@ -2013,3 +1898,4 @@ body:has([data-popout="true"]) [data-sidebar-tabs="true"] {
     animation: none;
   }
 }
+

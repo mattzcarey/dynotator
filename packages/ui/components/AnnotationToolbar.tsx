@@ -481,7 +481,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
       // Touch placement (host opt-in, finger pointer): which side of the
       // selection it took. theme.css sizes the buttons for a thumb here.
       data-pn-annotation-toolbar-touch={position.touch}
-      className="annotation-toolbar fixed z-[100] bg-popover border border-border rounded-lg shadow-2xl"
+      className="annotation-toolbar fixed z-[100] bg-popover border border-border rounded-full shadow-lg"
       style={style}
       onMouseDown={(e) => e.stopPropagation()}
       onMouseEnter={onMouseEnter}
@@ -532,7 +532,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
                 }
               />
             )}
-            <div className="w-px h-5 bg-border mx-0.5" />
+            <div className="w-px h-4 bg-border mx-1" />
           </>
         )}
         {(showDelete ?? !commentOnly) && (
@@ -598,7 +598,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
               onClick={() => onQuickLabel(THUMBS_UP_LABEL)}
               icon={<span className="block w-4 h-4 text-sm leading-4 text-center">👍</span>}
               label="Looks good"
-              className="hover:bg-green-500/10"
+              className="hover:bg-muted"
             />
             {quickLabelsOpen && zapButtonRef.current && (
               <FloatingQuickLabelPicker
@@ -623,7 +623,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
             };
             return (
               <>
-                <div className="w-px h-5 bg-border mx-0.5" />
+                <div className="w-px h-4 bg-border mx-1" />
                 {sideButton ? (
                   // The host's own drawing (`sideButton`): icon-only, as its neighbours are, named by its tooltip.
                   <ToolbarButton
@@ -643,7 +643,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
                     data-pn-touch-target="true"
                     data-annotation-side=""
                     onClick={pressSide}
-                    className="flex items-center gap-1.5 h-7 pl-2 pr-2.5 rounded-md text-foreground hover:bg-muted transition-colors text-[12.5px] font-medium whitespace-nowrap"
+                    className="flex items-center gap-1.5 h-7 pl-2 pr-2.5 rounded-full text-foreground hover:bg-muted transition-colors text-[12.5px] font-medium whitespace-nowrap"
                   >
                     <MessagesSquareIcon />
                     Side
@@ -652,7 +652,7 @@ export const AnnotationToolbar: React.FC<AnnotationToolbarProps> = ({
               </>
             );
           })()}
-        <div className="w-px h-5 bg-border mx-0.5" />
+        <div className="w-px h-4 bg-border mx-1" />
         <ToolbarButton
           onClick={onClose}
           icon={<CloseIcon />}
@@ -760,7 +760,7 @@ const ToolbarButton = React.forwardRef<
       data-pn-touch-target="true"
       data-pn-touch-target-icon="true"
       onClick={onClick}
-      className={`p-1.5 rounded-md transition-colors ${className}`}
+      className={`p-1.5 rounded-full transition-colors ${className}`}
       {...dataAttributes}
     >
       {icon}

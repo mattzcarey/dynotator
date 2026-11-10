@@ -41,7 +41,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
           data-pn-dismissable-popover="true"
           className={
             panelClassName ??
-            `absolute top-full right-0 mt-1 ${panelWidth === "wide" ? "w-64" : "w-56"} rounded-lg border border-border bg-popover py-1 shadow-xl z-[70]`
+            `absolute top-full right-0 mt-1 ${panelWidth === "wide" ? "w-64" : "w-56"} rounded-lg border border-border bg-popover py-1 shadow-lg z-[70]`
           }
         >
           {children({ closeMenu: () => setIsOpen(false) })}
@@ -82,13 +82,13 @@ export const ActionMenuItem: React.FC<ActionMenuItemProps> = ({
     onClick={onClick}
     disabled={disabled}
     role={role}
-    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent${className ? ` ${className}` : ""}`}
+    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent${className ? ` ${className}` : ""}`}
   >
     <span className="text-muted-foreground">{icon}</span>
     {subtitle ? (
       <span className="flex flex-1 flex-col gap-0.5">
         <span>{label}</span>
-        <span className="text-[10px] text-muted-foreground">{subtitle}</span>
+        <span className="text-[11px] text-muted-foreground">{subtitle}</span>
       </span>
     ) : (
       <span className="flex-1">{label}</span>
@@ -100,7 +100,7 @@ export const ActionMenuItem: React.FC<ActionMenuItemProps> = ({
 export const ActionMenuDivider: React.FC = () => <div className="my-1 border-t border-border" />;
 
 export const ActionMenuSectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+  <div className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground">
     {children}
   </div>
 );

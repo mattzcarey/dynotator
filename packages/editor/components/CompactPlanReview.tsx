@@ -3,7 +3,7 @@ import type { CompactPlanAction } from "@dynotator/ui/components/PlanHeaderMenu"
 
 type CompactPlanDecisionActionId = Extract<
   CompactPlanAction["id"],
-  "exit" | "feedback" | "approve" | "copy" | "done" | "note" | "discard-finish"
+  "exit" | "feedback" | "approve" | "note" | "discard-finish"
 >;
 
 /** An incumbent session decision that may be presented by compact Review. */
@@ -67,7 +67,6 @@ interface CompactPlanReviewProps {
   actions: CompactPlanReviewAction[];
   primaryActionId?: CompactPlanReviewAction["id"];
   onOpenAnnotations: () => void;
-  onOpenAI?: () => void;
 }
 
 /** Compact review summary and the incumbent session decision actions. */
@@ -76,7 +75,6 @@ export const CompactPlanReview: React.FC<CompactPlanReviewProps> = ({
   actions,
   primaryActionId,
   onOpenAnnotations,
-  onOpenAI,
 }) => {
   const orderedActions = [...actions].sort((left, right) => {
     if (left.id === primaryActionId) return -1;
@@ -109,17 +107,6 @@ export const CompactPlanReview: React.FC<CompactPlanReviewProps> = ({
               <span>Review annotations</span>
               <CommentIcon />
             </button>
-            {onOpenAI && (
-              <button
-                type="button"
-                data-pn-touch-target="true"
-                onClick={onOpenAI}
-                className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-border bg-background/40 px-4 py-3 text-left text-sm font-medium text-foreground outline-none transition-colors active:bg-muted focus-visible:ring-2 focus-visible:ring-ring/60"
-              >
-                <span>Ask AI</span>
-                <SparklesIcon />
-              </button>
-            )}
           </div>
         </section>
 
@@ -188,25 +175,9 @@ const CommentIcon = () => (
   </svg>
 );
 
-const SparklesIcon = () => (
-  <svg
-    className="h-4 w-4 flex-shrink-0"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={1.8}
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M12 3l1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3zM18.5 13l.8 2.7L22 16.5l-2.7.8-.8 2.7-.8-2.7-2.7-.8 2.7-.8.8-2.7zM5 13l.7 2.3L8 16l-2.3.7L5 19l-.7-2.3L2 16l2.3-.7L5 13z"
-    />
-  </svg>
-);
 
 const ActionIcon = ({ kind }: { kind: CompactPlanReviewAction["id"] }) => {
-  if (kind === "approve" || kind === "done" || kind === "discard-finish") {
+  if (kind === "approve" || kind === "discard-finish") {
     return (
       <svg
         className="h-4 w-4 flex-shrink-0"

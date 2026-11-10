@@ -51,8 +51,9 @@
  * it: a light palette now resolves a light Shiki theme. */
 pre code.pn-code {
   display: block;
-  padding: 1rem;
-  border-radius: var(--radius);
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   background: var(--code-bg) !important;
   font-size: 0.8125rem;
   line-height: 1.6;
@@ -73,11 +74,10 @@ pre code.pn-code[data-keep-layout] {
   min-width: max-content;
 }
 
-/* The code-file hover preview is not a <pre><code>, so the rule above misses
-   it. Its tokens carry their own theme colours; this supplies the default text
-   colour for the parts that have none. */
-.light .code-snippet-preview {
-  color: oklch(0.25 0.02 260) !important;
+/* The code-file hover preview is not a <pre><code>; this supplies the default text colour for
+   the parts the Shiki theme leaves uncoloured. */
+.code-snippet-preview {
+  color: var(--foreground);
 }
 
 /* Annotation highlights moved to packages/ui/theme.css (shared with the

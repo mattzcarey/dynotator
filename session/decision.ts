@@ -74,7 +74,8 @@ export function buildDecision(
     };
   }
 
-  if (kind === "exit") return { approved: false, exit: true, feedback: "", annotations: [], ...base };
+  if (kind === "exit")
+    return { approved: false, exit: true, feedback: "", annotations: [], ...base };
   const annotations = optionalArray(body.annotations, "annotations") ?? [];
   const codeAnnotations = optionalArray(body.codeAnnotations, "codeAnnotations");
   const selectedMessageId = optionalString(body.selectedMessageId);
@@ -178,6 +179,6 @@ export class Waiters {
   }
 
   resolveAll(decision: Decision): void {
-    for (const done of [...this.pending]) done(decision);
+    for (const done of this.pending) done(decision);
   }
 }

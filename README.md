@@ -41,13 +41,15 @@ bun install
 bun run deploy
 ```
 
-`bun run deploy` builds the session-server bundle and the browser app, then runs
-`wrangler deploy`. Wrangler prints the Worker's URL; that is your `DYNOTATOR_URL`.
+`bun run deploy` runs `cf deploy` (the [Cloudflare CLI](https://developers.cloudflare.com/cf/),
+configured by `cloudflare.config.ts`), which builds the browser app and the Worker in one Vite
+build and deploys them. It prints the Worker's URL; that is your `DYNOTATOR_URL`. Sign in first
+with `bunx cf login`, or set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
 Anyone who can reach the Worker can create sessions unless you set a token:
 
 ```sh
-bunx wrangler secret put DYNOTATOR_TOKEN
+bunx cf workers secrets update --help   # set the DYNOTATOR_TOKEN secret on the dynotator Worker
 ```
 
 With the secret set, `POST /api/sessions` requires `Authorization: Bearer <token>`. Session URLs
@@ -70,7 +72,7 @@ this environment):
 {
   "env": {
     "DYNOTATOR_URL": "https://dynotator.example.workers.dev",
-    "DYNOTATOR_TOKEN": "the token you set with wrangler secret put"
+    "DYNOTATOR_TOKEN": "the DYNOTATOR_TOKEN secret you set on the Worker"
   }
 }
 ```
@@ -137,9 +139,9 @@ bun install
 bun run dev
 ```
 
-`bun run dev` builds everything and runs `wrangler dev`; Dynamic Workers and facets work locally
-in Miniflare. Point the CLI at it with `DYNOTATOR_URL=http://localhost:8787`. `bun run dev:app`
-runs only the Vite dev server for the browser app.
+`bun run dev` runs `cf dev`: one Vite dev server on port 3000 serving the browser app with HMR and
+the real Worker, Dynamic Workers and facets included. Point the CLI at it with
+`DYNOTATOR_URL=http://localhost:3000`.
 
 `bun run check` runs the formatter check, the linter, the type checker and the tests.
 

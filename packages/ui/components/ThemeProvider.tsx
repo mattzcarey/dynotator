@@ -38,6 +38,9 @@ function applyMode(mode: ResolvedMode): void {
   el.classList.toggle("light", mode === "light");
   el.classList.toggle("dark", mode === "dark");
   el.style.colorScheme = mode;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", mode === "dark" ? "#151414" : "#ffffff");
   if (ready) enableTransitionsSoon();
 }
 

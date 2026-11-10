@@ -549,24 +549,7 @@ export interface AIResponse {
   createdAt: number;
 }
 
-export interface VaultNode {
-  name: string;
-  path: string; // relative path within vault
-  type: "file" | "folder";
-  children?: VaultNode[];
-}
-
 export type { EditorAnnotation } from "@dynotator/core/types";
-
-export type { ExternalAnnotationEvent } from "@dynotator/core/external-annotation";
-
-export type {
-  AgentJobInfo,
-  AgentJobEvent,
-  AgentJobStatus,
-  AgentCapability,
-  AgentCapabilities,
-} from "@dynotator/core/agent-jobs";
 
 /** Host toolbar seams (opt-in; Plannotator supplies neither). */
 export type { SelectionAction, SelectionActionContext } from "./utils/selectionActions";

@@ -100,18 +100,18 @@ export const TableBlock: React.FC<TableBlockProps> = ({
   return (
     <div
       ref={containerRef}
-      className="my-4 overflow-x-auto"
+      className="my-5 overflow-x-auto rounded-md border border-border"
       data-block-id={block.id}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={onLeave}
     >
       <table className="min-w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b border-border bg-surface-0">
             {headers.map((header, i) => (
               <th
                 key={i}
-                className="px-3 py-2 text-left font-semibold text-foreground/90 bg-muted/30"
+                className="px-3 py-2 text-left text-[13px] font-medium text-foreground"
               >
                 <InlineMarkdown
                   imageBaseDir={imageBaseDir}
@@ -129,9 +129,9 @@ export const TableBlock: React.FC<TableBlockProps> = ({
         </thead>
         <tbody>
           {rows.map((row, rowIdx) => (
-            <tr key={rowIdx} className="border-b border-border/50 hover:bg-muted/20">
+            <tr key={rowIdx} className="border-b border-border last:border-b-0 hover:bg-surface-0">
               {row.map((cell, cellIdx) => (
-                <td key={cellIdx} className="px-3 py-2 text-foreground/80">
+                <td key={cellIdx} className="px-3 py-2 text-foreground/85">
                   <InlineMarkdown
                     imageBaseDir={imageBaseDir}
                     onImageClick={onImageClick}

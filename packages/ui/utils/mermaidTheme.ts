@@ -779,19 +779,16 @@ export function buildMermaidConfig(spec: MermaidThemeSpec | null): MermaidConfig
 // ---------------------------------------------------------------------------
 
 /**
- * `mode:palette`, the cache key `applyMermaidTheme` compares — plus a
- * `#s<amount>` suffix when the shadow amount is not the shipped default, so a
- * changed amount re-initializes the runtime. The default amount keeps the key
- * byte-identical to the `(palette, mode)` pair it always was, which is also
- * what keeps a host that never names an amount on the same key it had.
+ * The cache key `applyMermaidTheme` compares: the mode, plus a `#s<amount>`
+ * suffix when the shadow amount is not the shipped default, so a changed
+ * amount re-initializes the runtime.
  */
 export function mermaidThemeKey(
-  colorTheme: string,
   mode: MermaidThemeMode,
   shadowAmount: number = DEFAULT_MERMAID_SHADOW_AMOUNT,
 ): string {
   const amount = clampShadowAmount(shadowAmount);
-  const base = `${mode}:${colorTheme}`;
+  const base = mode;
   return amount === DEFAULT_MERMAID_SHADOW_AMOUNT ? base : `${base}#s${amount}`;
 }
 

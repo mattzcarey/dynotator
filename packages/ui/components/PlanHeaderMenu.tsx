@@ -7,57 +7,18 @@ import {
 } from "./ActionMenu";
 import { useTheme } from "./ThemeProvider";
 import { THEME_MODES } from "./themeModes";
-import { ReviewAgentsIcon } from "./ReviewAgentsIcon";
-import { MenuVersionSection } from "./MenuVersionSection";
-import type { UpdateInfo } from "../hooks/useUpdateCheck";
-import type { Origin } from "@dynotator/core/agents";
 
 interface PlanHeaderMenuProps {
-  appVersion: string;
-  updateInfo?: UpdateInfo | null;
-  origin?: Origin | null;
-  isWSL?: boolean;
   onOpenSettings: () => void;
   onOpenExport: () => void;
-  onCopyAgentInstructions: () => void;
   onDownloadAnnotations: () => void;
   onPrint: () => void;
-  onCopyShareLink: () => void;
-  onOpenImport: () => void;
-  onSaveToObsidian: () => void;
-  onSaveToBear: () => void;
-  onSaveToOctarine: () => void;
-  onSaveToNotion?: () => void;
-  sharingEnabled: boolean;
-  isApiMode: boolean;
-  agentInstructionsEnabled: boolean;
-  obsidianConfigured: boolean;
-  bearConfigured: boolean;
-  octarineConfigured: boolean;
-  notionConfigured?: boolean;
   compactTouchLayout?: boolean;
   compactSessionActions?: CompactPlanAction[];
-  compactDocumentActions?: CompactPlanAction[];
 }
 
 export interface CompactPlanAction {
-  id:
-    | "exit"
-    | "feedback"
-    | "approve"
-    | "copy"
-    | "done"
-    | "edit"
-    | "tools"
-    | "annotate"
-    | "refresh"
-    | "annotations"
-    | "ai"
-    | "review"
-    | "note"
-    | "discard-finish"
-    | "bundle-previous"
-    | "bundle-next";
+  id: "exit" | "feedback" | "approve" | "annotations" | "review" | "note" | "discard-finish";
   label: string;
   subtitle?: string;
   onSelect: () => void;
@@ -65,38 +26,14 @@ export interface CompactPlanAction {
 }
 
 export const PlanHeaderMenu: React.FC<PlanHeaderMenuProps> = ({
-  appVersion,
-  updateInfo,
-  origin,
-  isWSL = false,
   onOpenSettings,
   onOpenExport,
-  onCopyAgentInstructions,
   onDownloadAnnotations,
   onPrint,
-  onCopyShareLink,
-  onOpenImport,
-  onSaveToObsidian,
-  onSaveToBear,
-  onSaveToOctarine,
-  onSaveToNotion,
-  sharingEnabled,
-  isApiMode,
-  agentInstructionsEnabled,
-  obsidianConfigured,
-  bearConfigured,
-  octarineConfigured,
-  notionConfigured = false,
   compactTouchLayout = false,
   compactSessionActions = [],
-  compactDocumentActions = [],
 }) => {
-  const { theme, setTheme } = useTheme();
-
-  const showUpdateDot = !!updateInfo?.updateAvailable && !updateInfo.dismissed;
-
-  const anyNotesAppConfigured =
-    isApiMode && (obsidianConfigured || bearConfigured || octarineConfigured || notionConfigured);
+  const { mode, setMode } = useTheme();
 
   return (
     <ActionMenu
@@ -111,10 +48,7 @@ export const PlanHeaderMenu: React.FC<PlanHeaderMenuProps> = ({
           id={compactTouchLayout ? "pn-compact-plan-options-trigger" : undefined}
           data-pn-touch-target={compactTouchLayout || undefined}
           data-pn-touch-target-icon={compactTouchLayout || undefined}
-          onClick={() => {
-            if (!isOpen && showUpdateDot) updateInfo?.dismiss();
-            toggleMenu();
-          }}
+          onClick={toggleMenu}
           className={`relative flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors ${compactTouchLayout ? "h-11 w-11 p-0" : "p-1.5 md:px-2.5 md:py-1"} ${
             isOpen
               ? "bg-muted text-foreground"
@@ -125,11 +59,7 @@ export const PlanHeaderMenu: React.FC<PlanHeaderMenuProps> = ({
           aria-expanded={isOpen}
         >
           {isOpen ? <CloseIcon /> : <MenuIcon />}
-          {/* The dot says an update is out; the label never moves (no shimmer). */}
           <span className="hidden md:inline">Options</span>
-          {showUpdateDot && (
-            <span className="absolute top-0.5 right-0.5 md:-top-0.5 md:-right-0.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
-          )}
         </button>
       )}
     >
@@ -146,17 +76,6 @@ export const PlanHeaderMenu: React.FC<PlanHeaderMenuProps> = ({
             </>
           )}
 
-          {compactTouchLayout && compactDocumentActions.length > 0 && (
-            <>
-              <CompactActionSection
-                label="Document"
-                actions={compactDocumentActions}
-                closeMenu={closeMenu}
-              />
-              <ActionMenuDivider />
-            </>
-          )}
-
           <div className="px-3 py-2 space-y-1.5">
             <ActionMenuSectionLabel>Theme</ActionMenuSectionLabel>
             <div className="flex items-center gap-1 rounded-lg bg-muted/50 p-0.5">
@@ -166,10 +85,10 @@ export const PlanHeaderMenu: React.FC<PlanHeaderMenuProps> = ({
                   key={id}
                   onClick={() => {
                     closeMenu();
-                    setTheme(id);
+                    setMode(id);
                   }}
                   className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
-                    theme === id
+                    mode === id
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -199,17 +118,6 @@ export const PlanHeaderMenu: React.FC<PlanHeaderMenuProps> = ({
             icon={<ExportIcon />}
             label="Export"
           />
-          {agentInstructionsEnabled && (
-            <ActionMenuItem
-              onClick={() => {
-                closeMenu();
-                onCopyAgentInstructions();
-              }}
-              icon={<ReviewAgentsIcon />}
-              label="Agent Instructions"
-              subtitle="Copy agent instructions for external annotations"
-            />
-          )}
 
           <ActionMenuDivider />
 
@@ -229,82 +137,6 @@ export const PlanHeaderMenu: React.FC<PlanHeaderMenuProps> = ({
             icon={<PrintIcon />}
             label="Print / Save as PDF"
             subtitle="Choose 'Save as PDF' in the print dialog"
-          />
-          {sharingEnabled && (
-            <ActionMenuItem
-              onClick={() => {
-                closeMenu();
-                onCopyShareLink();
-              }}
-              icon={<LinkIcon />}
-              label="Copy Share Link"
-            />
-          )}
-          {sharingEnabled && (
-            <ActionMenuItem
-              onClick={() => {
-                closeMenu();
-                onOpenImport();
-              }}
-              icon={<ImportIcon />}
-              label="Import Review"
-            />
-          )}
-
-          {anyNotesAppConfigured && (
-            <>
-              <ActionMenuDivider />
-              {obsidianConfigured && (
-                <ActionMenuItem
-                  onClick={() => {
-                    closeMenu();
-                    onSaveToObsidian();
-                  }}
-                  icon={<NoteIcon />}
-                  label="Save to Obsidian"
-                />
-              )}
-              {bearConfigured && (
-                <ActionMenuItem
-                  onClick={() => {
-                    closeMenu();
-                    onSaveToBear();
-                  }}
-                  icon={<NoteIcon />}
-                  label="Save to Bear"
-                />
-              )}
-              {octarineConfigured && (
-                <ActionMenuItem
-                  onClick={() => {
-                    closeMenu();
-                    onSaveToOctarine();
-                  }}
-                  icon={<NoteIcon />}
-                  label="Save to Octarine"
-                />
-              )}
-              {notionConfigured && onSaveToNotion && (
-                <ActionMenuItem
-                  onClick={() => {
-                    closeMenu();
-                    onSaveToNotion();
-                  }}
-                  icon={<NoteIcon />}
-                  label="Save to Notion"
-                />
-              )}
-            </>
-          )}
-
-          <ActionMenuDivider />
-
-          <MenuVersionSection
-            appVersion={appVersion}
-            updateInfo={updateInfo}
-            origin={origin}
-            isWSL={isWSL}
-            closeMenu={closeMenu}
           />
         </>
       )}
@@ -376,24 +208,7 @@ const CompactPlanActionIcon = ({ kind }: { kind: CompactPlanAction["id"] }) => {
       </svg>
     );
   }
-  if (kind === "ai") {
-    return (
-      <svg
-        className="w-3.5 h-3.5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.8}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 3l1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3zM18.5 13l.8 2.7L22 16.5l-2.7.8-.8 2.7-.8-2.7-2.7-.8 2.7-.8.8-2.7zM5 13l.7 2.3L8 16l-2.3.7L5 19l-.7-2.3L2 16l2.3-.7L5 13z"
-        />
-      </svg>
-    );
-  }
-  if (kind === "approve" || kind === "done") {
+  if (kind === "approve") {
     return (
       <svg
         className="w-3.5 h-3.5"
@@ -420,59 +235,6 @@ const CompactPlanActionIcon = ({ kind }: { kind: CompactPlanAction["id"] }) => {
           strokeLinejoin="round"
           d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
         />
-      </svg>
-    );
-  }
-  if (kind === "copy") {
-    return (
-      <svg
-        className="w-3.5 h-3.5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-        />
-      </svg>
-    );
-  }
-  if (kind === "edit" || kind === "annotate") {
-    return (
-      <svg
-        className="w-3.5 h-3.5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-        />
-      </svg>
-    );
-  }
-  if (kind === "tools") {
-    // Eye, matching the desktop header's show/hide-tools toggle.
-    return (
-      <svg
-        className="w-3.5 h-3.5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-        />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     );
   }
@@ -566,50 +328,5 @@ const PrintIcon = () => (
   </svg>
 );
 
-const LinkIcon = () => (
-  <svg
-    className="w-3.5 h-3.5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-    />
-  </svg>
-);
 
-const ImportIcon = () => (
-  <svg
-    className="w-3.5 h-3.5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"
-    />
-  </svg>
-);
 
-const NoteIcon = () => (
-  <svg
-    className="w-3.5 h-3.5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-    />
-  </svg>
-);

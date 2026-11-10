@@ -76,7 +76,7 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
       <div className={`flex items-center flex-wrap ${compact ? "gap-1" : "gap-1.5"}`}>
         {/* Input method group */}
         {!hideInputMethodSwitch && (
-          <div className="inline-flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/30">
+          <div className="inline-flex items-center gap-0.5 rounded-full border border-border bg-background p-0.5">
             <ToolstripButton
               active={inputMethod === "drag"}
               onClick={() => onInputMethodChange("drag")}
@@ -135,7 +135,7 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
 
         {/* Action mode group */}
         {!hideActionModes && (
-          <div className="inline-flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/30">
+          <div className="inline-flex items-center gap-0.5 rounded-full border border-border bg-background p-0.5">
             <ToolstripButton
               active={mode === "selection"}
               onClick={() => onModeChange("selection")}
@@ -241,7 +241,7 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
         {!compact && showHelpLink && (
           <button
             onClick={() => setShowHelp(true)}
-            className="ml-2 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors hidden sm:block"
+            className="ml-2 font-mono text-[11px] tracking-[0.04em] text-muted-foreground/80 hover:text-foreground transition-colors hidden sm:block"
           >
             how does this work?
           </button>
@@ -278,7 +278,7 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  How Plannotator Works
+                  How Dynotator Works
                 </button>
               </div>
               <button
@@ -307,7 +307,7 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
                     : "https://www.youtube-nocookie.com/embed/a_AT7cEN_9I?autoplay=1"
                 }
                 title={
-                  helpTab === "selection" ? "How Selection Modes Work" : "How Plannotator Works"
+                  helpTab === "selection" ? "How Selection Modes Work" : "How Dynotator Works"
                 }
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -325,27 +325,27 @@ export const AnnotationToolstrip: React.FC<AnnotationToolstripProps> = ({
 
 const colorStyles = {
   primary: {
-    active: "bg-background text-foreground shadow-sm",
+    active: "bg-muted text-foreground",
     hover: "text-primary/80 bg-primary/8",
     inactive: "text-muted-foreground hover:text-foreground",
   },
   secondary: {
-    active: "bg-background text-foreground shadow-sm",
+    active: "bg-muted text-foreground",
     hover: "text-secondary/80 bg-secondary/8",
     inactive: "text-muted-foreground hover:text-foreground",
   },
   accent: {
-    active: "bg-background text-foreground shadow-sm",
+    active: "bg-muted text-foreground",
     hover: "text-annotation-comment/80 bg-annotation-comment/8",
     inactive: "text-muted-foreground hover:text-foreground",
   },
   destructive: {
-    active: "bg-background text-foreground shadow-sm",
+    active: "bg-muted text-foreground",
     hover: "text-destructive/80 bg-destructive/8",
     inactive: "text-muted-foreground hover:text-foreground",
   },
   warning: {
-    active: "bg-background text-foreground shadow-sm",
+    active: "bg-muted text-foreground",
     hover: "text-amber-500/80 bg-amber-500/8",
     inactive: "text-muted-foreground hover:text-foreground",
   },
@@ -412,7 +412,7 @@ const ToolstripButton: React.FC<{
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-pressed={active}
-      className={`relative flex items-center h-7 rounded-md overflow-hidden whitespace-nowrap ${colorClass}`}
+      className={`relative flex items-center h-7 rounded-full overflow-hidden whitespace-nowrap ${colorClass}`}
       style={{ paddingInlineStart: pad, paddingInlineEnd: pad, transition }}
     >
       {icon}

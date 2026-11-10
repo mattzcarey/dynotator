@@ -56,8 +56,8 @@ const RegionCardContext = createContext<{
 // Global has no in-document highlight, so it uses a fixed legible purple.
 const TYPE_COLOR: Record<AnnotationType, string> = {
   [AnnotationType.DELETION]: "text-destructive",
-  [AnnotationType.COMMENT]: "text-annotation-comment",
-  [AnnotationType.GLOBAL_COMMENT]: "text-purple-500",
+  [AnnotationType.COMMENT]: "text-primary-ink",
+  [AnnotationType.GLOBAL_COMMENT]: "text-foreground",
 };
 
 const TYPE_LABEL: Record<AnnotationType, string> = {
@@ -468,19 +468,19 @@ export const AnnotationPanel: React.FC<PanelProps> = ({
     <aside
       data-annotation-panel="true"
       data-plan-sidebar="right"
-      className={`bg-card flex flex-col ${embedded ? "h-full min-h-0 w-full flex-1" : "flex-shrink-0 border-l border-border/50"} ${
+      className={`bg-card flex flex-col ${embedded ? "h-full min-h-0 w-full flex-1" : "flex-shrink-0 border-l border-border"} ${
         mobilePanel ? "fixed top-12 bottom-0 right-0 z-[60] w-full max-w-sm shadow-2xl bg-card" : ""
       }`}
       style={embedded || mobilePanel ? undefined : { width: width ?? 288 }}
     >
       {/* Header */}
       {!embedded && (
-        <div className="border-b border-border/50">
+        <div className="border-b border-border">
           <div className="flex h-10 items-center justify-between px-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-xs font-medium text-foreground">{title}</h2>
+              <h2 className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground">{title}</h2>
               {headerCount > 0 && (
-                <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary/10 px-1 font-mono text-[10px] font-medium tabular-nums text-primary">
+                <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-1 font-mono text-[10px] tabular-nums text-primary-ink">
                   {headerCount}
                 </span>
               )}
@@ -587,7 +587,7 @@ export const AnnotationPanel: React.FC<PanelProps> = ({
                       }
                 }
               />
-              <div className="mx-0.5 mt-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
+              <div className="mx-0.5 mt-1 flex items-center gap-2 font-mono text-[11px] tracking-[0.04em] text-muted-foreground">
                 <span className="flex-1">Comments</span>
                 <span className="tabular-nums">{showGroups ? groupedTotal : timelineCount}</span>
               </div>
@@ -717,11 +717,11 @@ export const AnnotationPanel: React.FC<PanelProps> = ({
               {sortedCodeAnnotations.length > 0 && (
                 <>
                   <div className="flex items-center gap-2 pt-2 pb-1">
-                    <div className="flex-1 border-t border-border/30" />
-                    <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                    <div className="flex-1 border-t border-dashed border-border-strong/60" />
+                    <span className="font-mono text-[10px] tracking-[0.04em] text-muted-foreground">
                       Code
                     </span>
-                    <div className="flex-1 border-t border-border/30" />
+                    <div className="flex-1 border-t border-dashed border-border-strong/60" />
                   </div>
                   {sortedCodeAnnotations.map((annotation) => (
                     <CodeAnnotationCard
@@ -746,11 +746,11 @@ export const AnnotationPanel: React.FC<PanelProps> = ({
               {editorAnnotations && editorAnnotations.length > 0 && (
                 <>
                   <div className="flex items-center gap-2 pt-2 pb-1">
-                    <div className="flex-1 border-t border-border/30" />
-                    <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                    <div className="flex-1 border-t border-dashed border-border-strong/60" />
+                    <span className="font-mono text-[10px] tracking-[0.04em] text-muted-foreground">
                       Editor
                     </span>
-                    <div className="flex-1 border-t border-border/30" />
+                    <div className="flex-1 border-t border-dashed border-border-strong/60" />
                   </div>
                   {editorAnnotations.map((ann) => (
                     <EditorAnnotationCard
@@ -783,13 +783,15 @@ export const AnnotationPanel: React.FC<PanelProps> = ({
             (!directEdits || directEdits.length === 0) &&
             (!hideEmptyMessage || (scopeEnabled && otherGroupCount > 0)) && (
               <div
-                className={`flex flex-col items-center justify-center px-4 ${hideEmptyMessage ? "py-1" : "py-16"} text-center`}
+                className={`flex flex-col items-center justify-center ${hideEmptyMessage ? "px-4 py-1" : "px-2 py-4"} text-center`}
               >
                 {!hideEmptyMessage && (
-                  <>
-                    <p className="text-xs text-muted-foreground/60">No annotations yet</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground/40">{emptyHint}</p>
-                  </>
+                  <div className="pn-corners w-full rounded-[3px] border border-dashed border-border-strong px-4 py-7">
+                    <p className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground">
+                      No annotations yet
+                    </p>
+                    <p className="mt-1.5 text-xs text-muted-foreground">{emptyHint}</p>
+                  </div>
                 )}
                 {scopeEnabled && otherGroupCount > 0 && (
                   <button
@@ -887,11 +889,11 @@ export const AnnotationPanel: React.FC<PanelProps> = ({
                 <>
                   {timelineEntries.length > 0 && (
                     <div className="flex items-center gap-2 pt-2 pb-1">
-                      <div className="flex-1 border-t border-border/30" />
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      <div className="flex-1 border-t border-dashed border-border-strong/60" />
+                      <span className="font-mono text-[10px] tracking-[0.04em] text-muted-foreground">
                         Editor
                       </span>
-                      <div className="flex-1 border-t border-border/30" />
+                      <div className="flex-1 border-t border-dashed border-border-strong/60" />
                     </div>
                   )}
                   {editorAnnotations.map((ann) => (
@@ -922,7 +924,7 @@ export const AnnotationPanel: React.FC<PanelProps> = ({
               }}
               className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition-colors ${
                 copiedText
-                  ? "text-green-500"
+                  ? "text-success"
                   : "text-muted-foreground hover:bg-surface-1 hover:text-foreground"
               }`}
             >
@@ -1286,7 +1288,7 @@ const AnnotationEditComposer: React.FC<{
         aria-controls={menuOpen ? listboxId : undefined}
         aria-owns={menuOpen ? listboxId : undefined}
         aria-activedescendant={mentionActiveOptionId(listboxId, mention.menu)}
-        className="w-full resize-none rounded-lg border border-border/50 bg-card px-2.5 py-2 text-base leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+        className="w-full resize-none rounded-md border border-border bg-card px-2.5 py-2 text-base leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
         style={{ fieldSizing: "content", minHeight: 44 } as React.CSSProperties}
       />
       <div className="mt-1.5 flex justify-end gap-1.5">
@@ -1431,32 +1433,32 @@ const AnnotationCard: React.FC<{
         }
       }}
       className={cn(
-        "group w-full cursor-pointer rounded-lg px-3 py-2.5 text-left transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        isSelected ? "bg-surface-1 ring-1 ring-border/50" : "hover:bg-surface-1/50",
+        "group w-full cursor-pointer rounded-md border px-3 py-2.5 text-left transition-colors duration-150 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        isSelected ? "border-primary/60 bg-cream" : "border-border bg-card hover:border-border-strong",
       )}
     >
       {/* Header: type word + author · time + actions */}
       <div className="mb-1.5 flex items-center gap-1.5">
-        <span className={cn("text-[11px] font-medium", typeColor)}>{typeLabel}</span>
+        <span className={cn("font-mono text-[11px] tracking-[0.04em]", typeColor)}>{typeLabel}</span>
         {region && regionNumber !== undefined && (
           <RegionNumber n={regionNumber} selected={isSelected} />
         )}
         {region && (
           <span
             data-annotation-region="true"
-            className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground"
+            className="font-mono text-[10px] px-1.5 py-px rounded-full border border-border text-muted-foreground"
           >
             Region
           </span>
         )}
         {annotation.diffContext && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground">
+          <span className="font-mono text-[10px] px-1.5 py-px rounded-full border border-border text-muted-foreground">
             diff
           </span>
         )}
         {annotation.pageUrl && (
           <HostTitle title={annotation.pageUrl}>
-            <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground truncate max-w-[10rem]">
+            <span className="font-mono text-[10px] px-1.5 py-px rounded-full border border-border text-muted-foreground truncate max-w-[10rem]">
               {annotation.pageUrl}
             </span>
           </HostTitle>
@@ -1465,7 +1467,7 @@ const AnnotationCard: React.FC<{
           <HostTitle title="This comment no longer matches a location in the document">
             <span
               data-annotation-unanchored="true"
-              className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground"
+              className="font-mono text-[10px] px-1.5 py-px rounded-full border border-border text-muted-foreground"
             >
               Unanchored
             </span>
@@ -1679,20 +1681,20 @@ const CodeAnnotationCard: React.FC<{
         }
       }}
       className={cn(
-        "group w-full cursor-pointer rounded-lg px-3 py-2.5 text-left transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        isSelected ? "bg-surface-1 ring-1 ring-border/50" : "hover:bg-surface-1/50",
+        "group w-full cursor-pointer rounded-md border px-3 py-2.5 text-left transition-colors duration-150 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        isSelected ? "border-primary/60 bg-cream" : "border-border bg-card hover:border-border-strong",
       )}
     >
       {/* Header: type word + author · time + actions */}
       <div className="mb-1.5 flex items-center gap-1.5">
         {isGlobal ? (
           <span
-            className={cn("text-[11px] font-medium", TYPE_COLOR[AnnotationType.GLOBAL_COMMENT])}
+            className={cn("font-mono text-[11px] tracking-[0.04em]", TYPE_COLOR[AnnotationType.GLOBAL_COMMENT])}
           >
             {TYPE_LABEL[AnnotationType.GLOBAL_COMMENT]}
           </span>
         ) : (
-          <span className="text-[11px] font-medium text-primary">Code</span>
+          <span className="font-mono text-[11px] tracking-[0.04em] text-primary">Code</span>
         )}
         <CardByline author={annotation.author} isMe={isMe} timestamp={annotation.createdAt} />
         {!readOnly && (
@@ -1765,7 +1767,7 @@ const CodeAnnotationCard: React.FC<{
             }}
             placeholder="Add your comment..."
             aria-label="Annotation comment"
-            className="w-full resize-none rounded-lg border border-border/50 bg-card px-2.5 py-2 text-base leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+            className="w-full resize-none rounded-md border border-border bg-card px-2.5 py-2 text-base leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
             style={{ fieldSizing: "content", minHeight: 44 } as React.CSSProperties}
           />
           <div className="mt-1.5 flex justify-end gap-1.5">

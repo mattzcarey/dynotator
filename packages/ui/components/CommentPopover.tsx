@@ -4,7 +4,7 @@ import type { ImageAttachment } from "../types";
 import { AttachmentsButton } from "./AttachmentsButton";
 import { useDraggable } from "../hooks/useDraggable";
 import { SparklesIcon } from "./SparklesIcon";
-import { Icon } from "./inbox-thread/icons";
+import { Icon } from "./Icon";
 import {
   commentCardAimX,
   getCommentCardEnabled,
@@ -908,7 +908,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
     <button
       type="button"
       onClick={handleExtra}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md text-primary border border-primary/40 hover:bg-primary/10 transition-colors"
+      className="inline-flex items-center gap-1.5 h-7 px-3 text-xs font-medium rounded-full text-primary border border-primary/40 hover:bg-primary/10 transition-colors"
       style={{ order: -1 }}
       data-comment-extra-action=""
     >
@@ -1019,7 +1019,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       data-pn-touch-target="true"
       data-pn-touch-target-icon="true"
       style={hasUnsavedContent ? { filter: "grayscale(1)" } : undefined}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm leading-none hover:bg-green-500/10 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm leading-none hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
     >
       <span aria-hidden="true">👍</span>
     </button>
@@ -1258,7 +1258,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
         <button
           type="button"
           aria-label="Dismiss comment"
-          className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+          className="absolute inset-0 bg-[rgb(21_20_20/0.45)]"
           onClick={() => handleClose()}
         />
 
@@ -1273,7 +1273,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           aria-modal="true"
           aria-label={isGlobal ? "Global comment" : "Comment"}
           tabIndex={-1}
-          className={`relative w-full max-w-xl max-h-full min-h-0 bg-popover border border-border rounded-xl shadow-2xl flex flex-col ${
+          className={`relative w-full max-w-xl max-h-full min-h-0 bg-popover border border-border rounded-lg shadow-lg flex flex-col ${
             showsSkillMenu ? "overflow-visible" : "overflow-hidden"
           }`}
           style={{
@@ -1295,8 +1295,8 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           `}</style>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-            <span className="text-xs text-muted-foreground truncate max-w-[400px]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <span className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground truncate max-w-[400px]">
               {headerLabel}
             </span>
             <div className="flex items-center gap-1">
@@ -1367,12 +1367,12 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           </div>
 
           {/* Footer — DOM order sets tab order (Save first); row-reverse keeps the visual layout unchanged */}
-          <div className="flex flex-row-reverse flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-border/50">
+          <div className="flex flex-row-reverse flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-border">
             <div className="flex flex-row-reverse flex-wrap items-center gap-3">
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                className="h-7 px-3.5 text-xs font-medium rounded-full bg-primary text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {submitLabel ?? (isGlobal ? "Add" : "Save")}
               </button>
@@ -1382,7 +1382,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                 <button
                   onClick={handleAskAI}
                   disabled={!canAskAI}
-                  className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
                 >
                   <SparklesIcon className="w-3 h-3" />
@@ -1394,7 +1394,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                   key={action.label}
                   onClick={() => runExtraAction(action)}
                   style={{ order: -1 - i }}
-                  className="px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                  className="px-2 py-1.5 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   {action.label}
                 </button>
@@ -1437,7 +1437,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       <div
         ref={popoverRef}
         data-comment-popover="true"
-        className={`fixed z-[100] bg-popover border border-border rounded-xl shadow-2xl flex flex-col${yieldClass}`}
+        className={`fixed z-[100] bg-popover border border-border rounded-lg shadow-lg flex flex-col${yieldClass}`}
         style={
           dragPosition
             ? {
@@ -1477,10 +1477,10 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
 
         {/* Header (draggable) */}
         <div
-          className="flex items-center justify-between px-3 py-2 border-b border-border/50"
+          className="flex items-center justify-between px-3 py-2 border-b border-border"
           {...dragHandleProps}
         >
-          <span className="text-xs text-muted-foreground truncate max-w-[260px]">
+          <span className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground truncate max-w-[260px]">
             {headerLabel}
           </span>
           <div className="flex items-center gap-1">
@@ -1545,7 +1545,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
         </div>
 
         {/* Footer — same DOM-order/row-reverse pattern as the dialog footer above */}
-        <div className="flex flex-row-reverse items-center justify-between px-3 py-2 border-t border-border/50">
+        <div className="flex flex-row-reverse items-center justify-between px-3 py-2 border-t border-border">
           {/* Wraps only with the opt-in third action, which can take the row past a narrow box. */}
           <div
             className={
@@ -1557,7 +1557,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              className="h-7 px-3.5 text-xs font-medium rounded-full bg-primary text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {submitLabel ?? (isGlobal ? "Add" : "Save")}
             </button>
@@ -1567,7 +1567,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
               <button
                 onClick={handleAskAI}
                 disabled={!canAskAI}
-                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
               >
                 <SparklesIcon className="w-3 h-3" />
@@ -1579,7 +1579,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                 key={action.label}
                 onClick={() => runExtraAction(action)}
                 style={{ order: -1 - i }}
-                className="px-2 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                className="px-2 py-1.5 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 {action.label}
               </button>

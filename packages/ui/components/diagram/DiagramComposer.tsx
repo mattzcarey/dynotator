@@ -14,7 +14,7 @@ import { Button } from "../ui/button";
 import { isCommentSubmitKey } from "../../utils/commentSubmitKey";
 import type { DiagramComposerDraft } from "./useDiagramComments";
 import { getCommentCardEnabled } from "../../utils/commentCardPolicy";
-import { Icon } from "../inbox-thread/icons";
+import { Icon } from "../Icon";
 import { CommentDraftScopeContext } from "../../utils/commentDraftScope";
 
 // The comment card (opt-in): the words typed on a part outlive a close, one draft per part of one document (the

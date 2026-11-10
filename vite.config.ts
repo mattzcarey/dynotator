@@ -1,16 +1,18 @@
 import path from "node:path";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import pkg from "./package.json";
+import { sessionServerBundle } from "./scripts/build-session";
 
 const pkgDir = (name: string) => path.resolve(import.meta.dirname, "packages", name);
 
-// The SPA is built to dist/app and served by the host Worker as static assets.
+// One build (`cf build`) for the SPA (index.html + app/, served as static assets) and the host
+// Worker (cloudflare.config.ts), whose session server comes in as virtual:session-server.
 export default defineConfig({
-  root: "app",
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), sessionServerBundle(), cloudflare()],
   resolve: {
     dedupe: ["react", "react-dom"],
     alias: [
@@ -31,14 +33,10 @@ export default defineConfig({
       },
     ],
   },
-  server: {
-    port: 3000,
-    // `wrangler dev` serves the API; run it alongside `vite` for HMR.
-    proxy: { "/api": "http://localhost:8787", "/s": "http://localhost:8787" },
-  },
+  // Scan only the SPA's own entry, not built copies of it under dist/.
+  optimizeDeps: { entries: ["index.html"] },
+  server: { port: 3000 },
   build: {
-    outDir: "../dist/app",
-    emptyOutDir: true,
     target: "esnext",
     chunkSizeWarningLimit: 10_000,
   },

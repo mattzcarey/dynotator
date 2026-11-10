@@ -57,7 +57,7 @@ function flattenToc(items: TocItem[]): TocItem[] {
 function itemClasses(level: number, isActive: boolean): string {
   const indent = level <= 1 ? "" : level === 2 ? "ml-3" : level === 3 ? "ml-6" : "ml-9";
   const tone = isActive
-    ? "bg-surface-1 text-foreground"
+    ? "bg-surface-1 text-foreground shadow-[inset_2px_0_0_var(--primary)]"
     : level <= 1
       ? "text-foreground/80 hover:bg-surface-1/70"
       : "text-muted-foreground hover:bg-surface-1/70";
@@ -172,14 +172,14 @@ export function TableOfContents({
                 type="button"
                 onClick={() => handleNavigate(item.id)}
                 aria-current={isActive ? "location" : undefined}
-                className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] font-medium leading-snug transition-colors ${itemClasses(
+                className={`flex items-center justify-between gap-2 rounded-[4px] px-2 py-1.5 text-left text-[12px] leading-snug transition-colors ${itemClasses(
                   item.level,
                   isActive,
                 )}`}
               >
                 <span className="line-clamp-2">{item.content}</span>
                 {item.annotationCount > 0 && (
-                  <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-primary/10 px-1 font-mono text-[9px] text-primary">
+                  <span className="ml-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full border border-primary/40 px-1 font-mono text-[10px] text-primary-ink">
                     {item.annotationCount}
                   </span>
                 )}

@@ -116,10 +116,10 @@ async function route(
 
   if (path === "/api/draft") {
     const version = currentVersion(store);
-    if (method === "GET") return result(loadDraft(store, version));
+    if (method === "GET") return reply(loadDraft(store, version));
     if (method === "POST") {
       const body = await readJsonObject(req);
-      return result(saveDraft(store, version, body, getDecision(store) !== undefined));
+      return reply(saveDraft(store, version, body, getDecision(store) !== undefined));
     }
     if (method === "DELETE") {
       deleteDraft(store, version, parseGeneration(url.searchParams.get("generation")));
@@ -131,7 +131,7 @@ async function route(
     if (Number(req.headers.get("content-length") ?? "0") > MAX_IMAGE_BYTES + 64 * 1024) {
       return error(413, `Images are limited to ${MAX_IMAGE_BYTES} bytes`);
     }
-    let file: FormDataEntryValue | null;
+    let file;
     try {
       file = (await req.formData()).get("file");
     } catch {
@@ -169,6 +169,6 @@ function readConfig(store: Store): Record<string, unknown> {
   return store.get<Record<string, unknown>>("config") ?? {};
 }
 
-function result(r: { status: number; body: unknown }): Response {
+function reply(r: { status: number; body: unknown }): Response {
   return json(r.body, r.status);
 }
