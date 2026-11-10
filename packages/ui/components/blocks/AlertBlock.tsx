@@ -14,12 +14,8 @@ interface AlertBlockProps {
   blockId: string;
   kind: AlertKind;
   body: string;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
-  githubRepo?: string;
-  repoHost?: string;
   onNavigateAnchor?: (hash: string) => void;
 }
 
@@ -96,22 +92,14 @@ export const AlertBlock: React.FC<AlertBlockProps> = ({
   blockId,
   kind,
   body,
-  onOpenLinkedDoc,
-  onOpenCodeFile,
   imageBaseDir,
   onImageClick,
-  githubRepo,
-  repoHost,
   onNavigateAnchor,
 }) => {
   const proseProps = {
     imageBaseDir,
     onImageClick,
-    onOpenLinkedDoc,
-    onOpenCodeFile,
     onNavigateAnchor,
-    githubRepo,
-    repoHost,
   };
 
   // A bold-only first line (optionally led by one emoji, optionally trailed by

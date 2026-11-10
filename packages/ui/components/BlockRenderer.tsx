@@ -27,15 +27,11 @@ const standaloneQuestion = (block: Block, contractLines: boolean): IndexedQuesti
 
 export const BlockRenderer: React.FC<{
   block: Block;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
   onToggleCheckbox?: (blockId: string, checked: boolean) => void;
   checkboxOverrides?: Map<string, boolean>;
   orderedIndex?: number | null;
-  githubRepo?: string;
-  repoHost?: string;
   headingAnchorId?: string;
   onNavigateAnchor?: (hash: string) => void;
   /** `:::question` blocks: this block's entry in the document's question
@@ -82,15 +78,11 @@ export const BlockRenderer: React.FC<{
   questionPictureSize?: QuestionBlockProps["pictureSize"];
 }> = ({
   block,
-  onOpenLinkedDoc,
-  onOpenCodeFile,
   imageBaseDir,
   onImageClick,
   onToggleCheckbox,
   checkboxOverrides,
   orderedIndex,
-  githubRepo,
-  repoHost,
   headingAnchorId,
   onNavigateAnchor,
   question,
@@ -134,10 +126,6 @@ export const BlockRenderer: React.FC<{
             imageBaseDir={imageBaseDir}
             onImageClick={onImageClick}
             text={block.content}
-            onOpenLinkedDoc={onOpenLinkedDoc}
-            onOpenCodeFile={onOpenCodeFile}
-            githubRepo={githubRepo}
-            repoHost={repoHost}
             onNavigateAnchor={onNavigateAnchor}
           />
         </Tag>
@@ -151,12 +139,8 @@ export const BlockRenderer: React.FC<{
             blockId={block.id}
             kind={block.alertKind}
             body={block.content}
-            onOpenLinkedDoc={onOpenLinkedDoc}
-            onOpenCodeFile={onOpenCodeFile}
             imageBaseDir={imageBaseDir}
             onImageClick={onImageClick}
-            githubRepo={githubRepo}
-            repoHost={repoHost}
             onNavigateAnchor={onNavigateAnchor}
           />
         );
@@ -166,12 +150,8 @@ export const BlockRenderer: React.FC<{
       return (
         <BlockquoteBlock
           block={block}
-          onOpenLinkedDoc={onOpenLinkedDoc}
-          onOpenCodeFile={onOpenCodeFile}
           imageBaseDir={imageBaseDir}
           onImageClick={onImageClick}
-          githubRepo={githubRepo}
-          repoHost={repoHost}
           onNavigateAnchor={onNavigateAnchor}
         />
       );
@@ -188,10 +168,6 @@ export const BlockRenderer: React.FC<{
       const inlineProps = {
         imageBaseDir,
         onImageClick,
-        onOpenLinkedDoc,
-        onOpenCodeFile,
-        githubRepo,
-        repoHost,
         onNavigateAnchor,
       };
       return (
@@ -228,10 +204,6 @@ export const BlockRenderer: React.FC<{
           block={block}
           imageBaseDir={imageBaseDir}
           onImageClick={onImageClick}
-          onOpenLinkedDoc={onOpenLinkedDoc}
-          onOpenCodeFile={onOpenCodeFile}
-          githubRepo={githubRepo}
-          repoHost={repoHost}
           onNavigateAnchor={onNavigateAnchor}
         />
       );
@@ -240,17 +212,13 @@ export const BlockRenderer: React.FC<{
       return <MathBlock block={block} />;
 
     case "hr":
-      return <hr className="border-dashed border-border-strong/70 my-10" data-block-id={block.id} />;
+      return (
+        <hr className="border-dashed border-border-strong/70 my-10" data-block-id={block.id} />
+      );
 
     case "html":
       return (
-        <HtmlBlock
-          block={block}
-          imageBaseDir={imageBaseDir}
-          onOpenLinkedDoc={onOpenLinkedDoc}
-          onOpenCodeFile={onOpenCodeFile}
-          onNavigateAnchor={onNavigateAnchor}
-        />
+        <HtmlBlock block={block} imageBaseDir={imageBaseDir} onNavigateAnchor={onNavigateAnchor} />
       );
 
     case "directive": {
@@ -281,12 +249,8 @@ export const BlockRenderer: React.FC<{
               pictureBadge={questionPictureBadge}
               onZoomChoice={onQuestionPictureZoom}
               pictureSize={questionPictureSize}
-              onOpenLinkedDoc={onOpenLinkedDoc}
-              onOpenCodeFile={onOpenCodeFile}
               imageBaseDir={imageBaseDir}
               onImageClick={onImageClick}
-              githubRepo={githubRepo}
-              repoHost={repoHost}
               onNavigateAnchor={onNavigateAnchor}
             />
           );
@@ -300,12 +264,8 @@ export const BlockRenderer: React.FC<{
           containerClassName={`directive directive-${kind} my-4 px-4 py-3 rounded-md border`}
           blockType="directive"
           kindAttribute={kind}
-          onOpenLinkedDoc={onOpenLinkedDoc}
-          onOpenCodeFile={onOpenCodeFile}
           imageBaseDir={imageBaseDir}
           onImageClick={onImageClick}
-          githubRepo={githubRepo}
-          repoHost={repoHost}
           onNavigateAnchor={onNavigateAnchor}
         />
       );
@@ -325,10 +285,6 @@ export const BlockRenderer: React.FC<{
             imageBaseDir={imageBaseDir}
             onImageClick={onImageClick}
             text={block.content}
-            onOpenLinkedDoc={onOpenLinkedDoc}
-            onOpenCodeFile={onOpenCodeFile}
-            githubRepo={githubRepo}
-            repoHost={repoHost}
             onNavigateAnchor={onNavigateAnchor}
           />
         </p>

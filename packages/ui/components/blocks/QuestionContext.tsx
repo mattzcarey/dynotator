@@ -43,11 +43,7 @@ export const QuestionContext: React.FC<{
   markdown: string;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   onNavigateAnchor?: (hash: string) => void;
-  githubRepo?: string;
-  repoHost?: string;
 }> = ({ id, markdown, ...inlineProps }) => {
   const groups = useMemo((): Array<
     { list: Block[]; indices: (number | null)[] } | { block: Block }

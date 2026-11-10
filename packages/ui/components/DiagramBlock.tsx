@@ -23,9 +23,7 @@ import { getIdentity } from "../utils/identity";
 import { createRuntimeRetryEpoch } from "../utils/runtimeRetry";
 import { DiagramAnchorClaims, DiagramAnchorClaimsContext } from "./diagram/anchorClaims";
 import { DiagramPending, DiagramInlineSource } from "./diagram/DiagramPending";
-import { DiagramViewer, type DiagramAskAI } from "./diagram/DiagramViewer";
-import type { CommentAskAIHandler } from "./CommentPopover";
-import { diagramAskAIContext } from "../utils/diagramAskAI";
+import { DiagramViewer } from "./diagram/DiagramViewer";
 import { svgContentSize } from "./diagram/svgContentSize";
 import type { DiagramComment, DiagramCreateComment } from "./diagram/useDiagramComments";
 import type { DiagramRenderState } from "./diagram/useDiagramRender";
@@ -97,13 +95,6 @@ export interface DiagramBlockProps {
    * `attempted`, the ones whose part is gone as `unanchored`, so the host's
    * panel shows the same "Unanchored" chip a text comment gets. */
   onRestoreReport?: (report: AnnotationRestoreReport) => void;
-  /** The document's Ask AI handler (the one the markdown composer takes).
-   * With it the diagram composer offers "Ask AI", and the question carries
-   * the part's identity and the bounded diagram source as `detail`. Absent:
-   * no Ask AI, exactly as before. */
-  onAskAI?: CommentAskAIHandler;
-  /** The document's path, sent with an Ask AI question (`sourcePath`). */
-  askAISourcePath?: string;
   /** Opt-in: a diagram whose source does not render shows that source as the
    * plain fence, not the error panel (a host showing a diagram the person did
    * not write, such as a guide's overview). A renderer that failed to load
@@ -133,8 +124,6 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
   onAddAnnotation,
   readOnly = false,
   onRestoreReport,
-  onAskAI,
-  askAISourcePath,
   sourceOnError = false,
   reopenComment,
   onComposerAnchor,
@@ -270,33 +259,6 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
   // A fence's offset is its own opening line; a whole-file diagram source
   // overrides it with 0 (see Block.diagramSourceLineOffset).
   const sourceLineOffset = block.diagramSourceLineOffset ?? block.startLine;
-
-  const handleAskAI = useMemo<DiagramAskAI | undefined>(() => {
-    if (readOnly || onAskAI === undefined) return undefined;
-    return (question, anchor, additionalTargets) =>
-      onAskAI(
-        question,
-        diagramAskAIContext({
-          kind,
-          anchor,
-          additionalTargets,
-          source: block.content,
-          sourceLineOffset,
-          sourcePath: askAISourcePath,
-        }),
-      );
-  }, [askAISourcePath, block.content, kind, onAskAI, readOnly, sourceLineOffset]);
-
-  // The popout covers the panel the answer streams into, so a question
-  // asked there closes it once the host takes the question.
-  const handlePopoutAskAI = useMemo<DiagramAskAI | undefined>(() => {
-    if (handleAskAI === undefined) return undefined;
-    return async (question, anchor, additionalTargets) => {
-      const accepted = await handleAskAI(question, anchor, additionalTargets);
-      if (accepted !== false) setIsExpanded(false);
-      return accepted;
-    };
-  }, [handleAskAI]);
 
   const [resolution, setResolution] = useState<ReadonlyMap<string, boolean> | null>(null);
   const svgReady = renderState?.svgNode != null;
@@ -510,7 +472,6 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
             <DiagramViewer
               {...viewerProps}
               renderId={`${kind}-${block.id}`}
-              onAskAI={handleAskAI}
               onResolutionChange={setResolution}
               onRenderState={setRenderState}
               renderFallback={renderFallback}
@@ -531,7 +492,6 @@ export const DiagramBlock: React.FC<DiagramBlockProps & { kind: DiagramKind }> =
               onClose={() => setIsExpanded(false)}
               title={`${label} diagram`}
               renderId={`${kind}-${block.id}-popout`}
-              onAskAI={handlePopoutAskAI}
               onComposerAnchor={popoutComposerAnchor}
               dataAttributes={{ "data-block-id": block.id }}
             />

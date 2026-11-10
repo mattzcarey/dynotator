@@ -1,21 +1,10 @@
 import type { DiagramAnchor } from "@dynotator/core/diagram-anchor";
 import type { ImageRegion } from "@dynotator/core/image-region";
-import type { DocumentRenderKind } from "@dynotator/core/annotatable";
 import type { QuestionAnswer } from "@dynotator/core/question-block";
 
 export type { DiagramAnchor } from "@dynotator/core/diagram-anchor";
 export type { ImageRegion, ImageRegionBox } from "@dynotator/core/image-region";
 export type { QuestionAnswer } from "@dynotator/core/question-block";
-export type { DiagramRenderKind, DocumentRenderKind } from "@dynotator/core/annotatable";
-
-/**
- * How a document's body is rendered. `markdown` and `html` are the original
- * pair; the two diagram kinds are whole-file diagram sources (.mmd/.mermaid,
- * .dot/.gv) that render as ONE diagram through the same engine a ```mermaid
- * fence uses — see diagramDocumentBlocks in utils/parser. `asciidoc` is an
- * .adoc source parsed by utils/asciidocParser into the same block model.
- */
-export type DocumentRenderAs = "markdown" | "html" | DocumentRenderKind;
 
 export enum AnnotationType {
   DELETION = "DELETION",

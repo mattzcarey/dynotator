@@ -8,12 +8,8 @@ interface CalloutProps {
   containerClassName: string;
   blockType: "alert" | "directive";
   kindAttribute: string;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
-  githubRepo?: string;
-  repoHost?: string;
   onNavigateAnchor?: (hash: string) => void;
 }
 
@@ -24,12 +20,8 @@ export const Callout: React.FC<CalloutProps> = ({
   containerClassName,
   blockType,
   kindAttribute,
-  onOpenLinkedDoc,
-  onOpenCodeFile,
   imageBaseDir,
   onImageClick,
-  githubRepo,
-  repoHost,
   onNavigateAnchor,
 }) => {
   const kindAttr =
@@ -54,11 +46,7 @@ export const Callout: React.FC<CalloutProps> = ({
         listClassName: "text-[15px] leading-relaxed",
         imageBaseDir,
         onImageClick,
-        onOpenLinkedDoc,
-        onOpenCodeFile,
         onNavigateAnchor,
-        githubRepo,
-        repoHost,
       })}
     </div>
   );

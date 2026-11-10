@@ -100,7 +100,5 @@ export const ActionMenuItem: React.FC<ActionMenuItemProps> = ({
 export const ActionMenuDivider: React.FC = () => <div className="my-1 border-t border-border" />;
 
 export const ActionMenuSectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground">
-    {children}
-  </div>
+  <div className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground">{children}</div>
 );

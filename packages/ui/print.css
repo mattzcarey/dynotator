@@ -16,11 +16,11 @@
 /* Code blocks: flatten the syntax theme's dark block background to paper */
 .plannotator-print pre,
 .plannotator-print pre[class] {
-  background: #f5f5f5 !important;
-  background-color: #f5f5f5 !important;
-  color: #1a1a1a !important;
-  border: 1px solid #ccc !important;
-  border-left: 3px solid #888 !important;
+  background: #fbfaf9 !important;
+  background-color: #fbfaf9 !important;
+  color: #262626 !important;
+  border: 1px solid #ebebeb !important;
+  border-left: 2px solid #ff5e1f !important;
 }
 
 .plannotator-print pre code,
@@ -29,7 +29,7 @@
 .plannotator-print .code-snippet-preview {
   background: transparent !important;
   background-color: transparent !important;
-  color: #1a1a1a !important;
+  color: #262626 !important;
 }
 
 /* The syntax theme colours every token with an inline `style`, so these
@@ -37,7 +37,7 @@
 .plannotator-print pre span,
 .plannotator-print pre code span,
 .plannotator-print .code-snippet-preview span {
-  color: #1a1a1a !important;
+  color: #262626 !important;
   background: transparent !important;
   background-color: transparent !important;
   text-decoration: none !important;
@@ -46,10 +46,10 @@
 
 /* Inline code */
 .plannotator-print code {
-  background: #e8e8e8 !important;
-  background-color: #e8e8e8 !important;
-  color: #1a1a1a !important;
-  border: 1px solid #ccc !important;
+  background: #f9f7f6 !important;
+  background-color: #f9f7f6 !important;
+  color: #262626 !important;
+  border: 1px solid #ebebeb !important;
 }
 
 /* Inline code inside pre should be transparent (not gray pill) */
@@ -81,9 +81,8 @@
     margin: 0;
     padding: 0;
     background: white !important;
-    color: #1a1a1a !important;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: #262626 !important;
+    font-family: var(--font-sans);
     line-height: 1.6;
     font-size: 11pt;
     overflow: visible !important;
@@ -199,7 +198,7 @@
    * `:not([data-diagram-block] *)` keeps every typography rule off DIAGRAM
    * content. Mermaid 12 draws node and edge labels as real HTML inside
    * `<foreignObject>` (`span.nodeLabel > p`, `span.edgeLabel`), so a blanket
-   * `div, span, p { color: #1a1a1a !important }` repainted them — over a dark
+   * `div, span, p { color: #262626 !important }` repainted them — over a dark
    * node fill that prints as an empty box. A diagram colours itself (and
    * prints in the light half of the palette, see ThemeProvider), and its own
    * `<style>` has no `!important` to defend itself with, so the exemption has
@@ -217,7 +216,7 @@
   em:not([data-diagram-block] *),
   b:not([data-diagram-block] *),
   i:not([data-diagram-block] *) {
-    color: #1a1a1a !important;
+    color: #262626 !important;
   }
 
   strong:not([data-diagram-block] *),
@@ -229,7 +228,7 @@
   em:not([data-diagram-block] *),
   i:not([data-diagram-block] *) {
     font-style: italic !important;
-    color: #1a1a1a !important;
+    color: #262626 !important;
   }
 
   h1 {
@@ -275,7 +274,7 @@
 
   p:not([data-diagram-block] *) {
     margin: 0.5em 0;
-    color: #1a1a1a !important;
+    color: #262626 !important;
   }
 
   /* ========== Lists ========== */
@@ -288,7 +287,7 @@
 
   li {
     margin: 0.25em 0;
-    color: #1a1a1a !important;
+    color: #262626 !important;
   }
 
   li p {
@@ -299,14 +298,14 @@
 
   code,
   code[class] {
-    font-family: "Courier New", Monaco, Consolas, monospace !important;
+    font-family: var(--font-mono) !important;
     font-size: 10pt !important;
-    background: #e8e8e8 !important;
-    background-color: #e8e8e8 !important;
-    color: #1a1a1a !important;
+    background: #f9f7f6 !important;
+    background-color: #f9f7f6 !important;
+    color: #262626 !important;
     padding: 0.1em 0.4em !important;
     border-radius: 3px !important;
-    border: 1px solid #ccc !important;
+    border: 1px solid #ebebeb !important;
   }
 
   .group {
@@ -317,14 +316,14 @@
   pre[class] {
     margin: 1em 0 !important;
     padding: 1em !important;
-    background: #f5f5f5 !important;
-    background-color: #f5f5f5 !important;
-    border: 1px solid #ccc !important;
-    border-left: 3px solid #888 !important;
+    background: #fbfaf9 !important;
+    background-color: #fbfaf9 !important;
+    border: 1px solid #ebebeb !important;
+    border-left: 2px solid #ff5e1f !important;
     border-radius: 4px !important;
     page-break-inside: avoid;
     overflow: visible !important;
-    color: #1a1a1a !important;
+    color: #262626 !important;
   }
 
   pre code,
@@ -334,7 +333,7 @@
     font-size: 9pt !important;
     background: transparent !important;
     background-color: transparent !important;
-    color: #1a1a1a !important;
+    color: #262626 !important;
     padding: 0 !important;
     border: none !important;
     display: block !important;
@@ -345,14 +344,14 @@
   .code-snippet-preview {
     background: transparent !important;
     background-color: transparent !important;
-    color: #1a1a1a !important;
+    color: #262626 !important;
   }
 
   pre span,
   pre code span,
   code span,
   .code-snippet-preview span {
-    color: #1a1a1a !important;
+    color: #262626 !important;
     background: transparent !important;
     background-color: transparent !important;
     text-decoration: none !important;
@@ -369,7 +368,7 @@
   }
 
   thead {
-    background: #e8e8e8 !important;
+    background: #f9f7f6 !important;
     page-break-after: avoid;
   }
 
@@ -379,17 +378,17 @@
     padding: 0.5em;
     border: 1px solid #999;
     color: #000 !important;
-    background: #e8e8e8 !important;
+    background: #f9f7f6 !important;
   }
 
   td {
     padding: 0.5em;
-    border: 1px solid #ccc;
-    color: #1a1a1a !important;
+    border: 1px solid #ebebeb;
+    color: #262626 !important;
   }
 
   tbody tr:nth-child(even) {
-    background: #f9f9f9 !important;
+    background: #fdfdfc !important;
   }
 
   tbody tr:nth-child(odd) {
@@ -401,8 +400,8 @@
   blockquote {
     margin: 1em 0;
     padding: 0.5em 0 0.5em 1em;
-    border-left: 4px solid #999 !important;
-    background: #f7f7f7 !important;
+    border-left: 2px solid #ff5e1f !important;
+    background: #fffbf5 !important;
     color: #333 !important;
   }
 
@@ -415,21 +414,21 @@
   hr {
     margin: 1.5em 0;
     border: none;
-    border-top: 1px solid #999;
+    border-top: 1px dashed #cccccc;
     page-break-after: avoid;
   }
 
   /* ========== Links ========== */
 
   a {
-    color: #0066cc !important;
+    color: #d63c01 !important;
     text-decoration: underline;
   }
 
   a[href]::after {
     content: " (" attr(href) ")";
     font-size: 9pt;
-    color: #666 !important;
+    color: #707070 !important;
     word-break: break-all;
   }
 

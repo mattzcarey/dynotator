@@ -109,7 +109,7 @@ class ToolbarErrorBoundary extends React.Component<
   }
 }
 
-import { CommentPopover, hasCommentDraft, type CommentAskAIHandler } from "./CommentPopover";
+import { CommentPopover, hasCommentDraft } from "./CommentPopover";
 import { AttachmentsButton } from "./AttachmentsButton";
 import { DiagramAnchorClaims, DiagramAnchorClaimsContext } from "./diagram/anchorClaims";
 import { DiagramBlockPending } from "./diagram/DiagramPending";
@@ -1025,12 +1025,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
         ro.disconnect();
         window.removeEventListener("resize", measure);
       };
-    }, [
-      hasViewerAnnotationHeader,
-      stickyActions,
-      hasPreviousVersion,
-      planDiffStats,
-    ]);
+    }, [hasViewerAnnotationHeader, stickyActions, hasPreviousVersion, planDiffStats]);
 
     // Per-doc heading slug map with dedup — computed once per blocks array so
     // anchor ids stay stable across re-renders and duplicate heading texts get
@@ -1878,7 +1873,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                 isGlobal: true,
               });
             }}
-            className="flex items-center gap-1.5 h-7 px-3 text-xs font-medium text-foreground/80 hover:text-foreground border border-border bg-background hover:border-border-strong hover:bg-surface-0 rounded-full transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 text-xs font-medium text-foreground/80 hover:text-foreground border border-border bg-background hover:border-border-strong hover:bg-surface-0 rounded-full transition-colors"
             title="Add global comment"
           >
             <svg
@@ -1901,7 +1896,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
 
         <button
           onClick={handleCopyPlan}
-          className="flex items-center gap-1.5 h-7 px-3 text-xs font-medium text-foreground/80 hover:text-foreground border border-border bg-background hover:border-border-strong hover:bg-surface-0 rounded-full transition-colors"
+          className="flex items-center gap-1.5 h-7 px-2.5 text-xs font-medium text-foreground/80 hover:text-foreground border border-border bg-background hover:border-border-strong hover:bg-surface-0 rounded-full transition-colors"
           title={copied ? "Copied!" : copyLabel || "Copy plan"}
         >
           {copied ? (
@@ -1932,9 +1927,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                   d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                 />
               </svg>
-              {actionsLabelMode === "full" && (
-                <span>{copyLabel || "Copy plan"}</span>
-              )}
+              {actionsLabelMode === "full" && <span>{copyLabel || "Copy plan"}</span>}
               {actionsLabelMode === "short" && <span>Copy</span>}
             </>
           )}
@@ -2018,10 +2011,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
     // none of them (an external POST, a deleted fence) is resolved by anchor
     // against each, first resolver wins (see diagram/anchorClaims).
     const diagramBlockKey = blocks
-      .filter(
-        (b) =>
-          b.type === "code" && isMermaidLanguage(b.language),
-      )
+      .filter((b) => b.type === "code" && isMermaidLanguage(b.language))
       .map((b) => b.id)
       .join("\n");
     const diagramClaims = useMemo(
@@ -2065,399 +2055,177 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
     };
 
     return (
-          <DiagramAnchorClaimsContext.Provider value={diagramClaims}>
-            <CommentDraftScopeContext.Provider value={commentDraftScope}>
-              <div
-                className={`relative z-50 w-full${fillHeight ? " flex flex-col print:block" : ""}`}
-                data-viewer-fill-height={fillHeight ? "" : undefined}
-                style={maxWidth === null ? undefined : { maxWidth: maxWidth ?? 832 }}
-              >
-                <article
-                  ref={containerRef}
-                  data-print-region="article"
-                  data-doc-text-root=""
-                  data-vim-mode={vimModeActive ? "enabled" : undefined}
-                  data-vim-phase={vimModeActive ? vim.state.phase : undefined}
-                  data-vim-focused={vimModeActive ? String(vim.focused) : undefined}
-                  data-vim-blocked={vimModeActive ? String(vimBlocked) : undefined}
-                  data-vim-target-key={vimModeActive ? vim.activeTarget?.key : undefined}
-                  tabIndex={vimModeActive ? 0 : undefined}
-                  onFocus={vim.onFocus}
-                  onBlur={vim.onBlur}
-                  onMouseDown={vim.onMouseDown}
-                  className={`w-full bg-card rounded-xl py-5 md:py-8 lg:py-10 xl:py-12 relative ${fillHeight ? "flex-1 " : ""}${gridEnabled ? "px-5 md:px-8 lg:px-10 xl:px-12 shadow-xl border border-border/50" : ""} ${inputMethod === "pinpoint" ? "cursor-pointer" : ""}`}
-                  style={
-                    {
-                      WebkitTouchCallout: "none",
-                      ...(vimModeActive ? { outline: "none" } : {}),
-                    } as React.CSSProperties
-                  }
+      <DiagramAnchorClaimsContext.Provider value={diagramClaims}>
+        <CommentDraftScopeContext.Provider value={commentDraftScope}>
+          <div
+            className={`relative z-50 w-full${fillHeight ? " flex flex-col print:block" : ""}`}
+            data-viewer-fill-height={fillHeight ? "" : undefined}
+            style={maxWidth === null ? undefined : { maxWidth: maxWidth ?? 832 }}
+          >
+            <article
+              ref={containerRef}
+              data-print-region="article"
+              data-doc-text-root=""
+              data-vim-mode={vimModeActive ? "enabled" : undefined}
+              data-vim-phase={vimModeActive ? vim.state.phase : undefined}
+              data-vim-focused={vimModeActive ? String(vim.focused) : undefined}
+              data-vim-blocked={vimModeActive ? String(vimBlocked) : undefined}
+              data-vim-target-key={vimModeActive ? vim.activeTarget?.key : undefined}
+              tabIndex={vimModeActive ? 0 : undefined}
+              onFocus={vim.onFocus}
+              onBlur={vim.onBlur}
+              onMouseDown={vim.onMouseDown}
+              className={`w-full bg-card rounded-xl py-5 md:py-8 lg:py-10 xl:py-12 relative ${fillHeight ? "flex-1 " : ""}${gridEnabled ? "px-5 md:px-8 lg:px-10 xl:px-12 shadow-xl border border-border/50" : ""} ${inputMethod === "pinpoint" ? "cursor-pointer" : ""}`}
+              style={
+                {
+                  WebkitTouchCallout: "none",
+                  ...(vimModeActive ? { outline: "none" } : {}),
+                } as React.CSSProperties
+              }
+            >
+              {!viewerAnnotationHeader && hasPreviousVersion && (
+                <div
+                  ref={docBadgesRef}
+                  data-print-hide
+                  className={`absolute top-3 md:top-4 ${gridEnabled ? "left-3 md:left-5" : "left-0"}`}
+                  style={badgeMaxWidth !== null ? { maxWidth: badgeMaxWidth } : undefined}
                 >
-                  {!viewerAnnotationHeader && hasPreviousVersion && (
-                      <div
-                        ref={docBadgesRef}
-                        data-print-hide
-                        className={`absolute top-3 md:top-4 ${gridEnabled ? "left-3 md:left-5" : "left-0"}`}
-                        style={badgeMaxWidth !== null ? { maxWidth: badgeMaxWidth } : undefined}
-                      >
-                        <DocBadges
-                          layout="column"
-                          planDiffStats={planDiffStats}
-                          isPlanDiffActive={isPlanDiffActive}
-                          hasPreviousVersion={hasPreviousVersion}
-                          onPlanDiffToggle={onPlanDiffToggle}
-                          planDiffBaselineLabel={planDiffBaselineLabel}
-                          planDiffBaselineTooltip={planDiffBaselineTooltip}
-                        />
-                      </div>
-                    )}
+                  <DocBadges
+                    layout="column"
+                    planDiffStats={planDiffStats}
+                    isPlanDiffActive={isPlanDiffActive}
+                    hasPreviousVersion={hasPreviousVersion}
+                    onPlanDiffToggle={onPlanDiffToggle}
+                    planDiffBaselineLabel={planDiffBaselineLabel}
+                    planDiffBaselineTooltip={planDiffBaselineTooltip}
+                  />
+                </div>
+              )}
 
-                  {viewerAnnotationHeader ? (
-                    <ViewerDocumentHeader
-                      config={viewerAnnotationHeader}
-                      inputMethod={inputMethod}
-                      mode={mode}
-                      sticky={stickyActions}
-                      stuck={isStuck}
-                      sentinelRef={stickySentinelRef}
-                      badges={{
-                        planDiffStats,
-                        isPlanDiffActive,
-                        hasPreviousVersion,
-                        onPlanDiffToggle,
-                        planDiffBaselineLabel,
-                        planDiffBaselineTooltip,
-                      }}
-                      actions={documentActions}
+              {viewerAnnotationHeader ? (
+                <ViewerDocumentHeader
+                  config={viewerAnnotationHeader}
+                  inputMethod={inputMethod}
+                  mode={mode}
+                  sticky={stickyActions}
+                  stuck={isStuck}
+                  sentinelRef={stickySentinelRef}
+                  badges={{
+                    planDiffStats,
+                    isPlanDiffActive,
+                    hasPreviousVersion,
+                    onPlanDiffToggle,
+                    planDiffBaselineLabel,
+                    planDiffBaselineTooltip,
+                  }}
+                  actions={documentActions}
+                />
+              ) : (
+                <>
+                  {badgeClearance > 0 && (
+                    <div data-print-hide style={{ height: badgeClearance }} aria-hidden="true" />
+                  )}
+                  {stickyActions && (
+                    <div
+                      ref={stickySentinelRef}
+                      className="h-0 w-0 float-right"
+                      aria-hidden="true"
                     />
+                  )}
+                  {answerOnly || hostComposes ? null : stickyActions ? (
+                    <StickyActionsLane
+                      className={`flex items-start gap-1 md:gap-2 rounded-lg p-1 md:p-2 transition-colors duration-150 ${isStuck ? "bg-card/95 backdrop-blur-sm shadow-sm" : ""} ${gridEnabled ? "-mr-3 md:-mr-5 lg:-mr-7 xl:-mr-9" : "-mr-1 md:-mr-2"} mt-6 md:-mt-5 lg:-mt-7 xl:-mt-9`}
+                    >
+                      {documentActions}
+                    </StickyActionsLane>
                   ) : (
-                    <>
-                      {badgeClearance > 0 && (
-                        <div
-                          data-print-hide
-                          style={{ height: badgeClearance }}
-                          aria-hidden="true"
-                        />
-                      )}
-                      {stickyActions && (
-                        <div
-                          ref={stickySentinelRef}
-                          className="h-0 w-0 float-right"
-                          aria-hidden="true"
-                        />
-                      )}
-                      {answerOnly || hostComposes ? null : stickyActions ? (
-                        <StickyActionsLane
-                          className={`flex items-start gap-1 md:gap-2 rounded-lg p-1 md:p-2 transition-colors duration-150 ${isStuck ? "bg-card/95 backdrop-blur-sm shadow-sm" : ""} ${gridEnabled ? "-mr-3 md:-mr-5 lg:-mr-7 xl:-mr-9" : "-mr-1 md:-mr-2"} mt-6 md:-mt-5 lg:-mt-7 xl:-mt-9`}
-                        >
-                          {documentActions}
-                        </StickyActionsLane>
-                      ) : (
-                        <div
-                          data-print-hide
-                          data-sticky-actions
-                          className={`z-30 float-right flex items-start gap-1 md:gap-2 rounded-lg p-1 md:p-2 transition-colors duration-150 ${gridEnabled ? "-mr-3 md:-mr-5 lg:-mr-7 xl:-mr-9" : "-mr-1 md:-mr-2"} mt-6 md:-mt-5 lg:-mt-7 xl:-mt-9`}
-                        >
-                          {documentActions}
-                        </div>
-                      )}
-                    </>
+                    <div
+                      data-print-hide
+                      data-sticky-actions
+                      className={`z-30 float-right flex items-start gap-1 md:gap-2 rounded-lg p-1 md:p-2 transition-colors duration-150 ${gridEnabled ? "-mr-3 md:-mr-5 lg:-mr-7 xl:-mr-9" : "-mr-1 md:-mr-2"} mt-6 md:-mt-5 lg:-mt-7 xl:-mt-9`}
+                    >
+                      {documentActions}
+                    </div>
                   )}
-                  {frontmatter && (
-                    <>
-                      <div className="clear-right md:hidden" />
-                      <FrontmatterCard frontmatter={frontmatter} />
-                    </>
-                  )}
-                  {!frontmatter && blocks.length > 0 && blocks[0].type !== "heading" && (
-                    <div className="mt-4" />
-                  )}
-                  {withBelowTitle(
-                    groupBlocks(blocks).map((group) =>
-                      group.type === "list-group" ? (
-                        (() => {
-                          const indices = computeListIndices(group.blocks);
-                          return (
-                            <div
-                              key={group.key}
-                              data-pinpoint-group="list"
-                              className="py-1 -mx-2 px-2"
-                            >
-                              {group.blocks.map((block, i) => (
-                                <BlockRenderer
-                                  imageBaseDir={imageBaseDir}
-                                  onImageClick={(src, alt) => setLightbox({ src, alt })}
-                                  key={block.id}
-                                  block={block}
-                                  orderedIndex={indices[i]}
-                                  onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
-                                  checkboxOverrides={checkboxOverrides}
-                                  headingAnchorId={headingSlugMap.get(block.id)}
-                                  onNavigateAnchor={scrollToAnchor}
-                                />
-                              ))}
-                            </div>
-                          );
-                        })()
-                      ) : group.block.type === "code" && isMermaidLanguage(group.block.language) ? (
-                        <LazyBlockBoundary
-                          key={group.block.id}
-                          fallback={(notice) => (
-                            <DiagramBlockPending
-                              block={group.block}
-                              kind="mermaid"
-                              notice={notice}
-                            />
-                          )}
-                        >
-                          <Suspense
-                            fallback={<DiagramBlockPending block={group.block} kind="mermaid" />}
-                          >
-                            <MermaidBlock
-                              block={group.block}
-                              annotations={annotations}
-                              reopenComment={
-                                diagramReopen?.blockId === group.block.id
-                                  ? diagramReopen.request
-                                  : undefined
-                              }
-                              onComposerAnchor={onDiagramComposer}
-                              selectedAnnotationId={selectedAnnotationId}
-                              onSelectAnnotation={onSelectAnnotation}
-                              onAddAnnotation={selectionCommentsOn ? onAddAnnotation : undefined}
-                              readOnly={!selectionCommentsOn}
-                              onRestoreReport={onRestoreReport}
-                            />
-                          </Suspense>
-                        </LazyBlockBoundary>
-                      ) : group.block.type === "table" ? (
-                        <TableBlock
-                          key={group.block.id}
-                          block={group.block}
-                          imageBaseDir={imageBaseDir}
-                          onImageClick={(src, alt) => setLightbox({ src, alt })}
-                          onNavigateAnchor={scrollToAnchor}
-                          onHover={(element) => {
-                            if (tableHoverTimeoutRef.current) {
-                              clearTimeout(tableHoverTimeoutRef.current);
-                              tableHoverTimeoutRef.current = null;
-                            }
-                            setIsTableToolbarExiting(false);
-                            if (!toolbarState && !hostComposes) {
-                              setHoveredTable({ block: group.block, element });
-                            }
-                          }}
-                          onLeave={() => {
-                            tableHoverTimeoutRef.current = setTimeout(() => {
-                              setIsTableToolbarExiting(true);
-                              setTimeout(() => {
-                                setHoveredTable(null);
-                                setIsTableToolbarExiting(false);
-                              }, 150);
-                            }, 100);
-                          }}
-                        />
-                      ) : group.block.type === "code" ? (
-                        <CodeBlock
-                          key={group.block.id}
-                          block={group.block}
-                          onHover={
-                            authoringOff || hostComposes || inputMethod === "pinpoint"
-                              ? undefined
-                              : (element) => {
-                                  // Clear any pending leave timeout
-                                  if (hoverTimeoutRef.current) {
-                                    clearTimeout(hoverTimeoutRef.current);
-                                    hoverTimeoutRef.current = null;
-                                  }
-                                  // Cancel exit animation if re-entering
-                                  setIsCodeBlockToolbarExiting(false);
-                                  // Only show hover toolbar if no selection toolbar is active
-                                  if (
-                                    !toolbarState &&
-                                    !vimOwnsDocumentNavigation &&
-                                    !keyboardCodeBlockToolbarOpen
-                                  ) {
-                                    setCodeBlockToolbar({
-                                      block: group.block,
-                                      element,
-                                      activation: "pointer",
-                                    });
-                                  }
-                                }
-                          }
-                          onLeave={
-                            authoringOff || hostComposes || inputMethod === "pinpoint"
-                              ? undefined
-                              : () => {
-                                  if (keyboardCodeBlockToolbarOpen) return;
-                                  // Delay then start exit animation
-                                  hoverTimeoutRef.current = setTimeout(() => {
-                                    setIsCodeBlockToolbarExiting(true);
-                                    // After exit animation, unmount
-                                    setTimeout(() => {
-                                      setCodeBlockToolbar(null);
-                                      setIsCodeBlockToolbarExiting(false);
-                                    }, 150);
-                                  }, 100);
-                                }
-                          }
-                          isHovered={
-                            !authoringOff &&
-                            inputMethod !== "pinpoint" &&
-                            !vimOwnsDocumentNavigation &&
-                            codeBlockToolbar?.block.id === group.block.id
-                          }
-                        />
-                      ) : (
-                        (() => {
-                          const question = questionIndex.byBlock.get(group.block.id);
-                          const hostCard =
-                            question && renderQuestionCard
-                              ? renderQuestionCard(
-                                  question,
-                                  answersByKey.get(question.question.key),
-                                )
-                              : !question &&
-                                  group.block.type === "directive" &&
-                                  renderDirectiveBlock
-                                ? renderDirectiveBlock(group.block)
-                                : undefined;
-                          if (hostCard !== undefined) {
-                            return (
-                              <div
-                                key={group.block.id}
-                                data-block-id={group.block.id}
-                                data-block-type="directive"
-                                className={textCommentsOnly ? "annotation-exclude" : undefined}
-                              >
-                                {hostCard}
-                              </div>
-                            );
-                          }
-                          const rendered = (
+                </>
+              )}
+              {frontmatter && (
+                <>
+                  <div className="clear-right md:hidden" />
+                  <FrontmatterCard frontmatter={frontmatter} />
+                </>
+              )}
+              {!frontmatter && blocks.length > 0 && blocks[0].type !== "heading" && (
+                <div className="mt-4" />
+              )}
+              {withBelowTitle(
+                groupBlocks(blocks).map((group) =>
+                  group.type === "list-group" ? (
+                    (() => {
+                      const indices = computeListIndices(group.blocks);
+                      return (
+                        <div key={group.key} data-pinpoint-group="list" className="py-1 -mx-2 px-2">
+                          {group.blocks.map((block, i) => (
                             <BlockRenderer
                               imageBaseDir={imageBaseDir}
                               onImageClick={(src, alt) => setLightbox({ src, alt })}
-                              key={group.block.id}
-                              block={group.block}
-                              onNavigateAnchor={scrollToAnchor}
+                              key={block.id}
+                              block={block}
+                              orderedIndex={indices[i]}
                               onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
                               checkboxOverrides={checkboxOverrides}
-                              headingAnchorId={headingSlugMap.get(group.block.id)}
-                              question={question}
-                              questionTotal={questionIndex.total}
-                              questionAnswer={
-                                question ? answersByKey.get(question.question.key) : undefined
-                              }
-                              onAnswerQuestion={
-                                readOnly || (question && questionReadOnly?.(question))
-                                  ? undefined
-                                  : onAnswerQuestion
-                              }
-                              onSaveQuestionAnswer={
-                                readOnly || (question && questionReadOnly?.(question))
-                                  ? undefined
-                                  : onSaveQuestionAnswer
-                              }
-                              saveQuestionAnswerLabel={saveQuestionAnswerLabel}
-                              renderQuestionFooter={renderQuestionFooter}
-                              questionDecisionRecording={
-                                question ? questionDecisionRecording?.(question) : undefined
-                              }
-                              questionDecisionScope={questionDecisionScope}
-                              onToggleQuestionDecisionRecording={
-                                readOnly ||
-                                (question &&
-                                  (questionDecisionLocked?.(question) ||
-                                    questionReadOnly?.(question)))
-                                  ? undefined
-                                  : onToggleQuestionDecisionRecording
-                              }
-                              onOpenQuestionDecision={
-                                readOnly ||
-                                (question &&
-                                  (questionDecisionLocked?.(question) ||
-                                    questionReadOnly?.(question)))
-                                  ? undefined
-                                  : onOpenQuestionDecision
-                              }
-                              questionStatusTag={questionStatusTag}
-                              questionStatusLabel={questionStatusLabel}
-                              renderQuestionBelowPrompt={renderQuestionBelowPrompt}
-                              renderQuestionAfterChoices={renderQuestionAfterChoices}
-                              questionContractLines={questionContractLines}
-                              questionPictureChoices={questionPictureChoices}
-                              questionPictureBadge={questionPictureBadge}
-                              onQuestionPictureZoom={onQuestionPictureZoom}
-                              questionPictureSize={questionPictureSize}
+                              headingAnchorId={headingSlugMap.get(block.id)}
+                              onNavigateAnchor={scrollToAnchor}
                             />
-                          );
-                          // `textComments`: a question card's words are not commented on
-                          // (its own controls already are excluded); a box-less wrapper
-                          // keeps its layout.
-                          if (question && textCommentsOnly) {
-                            return (
-                              <div
-                                key={group.block.id}
-                                className="annotation-exclude"
-                                style={{ display: "contents" }}
-                              >
-                                {rendered}
-                              </div>
-                            );
+                          ))}
+                        </div>
+                      );
+                    })()
+                  ) : group.block.type === "code" && isMermaidLanguage(group.block.language) ? (
+                    <LazyBlockBoundary
+                      key={group.block.id}
+                      fallback={(notice) => (
+                        <DiagramBlockPending block={group.block} kind="mermaid" notice={notice} />
+                      )}
+                    >
+                      <Suspense
+                        fallback={<DiagramBlockPending block={group.block} kind="mermaid" />}
+                      >
+                        <MermaidBlock
+                          block={group.block}
+                          annotations={annotations}
+                          reopenComment={
+                            diagramReopen?.blockId === group.block.id
+                              ? diagramReopen.request
+                              : undefined
                           }
-                          return rendered;
-                        })()
-                      ),
-                    ),
-                  )}
-
-                  {/* Text selection toolbar */}
-                  {selectionCommentsOn && !hostComposes && toolbarState && (
-                    <ToolbarErrorBoundary>
-                      <AnnotationToolbar
-                        element={toolbarState.element}
-                        positionMode="center-above"
-                        commentOnly={textCommentsOnly || undefined}
-                        showDelete={textCommentsOnly && textDeletions ? true : undefined}
-                        onAnnotate={handleAnnotate}
-                        onClose={handleToolbarClose}
-                        onRequestComment={handleRequestComment}
-                        onQuickLabel={handleQuickLabel}
-                        quickLabels={quickLabels}
-                        copyText={toolbarState.selectionText}
-                        getRichCopy={getRichCopyEnabled() ? toolbarState.getRichCopy : undefined}
-                        touchAnchorRect={toolbarState.getAnchorRect}
-                        hideCopyButton={!isTouchDevice}
-                        closeOnScrollOut
-                      />
-                    </ToolbarErrorBoundary>
-                  )}
-
-                  {/* Table hover toolbar */}
-                  {hoveredTable && !toolbarState && (
-                    <TableToolbar
-                      element={hoveredTable.element}
-                      markdown={hoveredTable.block.content}
-                      isExiting={isTableToolbarExiting}
-                      onExpand={() => {
-                        setPopoutTable(hoveredTable.block);
-                        setHoveredTable(null);
-                        setIsTableToolbarExiting(false);
-                        if (tableHoverTimeoutRef.current) {
-                          clearTimeout(tableHoverTimeoutRef.current);
-                          tableHoverTimeoutRef.current = null;
-                        }
-                      }}
-                      onMouseEnter={() => {
+                          onComposerAnchor={onDiagramComposer}
+                          selectedAnnotationId={selectedAnnotationId}
+                          onSelectAnnotation={onSelectAnnotation}
+                          onAddAnnotation={selectionCommentsOn ? onAddAnnotation : undefined}
+                          readOnly={!selectionCommentsOn}
+                          onRestoreReport={onRestoreReport}
+                        />
+                      </Suspense>
+                    </LazyBlockBoundary>
+                  ) : group.block.type === "table" ? (
+                    <TableBlock
+                      key={group.block.id}
+                      block={group.block}
+                      imageBaseDir={imageBaseDir}
+                      onImageClick={(src, alt) => setLightbox({ src, alt })}
+                      onNavigateAnchor={scrollToAnchor}
+                      onHover={(element) => {
                         if (tableHoverTimeoutRef.current) {
                           clearTimeout(tableHoverTimeoutRef.current);
                           tableHoverTimeoutRef.current = null;
                         }
                         setIsTableToolbarExiting(false);
+                        if (!toolbarState && !hostComposes) {
+                          setHoveredTable({ block: group.block, element });
+                        }
                       }}
-                      onMouseLeave={() => {
+                      onLeave={() => {
                         tableHoverTimeoutRef.current = setTimeout(() => {
                           setIsTableToolbarExiting(true);
                           setTimeout(() => {
@@ -2467,178 +2235,381 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(
                         }, 100);
                       }}
                     />
-                  )}
-
-                  {/* Code block hover toolbar */}
-                  {!authoringOff &&
-                    codeBlockToolbar &&
-                    !toolbarState &&
-                    !(vimOwnsDocumentNavigation && codeBlockToolbar.activation === "pointer") && (
-                      <ToolbarErrorBoundary>
-                        <AnnotationToolbar
-                          element={codeBlockToolbar.element}
-                          positionMode="top-right"
-                          onAnnotate={handleCodeBlockAnnotate}
-                          onClose={handleCodeBlockToolbarClose}
-                          onRequestComment={handleCodeBlockRequestComment}
-                          onQuickLabel={handleCodeBlockQuickLabel}
-                          quickLabels={quickLabels}
-                          isExiting={isCodeBlockToolbarExiting}
-                          onMouseEnter={() => {
-                            if (hoverTimeoutRef.current) {
-                              clearTimeout(hoverTimeoutRef.current);
-                              hoverTimeoutRef.current = null;
+                  ) : group.block.type === "code" ? (
+                    <CodeBlock
+                      key={group.block.id}
+                      block={group.block}
+                      onHover={
+                        authoringOff || hostComposes || inputMethod === "pinpoint"
+                          ? undefined
+                          : (element) => {
+                              // Clear any pending leave timeout
+                              if (hoverTimeoutRef.current) {
+                                clearTimeout(hoverTimeoutRef.current);
+                                hoverTimeoutRef.current = null;
+                              }
+                              // Cancel exit animation if re-entering
+                              setIsCodeBlockToolbarExiting(false);
+                              // Only show hover toolbar if no selection toolbar is active
+                              if (
+                                !toolbarState &&
+                                !vimOwnsDocumentNavigation &&
+                                !keyboardCodeBlockToolbarOpen
+                              ) {
+                                setCodeBlockToolbar({
+                                  block: group.block,
+                                  element,
+                                  activation: "pointer",
+                                });
+                              }
                             }
-                            setIsCodeBlockToolbarExiting(false);
-                          }}
-                          onMouseLeave={() => {
-                            if (codeBlockToolbar.activation === "keyboard") return;
-                            hoverTimeoutRef.current = setTimeout(() => {
-                              setIsCodeBlockToolbarExiting(true);
-                              setTimeout(() => {
-                                setCodeBlockToolbar(null);
-                                setIsCodeBlockToolbarExiting(false);
-                              }, 150);
-                            }, 100);
-                          }}
+                      }
+                      onLeave={
+                        authoringOff || hostComposes || inputMethod === "pinpoint"
+                          ? undefined
+                          : () => {
+                              if (keyboardCodeBlockToolbarOpen) return;
+                              // Delay then start exit animation
+                              hoverTimeoutRef.current = setTimeout(() => {
+                                setIsCodeBlockToolbarExiting(true);
+                                // After exit animation, unmount
+                                setTimeout(() => {
+                                  setCodeBlockToolbar(null);
+                                  setIsCodeBlockToolbarExiting(false);
+                                }, 150);
+                              }, 100);
+                            }
+                      }
+                      isHovered={
+                        !authoringOff &&
+                        inputMethod !== "pinpoint" &&
+                        !vimOwnsDocumentNavigation &&
+                        codeBlockToolbar?.block.id === group.block.id
+                      }
+                    />
+                  ) : (
+                    (() => {
+                      const question = questionIndex.byBlock.get(group.block.id);
+                      const hostCard =
+                        question && renderQuestionCard
+                          ? renderQuestionCard(question, answersByKey.get(question.question.key))
+                          : !question && group.block.type === "directive" && renderDirectiveBlock
+                            ? renderDirectiveBlock(group.block)
+                            : undefined;
+                      if (hostCard !== undefined) {
+                        return (
+                          <div
+                            key={group.block.id}
+                            data-block-id={group.block.id}
+                            data-block-type="directive"
+                            className={textCommentsOnly ? "annotation-exclude" : undefined}
+                          >
+                            {hostCard}
+                          </div>
+                        );
+                      }
+                      const rendered = (
+                        <BlockRenderer
+                          imageBaseDir={imageBaseDir}
+                          onImageClick={(src, alt) => setLightbox({ src, alt })}
+                          key={group.block.id}
+                          block={group.block}
+                          onNavigateAnchor={scrollToAnchor}
+                          onToggleCheckbox={readOnly ? undefined : onToggleCheckbox}
+                          checkboxOverrides={checkboxOverrides}
+                          headingAnchorId={headingSlugMap.get(group.block.id)}
+                          question={question}
+                          questionTotal={questionIndex.total}
+                          questionAnswer={
+                            question ? answersByKey.get(question.question.key) : undefined
+                          }
+                          onAnswerQuestion={
+                            readOnly || (question && questionReadOnly?.(question))
+                              ? undefined
+                              : onAnswerQuestion
+                          }
+                          onSaveQuestionAnswer={
+                            readOnly || (question && questionReadOnly?.(question))
+                              ? undefined
+                              : onSaveQuestionAnswer
+                          }
+                          saveQuestionAnswerLabel={saveQuestionAnswerLabel}
+                          renderQuestionFooter={renderQuestionFooter}
+                          questionDecisionRecording={
+                            question ? questionDecisionRecording?.(question) : undefined
+                          }
+                          questionDecisionScope={questionDecisionScope}
+                          onToggleQuestionDecisionRecording={
+                            readOnly ||
+                            (question &&
+                              (questionDecisionLocked?.(question) || questionReadOnly?.(question)))
+                              ? undefined
+                              : onToggleQuestionDecisionRecording
+                          }
+                          onOpenQuestionDecision={
+                            readOnly ||
+                            (question &&
+                              (questionDecisionLocked?.(question) || questionReadOnly?.(question)))
+                              ? undefined
+                              : onOpenQuestionDecision
+                          }
+                          questionStatusTag={questionStatusTag}
+                          questionStatusLabel={questionStatusLabel}
+                          renderQuestionBelowPrompt={renderQuestionBelowPrompt}
+                          renderQuestionAfterChoices={renderQuestionAfterChoices}
+                          questionContractLines={questionContractLines}
+                          questionPictureChoices={questionPictureChoices}
+                          questionPictureBadge={questionPictureBadge}
+                          onQuestionPictureZoom={onQuestionPictureZoom}
+                          questionPictureSize={questionPictureSize}
                         />
-                      </ToolbarErrorBoundary>
-                    )}
-
-                  {/* Table popout dialog — portaled into containerRef so annotations */}
-                  {/* can walk into its text nodes the same way they do the inline table. */}
-                  {popoutTable && (
-                    <TablePopout
-                      block={popoutTable}
-                      open={!!popoutTable}
-                      onClose={() => setPopoutTable(null)}
-                      container={containerRef.current}
-                      imageBaseDir={imageBaseDir}
-                      onImageClick={(src, alt) => setLightbox({ src, alt })}
-                      onNavigateAnchor={scrollToAnchor}
-                    />
-                  )}
-
-                  {/* Pinpoint hover overlay */}
-                  {(inputMethod === "pinpoint" || vim.activeTarget) && (
-                    <PinpointOverlay target={pinpointOverlayTarget} containerRef={containerRef} />
-                  )}
-                  {vimModeActive && (
-                    <VimModeOverlay
-                      containerRef={containerRef}
-                      inputMethod={inputMethod}
-                      state={vim.state}
-                      focused={vim.focused}
-                      hudEnabled={vimHudEnabled}
-                      keyPanelEnabled={vimHudKeyPanelEnabled}
-                      hudCommand={vim.hudCommand}
-                      activeTarget={vim.activeTarget}
-                      helpOpen={vim.helpOpen}
-                      onHelpOpenChange={vim.onHelpOpenChange}
-                      onKeyPanelHide={
-                        onVimHudKeyPanelChange ? () => onVimHudKeyPanelChange(false) : undefined
+                      );
+                      // `textComments`: a question card's words are not commented on
+                      // (its own controls already are excluded); a box-less wrapper
+                      // keeps its layout.
+                      if (question && textCommentsOnly) {
+                        return (
+                          <div
+                            key={group.block.id}
+                            className="annotation-exclude"
+                            style={{ display: "contents" }}
+                          >
+                            {rendered}
+                          </div>
+                        );
                       }
-                      onHudFocusLeave={vim.onHudFocusLeave}
-                    />
-                  )}
+                      return rendered;
+                    })()
+                  ),
+                ),
+              )}
 
-                  {/* Comment popover — hook handles text selection, Viewer handles global + code block */}
-                  {selectionCommentsOn && !hostComposes && hookCommentPopover && (
-                    <CommentPopover
-                      anchorEl={hookCommentPopover.anchorEl}
-                      contextText={hookCommentPopover.contextText}
-                      isGlobal={false}
-                      initialText={
-                        hookCommentPopover.initialText ||
-                        suggestComment?.(
-                          hookCommentPopover.selectedText ?? hookCommentPopover.contextText,
-                        ) ||
-                        undefined
-                      }
-                      draftKey={`plan:${commentDraftScope}:${hookCommentPopover.draftKey}`}
-                      onSubmit={hookCommentSubmit}
-                      onClose={hookCommentClose}
-                      allowImages={allowImages}
-                    />
-                  )}
-                  {!authoringOff && viewerCommentPopover && (
-                    <CommentPopover
-                      anchorEl={viewerCommentPopover.anchorEl}
-                      contextText={viewerCommentPopover.contextText}
-                      isGlobal={viewerCommentPopover.isGlobal}
-                      initialText={viewerCommentPopover.initialText}
-                      draftKey={`plan:${commentDraftScope}:${
-                        viewerCommentPopover.isGlobal
-                          ? "global"
-                          : `code-block:${viewerCommentPopover.codeBlock?.block.id ?? viewerCommentPopover.contextText}`
-                      }`}
-                      onSubmit={handleViewerCommentSubmit}
-                      onClose={handleViewerCommentClose}
-                      allowImages={allowImages}
-                    />
-                  )}
+              {/* Text selection toolbar */}
+              {selectionCommentsOn && !hostComposes && toolbarState && (
+                <ToolbarErrorBoundary>
+                  <AnnotationToolbar
+                    element={toolbarState.element}
+                    positionMode="center-above"
+                    commentOnly={textCommentsOnly || undefined}
+                    showDelete={textCommentsOnly && textDeletions ? true : undefined}
+                    onAnnotate={handleAnnotate}
+                    onClose={handleToolbarClose}
+                    onRequestComment={handleRequestComment}
+                    onQuickLabel={handleQuickLabel}
+                    quickLabels={quickLabels}
+                    copyText={toolbarState.selectionText}
+                    getRichCopy={getRichCopyEnabled() ? toolbarState.getRichCopy : undefined}
+                    touchAnchorRect={toolbarState.getAnchorRect}
+                    hideCopyButton={!isTouchDevice}
+                    closeOnScrollOut
+                  />
+                </ToolbarErrorBoundary>
+              )}
 
-                  {/* Quick Label floating picker — hook handles text selection, Viewer handles code blocks */}
-                  {selectionCommentsOn && !hostComposes && hookQuickLabelPicker && (
-                    <FloatingQuickLabelPicker
-                      anchorEl={hookQuickLabelPicker.anchorEl}
-                      cursorHint={hookQuickLabelPicker.cursorHint}
-                      onSelect={hookFloatingQuickLabel}
-                      onDismiss={hookQuickLabelPickerDismiss}
-                    />
-                  )}
-                  {!authoringOff && codeBlockQuickLabelPicker && (
-                    <FloatingQuickLabelPicker
-                      anchorEl={codeBlockQuickLabelPicker.anchorEl}
-                      onSelect={(label: QuickLabel) => {
-                        const codeEl =
-                          codeBlockQuickLabelPicker.codeBlock.element.querySelector("code");
-                        if (codeEl) {
-                          applyCodeBlockAnnotation(
-                            codeBlockQuickLabelPicker.codeBlock.block.id,
-                            codeEl,
-                            AnnotationType.COMMENT,
-                            `${label.emoji} ${label.text}`,
-                            undefined,
-                            true,
-                            label.tip,
-                          );
+              {/* Table hover toolbar */}
+              {hoveredTable && !toolbarState && (
+                <TableToolbar
+                  element={hoveredTable.element}
+                  markdown={hoveredTable.block.content}
+                  isExiting={isTableToolbarExiting}
+                  onExpand={() => {
+                    setPopoutTable(hoveredTable.block);
+                    setHoveredTable(null);
+                    setIsTableToolbarExiting(false);
+                    if (tableHoverTimeoutRef.current) {
+                      clearTimeout(tableHoverTimeoutRef.current);
+                      tableHoverTimeoutRef.current = null;
+                    }
+                  }}
+                  onMouseEnter={() => {
+                    if (tableHoverTimeoutRef.current) {
+                      clearTimeout(tableHoverTimeoutRef.current);
+                      tableHoverTimeoutRef.current = null;
+                    }
+                    setIsTableToolbarExiting(false);
+                  }}
+                  onMouseLeave={() => {
+                    tableHoverTimeoutRef.current = setTimeout(() => {
+                      setIsTableToolbarExiting(true);
+                      setTimeout(() => {
+                        setHoveredTable(null);
+                        setIsTableToolbarExiting(false);
+                      }, 150);
+                    }, 100);
+                  }}
+                />
+              )}
+
+              {/* Code block hover toolbar */}
+              {!authoringOff &&
+                codeBlockToolbar &&
+                !toolbarState &&
+                !(vimOwnsDocumentNavigation && codeBlockToolbar.activation === "pointer") && (
+                  <ToolbarErrorBoundary>
+                    <AnnotationToolbar
+                      element={codeBlockToolbar.element}
+                      positionMode="top-right"
+                      onAnnotate={handleCodeBlockAnnotate}
+                      onClose={handleCodeBlockToolbarClose}
+                      onRequestComment={handleCodeBlockRequestComment}
+                      onQuickLabel={handleCodeBlockQuickLabel}
+                      quickLabels={quickLabels}
+                      isExiting={isCodeBlockToolbarExiting}
+                      onMouseEnter={() => {
+                        if (hoverTimeoutRef.current) {
+                          clearTimeout(hoverTimeoutRef.current);
+                          hoverTimeoutRef.current = null;
                         }
-                        setCodeBlockQuickLabelPicker(null);
-                        window.getSelection()?.removeAllRanges();
+                        setIsCodeBlockToolbarExiting(false);
                       }}
-                      onDismiss={() => {
-                        setCodeBlockQuickLabelPicker(null);
-                        window.getSelection()?.removeAllRanges();
+                      onMouseLeave={() => {
+                        if (codeBlockToolbar.activation === "keyboard") return;
+                        hoverTimeoutRef.current = setTimeout(() => {
+                          setIsCodeBlockToolbarExiting(true);
+                          setTimeout(() => {
+                            setCodeBlockToolbar(null);
+                            setIsCodeBlockToolbarExiting(false);
+                          }, 150);
+                        }, 100);
                       }}
                     />
-                  )}
-                  {/* Mounted while drafts are on, so a badge that opened its comment gets focus back as it closes. */}
-                  {visibleDrafts && (
-                    <CommentDraftBadges
-                      drafts={commentDrafts}
-                      highlighterRef={highlighterRef}
-                      containerRef={containerRef}
-                      onOpen={reopenCommentDraft}
-                    />
-                  )}
-                </article>
+                  </ToolbarErrorBoundary>
+                )}
 
-                {/* Image lightbox */}
-                {lightbox &&
-                  createPortal(
-                    <ImageLightbox
-                      src={lightbox.src}
-                      alt={lightbox.alt}
-                      images={lightbox.images}
-                      regions={regionHost}
-                      onClose={closeLightbox}
-                    />,
-                    document.body,
-                  )}
-              </div>
-            </CommentDraftScopeContext.Provider>
-          </DiagramAnchorClaimsContext.Provider>
+              {/* Table popout dialog — portaled into containerRef so annotations */}
+              {/* can walk into its text nodes the same way they do the inline table. */}
+              {popoutTable && (
+                <TablePopout
+                  block={popoutTable}
+                  open={!!popoutTable}
+                  onClose={() => setPopoutTable(null)}
+                  container={containerRef.current}
+                  imageBaseDir={imageBaseDir}
+                  onImageClick={(src, alt) => setLightbox({ src, alt })}
+                  onNavigateAnchor={scrollToAnchor}
+                />
+              )}
+
+              {/* Pinpoint hover overlay */}
+              {(inputMethod === "pinpoint" || vim.activeTarget) && (
+                <PinpointOverlay target={pinpointOverlayTarget} containerRef={containerRef} />
+              )}
+              {vimModeActive && (
+                <VimModeOverlay
+                  containerRef={containerRef}
+                  inputMethod={inputMethod}
+                  state={vim.state}
+                  focused={vim.focused}
+                  hudEnabled={vimHudEnabled}
+                  keyPanelEnabled={vimHudKeyPanelEnabled}
+                  hudCommand={vim.hudCommand}
+                  activeTarget={vim.activeTarget}
+                  helpOpen={vim.helpOpen}
+                  onHelpOpenChange={vim.onHelpOpenChange}
+                  onKeyPanelHide={
+                    onVimHudKeyPanelChange ? () => onVimHudKeyPanelChange(false) : undefined
+                  }
+                  onHudFocusLeave={vim.onHudFocusLeave}
+                />
+              )}
+
+              {/* Comment popover — hook handles text selection, Viewer handles global + code block */}
+              {selectionCommentsOn && !hostComposes && hookCommentPopover && (
+                <CommentPopover
+                  anchorEl={hookCommentPopover.anchorEl}
+                  contextText={hookCommentPopover.contextText}
+                  isGlobal={false}
+                  initialText={
+                    hookCommentPopover.initialText ||
+                    suggestComment?.(
+                      hookCommentPopover.selectedText ?? hookCommentPopover.contextText,
+                    ) ||
+                    undefined
+                  }
+                  draftKey={`plan:${commentDraftScope}:${hookCommentPopover.draftKey}`}
+                  onSubmit={hookCommentSubmit}
+                  onClose={hookCommentClose}
+                  allowImages={allowImages}
+                />
+              )}
+              {!authoringOff && viewerCommentPopover && (
+                <CommentPopover
+                  anchorEl={viewerCommentPopover.anchorEl}
+                  contextText={viewerCommentPopover.contextText}
+                  isGlobal={viewerCommentPopover.isGlobal}
+                  initialText={viewerCommentPopover.initialText}
+                  draftKey={`plan:${commentDraftScope}:${
+                    viewerCommentPopover.isGlobal
+                      ? "global"
+                      : `code-block:${viewerCommentPopover.codeBlock?.block.id ?? viewerCommentPopover.contextText}`
+                  }`}
+                  onSubmit={handleViewerCommentSubmit}
+                  onClose={handleViewerCommentClose}
+                  allowImages={allowImages}
+                />
+              )}
+
+              {/* Quick Label floating picker — hook handles text selection, Viewer handles code blocks */}
+              {selectionCommentsOn && !hostComposes && hookQuickLabelPicker && (
+                <FloatingQuickLabelPicker
+                  anchorEl={hookQuickLabelPicker.anchorEl}
+                  cursorHint={hookQuickLabelPicker.cursorHint}
+                  onSelect={hookFloatingQuickLabel}
+                  onDismiss={hookQuickLabelPickerDismiss}
+                />
+              )}
+              {!authoringOff && codeBlockQuickLabelPicker && (
+                <FloatingQuickLabelPicker
+                  anchorEl={codeBlockQuickLabelPicker.anchorEl}
+                  onSelect={(label: QuickLabel) => {
+                    const codeEl =
+                      codeBlockQuickLabelPicker.codeBlock.element.querySelector("code");
+                    if (codeEl) {
+                      applyCodeBlockAnnotation(
+                        codeBlockQuickLabelPicker.codeBlock.block.id,
+                        codeEl,
+                        AnnotationType.COMMENT,
+                        `${label.emoji} ${label.text}`,
+                        undefined,
+                        true,
+                        label.tip,
+                      );
+                    }
+                    setCodeBlockQuickLabelPicker(null);
+                    window.getSelection()?.removeAllRanges();
+                  }}
+                  onDismiss={() => {
+                    setCodeBlockQuickLabelPicker(null);
+                    window.getSelection()?.removeAllRanges();
+                  }}
+                />
+              )}
+              {/* Mounted while drafts are on, so a badge that opened its comment gets focus back as it closes. */}
+              {visibleDrafts && (
+                <CommentDraftBadges
+                  drafts={commentDrafts}
+                  highlighterRef={highlighterRef}
+                  containerRef={containerRef}
+                  onOpen={reopenCommentDraft}
+                />
+              )}
+            </article>
+
+            {/* Image lightbox */}
+            {lightbox &&
+              createPortal(
+                <ImageLightbox
+                  src={lightbox.src}
+                  alt={lightbox.alt}
+                  images={lightbox.images}
+                  regions={regionHost}
+                  onClose={closeLightbox}
+                />,
+                document.body,
+              )}
+          </div>
+        </CommentDraftScopeContext.Provider>
+      </DiagramAnchorClaimsContext.Provider>
     );
   },
 );

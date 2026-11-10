@@ -25,8 +25,7 @@ const buttonVariants = cva(
           "border border-border bg-background text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:border-border-strong [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-0",
         secondary:
           "bg-muted text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-2",
-        ghost:
-          "text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted",
+        ghost: "text-foreground [@media(hover:hover)_and_(pointer:fine)]:hover:bg-muted",
         link: "text-primary-ink underline underline-offset-4 decoration-1 [@media(hover:hover)_and_(pointer:fine)]:hover:decoration-2",
       },
       size: {

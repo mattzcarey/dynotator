@@ -59,7 +59,7 @@ import {
   type DecisionControlProps,
   type DecisionHandler,
 } from "@dynotator/ui/components/DecisionControl";
-import { PermissionModeMenuLine } from "@dynotator/ui/components/PlanDecisionMenuExtras";
+import { PermissionModeMenuLine } from "@dynotator/ui/components/PermissionModeMenuLine";
 import { annotationOwnsHighlight } from "@dynotator/ui/utils/annotationOwnsHighlight";
 import {
   buildQuestionPanelRows,
@@ -96,7 +96,7 @@ import { useAnnotations } from "./hooks/useAnnotations";
 import { useDraft } from "./hooks/useDraft";
 import { useDecision } from "./hooks/useDecision";
 import { usePlanDiffViewAutoExit } from "./hooks/usePlanDiffViewAutoExit";
-import { useRevisionWatch } from "./hooks/useRevisionWatch";
+import { usePlanRevision } from "./hooks/usePlanRevision";
 
 // Copy puts rich text on the clipboard, and on touch screens the selection
 // toolbar sits below the selection, clear of the system edit menu.
@@ -226,6 +226,7 @@ const Review: React.FC<{ session: Session }> = ({ session }) => {
     feedbackInput,
     answersOnly,
     permissionMode: showsPermissionMode ? permissionMode : null,
+    planRevision: session.planRevision,
     getDraftGeneration: draft.getDraftGeneration,
     addAnnotation: ann.add,
     onDecided: draft.cancelPending,
@@ -234,9 +235,10 @@ const Review: React.FC<{ session: Session }> = ({ session }) => {
   useEffect(() => {
     if (submitted) setDecided(true);
   }, [submitted]);
-  const revisionReady = useRevisionWatch({
-    active: submitted === "denied" && !annotateMode,
-    version: session.versionInfo?.version ?? 0,
+  usePlanRevision({
+    revision: session.planRevision,
+    denied: submitted === "denied",
+    active: !submitted || submitted === "denied",
   });
 
   const restoreDraft = useCallback(() => {
@@ -431,7 +433,7 @@ const Review: React.FC<{ session: Session }> = ({ session }) => {
             gate: true,
             count: feedbackCount,
             hasFeedback: feedbackReady,
-            approvalNotesSupported: session.approvalNotesSupported,
+            approvalNotesSupported: true,
             plan: { answers: answerCount, directEdits: false, answersOnly, agentName },
           }),
     [
@@ -441,7 +443,6 @@ const Review: React.FC<{ session: Session }> = ({ session }) => {
       answersOnly,
       feedbackCount,
       feedbackReady,
-      session.approvalNotesSupported,
     ],
   );
   const actRef = useRef(decision.act);
@@ -1091,21 +1092,10 @@ const Review: React.FC<{ session: Session }> = ({ session }) => {
           />
 
           <CompletionOverlay
-            submitted={submitted}
+            submitted={submitted === "closed" ? "exited" : submitted}
             title={completionTitle(submitted, annotateMode)}
             subtitle={completionSubtitle(submitted, annotateMode, agentName)}
             agentLabel={agentName}
-            footer={
-              revisionReady ? (
-                <button
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-                >
-                  Review the revised plan
-                </button>
-              ) : undefined
-            }
           />
 
           <ImageAnnotator
@@ -1137,6 +1127,8 @@ function completionTitle(submitted: string | null, annotateMode: boolean): strin
       return "Done";
     case "exited":
       return "Session Closed";
+    case "closed":
+      return "Already Decided";
     default:
       return "Feedback Sent";
   }
@@ -1156,10 +1148,14 @@ function completionSubtitle(
       return `Nothing was sent to ${agentName}.`;
     case "exited":
       return "The session was closed without feedback.";
-    default:
+    case "closed":
+      return "This review was decided in another tab or window.";
+    case "denied":
       return annotateMode
         ? `${agentName} will address your feedback on the document.`
-        : `${agentName} will revise the plan based on your feedback.`;
+        : `${agentName} will revise the plan based on your feedback. The new version opens here.`;
+    default:
+      return "";
   }
 }
 

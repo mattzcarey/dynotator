@@ -6,13 +6,9 @@ interface TableBlockProps {
   block: Block;
   onHover?: (element: HTMLElement) => void;
   onLeave?: () => void;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   onNavigateAnchor?: (hash: string) => void;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
-  githubRepo?: string;
-  repoHost?: string;
 }
 
 // Parse pipe-delimited markdown table content into headers + rows.
@@ -82,13 +78,9 @@ export const TableBlock: React.FC<TableBlockProps> = ({
   block,
   onHover,
   onLeave,
-  onOpenLinkedDoc,
-  onOpenCodeFile,
   onNavigateAnchor,
   imageBaseDir,
   onImageClick,
-  githubRepo,
-  repoHost,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { headers, rows } = parseTableContent(block.content);
@@ -109,19 +101,12 @@ export const TableBlock: React.FC<TableBlockProps> = ({
         <thead>
           <tr className="border-b border-border bg-surface-0">
             {headers.map((header, i) => (
-              <th
-                key={i}
-                className="px-3 py-2 text-left text-[13px] font-medium text-foreground"
-              >
+              <th key={i} className="px-3 py-2 text-left text-[13px] font-medium text-foreground">
                 <InlineMarkdown
                   imageBaseDir={imageBaseDir}
                   onImageClick={onImageClick}
                   text={header}
-                  onOpenLinkedDoc={onOpenLinkedDoc}
-                  onOpenCodeFile={onOpenCodeFile}
                   onNavigateAnchor={onNavigateAnchor}
-                  githubRepo={githubRepo}
-                  repoHost={repoHost}
                 />
               </th>
             ))}
@@ -136,11 +121,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
                     imageBaseDir={imageBaseDir}
                     onImageClick={onImageClick}
                     text={cell}
-                    onOpenLinkedDoc={onOpenLinkedDoc}
-                    onOpenCodeFile={onOpenCodeFile}
                     onNavigateAnchor={onNavigateAnchor}
-                    githubRepo={githubRepo}
-                    repoHost={repoHost}
                   />
                 </td>
               ))}

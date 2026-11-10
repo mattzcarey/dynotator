@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import type { ImageAttachment } from "../types";
 import { AttachmentsButton } from "./AttachmentsButton";
 import { useDraggable } from "../hooks/useDraggable";
-import { SparklesIcon } from "./SparklesIcon";
 import { Icon } from "./Icon";
 import {
   commentCardAimX,
@@ -13,39 +12,13 @@ import {
 import { hasUnsavedCommentContent } from "../utils/commentContent";
 import { isCommentSubmitKey } from "../utils/commentSubmitKey";
 import { useConfigValue } from "../config/useConfig";
-import { useSkillReferenceAutocomplete } from "../hooks/useSkillReferenceAutocomplete";
-import { HumanOnlySkillNotice, SkillReferenceMenu } from "./SkillReferenceMenu";
-import { ComposerTokenTextarea, type ComposerMentionChips } from "./ComposerTokenTextarea";
-import { useMentionAutocomplete } from "../hooks/useMentionAutocomplete";
-import { MentionAutocompleteMenu, mentionActiveOptionId } from "./MentionAutocomplete";
-import type { MentionSource } from "../utils/mentions";
+import { ComposerTextarea } from "./ComposerTextarea";
 import {
   hasPrimaryCoarsePointer,
   shouldUseExpandedComposer,
   useVisibleViewportBounds,
   type VisibleViewportBounds,
 } from "../hooks/useViewportEnvironment";
-
-export type { ComposerMentionChips } from "./ComposerTokenTextarea";
-
-export interface CommentAskAIContext {
-  kind: "general" | "selection";
-  label?: string;
-  text?: string;
-  sourcePath?: string;
-  /** Agent-facing identity of the selected element(s), for a pinpoint on a
-   *  raw-HTML or live-app surface. Rides with the question; not displayed. */
-  detail?: string;
-  /** 1-based source lines of a markdown text selection (see
-   *  `AIQuestion.scope.lineStart`). Rides with the question; not displayed. */
-  lineStart?: number;
-  lineEnd?: number;
-}
-
-export type CommentAskAIHandler = (
-  question: string,
-  context: CommentAskAIContext,
-) => boolean | void | Promise<boolean | void>;
 
 /** One selected target of a multi-target draft comment (HTML pinpoint multi-select). */
 export interface CommentTargetChip {
@@ -77,13 +50,8 @@ interface CommentPopoverProps {
   isGlobal: boolean;
   /** Pre-filled text (for type-to-comment) */
   initialText?: string;
-  /**
-   * Called on submit with comment text and optional images. The third
-   * argument carries the mention ids the body still tags, and is passed ONLY
-   * when a `mentionSource` is supplied — without one the call is the two
-   * arguments it has always been.
-   */
-  onSubmit: (text: string, images?: ImageAttachment[], mentions?: readonly string[]) => void;
+  /** Called on submit with comment text and optional images. */
+  onSubmit: (text: string, images?: ImageAttachment[]) => void;
   /**
    * One-click 👍 "Looks good" (comment-only HTML / live-app surfaces, where a
    * pinpoint click opens this composer directly and never shows the selection
@@ -105,10 +73,6 @@ interface CommentPopoverProps {
   allowImages?: boolean;
   /** Whether submitting empty text is allowed, for editors that support clearing. */
   allowEmptySubmit?: boolean;
-  /** Optional Ask AI action. Absent by default so existing comment surfaces are unchanged. */
-  onAskAI?: CommentAskAIHandler;
-  askAIContext?: CommentAskAIContext;
-  askAIDisabled?: boolean;
   /**
    * Opt-in: a third action at the footer's end, needing no words (Shape's Show me). It gets what was typed, and the
    * box closes. Absent: nothing changes.
@@ -116,8 +80,6 @@ interface CommentPopoverProps {
   extraAction?: CommentExtraAction;
   /** Opt-in: the primary action's label (Shape: "Change it"). Absent → "Add" / "Save", as always. */
   submitLabel?: string;
-  /** Opt-in: the Ask AI action's label (Shape: "Ask"). Absent → "Ask AI", as always. */
-  askAILabel?: string;
   /** Opt-in: more actions, drawn after the main one in this order (the right end; Tab reaches them last), each taking
    *  whatever is typed (Shape's box: "Show me", "Add to reply"). Absent or empty → nothing drawn. */
   extraActions?: readonly {
@@ -131,15 +93,6 @@ interface CommentPopoverProps {
    * the host's choice, as always.
    */
   allowCard?: boolean;
-  /** Opt-in: `/` and `$` skill-reference autocomplete (document UI surfaces). Off by default. */
-  skillReferences?: boolean;
-  /**
-   * Opt-in host capability: an `@` mention source for this composer. Supplies
-   * the people, an optional honest-empty notice, and optional callbacks for
-   * the surviving mention ids and for a picked person the host blocks.
-   * Absent → no listener, no picker, no extra DOM: byte-identical composer.
-   */
-  mentionSource?: MentionSource;
   /** Opt-in (HTML multi-select): selected targets rendered as horizontally
    *  scrollable chips above the textarea. Absent → byte-identical composer. */
   targetChips?: CommentTargetChip[];
@@ -403,16 +356,10 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   draftKey,
   allowImages = true,
   allowEmptySubmit = false,
-  onAskAI,
-  askAIContext,
-  askAIDisabled = false,
   submitLabel,
   extraAction,
-  askAILabel,
   extraActions,
   allowCard = true,
-  skillReferences = false,
-  mentionSource,
   targetChips,
   onRemoveTargetChip,
   onHoverTargetChip,
@@ -808,24 +755,6 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
       </div>
     ) : null;
 
-  const mentionAc = useMentionAutocomplete({
-    text,
-    setText,
-    textareaRef,
-    source: mentionSource,
-  });
-
-  // The mention half of the composer's highlight layer: present for the whole
-  // life of a mention composer (so the first pick never swaps the textarea
-  // element), null without a source (so the overlay does not exist at all).
-  const mentionChipPeople = mentionAc.mentions;
-  const mentionTokenClassName = mentionSource?.tokenClassName;
-  const mentionChips: ComposerMentionChips | null = useMemo(
-    () =>
-      mentionSource ? { people: mentionChipPeople, tokenClassName: mentionTokenClassName } : null,
-    [mentionSource, mentionChipPeople, mentionTokenClassName],
-  );
-
   const runExtraAction = (action: NonNullable<CommentPopoverProps["extraActions"]>[number]) => {
     if (action.spends && draftKey) draftStore.delete(draftKey);
     action.onSelect(text.trim());
@@ -836,9 +765,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
     if (hasUnsavedContent || canSubmitEmpty) {
       if (draftKey) draftStore.delete(draftKey);
       const submitImages = allowImages && images.length > 0 ? images : undefined;
-      // Without a mentionSource this is the two-argument call it always was.
-      if (mentionSource) onSubmit(text, submitImages, mentionAc.mentionIds);
-      else onSubmit(text, submitImages);
+      onSubmit(text, submitImages);
       restoreOpeningFocus();
     }
   }, [
@@ -851,47 +778,6 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
     initialText,
     hasUnsavedContent,
     restoreOpeningFocus,
-    mentionSource,
-    mentionAc.mentionIds,
-  ]);
-
-  const handleAskAI = useCallback(async () => {
-    const question = text.trim();
-    if (!question || !onAskAI) {
-      textareaRef.current?.focus();
-      return;
-    }
-    let accepted: boolean | void;
-    try {
-      accepted = await onAskAI(
-        question,
-        askAIContext ?? {
-          kind: isGlobal ? "general" : "selection",
-          text: contextText,
-        },
-      );
-    } catch (error) {
-      console.error("Ask AI action failed:", error);
-      textareaRef.current?.focus();
-      return;
-    }
-    if (accepted === false) {
-      textareaRef.current?.focus();
-      return;
-    }
-    if (draftKey) draftStore.delete(draftKey);
-    onDraftChange?.("", allowImages ? [] : undefined);
-    onClose();
-  }, [
-    allowImages,
-    askAIContext,
-    contextText,
-    draftKey,
-    isGlobal,
-    onAskAI,
-    onClose,
-    onDraftChange,
-    text,
   ]);
 
   const handleExtra = useCallback(() => {
@@ -917,35 +803,8 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
     </button>
   ) : null;
 
-  const skillAc = useSkillReferenceAutocomplete({
-    text,
-    setText,
-    textareaRef,
-    enabled: skillReferences,
-  });
-  const readComposerCaret = useCallback(() => {
-    skillAc.onSelect();
-    mentionAc.onSelect();
-  }, [mentionAc, skillAc]);
-  const skillListboxId = `skill-reference-listbox-${useId().replace(/:/g, "")}`;
-  const mentionListboxId = `${skillListboxId}-mentions`;
-  const activeSkillOptionId =
-    skillAc.menu?.activeIndex === null || skillAc.menu?.activeIndex === undefined
-      ? undefined
-      : `${skillListboxId}-option-${skillAc.menu.activeIndex}`;
-  // At most one of the two menus can be open (their triggers are disjoint), so
-  // the textarea's ARIA relationship points at whichever one is. All three are
-  // `undefined`/false with no menu open, which is every render Plannotator
-  // makes without a `mentionSource`.
-  const activeMentionOptionId = mentionActiveOptionId(mentionListboxId, mentionAc.menu);
-  const composerListboxId = mentionAc.menu !== null ? mentionListboxId : skillListboxId;
-  const composerListboxOpen = skillAc.menu !== null || mentionAc.menu !== null;
-  const activeComposerOptionId = activeSkillOptionId ?? activeMentionOptionId;
-
   const enterSavesComment = useConfigValue("enterSavesComment");
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (skillAc.onKeyDown(e)) return;
-    if (mentionAc.onKeyDown(e)) return;
     if (e.key === "Escape") {
       e.stopPropagation();
       // The card: one layer per Escape. Opened to full goes back small first; then it closes and keeps the words.
@@ -992,8 +851,6 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
   ) : null;
 
   const canSubmit = hasUnsavedContent || (allowEmptySubmit && initialText.trim().length > 0);
-  const canAskAI = !!onAskAI && !askAIDisabled && text.trim().length > 0;
-  const showsSkillMenu = skillAc.menu !== null;
 
   // Shared by both footers, sits beside Save. Emoji-only like the selection
   // toolbar's 👍 (same hover tint). Disabled once anything is typed or
@@ -1085,7 +942,6 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           style={{
             ...(cardDragged ? cardDragStyle : cardGeo.style),
             ...(zIndex !== undefined ? { zIndex } : {}),
-            ...(showsSkillMenu ? { overflow: "visible" } : {}),
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
@@ -1107,17 +963,6 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           >
             <Icon name="chevD" size={16} />
           </button>
-          {/* The skill list hangs off the card itself, never off the field: the field scrolls, and would clip it. */}
-          {skillAc.menu && (
-            <SkillReferenceMenu
-              id={skillListboxId}
-              items={skillAc.menu.items}
-              activeIndex={skillAc.menu.activeIndex}
-              onSelect={skillAc.select}
-              // On the side away from the words the comment is about, so the list never covers them.
-              prefer={cardGeo.above || cardGeo.docked ? "above" : "below"}
-            />
-          )}
           {/* The words are the handle the card is dragged by (as the popover's header is). The press keeps the caret
               in the field and starts no selection of the page's text, which would close the card as a draft. */}
           <div
@@ -1136,30 +981,13 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           {errorRow}
           {chipsRow}
           <div className="pn-cbox-field">
-            <ComposerTokenTextarea
+            <ComposerTextarea
               textareaRef={focusOnMountRef}
               value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                readComposerCaret();
-              }}
+              onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
-              onSelectCaret={readComposerCaret}
               placeholder={isGlobal ? "Add a global comment…" : "Comment…"}
               sizeClassName={cardExpanded ? "pn-cbox-ta pn-cbox-ta-full" : "pn-cbox-ta"}
-              skillReferences={skillReferences}
-              tokens={skillAc.referenceTokens}
-              mentionChips={mentionChips}
-              listboxId={composerListboxId}
-              listboxOpen={composerListboxOpen}
-              activeOptionId={activeComposerOptionId}
-            />
-            <HumanOnlySkillNotice skills={skillAc.humanOnlyReferences} />
-            {mentionSource?.renderNotice?.(mentionChipPeople)}
-            <MentionAutocompleteMenu
-              id={mentionListboxId}
-              menu={mentionAc.menu}
-              onSelect={mentionAc.select}
             />
           </div>
           {/* Screen order is Tab order: the tools, the bin, then Comment at the right end. */}
@@ -1172,18 +1000,6 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                 onRemove={(path) => setImages((prev) => prev.filter((i) => i.path !== path))}
                 variant="inline"
               />
-            )}
-            {onAskAI && (
-              <button
-                type="button"
-                className="pn-cbox-tool pn-cbox-word"
-                onClick={handleAskAI}
-                disabled={!canAskAI}
-                title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
-              >
-                <SparklesIcon className="w-3.5 h-3.5" />
-                {askAILabel ?? "Ask AI"}
-              </button>
             )}
             {extraActions?.map((action) => (
               <button
@@ -1273,9 +1089,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           aria-modal="true"
           aria-label={isGlobal ? "Global comment" : "Comment"}
           tabIndex={-1}
-          className={`relative w-full max-w-xl max-h-full min-h-0 bg-popover border border-border rounded-lg shadow-lg flex flex-col ${
-            showsSkillMenu ? "overflow-visible" : "overflow-hidden"
-          }`}
+          className={`relative w-full max-w-xl max-h-full min-h-0 bg-popover border border-border rounded-lg shadow-lg flex flex-col ${"overflow-hidden"}`}
           style={{
             animation: "comment-dialog-in 0.15s ease-out",
           }}
@@ -1326,43 +1140,14 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
           {chipsRow}
 
           {/* Textarea */}
-          <div
-            className={`relative px-4 py-3 min-h-0 flex-1 ${
-              showsSkillMenu ? "overflow-visible" : "overflow-y-auto"
-            }`}
-          >
-            {skillAc.menu && (
-              <SkillReferenceMenu
-                id={skillListboxId}
-                items={skillAc.menu.items}
-                activeIndex={skillAc.menu.activeIndex}
-                onSelect={skillAc.select}
-              />
-            )}
-            <ComposerTokenTextarea
+          <div className={`relative px-4 py-3 min-h-0 flex-1 ${"overflow-y-auto"}`}>
+            <ComposerTextarea
               textareaRef={focusOnMountRef}
               value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                readComposerCaret();
-              }}
+              onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
-              onSelectCaret={readComposerCaret}
               placeholder={isGlobal ? "Add a global comment..." : "Add a comment..."}
               sizeClassName="min-h-32 max-h-full"
-              skillReferences={skillReferences}
-              tokens={skillAc.referenceTokens}
-              mentionChips={mentionChips}
-              listboxId={composerListboxId}
-              listboxOpen={composerListboxOpen}
-              activeOptionId={activeComposerOptionId}
-            />
-            <HumanOnlySkillNotice skills={skillAc.humanOnlyReferences} />
-            {mentionSource?.renderNotice?.(mentionChipPeople)}
-            <MentionAutocompleteMenu
-              id={mentionListboxId}
-              menu={mentionAc.menu}
-              onSelect={mentionAc.select}
             />
           </div>
 
@@ -1378,17 +1163,6 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
               </button>
               {extraButton}
               {quickLookGoodButton}
-              {onAskAI && (
-                <button
-                  onClick={handleAskAI}
-                  disabled={!canAskAI}
-                  className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
-                >
-                  <SparklesIcon className="w-3 h-3" />
-                  {askAILabel ?? "Ask AI"}
-                </button>
-              )}
               {extraActions?.map((action, i) => (
                 <button
                   key={action.label}
@@ -1446,7 +1220,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                 left: dragPosition.left,
                 width: position.width,
                 maxHeight: visibleBounds.height,
-                overflowY: showsSkillMenu ? "visible" : "auto",
+                overflowY: "auto",
               }
             : {
                 ...(zIndex !== undefined ? { zIndex } : {}),
@@ -1454,7 +1228,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
                 left: position.left,
                 width: position.width,
                 maxHeight: position.maxHeight,
-                overflowY: showsSkillMenu ? "visible" : "auto",
+                overflowY: "auto",
                 ...(position.flipAbove ? { transform: "translateY(-100%)" } : {}),
                 animation: position.flipAbove
                   ? "comment-popover-in-above 0.15s ease-out"
@@ -1509,38 +1283,13 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
 
         {/* Textarea */}
         <div className="relative px-3 py-2">
-          {skillAc.menu && (
-            <SkillReferenceMenu
-              id={skillListboxId}
-              items={skillAc.menu.items}
-              activeIndex={skillAc.menu.activeIndex}
-              onSelect={skillAc.select}
-            />
-          )}
-          <ComposerTokenTextarea
+          <ComposerTextarea
             textareaRef={focusOnMountRef}
             value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              readComposerCaret();
-            }}
+            onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            onSelectCaret={readComposerCaret}
             placeholder={isGlobal ? "Add a global comment..." : "Add a comment..."}
             sizeClassName="max-h-64 min-h-[4.5rem]"
-            skillReferences={skillReferences}
-            tokens={skillAc.referenceTokens}
-            mentionChips={mentionChips}
-            listboxId={composerListboxId}
-            listboxOpen={composerListboxOpen}
-            activeOptionId={activeComposerOptionId}
-          />
-          <HumanOnlySkillNotice skills={skillAc.humanOnlyReferences} />
-          {mentionSource?.renderNotice?.(mentionChipPeople)}
-          <MentionAutocompleteMenu
-            id={mentionListboxId}
-            menu={mentionAc.menu}
-            onSelect={mentionAc.select}
           />
         </div>
 
@@ -1563,17 +1312,6 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({
             </button>
             {extraButton}
             {quickLookGoodButton}
-            {onAskAI && (
-              <button
-                onClick={handleAskAI}
-                disabled={!canAskAI}
-                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
-              >
-                <SparklesIcon className="w-3 h-3" />
-                {askAILabel ?? "Ask AI"}
-              </button>
-            )}
             {extraActions?.map((action, i) => (
               <button
                 key={action.label}

@@ -15,11 +15,7 @@ export function renderProseBody(args: {
   listClassName?: string;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   onNavigateAnchor?: (hash: string) => void;
-  githubRepo?: string;
-  repoHost?: string;
 }): React.ReactNode {
   const {
     body,
@@ -27,11 +23,7 @@ export function renderProseBody(args: {
     listClassName = "text-[15px] leading-relaxed text-foreground/90",
     imageBaseDir,
     onImageClick,
-    onOpenLinkedDoc,
-    onOpenCodeFile,
     onNavigateAnchor,
-    githubRepo,
-    repoHost,
   } = args;
 
   const inline = (text: string) => (
@@ -39,11 +31,7 @@ export function renderProseBody(args: {
       imageBaseDir={imageBaseDir}
       onImageClick={onImageClick}
       text={text}
-      onOpenLinkedDoc={onOpenLinkedDoc}
-      onOpenCodeFile={onOpenCodeFile}
       onNavigateAnchor={onNavigateAnchor}
-      githubRepo={githubRepo}
-      repoHost={repoHost}
     />
   );
 

@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useContext } from "react";
-import { isCodeFilePath } from "@dynotator/core/code-file";
 import type { Block } from "../../types";
 import { sanitizeBlockHtml } from "../../utils/sanitizeHtml";
 import { parseSrcset, serializeSrcset, type SrcsetCandidate } from "../../utils/srcset";
@@ -11,18 +10,10 @@ import {
   useImageResolver,
   type ImageResolver,
 } from "../ImageResolverContext";
-import {
-  isLocalLinkTarget,
-  isNewTabClick,
-  useLocalLinkResolver,
-  type LocalLinkResolver,
-} from "../LocalLinkContext";
 
 interface HtmlBlockProps {
   block: Block;
   imageBaseDir?: string;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   onNavigateAnchor?: (hash: string) => void;
 }
 
@@ -140,10 +131,7 @@ const IMAGE_NOT_FOUND_TITLE = "Image could not be loaded";
 function rewriteRelativeRefs(
   root: HTMLElement,
   imageBaseDir?: string,
-  onOpenLinkedDoc?: (path: string) => void,
-  onOpenCodeFile?: (path: string) => void,
   onNavigateAnchor?: (hash: string) => void,
-  resolveLocalLink?: LocalLinkResolver | null,
   resolveImage?: ImageResolver | null,
 ): () => void {
   const cleanups: (() => void)[] = [];
@@ -199,62 +187,6 @@ function rewriteRelativeRefs(
       cleanups.push(() => a.removeEventListener("click", handler));
       return;
     }
-    // A host's resolver (Viewer `resolveLocalLink`) decides local paths
-    // first, as InlineMarkdown does; null keeps the rules below.
-    const localLink = resolveLocalLink && isLocalLinkTarget(href) ? resolveLocalLink(href) : null;
-    if (localLink?.kind === "open") {
-      const openLink = localLink.open;
-      const hostHref = localLink.href;
-      const handler = (e: Event) => {
-        // With the host's own address, a new-tab click goes there.
-        if (hostHref && e instanceof MouseEvent && isNewTabClick(e)) return;
-        e.preventDefault();
-        e.stopPropagation();
-        openLink();
-      };
-      if (hostHref) {
-        a.setAttribute("href", hostHref);
-        a.removeAttribute("target");
-      }
-      if (localLink.title) a.setAttribute("title", localLink.title);
-      a.setAttribute("data-local-link", "open");
-      // Without it, a middle click would open the path on the host's own origin.
-      const aux = (e: Event) => {
-        if (!hostHref) e.preventDefault();
-      };
-      a.addEventListener("click", handler);
-      a.addEventListener("auxclick", aux);
-      cleanups.push(() => {
-        a.removeEventListener("click", handler);
-        a.removeEventListener("auxclick", aux);
-      });
-      return;
-    }
-    if (localLink?.kind === "unavailable") {
-      // Inert: without an href the browser neither follows nor fetches it.
-      a.removeAttribute("href");
-      a.removeAttribute("target");
-      a.setAttribute("title", localLink.title);
-      a.setAttribute("data-local-link", "unavailable");
-      return;
-    }
-    if (onOpenCodeFile && isCodeFilePath(href)) {
-      const handler = (e: Event) => {
-        e.preventDefault();
-        onOpenCodeFile(href.replace(/#.*$/, ""));
-      };
-      a.addEventListener("click", handler);
-      cleanups.push(() => a.removeEventListener("click", handler));
-      return;
-    }
-    if (onOpenLinkedDoc && /\.(mdx?|txt|html?)(#.*)?$/i.test(href)) {
-      const handler = (e: Event) => {
-        e.preventDefault();
-        onOpenLinkedDoc(href.replace(/#.*$/, ""));
-      };
-      a.addEventListener("click", handler);
-      cleanups.push(() => a.removeEventListener("click", handler));
-    }
   });
 
   return () => cleanups.forEach((fn) => fn());
@@ -269,12 +201,9 @@ function rewriteRelativeRefs(
 const HtmlBlockImpl: React.FC<HtmlBlockProps> = ({
   block,
   imageBaseDir,
-  onOpenLinkedDoc,
-  onOpenCodeFile,
   onNavigateAnchor,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const resolveLocalLink = useLocalLinkResolver();
   const resolveImage = useImageResolver();
   const preserveVideos = useContext(PreserveResolvedVideosContext);
   const responsiveImages = useContext(ResolvedResponsiveImagesContext);
@@ -300,20 +229,14 @@ const HtmlBlockImpl: React.FC<HtmlBlockProps> = ({
     const cleanup = rewriteRelativeRefs(
       ref.current,
       imageBaseDir,
-      onOpenLinkedDoc,
-      onOpenCodeFile,
       onNavigateAnchor,
-      resolveLocalLink,
       resolveImage,
     );
     return cleanup;
   }, [
     sanitized,
     imageBaseDir,
-    onOpenLinkedDoc,
-    onOpenCodeFile,
     onNavigateAnchor,
-    resolveLocalLink,
     resolveImage,
     preserveVideos,
     responsiveImages,
@@ -333,7 +256,5 @@ export const HtmlBlock = React.memo(
     prev.block.id === next.block.id &&
     prev.block.content === next.block.content &&
     prev.imageBaseDir === next.imageBaseDir &&
-    prev.onOpenLinkedDoc === next.onOpenLinkedDoc &&
-    prev.onOpenCodeFile === next.onOpenCodeFile &&
     prev.onNavigateAnchor === next.onNavigateAnchor,
 );

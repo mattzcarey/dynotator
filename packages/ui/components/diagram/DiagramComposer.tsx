@@ -9,7 +9,6 @@ import {
 import { diagramTargetName, diagramTargetText } from "@dynotator/core/diagram-anchor";
 import { cn } from "../../lib/utils";
 import type { ScreenRect } from "../../utils/diagram-projection";
-import { SparklesIcon } from "../SparklesIcon";
 import { Button } from "../ui/button";
 import { isCommentSubmitKey } from "../../utils/commentSubmitKey";
 import type { DiagramComposerDraft } from "./useDiagramComments";
@@ -52,7 +51,6 @@ export function DiagramComposer({
   disabledReason,
   onSubmit,
   onCancel,
-  onAskAI,
   initialText,
 }: {
   draft: DiagramComposerDraft;
@@ -69,10 +67,6 @@ export function DiagramComposer({
   disabledReason?: string;
   onSubmit: (body: string) => void;
   onCancel: () => void;
-  /** Ask the typed text as a question about this part. Resolves true when
-   * the host took it (the composer then closes), false to keep the draft.
-   * Absent: no Ask AI button. */
-  onAskAI?: (question: string) => Promise<boolean>;
   /** Opt-in: the words it opens with (a comment the host kept and put back). Absent: empty, as always. */
   initialText?: string;
 }) {
@@ -105,7 +99,6 @@ export function DiagramComposer({
     if (value.trim() !== "") cardDrafts.set(cardKey, value);
     else cardDrafts.delete(cardKey);
   };
-  const [asking, setAsking] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
     textareaRef.current?.focus();
@@ -136,26 +129,6 @@ export function DiagramComposer({
     hostHeight > 0 && height > 0 ? Math.min(anchorRect.top, hostHeight - height) : anchorRect.top,
   );
 
-  const canAskAI = onAskAI !== undefined && !asking && !submitting && text.trim() !== "";
-  const askAI = async () => {
-    const question = text.trim();
-    if (onAskAI === undefined || question === "" || asking) {
-      textareaRef.current?.focus();
-      return;
-    }
-    setAsking(true);
-    let accepted = false;
-    try {
-      accepted = await onAskAI(question);
-    } catch (error) {
-      console.error("Ask AI action failed:", error);
-    } finally {
-      setAsking(false);
-    }
-    if (!accepted) setRefocus((n) => n + 1);
-    else if (card) cardDrafts.delete(cardKey);
-  };
-
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Escape") {
       // Ours: the canvas and whatever holds it (a popout) must not also
@@ -170,7 +143,7 @@ export function DiagramComposer({
     // the IME guard Safari needs (keyCode 229) and keeps Shift+Enter a newline.
     if (isCommentSubmitKey(event, true)) {
       event.preventDefault();
-      if (canWrite && !asking && text.trim() !== "") submit();
+      if (canWrite && text.trim() !== "") submit();
     }
   };
   // A Comment drops the draft only once it went (the host unmounts the box with no error); a refused save keeps the
@@ -238,7 +211,7 @@ export function DiagramComposer({
             onKeyDown={onKeyDown}
             placeholder="Comment…"
             rows={1}
-            disabled={submitting || asking}
+            disabled={submitting}
             className="pn-cbox-ta pn-cbox-plain"
           />
         </div>
@@ -248,19 +221,6 @@ export function DiagramComposer({
           </p>
         )}
         <div className="pn-cbox-row">
-          {onAskAI !== undefined && (
-            <button
-              type="button"
-              data-diagram-ask-ai=""
-              className="pn-cbox-tool pn-cbox-word"
-              onClick={() => void askAI()}
-              disabled={!canAskAI}
-              title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
-            >
-              <SparklesIcon className="h-3.5 w-3.5" />
-              Ask AI
-            </button>
-          )}
           <span className="pn-cbox-mid" />
           {text !== "" && (
             <button
@@ -281,7 +241,7 @@ export function DiagramComposer({
           <button
             type="button"
             className="pn-cbox-save"
-            disabled={!canWrite || submitting || asking || text.trim() === ""}
+            disabled={!canWrite || submitting || text.trim() === ""}
             onClick={submit}
             data-comment-card-submit=""
           >
@@ -326,7 +286,7 @@ export function DiagramComposer({
             onKeyDown={onKeyDown}
             placeholder="Add a comment..."
             rows={3}
-            disabled={submitting || asking}
+            disabled={submitting}
             className={cn(
               "w-full resize-none rounded-md border border-input bg-background px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground",
               "outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
@@ -338,26 +298,13 @@ export function DiagramComposer({
             </p>
           )}
           <div className="flex items-center justify-end gap-1">
-            {onAskAI !== undefined && (
-              <button
-                type="button"
-                data-diagram-ask-ai=""
-                onClick={() => void askAI()}
-                disabled={!canAskAI}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
-                title={canAskAI ? "Ask AI this question" : "Type a question to ask AI"}
-              >
-                <SparklesIcon className="h-3 w-3" />
-                Ask AI
-              </button>
-            )}
             <Button type="button" variant="ghost" size="xs" onClick={onCancel}>
               Cancel
             </Button>
             <Button
               type="button"
               size="xs"
-              disabled={!canWrite || submitting || asking || text.trim() === ""}
+              disabled={!canWrite || submitting || text.trim() === ""}
               onClick={submit}
             >
               Comment

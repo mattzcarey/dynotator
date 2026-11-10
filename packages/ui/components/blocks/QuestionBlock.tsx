@@ -344,12 +344,8 @@ export interface QuestionBlockProps {
    *  right after it, so a host's CSS can draw them as one shape. Return null
    *  for nothing. Absent: today's card. Not drawn on a text question. */
   renderAfterChoices?: (question: IndexedQuestion) => React.ReactNode;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
-  githubRepo?: string;
-  repoHost?: string;
   onNavigateAnchor?: (hash: string) => void;
   /** Draw picture choices (`choice.image`) as picture tiles (default true).
    *  False: every choice is a text row, as on a host that shows no images. */
@@ -427,12 +423,8 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
   statusLabel,
   renderBelowPrompt,
   renderAfterChoices,
-  onOpenLinkedDoc,
-  onOpenCodeFile,
   imageBaseDir,
   onImageClick,
-  githubRepo,
-  repoHost,
   onNavigateAnchor,
   pictureChoices = true,
   pictureBadge,
@@ -566,10 +558,6 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
       text={text}
       imageBaseDir={imageBaseDir}
       onImageClick={onImageClick}
-      onOpenLinkedDoc={onOpenLinkedDoc}
-      onOpenCodeFile={onOpenCodeFile}
-      githubRepo={githubRepo}
-      repoHost={repoHost}
       onNavigateAnchor={onNavigateAnchor}
     />
   );
@@ -1079,11 +1067,7 @@ export const QuestionBlock: React.FC<QuestionBlockProps> = ({
           markdown={question.context}
           imageBaseDir={imageBaseDir}
           onImageClick={onImageClick}
-          onOpenLinkedDoc={onOpenLinkedDoc}
-          onOpenCodeFile={onOpenCodeFile}
           onNavigateAnchor={onNavigateAnchor}
-          githubRepo={githubRepo}
-          repoHost={repoHost}
         />
       )}
 

@@ -7,7 +7,7 @@ import type { DecisionActionId } from "@dynotator/ui/utils/decisionSpec";
 import type { PermissionMode } from "@dynotator/ui/utils/permissionMode";
 import { buildFeedback, hasFeedback, NO_FEEDBACK_SENTENCE, type FeedbackInput } from "../feedback";
 
-export type Submitted = "approved" | "denied" | "done" | "exited";
+export type Submitted = "approved" | "denied" | "done" | "exited" | "closed";
 
 interface Options {
   mode: "plan" | "annotate";
@@ -16,9 +16,17 @@ interface Options {
   answersOnly: boolean;
   /** Sent with an approval when the agent honours it (Claude Code). */
   permissionMode: PermissionMode | null;
+  /** The plan revision on screen; the server refuses a decision on an older one. */
+  planRevision: number | null;
   getDraftGeneration: () => number;
   addAnnotation: (annotation: Annotation) => void;
   onDecided: () => void;
+}
+
+class Refused extends Error {
+  constructor(readonly code: string) {
+    super(code);
+  }
 }
 
 async function post(path: string, body?: object): Promise<void> {
@@ -28,10 +36,11 @@ async function post(path: string, body?: object): Promise<void> {
       ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
       : {}),
   });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => null)) as { error?: unknown } | null;
-    throw new Error(typeof data?.error === "string" ? data.error : `The server answered ${res.status}.`);
-  }
+  if (res.ok) return;
+  const data = (await res.json().catch(() => null)) as { error?: unknown } | null;
+  const error = typeof data?.error === "string" ? data.error : null;
+  if (res.status === 409 && error) throw new Refused(error);
+  throw new Error(error ?? `The server answered ${res.status}.`);
 }
 
 function noteAnnotation(text: string): Annotation {
@@ -54,6 +63,7 @@ export function useDecision({
   feedbackInput,
   answersOnly,
   permissionMode,
+  planRevision,
   getDraftGeneration,
   addAnnotation,
   onDecided,
@@ -72,6 +82,19 @@ export function useDecision({
         onDecided();
         setSubmitted(outcome);
       } catch (error) {
+        if (error instanceof Refused && error.code === "plan_revised") {
+          toast("The agent revised the plan", {
+            description: "Nothing was sent. Load the new version, then decide again.",
+            duration: Infinity,
+            action: { label: "Load", onClick: () => window.location.reload() },
+          });
+          return;
+        }
+        if (error instanceof Refused && error.code === "already_decided") {
+          onDecided();
+          setSubmitted("closed");
+          return;
+        }
         toast.error(`Could not send the ${what}`, {
           description: error instanceof Error ? error.message : undefined,
           action: { label: "Retry", onClick: () => void run(what, send) },
@@ -96,6 +119,7 @@ export function useDecision({
     run("approval", async () => {
       await post("/api/approve", {
         draftGeneration: getDraftGeneration(),
+        ...(planRevision !== null ? { planRevision } : {}),
         ...(input && hasFeedback(input) ? { feedback: buildFeedback(input) } : {}),
         ...(permissionMode ? { permissionMode } : {}),
       });
@@ -106,6 +130,7 @@ export function useDecision({
     run("feedback", async () => {
       await post("/api/deny", {
         draftGeneration: getDraftGeneration(),
+        ...(planRevision !== null ? { planRevision } : {}),
         feedback: buildFeedback(input),
         ...(answersOnly ? { answersOnly: true } : {}),
       });

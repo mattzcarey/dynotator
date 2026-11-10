@@ -478,7 +478,9 @@ export const AnnotationPanel: React.FC<PanelProps> = ({
         <div className="border-b border-border">
           <div className="flex h-10 items-center justify-between px-3">
             <div className="flex items-center gap-2">
-              <h2 className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground">{title}</h2>
+              <h2 className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground">
+                {title}
+              </h2>
               {headerCount > 0 && (
                 <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-1 font-mono text-[10px] tabular-nums text-primary-ink">
                   {headerCount}
@@ -1434,12 +1436,16 @@ const AnnotationCard: React.FC<{
       }}
       className={cn(
         "group w-full cursor-pointer rounded-md border px-3 py-2.5 text-left transition-colors duration-150 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        isSelected ? "border-primary/60 bg-cream" : "border-border bg-card hover:border-border-strong",
+        isSelected
+          ? "border-primary/60 bg-cream"
+          : "border-border bg-card hover:border-border-strong",
       )}
     >
       {/* Header: type word + author · time + actions */}
       <div className="mb-1.5 flex items-center gap-1.5">
-        <span className={cn("font-mono text-[11px] tracking-[0.04em]", typeColor)}>{typeLabel}</span>
+        <span className={cn("font-mono text-[11px] tracking-[0.04em]", typeColor)}>
+          {typeLabel}
+        </span>
         {region && regionNumber !== undefined && (
           <RegionNumber n={regionNumber} selected={isSelected} />
         )}
@@ -1682,14 +1688,19 @@ const CodeAnnotationCard: React.FC<{
       }}
       className={cn(
         "group w-full cursor-pointer rounded-md border px-3 py-2.5 text-left transition-colors duration-150 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        isSelected ? "border-primary/60 bg-cream" : "border-border bg-card hover:border-border-strong",
+        isSelected
+          ? "border-primary/60 bg-cream"
+          : "border-border bg-card hover:border-border-strong",
       )}
     >
       {/* Header: type word + author · time + actions */}
       <div className="mb-1.5 flex items-center gap-1.5">
         {isGlobal ? (
           <span
-            className={cn("font-mono text-[11px] tracking-[0.04em]", TYPE_COLOR[AnnotationType.GLOBAL_COMMENT])}
+            className={cn(
+              "font-mono text-[11px] tracking-[0.04em]",
+              TYPE_COLOR[AnnotationType.GLOBAL_COMMENT],
+            )}
           >
             {TYPE_LABEL[AnnotationType.GLOBAL_COMMENT]}
           </span>

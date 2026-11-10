@@ -65,7 +65,7 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
       });
   }, []);
 
-  const persist = useCallback((keepalive: boolean) => {
+  const persist = useCallback((keepalive: boolean, retried = false): void => {
     if (!enabledRef.current) return;
     const { annotations, globalAttachments } = latestRef.current;
     const generation = ++generationRef.current;
@@ -86,7 +86,17 @@ export function useDraft({ draft, enabled }: { draft: Draft; enabled: boolean })
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       keepalive,
-    }).catch(() => {});
+    })
+      .then(async (res) => {
+        if (res.status !== 409 || retried) return;
+        // Another tab saved ahead of this one: adopt its generation and save again.
+        const data = (await res.json().catch(() => null)) as StoredDraft & { decided?: boolean };
+        const stale = generationOf(data?.draftGeneration);
+        if (data?.decided || stale === null || generationRef.current !== generation) return;
+        generationRef.current = Math.max(generationRef.current, stale);
+        persist(false, true);
+      })
+      .catch(() => {});
   }, []);
 
   const flush = useCallback(

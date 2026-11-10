@@ -60,16 +60,6 @@ const DiagramSourcePane = lazy(async () => ({
 const PANE_CLASS =
   "order-last min-h-0 shrink-0 basis-2/5 border-t border-border md:order-first md:w-80 md:basis-auto md:border-r md:border-t-0";
 
-/** A question typed in the composer, asked about the part instead of saved
- * as a comment. The anchor is the one a comment there would carry (its
- * `sourceLine` already in document lines). Resolve false (or throw) to keep
- * the draft open; anything else closes it. */
-export type DiagramAskAI = (
-  question: string,
-  anchor: DiagramAnchor,
-  additionalTargets: readonly DiagramTarget[],
-) => boolean | void | Promise<boolean | void>;
-
 /** A part chosen for a comment the host composes (`onHostDraft`). */
 export interface DiagramHostDraft {
   /** The anchor a comment there carries (its `sourceLine` in document lines). */
@@ -92,8 +82,6 @@ export interface DiagramViewerProps {
    * drawn; the host saves the comment and passes it back in `comments`.
    * Absent: unchanged. */
   readonly onHostDraft?: (draft: DiagramHostDraft | null) => void;
-  /** Ask AI from the composer. Absent: the composer offers no Ask AI. */
-  readonly onAskAI?: DiagramAskAI;
   /** Save the pane's text. Absent: there is no Source pane. */
   readonly onSave?: (source: string) => Promise<SaveResult>;
   /** With `onSave`: show the pane read-only (no edit access). */
@@ -158,7 +146,6 @@ export function DiagramViewer({
   onCreateComment,
   onHostDraft,
   onComposerAnchor,
-  onAskAI,
   onSave,
   readOnlySource = false,
   sourceOpen = false,
@@ -311,29 +298,6 @@ export function DiagramViewer({
     });
   }, [cancelComposer, hostComposes, openComposer]);
 
-  // Ask AI asks about the part the draft is on; the host's handler decides
-  // whether the question was taken, and a taken question closes the draft
-  // exactly as the markdown composer closes.
-  const composerDraft = commentsState.composer;
-  const askFromComposer = useMemo(() => {
-    if (onAskAI === undefined || composerDraft === null || onCreateComment === undefined)
-      return undefined;
-    return async (question: string): Promise<boolean> => {
-      const anchor = buildDiagramAnchorValue(
-        composerDraft.primary.target,
-        composerDraft.sourceLine,
-      );
-      const accepted = await onAskAI(
-        question,
-        anchor,
-        composerDraft.additional.map((extra) => extra.target),
-      );
-      if (accepted === false) return false;
-      cancelComposer();
-      return true;
-    };
-  }, [cancelComposer, composerDraft, onAskAI, onCreateComment]);
-
   const overlay = useCallback(
     (handle: DiagramCanvasHandle) => (
       <DiagramOverlay
@@ -357,7 +321,6 @@ export function DiagramViewer({
               disabledReason={commentingDisabledReason}
               onSubmit={(text) => void commentsState.submit(text)}
               onCancel={commentsState.cancel}
-              onAskAI={askFromComposer}
               initialText={
                 reopenedText?.part === diagramPartKey(commentsState.composer.primary.target)
                   ? reopenedText.text
@@ -369,7 +332,6 @@ export function DiagramViewer({
       />
     ),
     [
-      askFromComposer,
       commentingDisabledReason,
       commentsState,
       hostComposes,

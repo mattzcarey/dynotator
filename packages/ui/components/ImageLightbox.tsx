@@ -6,12 +6,11 @@ import {
   type ImageRegion,
 } from "@dynotator/core/image-region";
 import { AnnotationType, type Annotation, type ImageAttachment } from "../types";
-import type { MentionSource } from "../utils/mentions";
 import { getIdentity } from "../utils/identity";
 import { THUMBS_UP_LABEL } from "../utils/quickLabels";
 import { hashDraftScope } from "../utils/draftScopeHash";
 import { AnnotationPanel } from "./AnnotationPanel";
-import { CommentPopover, type CommentAskAIHandler } from "./CommentPopover";
+import { CommentPopover } from "./CommentPopover";
 import { ImagePeek, type ImagePeekHandle, type ImagePeekRow } from "./ImagePeek";
 import { RegionBoxLayer, RegionToolStrip, regionOf, type RegionBoxItem } from "./ImageRegions";
 import {
@@ -62,9 +61,6 @@ export interface LightboxRegionComments {
   onEdit?: (id: string, updates: Partial<Annotation>) => void;
   /** Open on this comment: its image, zoomed to its box, its card selected (a card picked in the document's panel). */
   focusId?: string | null;
-  /** Ask AI from the comment box (the viewer closes once a question is taken, as the diagram popout does). */
-  onAskAI?: CommentAskAIHandler;
-  mentionSource?: MentionSource;
 }
 
 /** The image a region draft is kept for: its src as written, or a hash of a data URL (which can be megabytes long). */
@@ -386,7 +382,6 @@ export const ImageLightbox: React.FC<{
   const saveRegion = (
     text: string,
     attachments?: ImageAttachment[],
-    mentions?: readonly string[],
     quick = false,
   ) => {
     if (!regions || !pending || !dims || !current.writtenSrc || !current.blockId) return;
@@ -411,7 +406,6 @@ export const ImageLightbox: React.FC<{
       createdA: Date.now(),
       author: getIdentity(),
       ...(attachments && attachments.length > 0 ? { images: attachments } : {}),
-      ...(mentions && mentions.length > 0 ? { mentions } : {}),
       ...(quick ? { isQuickLabel: true } : {}),
       imageRegion: region,
     };
@@ -421,14 +415,6 @@ export const ImageLightbox: React.FC<{
       `Comment saved on region ${n}.${tool === "region" ? " Region is still on: drag to draw another box, or press Escape for Move." : ""}`,
     );
   };
-
-  const askAI: CommentAskAIHandler | undefined = regions?.onAskAI
-    ? async (question, context) => {
-        const accepted = await regions.onAskAI!(question, context);
-        if (accepted !== false) onCloseRef.current();
-        return accepted;
-      }
-    : undefined;
 
   const showNote = (note: string) => {
     setEndNote(note);
@@ -839,7 +825,6 @@ export const ImageLightbox: React.FC<{
             onEdit={regions!.onEdit}
             readOnly={!regions!.onDelete}
             imageRegionSrc={thumbFor}
-            mentionSource={regions!.mentionSource}
             emptyHint={
               canDraw
                 ? "Choose Region, then drag over the image to comment on part of it"
@@ -1112,31 +1097,10 @@ export const ImageLightbox: React.FC<{
           allowImages={false}
           // The words typed for this box survive a close (Escape, X) and come back when the same box is drawn again.
           draftKey={`image-region:${regionDraftScope}:${pending.x},${pending.y},${pending.w},${pending.h}`}
-          mentionSource={regions!.mentionSource}
-          onAskAI={askAI}
-          askAIContext={
-            askAI
-              ? {
-                  kind: "selection",
-                  label: `Region ${pendingNumber} of ${imageRegionFileName(current.writtenSrc!)}`,
-                  text: current.writtenSrc!,
-                  detail: imageRegionLocationLines({
-                    v: 1,
-                    src: current.writtenSrc!,
-                    sourceLine: current.line ?? null,
-                    box: pending,
-                    naturalWidth: dims?.width ?? pending.x + pending.w,
-                    naturalHeight: dims?.height ?? pending.y + pending.h,
-                  }),
-                  ...(current.line ? { lineStart: current.line, lineEnd: current.line } : {}),
-                }
-              : undefined
-          }
-          onSubmit={(text, attachments, mentions) => saveRegion(text, attachments, mentions)}
+          onSubmit={(text, attachments) => saveRegion(text, attachments)}
           onQuickLookGood={() =>
             saveRegion(
               `${THUMBS_UP_LABEL.emoji} ${THUMBS_UP_LABEL.text}`,
-              undefined,
               undefined,
               true,
             )

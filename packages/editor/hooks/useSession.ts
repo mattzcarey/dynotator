@@ -11,8 +11,8 @@ export interface Session {
   filePath: string | null;
   previousPlan: string | null;
   versionInfo: VersionInfo | null;
-  /** The approval body carries the reviewer's notes to the agent. */
-  approvalNotesSupported: boolean;
+  /** Plan review: bumps when the agent revises the plan; echoed on decisions. */
+  planRevision: number | null;
 }
 
 interface PlanResponse {
@@ -23,7 +23,7 @@ interface PlanResponse {
   filePath?: unknown;
   previousPlan?: unknown;
   versionInfo?: unknown;
-  approvalNotesSupported?: unknown;
+  planRevision?: unknown;
 }
 
 const str = (value: unknown): string | null =>
@@ -48,7 +48,8 @@ export function parseSession(data: PlanResponse): Session {
     filePath: str(data.filePath),
     previousPlan: str(data.previousPlan),
     versionInfo: parseVersionInfo(data.versionInfo),
-    approvalNotesSupported: data.approvalNotesSupported === true,
+    planRevision:
+      data.mode !== "annotate" && typeof data.planRevision === "number" ? data.planRevision : null,
   };
 }
 

@@ -22,13 +22,9 @@ interface TablePopoutProps {
   /** Portal target — pass Viewer's annotation containerRef so annotation
    *  hooks can walk into the popout's text nodes. Null falls back to body. */
   container?: HTMLElement | null;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   onNavigateAnchor?: (hash: string) => void;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
-  githubRepo?: string;
-  repoHost?: string;
 }
 
 type Row = Record<string, string>;
@@ -38,13 +34,9 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
   open,
   onClose,
   container,
-  onOpenLinkedDoc,
-  onOpenCodeFile,
   onNavigateAnchor,
   imageBaseDir,
   onImageClick,
-  githubRepo,
-  repoHost,
 }) => {
   const { headers, rows } = useMemo(() => parseTableContent(block.content), [block.content]);
 
@@ -81,11 +73,7 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
             imageBaseDir={imageBaseDir}
             onImageClick={onImageClick}
             text={info.getValue()}
-            onOpenLinkedDoc={onOpenLinkedDoc}
-            onOpenCodeFile={onOpenCodeFile}
             onNavigateAnchor={onNavigateAnchor}
-            githubRepo={githubRepo}
-            repoHost={repoHost}
           />
         ),
       }),
@@ -95,10 +83,7 @@ const TablePopoutImpl: React.FC<TablePopoutProps> = ({
     headers,
     imageBaseDir,
     onImageClick,
-    onOpenLinkedDoc,
     onNavigateAnchor,
-    githubRepo,
-    repoHost,
   ]);
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -303,9 +288,7 @@ export const TablePopout = React.memo(
     prev.block.content === next.block.content &&
     prev.open === next.open &&
     prev.container === next.container &&
-    prev.imageBaseDir === next.imageBaseDir &&
-    prev.githubRepo === next.githubRepo &&
-    prev.repoHost === next.repoHost,
+    prev.imageBaseDir === next.imageBaseDir,
 );
 
 const SortIndicator: React.FC<{ dir: false | "asc" | "desc" }> = ({ dir }) => {

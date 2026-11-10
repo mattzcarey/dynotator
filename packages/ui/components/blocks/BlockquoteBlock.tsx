@@ -10,8 +10,7 @@ import { Callout } from "./Callout";
 import { BlockRenderer } from "../BlockRenderer";
 
 /** The quote's look. Shared by both render paths so they cannot drift. */
-export const BLOCKQUOTE_CLASS_NAME =
-  "border-l-2 border-primary pl-4 my-5 text-muted-foreground";
+export const BLOCKQUOTE_CLASS_NAME = "border-l-2 border-primary pl-4 my-5 text-muted-foreground";
 
 /**
  * Spacing and tone for a quote whose content has block structure. A
@@ -59,12 +58,8 @@ export const useAtQuoteDepthCap = (): boolean =>
 
 export interface BlockquoteBlockProps {
   block: Block;
-  onOpenLinkedDoc?: (path: string) => void;
-  onOpenCodeFile?: (path: string) => void;
   imageBaseDir?: string;
   onImageClick?: (src: string, alt: string) => void;
-  githubRepo?: string;
-  repoHost?: string;
   onNavigateAnchor?: (hash: string) => void;
 }
 
