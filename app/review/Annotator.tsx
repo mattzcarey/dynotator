@@ -15,8 +15,13 @@ interface Pending {
   action?: Exclude<Action, "delete">;
 }
 
-/** Where a selection sits in the file: its block (markdown) and its source lines. */
-export type Locate = (range: Range) => Pick<Annotation, "blockId" | "lines">;
+/**
+ * Where a selection sits in the file: its block (markdown) and its source lines, and its text
+ * when the view knows it better than the highlighter (which folds whitespace).
+ */
+export type Locate = (range: Range) => Pick<Annotation, "blockId" | "lines"> & {
+  originalText?: string;
+};
 
 const classFor = (type: AnnotationType) =>
   type === AnnotationType.DELETION ? "deletion" : "comment";
@@ -174,10 +179,11 @@ export function Annotator({
     onAdd({
       id: source.id,
       path,
-      ...where,
+      blockId: where.blockId,
+      ...(where.lines && { lines: where.lines }),
       type,
       text,
-      originalText: source.text,
+      originalText: where.originalText ?? source.text,
       startMeta: source.startMeta,
       endMeta: source.endMeta,
     });

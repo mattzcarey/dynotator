@@ -75,7 +75,12 @@ export function CodeView({
   const lines = target?.lines;
   const bandRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (target?.lines) bandRef.current?.scrollIntoView({ block: "center" });
+    const band = bandRef.current;
+    if (!target?.lines || !band) return;
+    band.scrollIntoView({ block: "center" });
+    // The band spans the widest line: keep the code scrolled to its start.
+    const scroller = band.closest(".code-view > div");
+    if (scroller) scroller.scrollLeft = 0;
   }, [target]);
 
   const locate = useCallback((range: Range) => {
@@ -86,8 +91,9 @@ export function CodeView({
     before.setEnd(range.startContainer, range.startOffset);
     const start = before.toString().split("\n").length;
     // A selection that runs to the end of a line takes its newline; that is not the next line.
-    const span = range.toString().replace(/\n$/, "").split("\n").length - 1;
-    return { blockId: "", lines: { start, end: start + span } };
+    const originalText = range.toString().replace(/\n$/, "");
+    const end = start + originalText.split("\n").length - 1;
+    return { blockId: "", lines: { start, end }, originalText };
   }, []);
 
   const pick = (e: MouseEvent<HTMLDivElement>) => {

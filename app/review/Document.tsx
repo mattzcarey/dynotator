@@ -66,7 +66,19 @@ export function Document({
       const block = blocks.find((b) => b.endLine >= line && b.id);
       if (block) el = document.querySelector(`[data-block-id="${block.id}"]`);
     }
-    el?.scrollIntoView({ block: "start" });
+    if (!el) return;
+    const scroll = () => el.scrollIntoView({ block: "start" });
+    scroll();
+    // Diagrams and lazy blocks above it may still grow the page.
+    const timers = [250, 1000].map((ms) => setTimeout(scroll, ms));
+    const stop = () => timers.forEach(clearTimeout);
+    // Unless the reader moves first.
+    const events = ["wheel", "pointerdown", "keydown", "touchstart"] as const;
+    for (const name of events) window.addEventListener(name, stop, { once: true });
+    return () => {
+      stop();
+      for (const name of events) window.removeEventListener(name, stop);
+    };
   }, [blocks, target]);
 
   return (
