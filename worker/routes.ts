@@ -35,17 +35,6 @@ export function matchRoute(method: string, pathname: string): HostRoute {
   return { kind: "asset" };
 }
 
-/** Constant-time check of `Authorization: Bearer <token>`. No token configured means open. */
-export function isAuthorized(header: string | null, token: string | undefined): boolean {
-  if (!token) return true;
-  const presented = header?.startsWith("Bearer ") ? header.slice(7) : "";
-  const a = new TextEncoder().encode(presented);
-  const b = new TextEncoder().encode(token);
-  let diff = a.length ^ b.length;
-  for (let i = 0; i < b.length; i++) diff |= b[i] ^ (a[i] ?? 0);
-  return diff === 0;
-}
-
 export const DEFAULT_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 export function ttlSeconds(raw: string | undefined): number {

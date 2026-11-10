@@ -107,7 +107,6 @@ async function planHook(config: Config, ctx: Context): Promise<number> {
     }
     session ??= await createSession(
       baseUrl,
-      config.token,
       {
         mode: "plan",
         markdown: plan,
@@ -135,7 +134,6 @@ async function annotate(positionals: string[], config: Config, ctx: Context): Pr
   const { markdown, filePath } = await readInput(positionals[0], ctx);
   const session = await createSession(
     baseUrl,
-    config.token,
     {
       mode: "annotate",
       markdown,

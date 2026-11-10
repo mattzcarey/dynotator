@@ -1,6 +1,6 @@
 import { HttpError, MAX_MARKDOWN_BYTES, readJsonObject } from "../session/http";
 import { parseSessionInit } from "../session/plan";
-import { isAuthorized, matchRoute, newSessionId, ttlSeconds } from "./routes";
+import { matchRoute, newSessionId, ttlSeconds } from "./routes";
 
 export { SessionSupervisor } from "./supervisor";
 
@@ -14,9 +14,6 @@ export default {
 
     switch (route.kind) {
       case "create": {
-        if (!isAuthorized(request.headers.get("authorization"), env.DYNOTATOR_TOKEN)) {
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
-        }
         let init;
         try {
           init = parseSessionInit(await readJsonObject(request, MAX_CREATE_BODY_BYTES));

@@ -40,15 +40,12 @@ async function failure(res: Response, what: string): Promise<HttpError> {
 
 export async function createSession(
   baseUrl: string,
-  token: string | undefined,
   body: CreateSessionBody,
   fetchImpl: Fetch = fetch,
 ): Promise<Session> {
-  const headers: Record<string, string> = { "content-type": "application/json" };
-  if (token) headers.authorization = `Bearer ${token}`;
   const res = await fetchImpl(`${baseUrl}/api/sessions`, {
     method: "POST",
-    headers,
+    headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await failure(res, "creating the session failed");

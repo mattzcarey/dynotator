@@ -22,8 +22,8 @@ Everything that needs the local machine, a local agent process or an LLM provide
 
 ## Architecture
 
-- A host Worker (`worker/`) routes requests, checks the token on session creation and serves the
-  browser app.
+- A host Worker (`worker/`) routes requests and serves the browser app. It does no authentication of
+  its own; put it behind Cloudflare Access.
 - A `SessionSupervisor` Durable Object per session loads the session server (`session/`) as a
   Dynamic Worker and runs it as a facet. The session server keeps the plan, versions, drafts and
   the decision in its own SQLite storage.
@@ -46,15 +46,17 @@ configured by `cloudflare.config.ts`), which builds the browser app and the Work
 build and deploys them. It prints the Worker's URL; that is your `DYNOTATOR_URL`. Sign in first
 with `bunx cf login`, or set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
-Anyone who can reach the Worker can create sessions unless you set a token:
+The Worker has no authentication of its own: as deployed, anyone who can reach it can create
+sessions. Protect it with [Cloudflare Access](https://developers.cloudflare.com/workers/configuration/cloudflare-access/):
+in the dashboard open the Worker, select the **Access** tab, choose **Protect this Worker behind
+Access** for all traffic, and pick who may sign in. Reviewers then sign in with your identity
+provider in the browser, and the CLI signs in as you through
+[`cloudflared`](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/)
+(it runs `cloudflared access login` the first time Access challenges it). No token is configured
+anywhere.
 
-```sh
-bunx cf workers secrets update --help   # set the DYNOTATOR_TOKEN secret on the dynotator Worker
-```
-
-With the secret set, `POST /api/sessions` requires `Authorization: Bearer <token>`. Session URLs
-themselves are unguessable capabilities: whoever has one can read and decide that session, so
-share them only with reviewers. Sessions expire after 7 days by default.
+Within that boundary, session URLs are unguessable capabilities: whoever has one and passes Access
+can read and decide that session. Sessions expire after 7 days by default.
 
 ## Claude Code setup
 
@@ -71,8 +73,7 @@ this environment):
 ```json
 {
   "env": {
-    "DYNOTATOR_URL": "https://dynotator.example.workers.dev",
-    "DYNOTATOR_TOKEN": "the DYNOTATOR_TOKEN secret you set on the Worker"
+    "DYNOTATOR_URL": "https://dynotator.example.workers.dev"
   }
 }
 ```
@@ -108,7 +109,7 @@ as a new version, so the reviewer sees what changed. The CLI remembers that sess
 under your cache directory (`~/.cache/dynotator/sessions` on Linux, `~/Library/Caches` on macOS,
 `%LOCALAPPDATA%` on Windows) and forgets it once a plan is approved.
 
-If the hook cannot run (no `DYNOTATOR_URL`, server unreachable, bad token), it writes the reason
+If the hook cannot run (no `DYNOTATOR_URL`, server unreachable, Access sign-in failed), it writes the reason
 to stderr and exits with status 1 without a decision, and Claude Code shows its own plan approval
 dialog instead.
 
@@ -120,7 +121,7 @@ dynotator annotate <file.md|->         review a markdown file or stdin, print th
 dynotator revise <url|id> <file.md|->  submit a new version into an existing session
 ```
 
-Options: `--url` (default `$DYNOTATOR_URL`), `--token` (default `$DYNOTATOR_TOKEN`), `--no-browser`
+Options: `--url` (default `$DYNOTATOR_URL`), `--no-browser`
 (or `DYNOTATOR_NO_BROWSER=1`), `--help`, `--version`. Flags take precedence over the environment.
 
 The review URL always goes to stderr; stdout carries only what the agent should read. `annotate`

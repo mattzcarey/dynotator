@@ -16,7 +16,7 @@ interface FakeSession {
   pendingPolls: number;
 }
 const sessions = new Map<string, FakeSession>();
-const requests: { method: string; path: string; auth: string | null }[] = [];
+const requests: { method: string; path: string }[] = [];
 let nextId = 0;
 let failNextWait = 0;
 
@@ -27,13 +27,11 @@ const server = Bun.serve({
     requests.push({
       method: req.method,
       path: url.pathname + url.search,
-      auth: req.headers.get("authorization"),
     });
     if (req.method === "POST" && url.pathname === "/api/sessions") {
-      if (req.headers.get("authorization") === "Bearer wrong")
-        return new Response("no", { status: 401 });
-      const id = `sess${++nextId}`;
       const body = (await req.json()) as Record<string, unknown>;
+      if (body.markdown === "# REFUSED") return new Response("no", { status: 403 });
+      const id = `sess${++nextId}`;
       sessions.set(id, { body, revisions: [], decisions: [], pendingPolls: 0 });
       const origin = url.origin;
       return Response.json(
@@ -109,7 +107,7 @@ function decideNext(id: string, decision: Decision) {
 
 describe("waitForDecision", () => {
   test("polls through pending until decided", async () => {
-    const session = await createSession(base, undefined, { mode: "plan", markdown: "# P" });
+    const session = await createSession(base, { mode: "plan", markdown: "# P" });
     queueDecision({ approved: true, permissionMode: "acceptEdits" }, 2);
     const decision = await waitForDecision(session.apiUrl, { sleep: noSleep });
     expect(decision).toEqual({ approved: true, permissionMode: "acceptEdits" });
@@ -117,7 +115,7 @@ describe("waitForDecision", () => {
   });
 
   test("retries transient network errors and 5xx", async () => {
-    const session = await createSession(base, undefined, { mode: "plan", markdown: "# P" });
+    const session = await createSession(base, { mode: "plan", markdown: "# P" });
     queueDecision({ approved: false, feedback: "no" });
     failNextWait = 1;
     let thrown = 0;
@@ -161,7 +159,7 @@ const event = (plan: string) =>
 
 describe("plan hook", () => {
   test("deny, then the revised plan goes to the same session and approval clears it", async () => {
-    const first = context(event("# V1"), { DYNOTATOR_TOKEN: "secret" });
+    const first = context(event("# V1"));
     decideNext(`sess${nextId + 1}`, { approved: false, feedback: "Split step 2." });
     expect(await run([], first.ctx)).toBe(0);
     const id = `sess${nextId}`;
@@ -172,8 +170,6 @@ describe("plan hook", () => {
       permissionMode: "plan",
       project: expect.any(String),
     });
-    expect(requests[0].auth).toBe("Bearer secret");
-    expect(requests.slice(1).every((r) => r.auth === null)).toBe(true);
     const denied = JSON.parse(first.out.stdout);
     expect(denied.hookSpecificOutput.decision.behavior).toBe("deny");
     expect(denied.hookSpecificOutput.decision.message).toEndWith("\n\nSplit step 2.");
@@ -210,15 +206,10 @@ describe("plan hook", () => {
     expect(noUrl.out.stdout).toBe("");
     expect(noUrl.out.stderr).toContain("DYNOTATOR_URL");
 
-    const badToken = context(
-      JSON.stringify({ tool_name: "ExitPlanMode", tool_input: { plan: "#" } }),
-      {
-        DYNOTATOR_TOKEN: "wrong",
-      },
-    );
-    expect(await run([], badToken.ctx)).toBe(1);
-    expect(badToken.out.stdout).toBe("");
-    expect(badToken.out.stderr).toContain("HTTP 401");
+    const refused = context(event("# REFUSED"));
+    expect(await run([], refused.ctx)).toBe(1);
+    expect(refused.out.stdout).toBe("");
+    expect(refused.out.stderr).toContain("HTTP 403");
 
     const garbage = context("{");
     expect(await run([], garbage.ctx)).toBe(1);

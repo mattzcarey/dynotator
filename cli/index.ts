@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
+import { accessFetch } from "./access.ts";
 import { openBrowser, run } from "./commands.ts";
 import { defaultStateDir } from "./hook.ts";
 
@@ -29,4 +30,5 @@ process.exitCode = await run(process.argv.slice(2), {
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
   openBrowser,
+  fetch: accessFetch(fetch),
 });

@@ -2,7 +2,6 @@ import { parseArgs } from "node:util";
 
 export interface Config {
   url?: string;
-  token?: string;
   noBrowser: boolean;
 }
 
@@ -20,7 +19,6 @@ export function parseCli(argv: string[], env: Record<string, string | undefined>
     allowPositionals: true,
     options: {
       url: { type: "string" },
-      token: { type: "string" },
       "no-browser": { type: "boolean" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean", short: "v" },
@@ -35,7 +33,6 @@ export function parseCli(argv: string[], env: Record<string, string | undefined>
     version: values.version === true,
     config: {
       url: url || undefined,
-      token: values.token ?? (env.DYNOTATOR_TOKEN || undefined),
       noBrowser:
         values["no-browser"] === true ||
         (noBrowserEnv !== undefined && noBrowserEnv !== "" && noBrowserEnv !== "0"),
@@ -55,10 +52,10 @@ Usage:
 
 Options:
   --url <url>      Server URL (default: $DYNOTATOR_URL)
-  --token <token>  Bearer token for creating sessions (default: $DYNOTATOR_TOKEN)
   --no-browser     Do not open the review page (also: DYNOTATOR_NO_BROWSER=1)
   -h, --help       Show this help
   -v, --version    Show the version
 
+If the server is behind Cloudflare Access, the CLI signs in through cloudflared.
 The review URL is printed to stderr. Stdout carries only the result for the agent.
 `;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isAuthorized, isSessionId, matchRoute, newSessionId, ttlSeconds } from "./routes";
+import { isSessionId, matchRoute, newSessionId, ttlSeconds } from "./routes";
 
 test("session ids are 160-bit URL-safe and distinct", () => {
   const ids = new Set(Array.from({ length: 200 }, newSessionId));
@@ -28,16 +28,6 @@ describe("matchRoute", () => {
   ] as const)("%s %s", (method, path, expected) => {
     expect(matchRoute(method, path)).toEqual(expected);
   });
-});
-
-test("isAuthorized: open without a token, exact bearer match with one", () => {
-  expect(isAuthorized(null, undefined)).toBe(true);
-  expect(isAuthorized(null, "")).toBe(true);
-  expect(isAuthorized("Bearer s3cret", "s3cret")).toBe(true);
-  expect(isAuthorized(null, "s3cret")).toBe(false);
-  expect(isAuthorized("Bearer s3cre", "s3cret")).toBe(false);
-  expect(isAuthorized("Bearer s3cretX", "s3cret")).toBe(false);
-  expect(isAuthorized("s3cret", "s3cret")).toBe(false);
 });
 
 test("ttlSeconds defaults to 7 days", () => {

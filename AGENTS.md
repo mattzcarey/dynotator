@@ -33,7 +33,7 @@ browser ─/s/:id/api/*──────▶ host Worker ──▶ SessionSuperv
 agent ──GET /s/:id/api/wait▶ (long poll for the decision)                 (Dynamic Worker, own SQLite)
 ```
 
-- **Host Worker** (`worker/`): owns routing, auth on session creation, and serves the SPA assets.
+- **Host Worker** (`worker/`): owns routing and serves the SPA assets.
 - **SessionSupervisor** (Durable Object, SQLite): named by session id. Stores only session
   metadata and expiry. Loads the session-server bundle with `env.LOADER.get(bundleId, …)`
   (`globalOutbound: null`), gets its `SessionServer` class via `getDurableObjectClass`, and runs it
@@ -46,13 +46,15 @@ agent ──GET /s/:id/api/wait▶ (long poll for the decision)                 
 
 Host routes:
 
-- `POST /api/sessions` creates a session. If the `DYNOTATOR_TOKEN` secret is set, requires
-  `Authorization: Bearer <token>`. Body:
+- `POST /api/sessions` creates a session. Body:
   `{ mode: "plan" | "annotate", markdown: string, title?: string, origin?: string, permissionMode?: string, filePath?: string, project?: string }`.
   Response `201 { id, url, apiUrl }` where `url` is `<origin>/s/<id>` and `apiUrl` is `<origin>/s/<id>/api`.
 - `GET /s/:id` serves the SPA. `ANY /s/:id/api/*` goes to that session's server as `/api/*`.
 - The session id is an unguessable capability (>= 128 bits, URL-safe). Knowing it is the
   authorisation for everything under `/s/:id`.
+- Authentication is not the Worker's job. The deployment sits behind Cloudflare Access; the
+  Worker holds no secrets and checks no tokens, and the CLI signs in through `cloudflared` when
+  Access challenges it (`cli/access.ts`). Do not add tokens, API keys or secret bindings.
 
 Session server routes (paths as the session server sees them):
 
