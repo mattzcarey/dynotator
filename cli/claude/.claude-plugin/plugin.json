@@ -1,0 +1,6 @@
+{
+  "name": "dynotator",
+  "description": "Review Claude Code plans in a browser on a hosted Dynotator server before ExitPlanMode is approved.",
+  "version": "0.1.0",
+  "license": "MIT OR Apache-2.0"
+}
