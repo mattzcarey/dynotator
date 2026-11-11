@@ -1,4 +1,11 @@
-const MAX_JSON_BODY_BYTES = 4_000_000;
+// Bounds every browser body, a submission with up to 2,000 annotations included.
+const MAX_JSON_BODY_BYTES = 2_000_000;
+
+/**
+ * The reviewer's verified email, set by the host Worker on requests it forwards (worker/identity.ts)
+ * after removing any copy the client sent.
+ */
+export const REVIEWER_HEADER = "x-dynotator-reviewer";
 
 export class HttpError extends Error {
   constructor(

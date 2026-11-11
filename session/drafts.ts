@@ -4,7 +4,12 @@ import type { Store } from "./store";
 /**
  * Unsent annotations, kept per version. The browser stamps every save and delete with a growing
  * `draftGeneration`, and a delete leaves a tombstone with its generation, so a save that was in
- * flight when the draft was deleted (by the reviewer or by a decision) cannot bring it back.
+ * flight when the draft was deleted cannot bring it back.
+ *
+ * A submission at generation `g` deletes the draft as of `g`: the annotations it sent cannot come
+ * back through a late save, and the reviewer carries on at `g + 1`. A draft already saved past
+ * `g` (annotations made while the submission was in flight) is kept as it is; the browser drops
+ * what it sent from it with its next save.
  */
 interface Draft {
   annotations: unknown[];

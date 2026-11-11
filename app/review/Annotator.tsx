@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import Highlighter from "@plannotator/web-highlighter";
-import { AnnotationType, type Annotation } from "./annotations";
+import type { Annotation, AnnotationType } from "./annotations";
 import { Composer } from "./Composer";
 import { HIGHLIGHT_EVENT } from "../markdown/highlight";
 
@@ -8,53 +8,63 @@ const EXCLUDED = ".annotation-exclude";
 
 type Action = "comment" | "delete" | "replace";
 
+/**
+ * Where a selection sits in the view: its block, lines, side and column, and its text when the
+ * view knows it better than the highlighter (which folds whitespace). Null: not annotatable.
+ */
+export type Where = Pick<Annotation, "blockId" | "lines" | "side" | "col" | "against"> & {
+  original?: string;
+};
+export type Locate = (range: Range) => Where | null;
+
 interface Pending {
   range: Range;
   rect: DOMRect;
+  where: Where;
   /** Set once an action that needs words was chosen. */
   action?: Exclude<Action, "delete">;
 }
 
-/**
- * Where a selection sits in the file: its block (markdown) and its source lines, and its text
- * when the view knows it better than the highlighter (which folds whitespace).
- */
-export type Locate = (range: Range) => Pick<Annotation, "blockId" | "lines"> & {
-  originalText?: string;
-};
-
-const classFor = (type: AnnotationType) =>
-  type === AnnotationType.DELETION ? "deletion" : "comment";
+const classFor = (type: AnnotationType) => (type === "deletion" ? "deletion" : "comment");
 
 /**
- * One file's content, annotatable. Selecting text offers Comment / Delete / Replace; the chosen
- * range is painted with web-highlighter, whose serialized positions are stored on the annotation
- * so a draft, or the file opened again, repaints.
+ * One view's content, annotatable. Selecting text offers Comment / Delete / Replace (removed
+ * lines in a diff: Comment). Highlights are painted with web-highlighter: from the positions the
+ * annotation stored when `keepPositions` (rendered markdown, whose text is not the source), else
+ * from the range the view finds for it (`rangeOf`), so a note made in one view shows in another.
  */
 export function Annotator({
   path,
   annotations,
+  sentIds,
   selectedId,
   readOnly,
   className,
+  keepPositions = false,
   locate,
+  rangeOf,
   onAdd,
   onSelect,
   children,
 }: {
   path: string;
-  /** This file's annotations. */
+  /** What to paint here: this view's draft and sent annotations. */
   annotations: Annotation[];
+  sentIds: ReadonlySet<string>;
   selectedId: string | null;
   readOnly: boolean;
   className: string;
+  keepPositions?: boolean;
   locate: Locate;
+  rangeOf?: (annotation: Annotation) => Range | null;
   onAdd: (annotation: Annotation) => void;
   onSelect: (id: string | null) => void;
   children: ReactNode;
 }) {
   const rootRef = useRef<HTMLElement>(null);
   const highlighterRef = useRef<Highlighter | null>(null);
+  /** The id `fromRange` gives the highlight it paints next. */
+  const nextIdRef = useRef<string | null>(null);
   const paintedRef = useRef(new Set<string>());
   const selectedRef = useRef(selectedId);
   const focusedRef = useRef<string | null>(null);
@@ -80,24 +90,45 @@ export function Annotator({
     highlighter.getDoms(id)[0]?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  // Paint what is stored (draft restore, a new annotation) and drop what is gone.
+  const paintOne = useCallback(
+    (highlighter: Highlighter, ann: Annotation): boolean => {
+      if (keepPositions && ann.startMeta && ann.endMeta) {
+        return !!highlighter.fromStore(ann.startMeta, ann.endMeta, ann.original ?? "", ann.id);
+      }
+      const range = rangeOf?.(ann);
+      if (!range) return false;
+      nextIdRef.current = ann.id;
+      try {
+        return !!highlighter.fromRange(range);
+      } finally {
+        nextIdRef.current = null;
+      }
+    },
+    [keepPositions, rangeOf],
+  );
+
+  // Paint what is listed (a restored draft, a new or sent annotation) and drop what is gone.
   const paint = useCallback(
     (list: Annotation[]) => {
       const highlighter = highlighterRef.current;
       if (!highlighter) return;
       const live = new Set<string>();
       for (const ann of list) {
-        if (!ann.startMeta || !ann.endMeta) continue;
+        if (ann.type === "answer" || ann.type === "general") continue;
         live.add(ann.id);
         if (paintedRef.current.has(ann.id)) {
-          if (highlighter.getDoms(ann.id).length > 0) continue;
+          if (highlighter.getDoms(ann.id).length > 0) {
+            // Sent since it was painted.
+            if (sentIds.has(ann.id)) highlighter.addClass("sent", ann.id);
+            continue;
+          }
           highlighter.remove(ann.id);
           paintedRef.current.delete(ann.id);
         }
         try {
-          if (!highlighter.fromStore(ann.startMeta, ann.endMeta, ann.originalText, ann.id))
-            continue;
+          if (!paintOne(highlighter, ann)) continue;
           highlighter.addClass(classFor(ann.type), ann.id);
+          if (sentIds.has(ann.id)) highlighter.addClass("sent", ann.id);
           paintedRef.current.add(ann.id);
         } catch {
           // The text moved (a revision): the annotation stays listed, unpainted.
@@ -110,9 +141,9 @@ export function Annotator({
       }
       focus();
     },
-    [focus],
+    [focus, paintOne, sentIds],
   );
-  // Highlighting code replaced its markup, and any marks in it.
+  // Highlighting code, or opening a fold, replaced markup and any marks in it.
   const repaint = useEffectEvent(() => paint(annotations));
 
   useEffect(() => {
@@ -124,6 +155,7 @@ export function Annotator({
       wrapTag: "mark",
       style: { className: "annotation-highlight" },
     });
+    highlighter.hooks.Render.UUID.tap(() => nextIdRef.current ?? undefined);
     highlighter.on(Highlighter.event.CLICK, ({ id }: { id: string }) => select(id));
     highlighterRef.current = highlighter;
     const marks = paintedRef.current;
@@ -158,14 +190,16 @@ export function Annotator({
           ? range.startContainer
           : range.startContainer.parentElement;
       if (startEl?.closest(EXCLUDED) || !range.toString().trim()) return;
-      setPending({ range: range.cloneRange(), rect: range.getBoundingClientRect() });
+      const where = locate(range);
+      if (!where) return;
+      setPending({ range: range.cloneRange(), rect: range.getBoundingClientRect(), where });
     });
-  }, [readOnly]);
+  }, [locate, readOnly]);
 
   const commit = (type: AnnotationType, text?: string) => {
     const highlighter = highlighterRef.current;
     if (!pending || !highlighter) return;
-    const where = locate(pending.range);
+    const { where } = pending;
     // Null (despite its type) when the range held no paintable text.
     const source: ReturnType<Highlighter["fromRange"]> | null = highlighter.fromRange(
       pending.range,
@@ -179,13 +213,15 @@ export function Annotator({
     onAdd({
       id: source.id,
       path,
-      blockId: where.blockId,
-      ...(where.lines && { lines: where.lines }),
       type,
-      text,
-      originalText: where.originalText ?? source.text,
-      startMeta: source.startMeta,
-      endMeta: source.endMeta,
+      ...(where.lines && { lines: where.lines }),
+      ...(where.side && { side: where.side }),
+      original: where.original ?? source.text,
+      ...(text !== undefined && { text }),
+      ...(where.blockId && { blockId: where.blockId }),
+      ...(where.col !== undefined && { col: where.col }),
+      ...(where.against !== undefined && { against: where.against }),
+      ...(keepPositions && { startMeta: source.startMeta, endMeta: source.endMeta }),
     });
   };
 
@@ -203,10 +239,9 @@ export function Annotator({
       {pending && !pending.action && (
         <SelectionToolbar
           rect={pending.rect}
+          commentOnly={pending.where.side === "old"}
           onAction={(action) =>
-            action === "delete"
-              ? commit(AnnotationType.DELETION)
-              : setPending({ ...pending, action })
+            action === "delete" ? commit("deletion") : setPending({ ...pending, action })
           }
           onClose={dismiss}
         />
@@ -215,14 +250,9 @@ export function Annotator({
         <Composer
           rect={pending.rect}
           title={pending.action === "replace" ? "Replace with" : "Comment"}
-          quote={pending.range.toString()}
+          quote={pending.where.original ?? pending.range.toString()}
           onCancel={dismiss}
-          onSave={(text) =>
-            commit(
-              AnnotationType.COMMENT,
-              pending.action === "replace" ? `Replace with: ${text}` : text,
-            )
-          }
+          onSave={(text) => commit(pending.action === "replace" ? "replacement" : "comment", text)}
         />
       )}
     </>
@@ -231,10 +261,13 @@ export function Annotator({
 
 function SelectionToolbar({
   rect,
+  commentOnly,
   onAction,
   onClose,
 }: {
   rect: DOMRect;
+  /** Removed lines: there is nothing left to delete or replace. */
+  commentOnly: boolean;
   onAction: (action: Action) => void;
   onClose: () => void;
 }) {
@@ -261,16 +294,20 @@ function SelectionToolbar({
       >
         Comment
       </button>
-      <button
-        type="button"
-        className={`${button} text-destructive`}
-        onClick={() => onAction("delete")}
-      >
-        Delete
-      </button>
-      <button type="button" className={button} onClick={() => onAction("replace")}>
-        Replace
-      </button>
+      {!commentOnly && (
+        <>
+          <button
+            type="button"
+            className={`${button} text-destructive`}
+            onClick={() => onAction("delete")}
+          >
+            Delete
+          </button>
+          <button type="button" className={button} onClick={() => onAction("replace")}>
+            Replace
+          </button>
+        </>
+      )}
       <button
         type="button"
         aria-label="Cancel"

@@ -1,9 +1,27 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
-import type { Decision, Revision } from "../session/decision";
-import { type Files, type ReviewInit, parseFiles, parseInit } from "../session/files";
+import type { Annotation, ReviewEvent, ReviewEventType, Revision } from "../session/events";
+import type { Files } from "../session/files";
+import {
+  type Content,
+  type FileSource,
+  type ReviewInit,
+  parseContent,
+  parseInit,
+  upload,
+  uploadBase,
+} from "./content";
 import { isSessionId, newSessionId, ttlSeconds } from "./routes";
 
-export type { Decision, Files, Revision, ReviewInit };
+export type {
+  Annotation,
+  Content,
+  FileSource,
+  Files,
+  ReviewEvent,
+  ReviewEventType,
+  ReviewInit,
+  Revision,
+};
 
 export interface Review {
   id: string;
@@ -27,38 +45,52 @@ export interface DynotatorProps {
  */
 export class Dynotator extends WorkerEntrypoint<Env, DynotatorProps> {
   /**
-   * Opens a review of `files` and returns the URL to hand to a human. `mode` is `"plan"`
-   * (approve or request changes) or `"annotate"` (send feedback or close).
+   * Opens a review and returns the URL to hand to a human. Content is pushed (`files`) or pulled
+   * (`source`, read during this call only); `base` or `patch` makes it a review of a change. If
+   * anything fails, no review is left behind.
    */
   async createReview(init: ReviewInit): Promise<Review> {
-    const review = parseInit(init);
+    const { meta, content, base } = parseInit(init);
     const id = newSessionId();
-    await this.supervisor(id).create(review, ttlSeconds(this.env.SESSION_TTL_SECONDS));
+    const review = this.supervisor(id);
+    await review.create(ttlSeconds(this.env.SESSION_TTL_SECONDS));
+    try {
+      const baseInput = await uploadBase(review, base);
+      await review.init(meta, await upload(review, content), baseInput);
+    } catch (err) {
+      await review.destroy();
+      throw err;
+    }
     const origin = (this.ctx.props?.origin ?? this.env.PUBLIC_URL).replace(/\/+$/, "");
     return { id, url: `${origin}/s/${id}` };
   }
 
-  /** The decision, or `null` while the review is open. Throws if the review has expired. */
-  async getDecision(id: string): Promise<Decision | null> {
-    return this.session(id).decision();
+  /**
+   * Puts a full snapshot up as the next version at the same URL and appends `revised`; files
+   * absent from it are deleted in that version. Allowed until the review is closed, approved or
+   * not. An identical snapshot is `unchanged` and appends nothing.
+   */
+  async revise(id: string, content: Content): Promise<Revision> {
+    const review = this.session(id);
+    return review.revise(await upload(review, parseContent(content)));
+  }
+
+  /** Events with `seq > after` (default 0), in order; a long log may come in several calls. */
+  async getEvents(id: string, after = 0): Promise<ReviewEvent[]> {
+    return this.session(id).events(after);
   }
 
   /**
-   * Waits up to `seconds` (default 25, at most 55) for the decision; `null` means still open.
-   * Call it again to keep waiting, or poll `getDecision` from an alarm instead.
+   * Like `getEvents`, but waits up to `seconds` (default 25, at most 55) for at least one event;
+   * `[]` means none yet. Keep a cursor: call, process, set it to the last `seq`.
    */
-  async waitForDecision(id: string, seconds?: number): Promise<Decision | null> {
-    return this.session(id).wait(seconds);
+  async waitForEvents(id: string, after: number, seconds?: number): Promise<ReviewEvent[]> {
+    return this.session(id).wait(after, seconds);
   }
 
-  /**
-   * Puts `files`, a full snapshot, up as the next version at the same URL, so the reviewer sees
-   * what changed, and reopens the decision. Files absent from the snapshot are deleted in that
-   * version. An identical snapshot is `unchanged` and leaves the decision standing. Throws once
-   * the review has been approved or closed.
-   */
-  async revise(id: string, files: Files): Promise<Revision> {
-    return this.session(id).revise(parseFiles(files));
+  /** Ends the review: `closed` is appended once, and nothing more is accepted. Reads still work. */
+  async close(id: string): Promise<void> {
+    await this.session(id).close();
   }
 
   private supervisor(id: string) {

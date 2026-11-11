@@ -1,4 +1,5 @@
 import { parseMarkdownToBlocks, type Block } from "../markdown/blocks";
+import type { Lines, Side } from "./annotations";
 
 export type DiffEntry =
   | { change: "unchanged" | "added" | "removed"; block: Block }
@@ -146,4 +147,81 @@ export function foldUnchanged(entries: readonly LineEntry[], context = 3): DiffR
   });
   flush();
   return out;
+}
+
+/** Where a selection in a line diff sits: its side, its lines there, and its text. */
+export interface DiffSelection {
+  side: Side;
+  lines: Lines;
+  original: string;
+  /** Column of the start in `lines.start`. */
+  col: number;
+}
+
+/**
+ * A selection over consecutive diff rows (`startOffset` into the first row's text, `endOffset`
+ * into the last's) as an annotation's place. Removed rows alone are the old side, numbered in
+ * the version compared against; anything else is the new side, its removed rows left out, since
+ * they are not in the version the agent edits.
+ */
+export function diffSelection(
+  rows: readonly Pick<LineEntry, "change" | "oldLine" | "newLine" | "text">[],
+  startOffset: number,
+  endOffset: number,
+): DiffSelection | null {
+  const parts = rows.map((row, i) => ({
+    row,
+    from: i === 0 ? Math.min(startOffset, row.text.length) : 0,
+    to: i === rows.length - 1 ? Math.min(endOffset, row.text.length) : row.text.length,
+  }));
+  // A selection that ends at the start of a row, or starts at the end of one, does not take it.
+  while (parts.length > 1 && parts[parts.length - 1].to === 0) parts.pop();
+  while (parts.length > 1 && parts[0].from > 0 && parts[0].from >= parts[0].row.text.length)
+    parts.shift();
+  if (parts.length === 0) return null;
+  const old = parts.every((p) => p.row.change === "removed");
+  const mine = old ? parts : parts.filter((p) => p.row.change !== "removed");
+  const lineOf = (p: (typeof parts)[number]) => (old ? p.row.oldLine : p.row.newLine);
+  const start = lineOf(mine[0]);
+  const end = lineOf(mine[mine.length - 1]);
+  const original = mine.map((p) => p.row.text.slice(p.from, p.to)).join("\n");
+  if (start === undefined || end === undefined || !original.trim()) return null;
+  return { side: old ? "old" : "new", lines: { start, end }, original, col: mine[0].from };
+}
+
+/** The offset each line starts at. */
+export const lineStarts = (text: string): number[] => {
+  const out = [0];
+  for (let i = text.indexOf("\n"); i !== -1; i = text.indexOf("\n", i + 1)) out.push(i + 1);
+  return out;
+};
+
+/**
+ * Where an annotation's text is in a file's source, as offsets: at its column when it is known
+ * and still matches, else its first occurrence starting within its lines; null when neither.
+ */
+export function locateText(
+  text: string,
+  { lines, col, original }: { lines?: Lines; col?: number; original?: string },
+  starts = lineStarts(text),
+): [number, number] | null {
+  if (!lines || !original || lines.start > starts.length) return null;
+  const first = starts[lines.start - 1];
+  if (col !== undefined && text.startsWith(original, first + col))
+    return [first + col, first + col + original.length];
+  const limit = lines.end < starts.length ? starts[lines.end] : text.length;
+  const at = text.indexOf(original, first);
+  return at !== -1 && at < limit ? [at, at + original.length] : null;
+}
+
+/** The 1-based line and 0-based column of `offset`, given the text's `lineStarts`. */
+export function lineAt(starts: readonly number[], offset: number): [number, number] {
+  let lo = 0;
+  let hi = starts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (starts[mid] <= offset) lo = mid;
+    else hi = mid - 1;
+  }
+  return [lo + 1, offset - starts[lo]];
 }

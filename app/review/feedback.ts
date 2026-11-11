@@ -1,4 +1,4 @@
-import { AnnotationType, type Annotation } from "./annotations";
+import type { Annotation } from "./annotations";
 import { codeFenceFor } from "../markdown/structure";
 import {
   formatAnswersSection,
@@ -26,8 +26,21 @@ const fenced = (text: string) => {
 };
 const oneLine = (text: string) => text.replace(/\s+/g, " ").trim();
 
-const lineLabel = ({ start, end }: { start: number; end: number }): string =>
-  end > start ? `lines ${start}-${end}` : `line ${start}`;
+/**
+ * Removed lines are numbered in the version the diff compared against, which the annotation's
+ * structure does not say: the text does.
+ */
+export const removedFrom = (against: number | undefined): string =>
+  against === undefined || against === 0 ? "removed from the base" : `removed from version ${against}`;
+
+/** `line 3`, `lines 3-4`; removed lines say so, in parentheses or (`inline`) after a comma. */
+const lineLabel = ({ lines, side, against }: Annotation, inline = false): string => {
+  if (!lines) return "";
+  const { start, end } = lines;
+  const label = end > start ? `lines ${start}-${end}` : `line ${start}`;
+  if (side !== "old") return label;
+  return inline ? `${label}, ${removedFrom(against)}` : `${label} (${removedFrom(against)})`;
+};
 const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
@@ -45,7 +58,7 @@ export function buildFeedback({ mode, files, questions, annotations }: FeedbackI
   const rank = new Map(files.map((path, index) => [path, index]));
   const notes = annotations
     .map((annotation, index) => ({ annotation, index }))
-    .filter(({ annotation }) => !annotation.questionAnswer)
+    .filter(({ annotation }) => annotation.type !== "answer")
     .toSorted(
       (x, y) =>
         (x.annotation.path ? (rank.get(x.annotation.path) ?? files.length) : -1) -
@@ -64,19 +77,21 @@ export function buildFeedback({ mode, files, questions, annotations }: FeedbackI
   let file: string | null = null;
   notes.forEach((ann, index) => {
     const number = `${index + 1}. `;
-    if (ann.type === AnnotationType.GLOBAL_COMMENT) {
+    if (ann.type === "general") {
       out += `## ${number}General feedback about the ${subject}\n${quote(ann.text)}\n`;
       return;
     }
-    const deletion = ann.type === AnnotationType.DELETION;
+    const deletion = ann.type === "deletion";
+    const original = ann.original ?? "";
+    const said = ann.type === "replacement" ? quote(`Replace with: ${ann.text ?? ""}`) : quote(ann.text);
     if (single) {
-      out += `## ${number}${ann.lines ? `(${lineLabel(ann.lines)}) ` : ""}`;
+      out += `## ${number}${ann.lines ? `(${lineLabel(ann, true)}) ` : ""}`;
       if (deletion) {
-        out += `Remove this\n${fenced(ann.originalText)}> I don't want this in the ${subject}.\n`;
-      } else if (ann.originalText.includes("\n")) {
-        out += `Feedback on:\n${fenced(ann.originalText)}${quote(ann.text)}`;
+        out += `Remove this\n${fenced(original)}> I don't want this in the ${subject}.\n`;
+      } else if (original.includes("\n")) {
+        out += `Feedback on:\n${fenced(original)}${said}`;
       } else {
-        out += `Feedback on: "${ann.originalText}"\n${quote(ann.text)}`;
+        out += `Feedback on: "${original}"\n${said}`;
       }
       out += "\n";
       return;
@@ -85,9 +100,9 @@ export function buildFeedback({ mode, files, questions, annotations }: FeedbackI
       file = ann.path;
       out += `## ${oneLine(file)}\n\n`;
     }
-    const where = ann.lines ? capitalized(lineLabel(ann.lines)) : "Selection";
-    out += `### ${number}${where}${deletion ? ": remove this" : ""}\n${fenced(ann.originalText)}`;
-    out += deletion ? "> I don't want this.\n" : quote(ann.text);
+    const where = ann.lines ? capitalized(lineLabel(ann)) : "Selection";
+    out += `### ${number}${where}${deletion ? ": remove this" : ""}\n${fenced(original)}`;
+    out += deletion ? "> I don't want this.\n" : said;
     out += "\n";
   });
   return `${out}---\n`;

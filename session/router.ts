@@ -1,39 +1,43 @@
-import { DECISION_KINDS, type Decision, type DecisionKind, getDecision, settle } from "./decision";
 import { deleteDraft, loadDraft, parseGeneration, saveDraft } from "./drafts";
-import { HttpError, error, json, readJsonObject } from "./http";
+import {
+  type ReviewEvent,
+  SUBMISSIONS,
+  assertOpen,
+  eventsAfter,
+  isClosed,
+  lastSeq,
+  submit,
+} from "./events";
 import { changes, isValidPath } from "./files";
+import { HttpError, REVIEWER_HEADER, error, json, readJsonObject } from "./http";
+import { imageType } from "./image";
 import {
   type Fs,
   type ReviewMeta,
   currentVersion,
   getManifest,
   getMeta,
+  hasBase,
   listVersions,
   openPath,
-  readVersionFile,
+  readBytes,
+  readText,
 } from "./review";
 import type { Store } from "./store";
 
-const DECISION_ROUTES: Record<string, DecisionKind> = {
-  "/api/approve": "approve",
-  "/api/deny": "deny",
-  "/api/feedback": "feedback",
-  "/api/exit": "exit",
-};
-
-/** The browser's API. `onDecision` hears every decision recorded here. */
+/** The browser's API. `onEvent` hears every event appended here. */
 export async function handleRequest(
   req: Request,
   store: Store,
   fs: Fs,
-  onDecision: (decision: Decision) => void,
+  onEvent: (event: ReviewEvent) => void,
 ): Promise<Response> {
   const url = new URL(req.url);
   const meta = getMeta(store);
   if (!meta) return error(404, "Session not found");
   try {
     return (
-      (await route(req, url, meta, store, fs, onDecision)) ??
+      (await route(req, url, meta, store, fs, onEvent)) ??
       error(404, "Not found", { path: url.pathname })
     );
   } catch (err) {
@@ -48,16 +52,22 @@ async function route(
   meta: ReviewMeta,
   store: Store,
   fs: Fs,
-  onDecision: (decision: Decision) => void,
+  onEvent: (event: ReviewEvent) => void,
 ): Promise<Response | undefined> {
   const { method } = req;
   const path = url.pathname;
+  const query = url.searchParams;
   const version = currentVersion(store);
-  const versionParam = (name: string) => parseVersion(url.searchParams.get(name), version);
+  const versionParam = (name: string) => parseVersion(query.get(name), version);
   const manifestOf = (v: number) => {
     const manifest = getManifest(store, v);
     if (!manifest) throw new HttpError(404, "Version not found", { version: v });
     return manifest;
+  };
+  const filePath = () => {
+    const p = query.get("path");
+    if (!isValidPath(p)) throw new HttpError(400, "Invalid path");
+    return p;
   };
 
   if (method === "GET" && path === "/api/review") {
@@ -67,68 +77,103 @@ async function route(
       open: openPath(meta, manifestOf(version)),
       version,
       versions: listVersions(store),
+      closed: isClosed(store),
+      base: hasBase(store),
     });
   }
   if (method === "GET" && path === "/api/revision") {
-    return json({ revision: version });
+    return json({ revision: version, seq: lastSeq(store) });
+  }
+  if (method === "GET" && path === "/api/events") {
+    return json({ events: eventsAfter(store, parseCursor(query.get("after"))) });
   }
   if (method === "GET" && path === "/api/files") {
-    const files = Array.from(manifestOf(versionParam("v")), ([p, { size }]) => ({ path: p, size }));
+    const files = Array.from(manifestOf(versionParam("v")), ([p, { size, binary }]) => ({
+      path: p,
+      size,
+      ...(binary && { binary: true }),
+    }));
     return json({ files });
   }
   if (method === "GET" && path === "/api/file") {
     const v = versionParam("v");
-    const filePath = url.searchParams.get("path");
-    if (!isValidPath(filePath)) return error(400, "Invalid path");
+    const p = filePath();
     manifestOf(v);
-    const content = await readVersionFile(store, fs, v, filePath);
-    if (content === undefined) return error(404, "File not found", { path: filePath });
-    return json({ path: filePath, content });
+    const file = await readText(store, fs, v, p);
+    if (!file) return error(404, "File not found", { path: p });
+    if ("binary" in file) return error(415, "Binary file", { path: p });
+    return json({ path: p, content: file.text });
+  }
+  if (method === "GET" && path === "/api/raw") {
+    const v = versionParam("v");
+    const p = filePath();
+    manifestOf(v);
+    const bytes = await readBytes(store, fs, v, p);
+    if (!bytes) return error(404, "File not found", { path: p });
+    const type = imageType(bytes);
+    if (!type) return error(415, "Not an image", { path: p });
+    return new Response(bytes, {
+      headers: {
+        "Content-Type": type,
+        "Content-Security-Policy": "sandbox",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   }
   if (method === "GET" && path === "/api/changes") {
     const to = versionParam("to");
-    const from = parseVersion(url.searchParams.get("from"), to - 1);
+    const from = parseVersion(query.get("from"), to - 1);
     return json({ files: changes(manifestOf(from), manifestOf(to)) });
   }
 
-  const kind = DECISION_ROUTES[path];
-  if (method === "POST" && kind && DECISION_KINDS[meta.mode].includes(kind)) {
-    // Exit is a bare POST; its draft generation rides the query string.
-    const body = kind === "exit" ? {} : await readJsonObject(req);
-    const decision = settle(store, kind, body);
+  const type = SUBMISSIONS[meta.mode][path];
+  if (method === "POST" && type) {
+    // Exit is a bare POST; its draft generation and revision ride the query string.
+    const body =
+      type === "dismissed"
+        ? { revision: query.get("revision") ?? undefined }
+        : await readJsonObject(req);
+    const by = req.headers.get(REVIEWER_HEADER) ?? undefined;
+    const event = submit(store, type, version, body, by);
     deleteDraft(
       store,
       version,
-      parseGeneration(body.draftGeneration ?? url.searchParams.get("draftGeneration")),
+      parseGeneration(
+        type === "dismissed" ? query.get("draftGeneration") : body.draftGeneration,
+      ),
     );
-    onDecision(decision);
-    return json({ ok: true });
+    onEvent(event);
+    return json({ ok: true, seq: event.seq });
   }
-
   if (path === "/api/draft") {
     if (method === "GET") return json(loadDraft(store, version));
     if (method === "POST") {
-      if (getDecision(store)) {
-        return error(409, "This review has already been decided.", { decided: true });
-      }
+      assertOpen(store);
       saveDraft(store, version, await readJsonObject(req));
       return json({ ok: true });
     }
     if (method === "DELETE") {
-      const generation = parseGeneration(url.searchParams.get("generation"));
+      const generation = parseGeneration(query.get("generation"));
       if (generation === undefined) return error(400, "generation must be an integer >= 0");
       deleteDraft(store, version, generation);
       return json({ ok: true });
     }
   }
-
   return undefined;
 }
 
-/** A `?v=`-style version: absent means `fallback`; anything but a positive integer is a 400. */
+/** A `?v=`-style version: absent means `fallback`; anything but an integer >= 0 is a 400. */
 function parseVersion(raw: string | null, fallback: number): number {
   if (raw === null) return fallback;
   const v = Number(raw);
-  if (raw === "" || !Number.isInteger(v) || v < 1) throw new HttpError(400, "Invalid version");
+  if (raw === "" || !Number.isInteger(v) || v < 0) throw new HttpError(400, "Invalid version");
   return v;
+}
+
+function parseCursor(raw: string | null): number {
+  const n = raw === null ? 0 : Number(raw);
+  if (raw === "" || !Number.isInteger(n) || n < 0) {
+    throw new HttpError(400, "after must be an integer >= 0");
+  }
+  return n;
 }

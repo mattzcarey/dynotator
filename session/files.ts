@@ -4,21 +4,22 @@
  */
 export type Files = Record<string, string>;
 
-export type ReviewMode = "plan" | "annotate";
-
 /** What `createReview` takes. */
 export interface ReviewInit {
-  /** `"plan"`: approve or request changes. `"annotate"`: send feedback or close. */
-  mode: ReviewMode;
-  title?: string;
   files: Files;
+  /**
+   * A unified diff (`git diff`) of the change that produced `files`. The state before it becomes
+   * version 0; paths it does not mention are the same there.
+   */
+  patch?: string;
+  title?: string;
   /** The path shown first. Default: `README.md`, else the first `.md` file, else the first path. */
   open?: string;
 }
 
-// A snapshot crosses Workers RPC twice (caller to entrypoint to supervisor to facet), and each
-// message must stay under its 32 MiB limit; strings serialise at up to two bytes per UTF-16 unit,
-// so 20 MiB of UTF-8 stays below it whatever the text.
+// A snapshot crosses Workers RPC three times (caller to entrypoint to supervisor to facet), and
+// each message must stay under its 32 MiB limit. A patch rides along, so it counts toward the
+// total.
 export const MAX_FILES = 5_000;
 export const MAX_FILE_BYTES = 1024 * 1024;
 export const MAX_TOTAL_BYTES = 20 * 1024 * 1024;
@@ -56,8 +57,13 @@ export function parseFiles(files: unknown): Files {
   }
   if (total > MAX_TOTAL_BYTES)
     throw new RangeError(`files exceed ${MAX_TOTAL_BYTES} bytes in total`);
-  // A path that is also another path's directory cannot exist in one tree.
-  const paths = new Set(entries.map(([path]) => path));
+  assertTree(entries.map(([path]) => path));
+  return Object.fromEntries(entries);
+}
+
+/** A path that is also another path's directory cannot exist in one tree. */
+export function assertTree(list: string[]): void {
+  const paths = new Set(list);
   for (const path of paths) {
     for (let i = path.indexOf("/"); i !== -1; i = path.indexOf("/", i + 1)) {
       if (paths.has(path.slice(0, i))) {
@@ -65,17 +71,13 @@ export function parseFiles(files: unknown): Files {
       }
     }
   }
-  return Object.fromEntries(entries);
 }
 
 export function parseInit(init: unknown): ReviewInit {
   if (!init || typeof init !== "object") {
-    throw new TypeError("Expected { mode, files, title?, open? }");
+    throw new TypeError("Expected { files, patch?, title?, open? }");
   }
-  const { mode, title, files, open } = init as Partial<Record<keyof ReviewInit, unknown>>;
-  if (mode !== "plan" && mode !== "annotate") {
-    throw new TypeError('mode must be "plan" or "annotate"');
-  }
+  const { files, patch, title, open } = init as Partial<Record<keyof ReviewInit, unknown>>;
   if (title !== undefined && (typeof title !== "string" || title.length > MAX_TITLE_LENGTH)) {
     throw new TypeError(`title must be a string of at most ${MAX_TITLE_LENGTH} characters`);
   }
@@ -83,7 +85,19 @@ export function parseInit(init: unknown): ReviewInit {
   if (open !== undefined && (typeof open !== "string" || !Object.hasOwn(parsed, open))) {
     throw new TypeError("open must be one of the paths in files");
   }
-  return { mode, files: parsed, ...(title && { title }), ...(open !== undefined && { open }) };
+  if (patch !== undefined) {
+    if (typeof patch !== "string") throw new TypeError("patch must be a string");
+    const total = Object.values(parsed).reduce((n, text) => n + byteLength(text), 0);
+    if (total + byteLength(patch) > MAX_TOTAL_BYTES) {
+      throw new RangeError(`files and patch exceed ${MAX_TOTAL_BYTES} bytes in total`);
+    }
+  }
+  return {
+    files: parsed,
+    ...(patch !== undefined && { patch }),
+    ...(title && { title }),
+    ...(open !== undefined && { open }),
+  };
 }
 
 /** `README.md` if present, else the first `.md` file, else the first path, in sorted order. */

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, type MouseEvent } from "react";
 import { Annotator } from "../review/Annotator";
 import type { Annotation } from "../review/annotations";
-import { splitLines } from "../review/diff";
+import { lineStarts, locateText, splitLines } from "../review/diff";
+import { textRange } from "../review/ranges";
 import { HIGHLIGHT_EVENT, highlight } from "../markdown/highlight";
 import { useTheme } from "../theme";
 import type { Location } from "./paths";
@@ -24,6 +25,7 @@ export function CodeView({
   content,
   language,
   annotations,
+  sentIds,
   selectedId,
   readOnly,
   target,
@@ -34,7 +36,9 @@ export function CodeView({
   path: string;
   content: string;
   language: string | undefined;
+  /** This file's annotations, current version. */
   annotations: Annotation[];
+  sentIds: ReadonlySet<string>;
   selectedId: string | null;
   readOnly: boolean;
   /** The lines to mark and scroll to; a new object scrolls again. */
@@ -57,7 +61,11 @@ export function CodeView({
   useEffect(() => {
     const el = codeRef.current;
     if (!el) return;
-    if (el.textContent !== content || el.childElementCount > 0) el.textContent = content;
+    if (el.textContent !== content || el.childElementCount > 0) {
+      el.textContent = content;
+      // Marks painted before this ran went with the old text.
+      el.dispatchEvent(new Event(HIGHLIGHT_EVENT, { bubbles: true }));
+    }
     if (plain || !language) return;
     let current = true;
     void highlight(content, language, mode)
@@ -85,16 +93,25 @@ export function CodeView({
 
   const locate = useCallback((range: Range) => {
     const code = codeRef.current;
-    if (!code) return { blockId: "" };
+    if (!code) return null;
     const before = document.createRange();
     before.setStart(code, 0);
     before.setEnd(range.startContainer, range.startOffset);
-    const start = before.toString().split("\n").length;
+    const prefix = before.toString();
+    const start = prefix.split("\n").length;
     // A selection that runs to the end of a line takes its newline; that is not the next line.
-    const originalText = range.toString().replace(/\n$/, "");
-    const end = start + originalText.split("\n").length - 1;
-    return { blockId: "", lines: { start, end }, originalText };
+    const original = range.toString().replace(/\n$/, "");
+    const end = start + original.split("\n").length - 1;
+    return { lines: { start, end }, original, col: prefix.length - prefix.lastIndexOf("\n") - 1 };
   }, []);
+  const starts = useMemo(() => lineStarts(content), [content]);
+  const rangeOf = useCallback(
+    (annotation: Annotation) => {
+      const at = codeRef.current && locateText(content, annotation, starts);
+      return at && codeRef.current ? textRange(codeRef.current, at[0], at[1]) : null;
+    },
+    [content, starts],
+  );
 
   const pick = (e: MouseEvent<HTMLDivElement>) => {
     const top = e.currentTarget.getBoundingClientRect().top;
@@ -111,10 +128,12 @@ export function CodeView({
     <Annotator
       path={path}
       annotations={annotations}
+      sentIds={sentIds}
       selectedId={selectedId}
       readOnly={readOnly}
       className="code-view w-full overflow-hidden rounded-xl border border-border"
       locate={locate}
+      rangeOf={rangeOf}
       onAdd={onAdd}
       onSelect={onSelect}
     >
