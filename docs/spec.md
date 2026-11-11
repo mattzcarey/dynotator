@@ -129,8 +129,32 @@ point and the ability to comment on a diff.
 - Diffs stay line-based and dependency-free. No word-level diff, no side-by-side view, no syntax
   colouring inside diffs.
 
-`createReview` with a `git diff` string is not supported and will not be: a patch without the
-files cannot be rendered in context or annotated by line reliably. Send the files.
+### From a patch
+
+Most agents have a diff, not two trees. `ReviewInit.patch?: string` takes a unified diff
+(`git diff` output) of the change that produced `files`:
+
+```ts
+createReview({ mode: "plan", files: { "PLAN.md": plan, "src/a.ts": newA }, patch: gitDiff });
+```
+
+- Dynotator derives the base by applying the patch in reverse to `files`. Files the patch creates
+  are absent from the base; files it deletes exist only in the base, rebuilt from the patch's
+  removed lines; renames are a delete plus an add. Every file the patch touches (other than
+  deletions) must be in `files`.
+- Paths in `files` that the patch does not mention are **context**: the same in the base, so they
+  are not changes. That is how a plan and its docs ride along with a code change without showing
+  up as added files.
+- `patch` and `base` are alternatives; giving both is an error. With `base`, a path absent from
+  it is an added file, as in git.
+- If the patch does not apply cleanly in reverse (a hunk's new-side lines do not match the file),
+  `createReview` fails naming the file and hunk. Dynotator never guesses. Binary patches and
+  mode-only changes are rejected with a clear message.
+- The parser and reverse-apply are small, in-repo and dependency-free (`session/patch.ts`).
+- `revise` takes content only; the base is fixed when the review is created.
+
+A patch on its own, without the files, is not supported and will not be: it cannot be rendered in
+context or annotated by line reliably.
 
 ## 3. Annotations are structured, always
 
@@ -190,7 +214,10 @@ type ReviewInit = Content & {
   title?: string;
   /** The path shown first. */
   open?: string;
+  /** The state the change is against (section 2). */
   base?: Content;
+  /** Or a unified diff that produced this content; the base is derived from it. */
+  patch?: string;
 };
 ```
 
@@ -237,7 +264,7 @@ Decisions did not say who decided. They now can, without Dynotator authenticatin
 - **Export.** The agent already receives the feedback as markdown and as structure in every
   event; the embedding product owns what to do with it.
 - **In-place editing.** See section 3.
-- **Live container reads, patch-only reviews.** See sections 4 and 2.
+- **Live container reads, reviews of a patch without its files.** See sections 4 and 2.
 
 ## 7. Migration
 
