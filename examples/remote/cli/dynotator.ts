@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
+import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
 import type { ReviewEvent, Revision } from "../../../session/events.ts";
 import {
@@ -66,6 +67,25 @@ function saveState(state: Record<string, Tracked>): void {
   writeFileSync(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
 }
 
+/**
+ * Runs `cloudflared access login`, which opens a browser. cloudflared prints the token it fetched;
+ * that line is dropped so the token never reaches a terminal log or an agent's transcript.
+ */
+function login(server: string): Promise<void> {
+  return new Promise((resolve) => {
+    const child = spawn("cloudflared", ["access", "login", server], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    for (const stream of [child.stdout, child.stderr]) {
+      createInterface({ input: stream }).on("line", (line) => {
+        if (!line.trim().startsWith("eyJ")) console.error(line);
+      });
+    }
+    child.on("error", () => resolve());
+    child.on("close", () => resolve());
+  });
+}
+
 /** Headers that get a request through Cloudflare Access, or none if the server is not behind it. */
 async function accessHeaders(server: string): Promise<Record<string, string>> {
   const id = process.env.DYNOTATOR_ACCESS_CLIENT_ID;
@@ -92,7 +112,7 @@ async function accessHeaders(server: string): Promise<Record<string, string>> {
   let jwt = token();
   if (!jwt) {
     console.error(`Signing in to ${server} with Cloudflare Access...`);
-    spawnSync("cloudflared", ["access", "login", server], { stdio: ["ignore", 2, 2] });
+    await login(server);
     jwt = token();
   }
   if (!jwt) throw new Failure(`Could not sign in. Try: cloudflared access login ${server}`);
@@ -105,12 +125,12 @@ type Call = <T>(tool: string, args: Record<string, unknown>) => Promise<T>;
 async function withServer<T>(server: string, use: (call: Call) => Promise<T>): Promise<T> {
   const headers = await accessHeaders(server);
   const client = new Client({ name: "dynotator-cli", version: "0.1.0" });
-  await client.connect(
-    new StreamableHTTPClientTransport(new URL("/mcp", server), {
-      requestInit: { headers, redirect: "manual" },
-    }),
-  );
   try {
+    await client.connect(
+      new StreamableHTTPClientTransport(new URL("/mcp", server), {
+        requestInit: { headers, redirect: "manual" },
+      }),
+    );
     return await use(async <R>(tool: string, args: Record<string, unknown>) => {
       const result = await client.callTool({ name: tool, arguments: args }, { timeout: 120_000 });
       const first = result.content[0];
@@ -118,6 +138,11 @@ async function withServer<T>(server: string, use: (call: Call) => Promise<T>): P
       if (result.isError) throw new Failure(text || `${tool} failed`);
       return JSON.parse(text) as R;
     });
+  } catch (err) {
+    if (err instanceof Failure) throw err;
+    const reason = (err instanceof Error ? err.message : String(err)).slice(0, 300);
+    const hint = "cf-access-token" in headers ? ` Try: cloudflared access login ${server}` : "";
+    throw new Failure(`${server}/mcp did not answer as expected. ${reason}${hint}`);
   } finally {
     await client.close();
   }
