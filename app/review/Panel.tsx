@@ -8,7 +8,13 @@ export interface PanelQuestion extends QuestionRow {
 }
 
 const labelOf = (a: Annotation) =>
-  isGeneral(a) ? "General" : isDeletion(a) ? "Delete" : a.type === "replacement" ? "Replace" : "Comment";
+  isGeneral(a)
+    ? "General"
+    : isDeletion(a)
+      ? "Delete"
+      : a.type === "replacement"
+        ? "Replace"
+        : "Comment";
 
 const lineLabel = ({ lines, side }: Annotation) =>
   !lines
@@ -87,7 +93,11 @@ export function Panel({
     .map((s) => ({ ...s, annotations: s.annotations.filter(isNote) }))
     .filter((s) => s.annotations.length > 0);
 
-  const card = (annotation: Annotation, readOnly: boolean, where = !single || !!annotation.side) => (
+  const card = (
+    annotation: Annotation,
+    readOnly: boolean,
+    where = !single || !!annotation.side,
+  ) => (
     <Card
       key={annotation.id}
       annotation={annotation}
@@ -183,7 +193,10 @@ export function Panel({
           )
         )}
         {sent.length > 0 && (
-          <section aria-label="Sent" className="mt-3 flex flex-col gap-1.5 border-t border-dashed border-border pt-2">
+          <section
+            aria-label="Sent"
+            className="mt-3 flex flex-col gap-1.5 border-t border-dashed border-border pt-2"
+          >
             <h3 className={`px-1 ${mono}`}>Sent</h3>
             {sent.map((s) => (
               <div key={s.seq} className="flex flex-col gap-1.5">
@@ -194,7 +207,10 @@ export function Panel({
                 {s.annotations.map((a) => (
                   <div key={a.id}>
                     {!single && a.path && (
-                      <p className="truncate px-1 font-mono text-[10.5px] text-muted-foreground" title={a.path}>
+                      <p
+                        className="truncate px-1 font-mono text-[10.5px] text-muted-foreground"
+                        title={a.path}
+                      >
                         {a.path}
                       </p>
                     )}

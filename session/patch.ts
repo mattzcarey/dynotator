@@ -273,9 +273,7 @@ function diffPath(raw: string): string | null {
 function stripPrefixes(file: FilePatch): FilePatch {
   const { oldPath: o, newPath: n } = file;
   const prefixed = (o === null || o.startsWith("a/")) && (n === null || n.startsWith("b/"));
-  return prefixed
-    ? { ...file, oldPath: o && o.slice(2), newPath: n && n.slice(2) }
-    : file;
+  return prefixed ? { ...file, oldPath: o && o.slice(2), newPath: n && n.slice(2) } : file;
 }
 
 const strip = (path: string) => path.slice(2);

@@ -1,5 +1,13 @@
 import { describe, expect, test } from "vite-plus/test";
-import { diffLines, diffPlans, foldUnchanged } from "./diff";
+import {
+  diffLines,
+  diffPlans,
+  diffSelection,
+  foldUnchanged,
+  lineAt,
+  lineStarts,
+  locateText,
+} from "./diff";
 
 const shape = (oldText: string, newText: string) =>
   diffPlans(oldText, newText).map((e) =>
@@ -100,5 +108,73 @@ describe("foldUnchanged", () => {
     expect(foldUnchanged(diffLines("a\nb\nc\nd", "a\nb\nc\nd"))).toEqual([
       { hidden: diffLines("a\nb\nc\nd", "a\nb\nc\nd") },
     ]);
+  });
+});
+
+describe("a selection in a line diff", () => {
+  const OLD = "keep\nold one\nold two\ntail\n";
+  const NEW = "keep\nnew one\ntail\nadded\n";
+  const rows = diffLines(OLD, NEW);
+  const pick = (from: number, to: number) => rows.slice(from, to + 1);
+
+  test("removed lines alone are the old side, numbered in the compared version", () => {
+    // keep, -old one, -old two, +new one, tail, +added
+    expect(rows.map((r) => r.change[0])).toEqual(["u", "r", "r", "a", "u", "a"]);
+    expect(diffSelection(pick(1, 2), 4, 3)).toEqual({
+      side: "old",
+      lines: { start: 2, end: 3 },
+      original: "one\nold",
+      col: 4,
+    });
+  });
+
+  test("added and unchanged lines are the new side; removed rows in between are left out", () => {
+    expect(diffSelection(pick(3, 5), 0, 5)).toEqual({
+      side: "new",
+      lines: { start: 2, end: 4 },
+      original: "new one\ntail\nadded",
+      col: 0,
+    });
+    expect(diffSelection(pick(2, 4), 2, 2)).toEqual({
+      side: "new",
+      lines: { start: 2, end: 3 },
+      original: "new one\nta",
+      col: 0,
+    });
+  });
+
+  test("a selection ending at the start of a row does not take it; empty is nothing", () => {
+    expect(diffSelection(pick(0, 1), 0, 0)).toMatchObject({
+      side: "new",
+      lines: { start: 1, end: 1 },
+      original: "keep",
+    });
+    expect(diffSelection(pick(0, 0), 2, 2)).toBeNull();
+  });
+});
+
+describe("locating an annotation's text in a side's source", () => {
+  const text = "foo foo\nbar\nfoo\n";
+  const starts = lineStarts(text);
+
+  test("at its column when it still matches, else the first match within its lines", () => {
+    expect(starts).toEqual([0, 8, 12, 16]);
+    expect(locateText(text, { lines: { start: 1, end: 1 }, col: 4, original: "foo" })).toEqual([
+      4, 7,
+    ]);
+    expect(locateText(text, { lines: { start: 3, end: 3 }, col: 9, original: "foo" })).toEqual([
+      12, 15,
+    ]);
+    expect(locateText(text, { lines: { start: 2, end: 3 }, original: "bar\nfoo" })).toEqual([
+      8, 15,
+    ]);
+    expect(locateText(text, { lines: { start: 2, end: 2 }, original: "foo" })).toBeNull();
+    expect(locateText(text, { lines: { start: 9, end: 9 }, original: "foo" })).toBeNull();
+  });
+
+  test("lineAt is the inverse of lineStarts", () => {
+    expect(lineAt(starts, 0)).toEqual([1, 0]);
+    expect(lineAt(starts, 10)).toEqual([2, 2]);
+    expect(lineAt(starts, 12)).toEqual([3, 0]);
   });
 });

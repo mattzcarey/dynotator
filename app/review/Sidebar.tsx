@@ -13,6 +13,7 @@ export function Sidebar({
   blocks,
   version,
   versions,
+  hasBase,
   baseVersion,
   diffActive,
   onSelectBase,
@@ -25,6 +26,8 @@ export function Sidebar({
   blocks: Block[] | null;
   version: number;
   versions: VersionEntry[];
+  /** Version 0, the state before the change, can be compared against. */
+  hasBase: boolean;
   baseVersion: number | null;
   diffActive: boolean;
   onSelectBase: (version: number) => void;
@@ -34,7 +37,7 @@ export function Sidebar({
   const views: [View, string][] = [];
   if (files) views.push(["files", "Files"]);
   if (blocks || !files) views.push(["toc", "Contents"]);
-  if (versions.length > 1) views.push(["versions", "Versions"]);
+  if (versions.length > 1 || hasBase) views.push(["versions", "Versions"]);
   const [chosen, setView] = useState<View>(files ? "files" : "toc");
   const view = views.some(([id]) => id === chosen) ? chosen : views[0][0];
   const headings = useMemo(
@@ -91,29 +94,32 @@ export function Sidebar({
             >
               {diffActive ? "Hide changes" : "Show changes"}
             </button>
-            {versions
-              .filter((entry) => entry.version !== version)
-              .toReversed()
-              .map((entry) => (
-                <button
-                  type="button"
-                  key={entry.version}
-                  onClick={() => {
-                    onSelectBase(entry.version);
-                    onShowDiff(true);
-                    onNavigate();
-                  }}
-                  className={`flex justify-between rounded-md border px-2 py-1.5 text-left text-xs ${entry.version === baseVersion ? "border-primary/50 bg-primary/5" : "border-border hover:bg-muted"}`}
-                >
-                  <span>Compare with v{entry.version}</span>
-                  <span className="text-muted-foreground">
-                    {new Date(entry.timestamp).toLocaleTimeString([], {
+            {[
+              ...versions.filter((entry) => entry.version < version).toReversed(),
+              ...(hasBase ? [{ version: 0, timestamp: "" }] : []),
+            ].map((entry) => (
+              <button
+                type="button"
+                key={entry.version}
+                onClick={() => {
+                  onSelectBase(entry.version);
+                  onShowDiff(true);
+                  onNavigate();
+                }}
+                className={`flex justify-between rounded-md border px-2 py-1.5 text-left text-xs ${entry.version === baseVersion ? "border-primary/50 bg-primary/5" : "border-border hover:bg-muted"}`}
+              >
+                <span>
+                  {entry.version === 0 ? "Compare with the base" : `Compare with v${entry.version}`}
+                </span>
+                <span className="text-muted-foreground">
+                  {entry.timestamp &&
+                    new Date(entry.timestamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
-                  </span>
-                </button>
-              ))}
+                </span>
+              </button>
+            ))}
           </div>
         )}
       </div>

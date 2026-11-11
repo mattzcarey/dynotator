@@ -73,28 +73,24 @@ describe("parseFiles", () => {
 
 describe("parseInit", () => {
   const files = { "README.md": "# x" };
-
   test("passes on only the known fields", () => {
-    expect(parseInit({ mode: "plan", files, origin: "cli", title: "" })).toEqual({
-      mode: "plan",
-      files,
-    });
-    expect(parseInit({ mode: "annotate", files, title: "T", open: "README.md" })).toEqual({
-      mode: "annotate",
+    expect(parseInit({ mode: "plan", files, origin: "cli", title: "" })).toEqual({ files });
+    expect(parseInit({ files, title: "T", open: "README.md", patch: "p" })).toEqual({
       files,
       title: "T",
       open: "README.md",
+      patch: "p",
     });
   });
-
   test.each([
-    [{ mode: "review", files }, /mode/],
-    [{ mode: "plan" }, /files/],
-    [{ mode: "plan", markdown: "# x" }, /files/],
-    [{ mode: "plan", files, title: 5 }, /title/],
-    [{ mode: "plan", files, open: "nope.md" }, /open/],
-    [{ mode: "plan", files, open: "toString" }, /open/],
-    [{ mode: "plan", files, open: 1 }, /open/],
+    [{}, /files/],
+    [{ markdown: "# x" }, /files/],
+    [{ files, title: 5 }, /title/],
+    [{ files, open: "nope.md" }, /open/],
+    [{ files, open: "toString" }, /open/],
+    [{ files, open: 1 }, /open/],
+    [{ files, patch: 1 }, /patch/],
+    [{ files, patch: "x".repeat(MAX_TOTAL_BYTES) }, /files and patch exceed/],
     [null, /Expected/],
   ])("rejects %j", (init, message) => {
     expect(() => parseInit(init)).toThrow(message);

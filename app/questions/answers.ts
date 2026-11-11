@@ -37,9 +37,7 @@ export function upsertAnswer(
   answer: QuestionAnswer | null,
   key: string,
 ): Annotation[] {
-  const index = annotations.findIndex(
-    (a) => a.path === path && a.questionAnswer?.key === key,
-  );
+  const index = annotations.findIndex((a) => a.path === path && a.questionAnswer?.key === key);
   if (!answer || isEmptyAnswer(answer)) {
     return index === -1 ? annotations : annotations.filter((_, i) => i !== index);
   }

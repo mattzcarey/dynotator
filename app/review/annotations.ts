@@ -53,7 +53,14 @@ export interface WireAnnotation extends Omit<Annotation, keyof Private> {
   ui?: Private;
 }
 
-const PRIVATE_KEYS = ["blockId", "col", "against", "startMeta", "endMeta", "questionAnswer"] as const;
+const PRIVATE_KEYS = [
+  "blockId",
+  "col",
+  "against",
+  "startMeta",
+  "endMeta",
+  "questionAnswer",
+] as const;
 
 export function toWire(annotation: Annotation): WireAnnotation {
   const { id, path, type, lines, side, original, text, answer } = annotation;

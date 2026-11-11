@@ -27,7 +27,9 @@ const oneLine = (text: string) => text.replace(/\s+/g, " ").trim();
  * structure does not say: the text does.
  */
 export const removedFrom = (against: number | undefined): string =>
-  against === undefined || against === 0 ? "removed from the base" : `removed from version ${against}`;
+  against === undefined || against === 0
+    ? "removed from the base"
+    : `removed from version ${against}`;
 
 /** `line 3`, `lines 3-4`; removed lines say so, in parentheses or (`inline`) after a comma. */
 const lineLabel = ({ lines, side, against }: Annotation, inline = false): string => {

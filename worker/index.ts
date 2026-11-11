@@ -32,7 +32,9 @@ export default {
       case "session-api":
         return sessions
           .getByName(route.id)
-          .fetch(asReviewer(request, new URL(route.path + url.search, url), await reviewerEmail(ctx)));
+          .fetch(
+            asReviewer(request, new URL(route.path + url.search, url), await reviewerEmail(ctx)),
+          );
       case "api-not-found":
         return notFound(url);
       case "asset":

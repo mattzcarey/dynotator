@@ -155,7 +155,8 @@ export function Annotator({
       wrapTag: "mark",
       style: { className: "annotation-highlight" },
     });
-    highlighter.hooks.Render.UUID.tap(() => nextIdRef.current ?? undefined);
+    // Typed as returning a string, but undefined is what makes it fall back to a random id.
+    highlighter.hooks.Render.UUID.tap((() => nextIdRef.current ?? undefined) as () => string);
     highlighter.on(Highlighter.event.CLICK, ({ id }: { id: string }) => select(id));
     highlighterRef.current = highlighter;
     const marks = paintedRef.current;

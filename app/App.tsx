@@ -1,35 +1,29 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useState, type ReactNode } from "react";
 import { CodeView } from "./files/CodeView";
 import { FileTree } from "./files/FileTree";
-import {
-  formatHash,
-  isMarkdown,
-  languageFor,
-  parseHash,
-  resolveLink,
-  type Location,
-} from "./files/paths";
+import { formatHash, isMarkdown, languageFor, resolveLink, type Location } from "./files/paths";
 import { buildTree, countByPath, fileOrder } from "./files/tree";
-import { loadFile, useFile } from "./files/useFile";
-import { parseMarkdownToBlocks, type Block } from "./markdown/blocks";
+import { useFile } from "./files/useFile";
+import { useHashLocation } from "./files/useHashLocation";
 import { LinkResolver } from "./markdown/links";
 import { focusQuestionCard } from "./questions/QuestionCard";
-import { questionRows, upsertAnswer } from "./questions/answers";
-import { indexQuestions } from "./questions/questions";
-import { globalComment, type Annotation } from "./review/annotations";
+import { upsertAnswer } from "./questions/answers";
+import { MARKDOWN_MAX_BYTES, blocksOf, useQuestions } from "./questions/useQuestions";
+import { globalComment, isNote, type Annotation } from "./review/annotations";
 import { Composer } from "./review/Composer";
-import { DiffView } from "./review/DiffView";
+import { DiffView, type Notes } from "./review/DiffView";
 import { Document } from "./review/Document";
-import type { FeedbackInput } from "./review/feedback";
+import { answersInForce, reviewState, unsent } from "./review/events";
+import { Header } from "./review/Header";
 import { Notices, useNotices } from "./review/Notices";
-import { Panel, type PanelQuestion } from "./review/Panel";
+import { Panel } from "./review/Panel";
 import { Sidebar } from "./review/Sidebar";
-import { useDecision, type Outcome } from "./review/useDecision";
 import { useDraft } from "./review/useDraft";
-import { useRevision } from "./review/useRevision";
+import { useEvents } from "./review/useEvents";
 import { useSession, type Session } from "./review/useSession";
+import { useSubmit } from "./review/useSubmit";
 import { useVersions } from "./review/useVersions";
-import { ModeToggle, ThemeProvider } from "./theme";
+import { ThemeProvider } from "./theme";
 
 export default function App() {
   const state = useSession();
@@ -48,55 +42,8 @@ export default function App() {
   );
 }
 
-const button =
-  "h-8 shrink-0 rounded-full px-3 text-xs font-medium transition-colors disabled:opacity-50";
-
-/** A larger markdown file shows as source: rendering it would stall the page. */
-const MARKDOWN_MAX_BYTES = 512 * 1024;
-
-/**
- * In a small review the markdown files are read in the background once the first file is on
- * screen, so the panel's questions span every file; a larger one finds questions as files open.
- */
-const PREFETCH = { maxFiles: 200, maxMarkdown: 20, maxBytes: 128 * 1024 };
-
-const blockCache = new Map<string, Block[]>();
-function blocksOf(content: string): Block[] {
-  let blocks = blockCache.get(content);
-  if (!blocks) {
-    blocks = parseMarkdownToBlocks(content);
-    blockCache.set(content, blocks);
-  }
-  return blocks;
-}
-
-/**
- * The location in the hash (`#/path:L1-2`, `#/path#anchor`), or the review's first file. The
- * scroll target is a new object on every hash change, a repeated one included.
- */
-function useHashLocation(fallback: string, has: (path: string) => boolean) {
-  const [hash, setHash] = useState(() => ({ value: location.hash, seq: 0 }));
-  useEffect(() => {
-    const onChange = () => setHash(({ seq }) => ({ value: location.hash, seq: seq + 1 }));
-    window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
-  }, []);
-  // A new object per hash change: the views scroll when it changes.
-  const parsed = useMemo(() => parseHash(hash.value), [hash]);
-  const known = parsed && has(parsed.path) ? parsed : null;
-  const at: Location = known ?? { path: fallback };
-  const target = known && (known.lines || known.anchor) ? known : null;
-  const navigate = useCallback((next: Location) => {
-    const value = formatHash(next);
-    if (location.hash === value) window.dispatchEvent(new HashChangeEvent("hashchange"));
-    else location.hash = value;
-  }, []);
-  return { at, target, navigate };
-}
-
 function Review({ session }: { session: Session }) {
-  const { mode, version, files } = session;
-  const plan = mode === "plan";
+  const { version, files } = session;
   const single = files.length <= 1;
   const tree = useMemo(() => buildTree(files), [files]);
   const order = useMemo(() => fileOrder(tree), [tree]);
@@ -115,135 +62,94 @@ function Review({ session }: { session: Session }) {
     [content, markdown],
   );
 
-  // Markdown files read so far, for the questions across files.
-  const [readMarkdown, setReadMarkdown] = useState<ReadonlyMap<string, string>>(new Map());
-  const remember = useCallback((file: string, text: string) => {
-    if (!isMarkdown(file) || text.length > MARKDOWN_MAX_BYTES) return;
-    setReadMarkdown((prev) => (prev.get(file) === text ? prev : new Map(prev).set(file, text)));
-  }, []);
-  const firstShown = content !== null;
-  useEffect(() => {
-    // Served from the cache by now: this only records the open file as read.
-    if (firstShown && path)
-      loadFile(path, version).then(
-        (text) => remember(path, text),
-        () => {},
-      );
-  }, [firstShown, path, remember, version]);
-  useEffect(() => {
-    if (!firstShown || single || files.length > PREFETCH.maxFiles) return;
-    files
-      .filter((f) => isMarkdown(f.path) && f.size <= PREFETCH.maxBytes)
-      .slice(0, PREFETCH.maxMarkdown)
-      .forEach((f) =>
-        loadFile(f.path, version).then(
-          (text) => remember(f.path, text),
-          () => {},
-        ),
-      );
-  }, [files, firstShown, remember, single, version]);
-
   const title = useMemo(
     () =>
       session.title ??
       (single
         ? (blocks?.find((block) => block.type === "heading")?.content ??
-          (isMarkdown(path) || !path ? (plan ? "Plan" : "Document") : path))
-        : plan
-          ? "Plan"
-          : "Review"),
-    [blocks, path, plan, session.title, single],
+          (isMarkdown(path) || !path ? "Document" : path))
+        : "Review"),
+    [blocks, path, session.title, single],
   );
   useEffect(() => {
     document.title = `${title} · Dynotator`;
   }, [title]);
 
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  // The page's annotations on this version. Those whose id is in the log are sent; the rest
+  // are editable, saved as the draft, and what the next submission carries.
+  const [mine, setMine] = useState<Annotation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth >= 1024);
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1280);
-  const [composer, setComposer] = useState<"global" | "changes" | null>(null);
-  const [decided, setDecided] = useState(false);
+  const [composer, setComposer] = useState<"global" | "feedback" | null>(null);
   const [diffPath, setDiffPath] = useState<string | null>(null);
 
   const [notices, notify] = useNotices();
-  const draft = useDraft({ annotations, enabled: !decided, notify, onRestore: setAnnotations });
-  const { cancelPending } = draft;
-
-  const getFeedback = async (list: Annotation[]): Promise<FeedbackInput> => {
-    // An answer restored from a draft may sit in a file not read since the reload.
-    const texts = new Map(readMarkdown);
-    const unread = new Set(
-      list.filter((a) => a.questionAnswer && a.path && !texts.has(a.path)).map((a) => a.path),
-    );
-    await Promise.all(
-      [...unread].map((file) =>
-        loadFile(file, version).then(
-          (text) => texts.set(file, text),
-          () => {},
-        ),
-      ),
-    );
-    const questions = order.flatMap((file) => {
-      const text = texts.get(file);
-      return text === undefined
-        ? []
-        : indexQuestions(blocksOf(text)).map((q) => ({ ...q, path: file }));
-    });
-    return { mode, files: order, questions, annotations: list };
+  const load = () => {
+    draft.flush();
+    window.location.reload();
   };
-
-  const decision = useDecision({
+  const log = useEvents({ version, initial: session.events, notify, onLoad: load });
+  const { closed, latest, submissions, sent, sentIds } = useMemo(
+    () => reviewState(log.events, version),
+    [log.events, version],
+  );
+  const editable = useMemo(() => unsent(mine, sentIds), [mine, sentIds]);
+  const draft = useDraft({
+    annotations: editable,
+    enabled: !closed,
+    onRestore: (restored) =>
+      setMine((prev) => [...prev, ...restored.filter((a) => !prev.some((p) => p.id === a.id))]),
+  });
+  const answers = useMemo(() => answersInForce(editable, sent), [editable, sent]);
+  const all = useMemo(() => [...editable, ...sent], [editable, sent]);
+  const { questions, describe } = useQuestions({
+    files,
+    order,
+    version,
+    path,
+    shown: content !== null,
+    answers,
+  });
+  const { busy, submit } = useSubmit({
     revision: version,
-    getFeedback,
-    getDraftGeneration: draft.getDraftGeneration,
-    onDecided: useCallback(() => {
-      cancelPending();
-      setDecided(true);
-    }, [cancelPending]),
+    describe,
+    refresh: log.refresh,
+    onLoad: load,
     notify,
   });
-  useRevision({
-    revision: version,
-    denied: decision.outcome === "changes",
-    active: !decision.outcome || decision.outcome === "changes",
-    notify,
-  });
-  const versions = useVersions(version, session.versions);
+  const versions = useVersions(version, session.versions, session.base);
 
-  const fileAnnotations = useMemo(
-    () => annotations.filter((a) => a.path === path),
-    [annotations, path],
-  );
-  const questions = useMemo<PanelQuestion[]>(
-    () =>
-      order.flatMap((file) => {
-        const text = readMarkdown.get(file);
-        if (text === undefined) return [];
-        const own = annotations.filter((a) => a.path === file);
-        return questionRows(blocksOf(text), own).map((row) => ({ ...row, path: file }));
-      }),
-    [annotations, order, readMarkdown],
-  );
-  const comments = annotations.filter((a) => a.questionAnswer == null);
+  const notes = editable.filter(isNote);
   const counts = useMemo(() => {
     const perFile = new Map<string, number>();
-    for (const a of annotations) {
-      if (a.questionAnswer == null && a.path) perFile.set(a.path, (perFile.get(a.path) ?? 0) + 1);
-    }
+    for (const a of all)
+      if (isNote(a) && a.path) perFile.set(a.path, (perFile.get(a.path) ?? 0) + 1);
     return countByPath(perFile);
-  }, [annotations]);
-  const answersOnly = plan && comments.length === 0 && annotations.length > 0;
+  }, [all]);
 
   const add = (annotation: Annotation) => {
-    setAnnotations((prev) => [...prev, annotation]);
+    setMine((prev) => [...prev, annotation]);
     setSelectedId(annotation.id);
   };
-  const requestChanges = (note: string) => {
-    const withNote = note ? [...annotations, globalComment(note)] : annotations;
-    setAnnotations(withNote);
-    void decision.requestChanges(withNote, answersOnly && !note);
+  const sendFeedback = () => {
+    if (editable.length === 0) setComposer("feedback");
+    else void submit("feedback", editable);
   };
+  const onSendKey = useEffectEvent(() => !closed && sendFeedback());
+  useEffect(() => {
+    // Mod+Enter sends feedback.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey) || e.defaultPrevented) return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest("textarea, input, [contenteditable='true']")) return;
+      e.preventDefault();
+      onSendKey();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const open = (next: Location) => {
     versions.show(false);
     navigate(next);
@@ -256,30 +162,24 @@ function Review({ session }: { session: Session }) {
     },
     [has, path],
   );
-
-  // Mod+Enter: the primary decision.
-  const primary = plan
-    ? () => decision.approve(annotations)
-    : () => decision.sendFeedback(annotations);
-  const onPrimaryKey = useEffectEvent(primary);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey) || e.defaultPrevented) return;
-      const el = e.target as HTMLElement | null;
-      if (el?.closest("textarea, input, [contenteditable='true']")) return;
-      e.preventDefault();
-      void onPrimaryKey();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  if (decision.outcome) return <Done outcome={decision.outcome} plan={plan} />;
+  const select = (id: string | null) => {
+    setSelectedId(id);
+    if (id) setPanelOpen(true);
+  };
+  const viewNotes: Notes = {
+    annotations: all,
+    sentIds,
+    selectedId,
+    readOnly: !!closed,
+    onAdd: add,
+    onSelect: select,
+  };
 
   const changed = versions.changes.status === "ready" ? versions.changes.files : [];
   const diffFile =
     changed.find((f) => f.path === diffPath) ?? changed.find((f) => f.path === path) ?? changed[0];
-  const wide = versions.active ? !!diffFile && !isMarkdown(diffFile.path) : !markdown;
+  const wide = versions.active || !markdown;
+  const fileNotes = all.filter((a) => a.path === path && a.side !== "old");
 
   let body: ReactNode;
   if (versions.active && versions.base !== null) {
@@ -291,7 +191,10 @@ function Review({ session }: { session: Session }) {
           files={changed}
           showList={!single || changed.length > 1}
           selected={diffFile ?? null}
+          sourceMarkdown={session.base}
+          notes={viewNotes}
           onSelect={setDiffPath}
+          onOpenFile={(next) => open({ path: next })}
         />
       ) : (
         <Quiet>
@@ -322,17 +225,18 @@ function Review({ session }: { session: Session }) {
           key={path}
           path={path}
           blocks={blocks}
-          annotations={fileAnnotations}
+          annotations={fileNotes}
+          answers={answers.filter((a) => a.path === path)}
+          sentIds={sentIds}
           selectedId={selectedId}
-          readOnly={decided}
+          readOnly={!!closed}
           target={target}
           onAdd={add}
-          onSelect={(id) => {
-            setSelectedId(id);
-            if (id) setPanelOpen(true);
-          }}
-          onAnswerQuestion={(blockId, answer, key) =>
-            setAnnotations((prev) => upsertAnswer(prev, path, blockId, answer, key))
+          onSelect={select}
+          onAnswerQuestion={(blockId, lines, answer, key) =>
+            setMine((prev) =>
+              upsertAnswer(unsent(prev, sentIds), path, blockId, lines, answer, key),
+            )
           }
         />
       </LinkResolver.Provider>
@@ -344,15 +248,13 @@ function Review({ session }: { session: Session }) {
         path={path}
         content={opened.content}
         language={isMarkdown(path) ? undefined : languageFor(path)}
-        annotations={fileAnnotations}
+        annotations={fileNotes}
+        sentIds={sentIds}
         selectedId={selectedId}
-        readOnly={decided}
+        readOnly={!!closed}
         target={target}
         onAdd={add}
-        onSelect={(id) => {
-          setSelectedId(id);
-          if (id) setPanelOpen(true);
-        }}
+        onSelect={select}
         onPickLines={(lines) => navigate({ path, lines })}
       />
     );
@@ -360,90 +262,20 @@ function Review({ session }: { session: Session }) {
 
   return (
     <div className="flex h-dvh flex-col bg-background">
-      <header className="flex h-12 shrink-0 items-center gap-1.5 border-b border-border bg-card px-2 md:gap-2 md:px-4">
-        <button
-          type="button"
-          aria-label={single ? "Contents" : "Files"}
-          aria-pressed={sidebarOpen}
-          onClick={() => setSidebarOpen((was) => !was)}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-        >
-          <svg
-            className="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h10" />
-          </svg>
-        </button>
-        <span className="hidden shrink-0 items-center gap-1.5 text-sm font-semibold sm:flex">
-          <span aria-hidden="true">🦖🥔</span>
-          Dynotator
-          <span aria-hidden="true" className="font-normal text-muted-foreground">
-            /
-          </span>
-        </span>
-        <span className="min-w-0 flex-1 truncate text-sm font-medium" title={title}>
-          {title}
-        </span>
-        <ModeToggle />
-        <button
-          type="button"
-          aria-pressed={panelOpen}
-          onClick={() => setPanelOpen((was) => !was)}
-          className={`${button} border border-border hover:bg-muted`}
-        >
-          Notes{comments.length > 0 && ` ${comments.length}`}
-        </button>
-        {plan ? (
-          <>
-            <button
-              type="button"
-              disabled={decision.busy}
-              onClick={() => setComposer("changes")}
-              className={`${button} border border-border hover:bg-muted`}
-            >
-              {answersOnly ? (
-                "Send answers"
-              ) : (
-                <>
-                  <span className="sm:hidden">Changes</span>
-                  <span className="hidden sm:inline">Request changes</span>
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              disabled={decision.busy}
-              onClick={primary}
-              className={`${button} bg-primary text-primary-foreground`}
-            >
-              Approve
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              disabled={decision.busy}
-              onClick={decision.close}
-              className={`${button} text-muted-foreground hover:bg-muted`}
-            >
-              Close
-            </button>
-            <button
-              type="button"
-              disabled={decision.busy}
-              onClick={primary}
-              className={`${button} bg-primary text-primary-foreground`}
-            >
-              Send feedback
-            </button>
-          </>
-        )}
-      </header>
+      <Header
+        title={title}
+        single={single}
+        sidebarOpen={sidebarOpen}
+        panelOpen={panelOpen}
+        notes={notes.length}
+        latest={latest}
+        closed={closed}
+        busy={busy}
+        onToggleSidebar={() => setSidebarOpen((was) => !was)}
+        onTogglePanel={() => setPanelOpen((was) => !was)}
+        onSendFeedback={sendFeedback}
+        onApprove={() => void submit("approve", editable)}
+      />
 
       <div className="relative flex min-h-0 flex-1">
         {(sidebarOpen || panelOpen) && (
@@ -478,6 +310,7 @@ function Review({ session }: { session: Session }) {
               blocks={versions.active ? null : blocks}
               version={version}
               versions={session.versions}
+              hasBase={session.base}
               baseVersion={versions.base}
               diffActive={versions.active}
               onSelectBase={versions.selectBase}
@@ -491,28 +324,39 @@ function Review({ session }: { session: Session }) {
           <div
             className={`mx-auto px-2 py-3 md:px-6 md:py-8 ${wide ? "max-w-[1200px]" : "max-w-[860px]"}`}
           >
-            {!single && !versions.active && path && <PathBar path={path} />}
+            {!versions.active && (path || versions.base !== null) && (
+              <PathBar
+                path={single ? null : path}
+                onShowChanges={versions.base !== null ? () => versions.show(true) : null}
+              />
+            )}
             {body}
           </div>
         </main>
         {panelOpen && (
           <aside className="absolute inset-y-0 right-0 z-30 w-[min(22rem,100%)] border-l border-border bg-card shadow-xl lg:static lg:w-80 lg:shadow-none">
             <Panel
-              annotations={annotations}
+              editable={editable}
+              submissions={submissions}
+              approved={latest?.type === "approved"}
               questions={questions}
               files={order}
               current={path}
               selectedId={selectedId}
-              readOnly={decided}
+              closed={!!closed}
               onSelect={(annotation) => {
                 setSelectedId(annotation.id);
-                if (annotation.path && (annotation.path !== path || versions.active))
+                if (!annotation.path) return;
+                if (annotation.side && versions.base !== null) {
+                  setDiffPath(annotation.path);
+                  versions.show(true);
+                } else if (annotation.path !== path || versions.active)
                   open({ path: annotation.path });
               }}
               onOpenFile={(next) => open({ path: next })}
-              onDelete={(id) => setAnnotations((prev) => prev.filter((a) => a.id !== id))}
+              onDelete={(id) => setMine((prev) => prev.filter((a) => a.id !== id))}
               onEdit={(id, text) =>
-                setAnnotations((prev) => prev.map((a) => (a.id === id ? { ...a, text } : a)))
+                setMine((prev) => prev.map((a) => (a.id === id ? { ...a, text } : a)))
               }
               onSelectQuestion={(row) => {
                 if (row.path !== path || versions.active) open({ path: row.path });
@@ -536,15 +380,16 @@ function Review({ session }: { session: Session }) {
           }}
         />
       )}
-      {composer === "changes" && (
+      {composer === "feedback" && (
         <Composer
-          title={answersOnly ? "Send answers" : "Request changes"}
+          title="Send feedback"
           saveLabel="Send"
-          allowEmpty={annotations.length > 0}
           onCancel={() => setComposer(null)}
-          onSave={(note) => {
+          onSave={(text) => {
+            const note = globalComment(text);
             setComposer(null);
-            requestChanges(note);
+            setMine((prev) => [...prev, note]);
+            void submit("feedback", [...editable, note]);
           }}
         />
       )}
@@ -569,41 +414,40 @@ function Quiet({ children }: { children: ReactNode }) {
   );
 }
 
-function PathBar({ path }: { path: string }) {
-  const parts = path.split("/");
+/** The open file's path, and the way back to the changes when there are some. */
+function PathBar({
+  path,
+  onShowChanges,
+}: {
+  path: string | null;
+  onShowChanges: (() => void) | null;
+}) {
+  const parts = path?.split("/") ?? [];
   return (
-    <p
-      className="mb-2 truncate px-1 font-mono text-[11px] tracking-[0.04em] text-muted-foreground"
-      title={path}
-    >
-      {parts.slice(0, -1).map((part, i) => (
-        <span key={i}>
-          {part}
-          <span className="px-0.5 text-border-strong">/</span>
-        </span>
-      ))}
-      <span className="text-foreground">{parts[parts.length - 1]}</span>
-    </p>
-  );
-}
-
-const DONE: Record<Outcome, [string, string]> = {
-  approved: ["Approved", "The agent will proceed."],
-  changes: ["Changes requested", "The agent will revise. The new version opens here."],
-  sent: ["Feedback sent", "The agent will address your feedback."],
-  done: ["Done", "Nothing was sent."],
-  closed: ["Closed", "The session was closed without feedback."],
-  taken: ["Already decided", "This review was decided in another window."],
-};
-
-function Done({ outcome, plan }: { outcome: Outcome; plan: boolean }) {
-  const [title, subtitle] = DONE[outcome];
-  return (
-    <div className="flex h-dvh flex-col items-center justify-center gap-2 bg-background p-6 text-center">
-      <h1 className="text-xl font-semibold">
-        {plan && outcome === "approved" ? "Plan approved" : title}
-      </h1>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
+    <div className="mb-2 flex items-center gap-2 px-1">
+      {onShowChanges && (
+        <button
+          type="button"
+          onClick={onShowChanges}
+          className="h-6 shrink-0 rounded-full border border-primary/40 px-2.5 font-mono text-[11px] tracking-[0.04em] text-primary hover:bg-primary/5"
+        >
+          ← Changes
+        </button>
+      )}
+      {path && (
+        <p
+          className="min-w-0 truncate font-mono text-[11px] tracking-[0.04em] text-muted-foreground"
+          title={path}
+        >
+          {parts.slice(0, -1).map((part, i) => (
+            <span key={i}>
+              {part}
+              <span className="px-0.5 text-border-strong">/</span>
+            </span>
+          ))}
+          <span className="text-foreground">{parts[parts.length - 1]}</span>
+        </p>
+      )}
     </div>
   );
 }

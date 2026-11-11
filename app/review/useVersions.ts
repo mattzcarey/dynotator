@@ -12,14 +12,19 @@ type Changes =
   | { status: "error"; message: string };
 
 /**
- * The version on screen against a chosen earlier one (the previous by default): whether the
- * changes are shown, and which files changed (`/api/changes`), fetched when first shown.
+ * The version on screen against a chosen earlier one: whether the changes are shown, and which
+ * files changed (`/api/changes`), fetched when first shown. A change review compares against
+ * version 0, the state before the change, and opens on it; otherwise the previous version.
  */
-export function useVersions(version: number, versions: readonly { version: number }[]) {
+export function useVersions(
+  version: number,
+  versions: readonly { version: number }[],
+  hasBase: boolean,
+) {
   const [base, setBase] = useState<number | null>(() =>
-    versions.some((v) => v.version === version - 1) ? version - 1 : null,
+    hasBase ? 0 : versions.some((v) => v.version === version - 1) ? version - 1 : null,
   );
-  const [active, setActive] = useState(false);
+  const [active, setActive] = useState(hasBase);
   const [loaded, setLoaded] = useState<ReadonlyMap<number, Changes>>(new Map());
   const requested = useRef(new Set<number>());
 

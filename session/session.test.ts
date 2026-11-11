@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
-import type { Files } from "./files";
+import { MAX_ANNOTATIONS } from "./events";
+import type { Files, ReviewInit } from "./files";
+import { REVIEWER_HEADER } from "./http";
 import type { Fs } from "./review";
 import { Session } from "./session";
 import { MemoryStore } from "./store";
@@ -33,15 +35,22 @@ class MemoryFs implements Fs {
 }
 
 const V1: Files = { "README.md": "# v1", "src/a.ts": "a", "src/deep/b.ts": "b" };
+const V2: Files = { "README.md": "# v2", "src/a.ts": "a", "src/c.ts": "c" };
 
-async function session(init: { mode?: "plan" | "annotate"; title?: string; open?: string } = {}) {
+async function session(init: Partial<ReviewInit> = {}) {
   const fs = new MemoryFs();
   const server = new Session(new MemoryStore(), fs);
-  await server.init({ mode: "plan", files: V1, ...init });
-  const call = async (method: string, path: string, body?: unknown) => {
+  await server.init({ files: V1, ...init });
+  const call = async (
+    method: string,
+    path: string,
+    body?: unknown,
+    headers?: Record<string, string>,
+  ) => {
     const res = await server.fetch(
       new Request(`https://facet${path}`, {
         method,
+        headers,
         body:
           body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
       }),
@@ -50,53 +59,46 @@ async function session(init: { mode?: "plan" | "annotate"; title?: string; open?
     // oxlint-disable-next-line typescript/no-explicit-any
     return { status: res.status, json: (await res.json()) as any };
   };
-  return { server, call, fs };
+  const types = async () => (await server.events()).map((e) => e.type);
+  return { server, call, fs, types };
 }
 
+const note = (id: string, path = "README.md") => ({ id, path, type: "comment", text: id });
+
 describe("review payload", () => {
-  test("plan mode", async () => {
+  test("title, open path, versions, base and closed", async () => {
     const { call } = await session({ title: "T" });
     const { status, json } = await call("GET", "/api/review");
     expect(status).toBe(200);
     expect(json).toEqual({
-      mode: "plan",
       title: "T",
       open: "README.md",
       version: 1,
       versions: [{ version: 1, timestamp: json.versions[0].timestamp }],
+      base: false,
+      closed: false,
     });
     expect(Date.parse(json.versions[0].timestamp)).not.toBeNaN();
-    expect((await call("GET", "/api/revision")).json).toEqual({ revision: 1 });
+    expect((await call("GET", "/api/revision")).json).toEqual({ revision: 1, seq: 0 });
   });
 
-  test("annotate mode has a revision too, and keeps the requested open path", async () => {
-    const { call } = await session({ mode: "annotate", open: "src/a.ts" });
-    expect((await call("GET", "/api/review")).json).toMatchObject({
-      mode: "annotate",
-      open: "src/a.ts",
-    });
-    expect((await call("GET", "/api/revision")).json).toEqual({ revision: 1 });
+  test("keeps the requested open path", async () => {
+    const { call } = await session({ open: "src/a.ts" });
+    expect((await call("GET", "/api/review")).json.open).toBe("src/a.ts");
   });
 
-  test("unknown and removed paths and the other mode's decisions are JSON 404s", async () => {
-    const plan = await session();
-    expect(await plan.call("GET", "/api/nope")).toEqual({
+  test("unknown and removed routes are JSON 404s", async () => {
+    const { call, types } = await session();
+    expect(await call("GET", "/api/nope")).toEqual({
       status: 404,
       json: { error: "Not found", path: "/api/nope" },
     });
-    for (const path of ["/api/plan", "/api/plan/revision", "/api/plan/versions"]) {
-      expect((await plan.call("GET", path)).status).toBe(404);
+    for (const path of ["/api/deny", "/api/exit", "/api/plan", "/api/upload", "/api/revise"]) {
+      expect((await call("POST", path, {})).status).toBe(404);
     }
-    expect((await plan.call("GET", "/api/plan/version?v=1")).status).toBe(404);
-    for (const path of ["/api/feedback", "/api/exit", "/api/upload", "/api/revise"]) {
-      expect((await plan.call("POST", path, {})).status).toBe(404);
-    }
-    const annotate = await session({ mode: "annotate" });
-    for (const path of ["/api/approve", "/api/deny"]) {
-      expect((await annotate.call("POST", path, {})).status).toBe(404);
-    }
-    expect(plan.server.decision()).toBeNull();
-    expect(annotate.server.decision()).toBeNull();
+    expect((await call("DELETE", "/api/draft?generation=1")).status).toBe(404);
+    expect((await call("GET", "/api/raw?path=README.md")).status).toBe(404);
+    expect(await types()).toEqual([]);
   });
 
   test("an uninitialised facet answers 404", async () => {
@@ -106,7 +108,7 @@ describe("review payload", () => {
 
   test("init refuses to run twice", async () => {
     const { server } = await session();
-    await expect(server.init({ mode: "plan", files: V1 })).rejects.toThrow();
+    await expect(server.init({ files: V1 })).rejects.toThrow();
   });
 });
 
@@ -157,140 +159,339 @@ describe("files", () => {
     expect((await call("GET", "/api/file?path=src")).status).toBe(404);
     expect((await call("GET", "/api/file?path=README.md&v=2")).status).toBe(404);
     expect((await call("GET", "/api/files?v=9")).status).toBe(404);
+    // Without a patch there is no version 0.
+    expect((await call("GET", "/api/files?v=0")).status).toBe(404);
+    expect((await call("GET", "/api/changes")).status).toBe(404);
     for (const bad of ["../x", "/etc/passwd", "src/../README.md", "a//b", "./a", ""]) {
       const res = await call("GET", `/api/file?path=${encodeURIComponent(bad)}`);
       expect(res.status).toBe(400);
     }
     expect((await call("GET", "/api/file")).status).toBe(400);
-    for (const v of ["0", "-1", "x", "1.5", ""]) {
+    for (const v of ["-1", "x", "1.5", ""]) {
       expect((await call("GET", `/api/files?v=${v}`)).status).toBe(400);
     }
   });
 });
 
-describe("decisions", () => {
-  test("plan approve keeps notes; empty notes are omitted", async () => {
-    const a = await session();
-    expect(await a.call("POST", "/api/approve", { feedback: "nit", revision: 1 })).toEqual({
-      status: 200,
-      json: { ok: true },
-    });
-    const d = a.server.decision();
-    expect(d).toEqual({ approved: true, feedback: "nit", version: 1, decidedAt: d!.decidedAt });
-    expect(Date.parse(d!.decidedAt)).not.toBeNaN();
+describe("a review of a patch", () => {
+  const files = { "PLAN.md": "# Plan\n", "src/a.ts": "const a = 2;\n", "src/new.ts": "n\n" };
+  const patch = [
+    "diff --git a/src/a.ts b/src/a.ts",
+    "--- a/src/a.ts",
+    "+++ b/src/a.ts",
+    "@@ -1 +1 @@",
+    "-const a = 1;",
+    "+const a = 2;",
+    "diff --git a/src/new.ts b/src/new.ts",
+    "new file mode 100644",
+    "--- /dev/null",
+    "+++ b/src/new.ts",
+    "@@ -0,0 +1 @@",
+    "+n",
+    "diff --git a/src/old.ts b/src/old.ts",
+    "deleted file mode 100644",
+    "--- a/src/old.ts",
+    "+++ /dev/null",
+    "@@ -1 +0,0 @@",
+    "-o",
+    "",
+  ].join("\n");
 
-    const b = await session();
-    await b.call("POST", "/api/approve", { feedback: "" });
-    expect(Object.keys(b.server.decision()!).toSorted()).toEqual([
-      "approved",
-      "decidedAt",
-      "version",
+  test("stores the state before the patch as version 0, outside versions", async () => {
+    const { call, fs } = await session({ files, patch });
+    const review = (await call("GET", "/api/review")).json;
+    expect(review).toMatchObject({ base: true, version: 1 });
+    expect(review.versions.map((v: { version: number }) => v.version)).toEqual([1]);
+    expect((await call("GET", "/api/files?v=0")).json.files).toEqual([
+      { path: "PLAN.md", size: 7 },
+      { path: "src/a.ts", size: 13 },
+      { path: "src/old.ts", size: 2 },
+    ]);
+    expect((await call("GET", "/api/file?path=src/a.ts&v=0")).json.content).toBe("const a = 1;\n");
+    expect((await call("GET", "/api/file?path=src/old.ts&v=0")).json.content).toBe("o\n");
+    expect((await call("GET", "/api/file?path=src/new.ts&v=0")).status).toBe(404);
+    expect([...fs.files.keys()].filter((p) => p.startsWith("/v/0/")).toSorted()).toEqual([
+      "/v/0/PLAN.md",
+      "/v/0/src/a.ts",
+      "/v/0/src/old.ts",
     ]);
   });
 
-  test("plan deny carries feedback and answersOnly, and ignores unknown fields", async () => {
-    const { call, server } = await session();
-    await call("POST", "/api/deny", {
-      feedback: "Add tests",
-      answersOnly: true,
-      permissionMode: "acceptEdits",
-      draftGeneration: 1,
-    });
-    expect(server.decision()).toMatchObject({
-      approved: false,
-      feedback: "Add tests",
-      answersOnly: true,
-    });
-    expect(server.decision()).not.toHaveProperty("permissionMode");
+  test("changes from 0 list only what the patch changed; the plan is context", async () => {
+    const { call, server } = await session({ files, patch });
+    const expected = [
+      { path: "src/a.ts", status: "modified" },
+      { path: "src/new.ts", status: "added" },
+      { path: "src/old.ts", status: "deleted" },
+    ];
+    expect((await call("GET", "/api/changes?from=0&to=1")).json.files).toEqual(expected);
+    // Version 1's default "from" is the version before it: the base.
+    expect((await call("GET", "/api/changes")).json.files).toEqual(expected);
+    await server.revise({ ...files, "PLAN.md": "# Plan v2\n" });
+    expect((await call("GET", "/api/changes?from=0&to=2")).json.files).toEqual([
+      { path: "PLAN.md", status: "modified" },
+      ...expected,
+    ]);
+    expect((await call("GET", "/api/changes")).json.files).toEqual([
+      { path: "PLAN.md", status: "modified" },
+    ]);
   });
 
-  test("annotate feedback passes the text and annotations through", async () => {
-    const { call, server } = await session({ mode: "annotate" });
-    const annotations = [{ id: "a", path: "src/a.ts" }];
-    await call("POST", "/api/feedback", { feedback: "fix it", annotations });
-    expect(server.decision()).toMatchObject({ approved: false, feedback: "fix it", annotations });
-  });
-
-  test("annotate exit is a bare POST and records only exit", async () => {
-    const { call, server } = await session({ mode: "annotate" });
-    expect((await call("POST", "/api/exit?draftGeneration=1")).json).toEqual({ ok: true });
-    const d = server.decision()!;
-    expect(d).toEqual({ approved: false, exit: true, version: 1, decidedAt: d.decidedAt });
-  });
-
-  test("malformed bodies are 400s and record nothing", async () => {
-    const { call, server } = await session({ mode: "annotate" });
-    expect((await call("POST", "/api/feedback", { annotations: "nope" })).status).toBe(400);
-    expect((await call("POST", "/api/feedback", { feedback: 5 })).status).toBe(400);
-    expect((await call("POST", "/api/feedback", "[1]")).status).toBe(400);
-    expect((await call("POST", "/api/feedback", "{")).status).toBe(400);
-    expect(server.decision()).toBeNull();
-  });
-
-  test("a second decision is refused with already_decided and keeps the first", async () => {
-    const { call, server } = await session();
-    await call("POST", "/api/approve", {});
-    const again = await call("POST", "/api/deny", { feedback: "late" });
-    expect(again.status).toBe(409);
-    expect(again.json.code).toBe("already_decided");
-    expect(server.decision()!.approved).toBe(true);
-  });
-
-  test("a decision on a replaced version is refused with revised", async () => {
-    const { call, server } = await session();
-    await server.revise({ ...V1, "README.md": "# v2" });
-    const stale = await call("POST", "/api/approve", { revision: 1 });
-    expect(stale.status).toBe(409);
-    expect(stale.json).toMatchObject({ code: "revised", revision: 2 });
-    expect(server.decision()).toBeNull();
-    expect((await call("POST", "/api/approve", { revision: 2 })).status).toBe(200);
+  test("a patch that does not apply fails init and leaves no review", async () => {
+    const server = new Session(new MemoryStore(), new MemoryFs());
+    await expect(
+      server.init({ files: { ...files, "src/a.ts": "const a = 3;\n" }, patch }),
+    ).rejects.toThrow("src/a.ts: hunk @@ -1 +1 @@ does not apply: line 1 differs");
+    expect((await server.fetch(new Request("https://facet/api/review"))).status).toBe(404);
   });
 });
 
-describe("wait", () => {
-  test("resolves every pending waiter with the decision", async () => {
+describe("events", () => {
+  test("submissions append in order with gapless seq, and answer that seq", async () => {
     const { call, server } = await session();
-    const waits = [server.wait(30), server.wait(30)];
-    await call("POST", "/api/deny", { feedback: "no" });
+    expect(await call("POST", "/api/feedback", { feedback: "one", revision: 1 })).toEqual({
+      status: 200,
+      json: { ok: true, seq: 1 },
+    });
+    expect((await call("POST", "/api/feedback", { feedback: "two" })).json.seq).toBe(2);
+    await server.revise(V2);
+    expect((await call("POST", "/api/approve", { revision: 2 })).json.seq).toBe(4);
+    await server.close();
+    const events = await server.events();
+    expect(events.map((e) => [e.seq, e.type, e.version])).toEqual([
+      [1, "feedback", 1],
+      [2, "feedback", 1],
+      [3, "revised", 2],
+      [4, "approved", 2],
+      [5, "closed", 2],
+    ]);
+    for (const e of events) expect(Date.parse(e.at)).not.toBeNaN();
+    expect((await call("GET", "/api/revision")).json).toEqual({ revision: 2, seq: 5 });
+  });
+
+  test("the cursor returns only later events, in RPC and over HTTP", async () => {
+    const { call, server } = await session();
+    for (const text of ["a", "b", "c"]) await call("POST", "/api/feedback", { feedback: text });
+    expect((await server.events(1)).map((e) => e.feedback)).toEqual(["b", "c"]);
+    expect(await server.events(3)).toEqual([]);
+    expect(await server.events(99)).toEqual([]);
+    expect(
+      (await call("GET", "/api/events?after=2")).json.events.map((e: { seq: number }) => e.seq),
+    ).toEqual([3]);
+    expect((await call("GET", "/api/events")).json.events).toHaveLength(3);
+    for (const bad of ["-1", "x", "1.5", ""]) {
+      expect((await call("GET", `/api/events?after=${bad}`)).status).toBe(400);
+    }
+    await expect(server.events(-1)).rejects.toThrow(/after/);
+  });
+
+  test("an event carries only what was sent: no empty feedback, no empty annotations", async () => {
+    const { call, server } = await session();
+    await call("POST", "/api/approve", { feedback: "", annotations: [] });
+    const [approved] = await server.events();
+    expect(Object.keys(approved).toSorted()).toEqual(["at", "seq", "type", "version"]);
+    await call("POST", "/api/feedback", {
+      feedback: "fix",
+      annotations: [{ ...note("a"), lines: { start: 1, end: 1 }, side: "old", extra: 1 }],
+      answersOnly: true,
+    });
+    const [, feedback] = await server.events();
+    expect(feedback).toMatchObject({
+      type: "feedback",
+      feedback: "fix",
+      annotations: [{ id: "a", side: "old", extra: 1 }],
+    });
+    expect(feedback).not.toHaveProperty("answersOnly");
+  });
+
+  test("a feedback after an approval withdraws it; the log keeps both", async () => {
+    const { call, types } = await session();
+    await call("POST", "/api/approve", {});
+    await call("POST", "/api/feedback", { feedback: "on second thought" });
+    expect(await types()).toEqual(["approved", "feedback"]);
+    // So a second approval is a new fact, not a repeat.
+    expect((await call("POST", "/api/approve", {})).json.seq).toBe(3);
+  });
+
+  test("a submission on a replaced version is 409 revised and appends nothing", async () => {
+    const { call, server, types } = await session();
+    await server.revise(V2);
+    for (const path of ["/api/feedback", "/api/approve"]) {
+      expect(await call("POST", path, { feedback: "late", revision: 1 })).toEqual({
+        status: 409,
+        json: {
+          error: expect.stringMatching(/revised/),
+          code: "revised",
+          revision: 2,
+        },
+      });
+    }
+    expect(await types()).toEqual(["revised"]);
+    expect((await call("POST", "/api/approve", { revision: 2 })).status).toBe(200);
+  });
+
+  test("malformed bodies are 400s and append nothing", async () => {
+    const { call, types } = await session();
+    const bad = [
+      { annotations: "nope" },
+      { feedback: 5 },
+      { annotations: [5] },
+      { annotations: [[]] },
+      { annotations: [{ id: "a" }] },
+      { annotations: [{ path: "a" }] },
+      { annotations: [{ id: 1, path: "a" }] },
+      { annotations: Array.from({ length: MAX_ANNOTATIONS + 1 }, (_, i) => note(`n${i}`)) },
+    ];
+    for (const body of bad) expect((await call("POST", "/api/feedback", body)).status).toBe(400);
+    expect((await call("POST", "/api/feedback", "[1]")).status).toBe(400);
+    expect((await call("POST", "/api/feedback", "{")).status).toBe(400);
+    expect(await types()).toEqual([]);
+  });
+
+  test("the annotation bounds: 2,000 entries and a 2 MB body are accepted, more is not", async () => {
+    const { call } = await session();
+    const many = Array.from({ length: MAX_ANNOTATIONS }, (_, i) => note(`n${i}`));
+    expect((await call("POST", "/api/feedback", { annotations: many })).status).toBe(200);
+    const text = "x".repeat(1_999_900);
+    expect((await call("POST", "/api/feedback", { feedback: text })).status).toBe(200);
+    expect(
+      (await call("POST", "/api/feedback", { feedback: `${text}${"x".repeat(200)}` })).status,
+    ).toBe(413);
+  });
+});
+
+describe("sent annotations", () => {
+  test("an id already in the log is dropped from a later submission", async () => {
+    const { call, server } = await session();
+    await call("POST", "/api/feedback", { annotations: [note("a"), note("b")] });
+    await call("POST", "/api/feedback", { annotations: [note("b"), note("c")] });
+    const ids = (await server.events()).map((e) => e.annotations?.map((a) => a.id));
+    expect(ids).toEqual([["a", "b"], ["c"]]);
+  });
+
+  test("an id repeated within one submission is sent once", async () => {
+    const { call, server } = await session();
+    await call("POST", "/api/feedback", { annotations: [note("a"), note("a")] });
+    expect((await server.events())[0].annotations).toHaveLength(1);
+  });
+
+  test("a retry of the same body appends nothing and answers the last seq", async () => {
+    const { call, types } = await session();
+    const body = { feedback: "", annotations: [note("a")], revision: 1 };
+    expect((await call("POST", "/api/feedback", body)).json).toEqual({ ok: true, seq: 1 });
+    expect((await call("POST", "/api/feedback", body)).json).toEqual({ ok: true, seq: 1 });
+    expect(await types()).toEqual(["feedback"]);
+  });
+
+  test("feedback with nothing new and no text appends nothing", async () => {
+    const { call, types } = await session();
+    expect((await call("POST", "/api/feedback", {})).json).toEqual({ ok: true, seq: 0 });
+    expect((await call("POST", "/api/feedback", { feedback: "" })).json).toEqual({
+      ok: true,
+      seq: 0,
+    });
+    expect(await types()).toEqual([]);
+  });
+
+  test("feedback text is a new fact even with the same words", async () => {
+    const { call, types } = await session();
+    await call("POST", "/api/feedback", { feedback: "again" });
+    await call("POST", "/api/feedback", { feedback: "again" });
+    expect(await types()).toEqual(["feedback", "feedback"]);
+  });
+
+  test("approving an approved version with nothing new is a no-op", async () => {
+    const { call, server, types } = await session();
+    expect((await call("POST", "/api/approve", { annotations: [note("a")] })).json.seq).toBe(1);
+    expect((await call("POST", "/api/approve", { annotations: [note("a")] })).json.seq).toBe(1);
+    expect((await call("POST", "/api/approve", {})).json.seq).toBe(1);
+    // Something new is another approval.
+    expect((await call("POST", "/api/approve", { feedback: "ship it" })).json.seq).toBe(2);
+    // A new version has no approval yet.
+    await server.revise(V2);
+    expect((await call("POST", "/api/approve", {})).json.seq).toBe(4);
+    expect(await types()).toEqual(["approved", "approved", "revised", "approved"]);
+  });
+
+  test("a stale draft holding sent ids cannot send them again", async () => {
+    const { call, server } = await session();
+    await call("POST", "/api/draft", { annotations: [note("a")] });
+    await call("POST", "/api/feedback", { annotations: [note("a")] });
+    // Another tab still has the old draft and saves it back, then sends it with one more.
+    await call("POST", "/api/draft", { annotations: [note("a"), note("b")] });
+    const { annotations } = (await call("GET", "/api/draft")).json;
+    await call("POST", "/api/feedback", { annotations });
+    expect((await server.events()).map((e) => e.annotations?.map((a) => a.id))).toEqual([
+      ["a"],
+      ["b"],
+    ]);
+  });
+
+  test("ids are global to the review, across versions", async () => {
+    const { call, server } = await session();
+    await call("POST", "/api/feedback", { annotations: [note("a")] });
+    await server.revise(V2);
+    await call("POST", "/api/feedback", { annotations: [note("a")], revision: 2 });
+    expect(await server.events()).toHaveLength(2);
+  });
+});
+
+describe("waiting", () => {
+  test("resolves every waiter on the next event", async () => {
+    const { call, server } = await session();
+    const waits = [server.events(0, 30), server.events(0, 30)];
+    await call("POST", "/api/feedback", { feedback: "no" });
     const [a, b] = await Promise.all(waits);
-    expect(a).toMatchObject({ approved: false, feedback: "no", version: 1 });
+    expect(a.map((e) => e.feedback)).toEqual(["no"]);
     expect(b).toEqual(a);
   });
 
-  test("returns a standing decision at once", async () => {
-    const { call, server } = await session();
-    await call("POST", "/api/approve", {});
-    expect((await server.wait(30))!.approved).toBe(true);
+  test("resolves on agent events too", async () => {
+    const { server } = await session();
+    const wait = server.events(0, 30);
+    await server.close();
+    expect((await wait).map((e) => e.type)).toEqual(["closed"]);
   });
 
-  test("times out with null", async () => {
+  test("returns existing events at once", async () => {
+    const { call, server } = await session();
+    await call("POST", "/api/approve", {});
+    const started = performance.now();
+    expect(await server.events(0, 30)).toHaveLength(1);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  test("times out with []", async () => {
     const { server } = await session();
     const started = performance.now();
-    expect(await server.wait(0.02)).toBeNull();
+    expect(await server.events(0, 0.02)).toEqual([]);
     expect(performance.now() - started).toBeGreaterThanOrEqual(15);
+  });
+
+  test("without wait, or with nonsense, it does not hold", async () => {
+    const { server } = await session();
+    const started = performance.now();
+    for (const wait of [0, -5, Number.NaN, undefined])
+      expect(await server.events(0, wait)).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(100);
   });
 
   test("a waiter that timed out is not resolved later", async () => {
     const { call, server } = await session();
-    expect(await server.wait(0)).toBeNull();
+    expect(await server.events(0, 0)).toEqual([]);
     await call("POST", "/api/approve", {});
-    expect((await server.wait(0))!.approved).toBe(true);
+    expect(await server.events(0, 0)).toHaveLength(1);
   });
 });
 
 describe("revise and versions", () => {
-  const V2: Files = { "README.md": "# v2", "src/a.ts": "a", "src/c.ts": "c" };
-
   test("a snapshot becomes the next version; the old one stays readable", async () => {
     const { call, server } = await session();
-    await call("POST", "/api/deny", { feedback: "no" });
     expect(await server.revise(V2)).toEqual({ version: 2, unchanged: false });
-    expect(server.decision()).toBeNull();
     expect((await call("GET", "/api/review")).json).toMatchObject({
       version: 2,
       open: "README.md",
     });
-    expect((await call("GET", "/api/revision")).json).toEqual({ revision: 2 });
     const versions = (await call("GET", "/api/review")).json.versions;
     expect(versions.map((v: { version: number }) => v.version)).toEqual([1, 2]);
     expect(
@@ -314,11 +515,6 @@ describe("revise and versions", () => {
     };
     expect((await call("GET", "/api/changes?from=1&to=2")).json).toEqual(expected);
     expect((await call("GET", "/api/changes")).json).toEqual(expected);
-    expect((await call("GET", "/api/changes?from=2&to=1")).json.files).toEqual([
-      { path: "README.md", status: "modified" },
-      { path: "src/c.ts", status: "deleted" },
-      { path: "src/deep/b.ts", status: "added" },
-    ]);
     expect((await call("GET", "/api/changes?from=2&to=2")).json).toEqual({ files: [] });
     expect((await call("GET", "/api/changes?from=1&to=3")).status).toBe(404);
     expect((await call("GET", "/api/changes?from=x")).status).toBe(400);
@@ -331,23 +527,20 @@ describe("revise and versions", () => {
     expect((await call("GET", "/api/review")).json.open).toBe("docs/guide.md");
   });
 
-  test("the decision records the version it was made on", async () => {
-    const { call, server } = await session();
-    for (let v = 2; v <= 4; v++) {
-      await call("POST", "/api/deny", { feedback: `round ${v}`, revision: v - 1 });
-      await server.revise({ ...V1, "README.md": `# v${v}` });
-    }
-    await call("POST", "/api/approve", { revision: 4 });
-    expect(server.decision()).toMatchObject({ approved: true, version: 4 });
+  test("revise after an approval is a new version without one", async () => {
+    const { call, server, types } = await session();
+    await call("POST", "/api/approve", {});
+    expect(await server.revise(V2)).toEqual({ version: 2, unchanged: false });
+    expect(await types()).toEqual(["approved", "revised"]);
+    expect((await server.events(1))[0]).toMatchObject({ type: "revised", version: 2 });
   });
 
-  test("an unchanged snapshot adds no version and leaves the decision standing", async () => {
-    const { call, server, fs } = await session();
-    await call("POST", "/api/deny", {});
+  test("an unchanged snapshot adds no version and appends nothing", async () => {
+    const { call, server, fs, types } = await session();
     expect(
       await server.revise({ "src/deep/b.ts": "b", "README.md": "# v1", "src/a.ts": "a" }),
     ).toEqual({ version: 1, unchanged: true });
-    expect(server.decision()).toMatchObject({ approved: false, version: 1 });
+    expect(await types()).toEqual([]);
     expect((await call("GET", "/api/review")).json.versions).toHaveLength(1);
     expect([...fs.files.keys()].every((p) => p.startsWith("/v/1/"))).toBe(true);
   });
@@ -359,36 +552,6 @@ describe("revise and versions", () => {
       version: 2,
       unchanged: false,
     });
-  });
-
-  test("revise is refused after approval and after exit, and keeps the decision", async () => {
-    const plan = await session();
-    await plan.call("POST", "/api/approve", {});
-    await expect(plan.server.revise(V2)).rejects.toThrow(/finished/);
-    expect(plan.server.decision()!.approved).toBe(true);
-
-    const annotate = await session({ mode: "annotate" });
-    await annotate.call("POST", "/api/exit");
-    await expect(annotate.server.revise(V2)).rejects.toThrow(/finished/);
-    expect(annotate.server.decision()!.exit).toBe(true);
-  });
-
-  test("an approval that lands while a snapshot is written wins over the snapshot", async () => {
-    const { call, server, fs } = await session();
-    const write = fs.writeFile.bind(fs);
-    let approved = false;
-    fs.writeFile = async (path, content) => {
-      if (!approved) {
-        approved = true;
-        await call("POST", "/api/approve", {});
-      }
-      return write(path, content);
-    };
-    await expect(server.revise(V2)).rejects.toThrow(/finished/);
-    expect(server.decision()).toMatchObject({ approved: true, version: 1 });
-    expect((await call("GET", "/api/revision")).json).toEqual({ revision: 1 });
-    // The abandoned tree is cleared by the next attempt, not served.
-    expect((await call("GET", "/api/files?v=2")).status).toBe(404);
   });
 
   test("concurrent revisions get consecutive versions", async () => {
@@ -404,93 +567,125 @@ describe("revise and versions", () => {
       { version: 3, unchanged: true },
     ]);
   });
+});
 
-  test("revise is allowed after annotate feedback", async () => {
-    const { call, server } = await session({ mode: "annotate" });
-    await call("POST", "/api/feedback", { feedback: "x", annotations: [] });
-    expect((await server.revise(V2)).version).toBe(2);
-    expect(server.decision()).toBeNull();
+describe("close", () => {
+  test("is idempotent and final", async () => {
+    const { call, server, types } = await session();
+    await server.close();
+    await server.close();
+    expect(await types()).toEqual(["closed"]);
+    expect((await call("GET", "/api/review")).json.closed).toBe(true);
+    for (const path of ["/api/feedback", "/api/approve"]) {
+      expect(await call("POST", path, { feedback: "x" })).toEqual({
+        status: 409,
+        json: { error: "This review is closed.", code: "closed" },
+      });
+    }
+    await expect(server.revise(V2)).rejects.toThrow(/closed/);
+    expect(await types()).toEqual(["closed"]);
+    // Reads keep working.
+    expect((await call("GET", "/api/file?path=README.md")).status).toBe(200);
+    expect((await call("GET", "/api/events")).json.events).toHaveLength(1);
+  });
+
+  test("a close requested while a snapshot is written lands after it, and stays last", async () => {
+    const { server, fs, types } = await session();
+    const write = fs.writeFile.bind(fs);
+    let closing: Promise<void> | undefined;
+    fs.writeFile = async (path, content) => {
+      closing ??= server.close();
+      return write(path, content);
+    };
+    expect(await server.revise(V2)).toEqual({ version: 2, unchanged: false });
+    await closing;
+    expect(await types()).toEqual(["revised", "closed"]);
+    await expect(server.revise({ "a.md": "late" })).rejects.toThrow(/closed/);
   });
 });
 
-const save = (generation: number, annotations: unknown[] = [generation]) => ({
-  annotations,
-  draftGeneration: generation,
-  ts: 1,
+describe("reviewer identity", () => {
+  test("events carry the email the host passed on", async () => {
+    const { call, server } = await session();
+    await call(
+      "POST",
+      "/api/feedback",
+      { feedback: "x" },
+      { [REVIEWER_HEADER]: "ada@example.com" },
+    );
+    await call("POST", "/api/approve", {}, { [REVIEWER_HEADER]: "bob@example.com" });
+    expect((await server.events()).map((e) => e.by)).toEqual([
+      "ada@example.com",
+      "bob@example.com",
+    ]);
+  });
+
+  test("without it there is no by", async () => {
+    const { call, server } = await session();
+    await call("POST", "/api/feedback", { feedback: "x", by: "mallory@example.com" });
+    expect((await server.events())[0]).not.toHaveProperty("by");
+  });
 });
 
 describe("drafts", () => {
-  test("no draft is a 200 with nothing in it", async () => {
+  test("no draft is an empty list", async () => {
     const { call } = await session();
-    expect(await call("GET", "/api/draft")).toEqual({ status: 200, json: {} });
+    expect(await call("GET", "/api/draft")).toEqual({ status: 200, json: { annotations: [] } });
   });
 
-  test("round trip keeps exactly the draft fields", async () => {
+  test("last write wins, and only annotations are kept", async () => {
     const { call } = await session();
-    expect((await call("POST", "/api/draft", { ...save(5), extra: "x" })).status).toBe(200);
-    expect(await call("GET", "/api/draft")).toEqual({
+    expect(
+      await call("POST", "/api/draft", { annotations: [note("a")], draftGeneration: 9 }),
+    ).toEqual({
       status: 200,
-      json: { annotations: [5], draftGeneration: 5, ts: 1 },
+      json: { ok: true },
     });
+    await call("POST", "/api/draft", { annotations: [note("b")] });
+    expect((await call("GET", "/api/draft")).json).toEqual({ annotations: [note("b")] });
+    await call("POST", "/api/draft", { annotations: [] });
+    expect((await call("GET", "/api/draft")).json).toEqual({ annotations: [] });
   });
 
-  test("an older generation is refused with the latest; the same one overwrites", async () => {
+  test("a submission clears the draft, even one that adds nothing", async () => {
     const { call } = await session();
-    await call("POST", "/api/draft", save(5));
-    const stale = await call("POST", "/api/draft", save(4));
-    expect(stale).toEqual({ status: 409, json: { error: "Stale draft", draftGeneration: 5 } });
-    expect((await call("POST", "/api/draft", save(5, ["again"]))).status).toBe(200);
-    expect((await call("GET", "/api/draft")).json.annotations).toEqual(["again"]);
+    await call("POST", "/api/draft", { annotations: [note("a")] });
+    await call("POST", "/api/feedback", { annotations: [note("a")] });
+    expect((await call("GET", "/api/draft")).json.annotations).toEqual([]);
+    await call("POST", "/api/draft", { annotations: [note("a")] });
+    await call("POST", "/api/feedback", { annotations: [note("a")] });
+    expect((await call("GET", "/api/draft")).json.annotations).toEqual([]);
   });
 
-  test("a delete leaves a tombstone that refuses saves up to its generation", async () => {
-    const { call } = await session();
-    await call("POST", "/api/draft", save(5));
-    expect((await call("DELETE", "/api/draft?generation=6")).status).toBe(200);
-    expect((await call("GET", "/api/draft")).json).toEqual({ draftGeneration: 6 });
-    expect((await call("POST", "/api/draft", save(6))).status).toBe(409);
-    expect((await call("POST", "/api/draft", save(7))).status).toBe(200);
-  });
-
-  test("a delete older than the stored draft is ignored", async () => {
-    const { call } = await session();
-    await call("POST", "/api/draft", save(5));
-    await call("DELETE", "/api/draft?generation=3");
-    expect((await call("GET", "/api/draft")).json.draftGeneration).toBe(5);
-  });
-
-  test("bad draft requests are 400s", async () => {
-    const { call } = await session();
-    expect((await call("POST", "/api/draft", { annotations: [] })).status).toBe(400);
-    expect((await call("POST", "/api/draft", { draftGeneration: 1 })).status).toBe(400);
-    expect((await call("POST", "/api/draft", { ...save(1), ts: "now" })).status).toBe(400);
-    expect((await call("DELETE", "/api/draft")).status).toBe(400);
-    expect((await call("DELETE", "/api/draft?generation=-1")).status).toBe(400);
-  });
-
-  test("a decision deletes the draft and later saves are refused as decided", async () => {
-    const { call } = await session();
-    await call("POST", "/api/draft", save(1));
-    await call("POST", "/api/deny", { feedback: "no", draftGeneration: 2 });
-    expect((await call("GET", "/api/draft")).json).toEqual({ draftGeneration: 2 });
-    expect(await call("POST", "/api/draft", save(3))).toEqual({
-      status: 409,
-      json: { error: "This review has already been decided.", decided: true },
-    });
-  });
-
-  test("exit's draft generation comes from the query string", async () => {
-    const { call } = await session({ mode: "annotate" });
-    await call("POST", "/api/draft", save(1));
-    await call("POST", "/api/exit?draftGeneration=2");
-    expect((await call("GET", "/api/draft")).json).toEqual({ draftGeneration: 2 });
+  test("a refused submission keeps the draft", async () => {
+    const { call, server } = await session();
+    await server.revise(V2);
+    await call("POST", "/api/draft", { annotations: [note("a")] });
+    expect(
+      (await call("POST", "/api/feedback", { annotations: [note("a")], revision: 1 })).status,
+    ).toBe(409);
+    expect((await call("GET", "/api/draft")).json.annotations).toEqual([note("a")]);
   });
 
   test("drafts are per version", async () => {
     const { call, server } = await session();
-    await call("POST", "/api/draft", save(1));
-    await call("POST", "/api/deny", { feedback: "no" });
-    await server.revise({ "a.md": "2" });
-    expect((await call("GET", "/api/draft")).json).toEqual({});
+    await call("POST", "/api/draft", { annotations: [note("a")] });
+    await server.revise(V2);
+    expect((await call("GET", "/api/draft")).json).toEqual({ annotations: [] });
+  });
+
+  test("bad drafts are 400s, with the same bounds as submissions", async () => {
+    const { call } = await session();
+    expect((await call("POST", "/api/draft", {})).status).toBe(400);
+    expect((await call("POST", "/api/draft", { annotations: "x" })).status).toBe(400);
+    expect((await call("POST", "/api/draft", { annotations: [{ id: "a" }] })).status).toBe(400);
+    const many = Array.from({ length: MAX_ANNOTATIONS + 1 }, (_, i) => note(`n${i}`));
+    expect((await call("POST", "/api/draft", { annotations: many })).status).toBe(400);
+  });
+
+  test("a closed review still saves drafts: no 409s from drafts", async () => {
+    const { call, server } = await session();
+    await server.close();
+    expect((await call("POST", "/api/draft", { annotations: [] })).status).toBe(200);
   });
 });

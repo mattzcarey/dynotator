@@ -78,9 +78,9 @@ export async function initReview(store: Store, fs: Fs, { files, patch, ...meta }
   if (getMeta(store)) throw new Error("Review already initialised");
   if (patch !== undefined) {
     const base = baseOf(files, patch);
-    await writeVersion(store, fs, 0, base, await manifestOf(base), () => {});
+    await writeVersion(store, fs, 0, base, await manifestOf(base));
   }
-  await writeVersion(store, fs, 1, files, await manifestOf(files), () => {});
+  await writeVersion(store, fs, 1, files, await manifestOf(files));
   // Last, so that a facet whose init failed part way still reads as uninitialised.
   store.put<ReviewMeta>(META, meta);
 }
@@ -98,22 +98,17 @@ export function baseOf(files: Files, patch: string): Files {
   return base;
 }
 
-/**
- * Adds `files` as the next version unless it equals the current one. `beforeCommit` runs right
- * before the version is recorded, after every await, and may throw to abandon it. Callers must
- * not run two of these at once.
- */
+/** Adds `files` as the next version unless it equals the current one. Callers must not run two of these at once. */
 export async function addVersion(
   store: Store,
   fs: Fs,
   files: Files,
-  beforeCommit: () => void,
 ): Promise<{ version: number; unchanged: boolean }> {
   const head = currentVersion(store);
   const manifest = await manifestOf(files);
   const current = getManifest(store, head);
   if (current && sameManifest(current, manifest)) return { version: head, unchanged: true };
-  await writeVersion(store, fs, head + 1, files, manifest, beforeCommit);
+  await writeVersion(store, fs, head + 1, files, manifest);
   return { version: head + 1, unchanged: false };
 }
 
@@ -132,14 +127,7 @@ export async function readVersionFile(
  * synchronous batch of storage writes, so a version exists only once all its files do. A tree
  * left behind by a failed attempt is cleared before writing.
  */
-async function writeVersion(
-  store: Store,
-  fs: Fs,
-  v: number,
-  files: Files,
-  manifest: Manifest,
-  beforeCommit: () => void,
-) {
+async function writeVersion(store: Store, fs: Fs, v: number, files: Files, manifest: Manifest) {
   const root = versionRoot(v);
   await fs.rm(root, { recursive: true, force: true });
   const dirs = new Set([root]);
@@ -150,7 +138,6 @@ async function writeVersion(
   for (const dir of dirs) await fs.mkdir(dir, { recursive: true });
   for (const path of manifest.keys()) await fs.writeFile(`${root}/${path}`, files[path]);
 
-  beforeCommit();
   const prefix = filePrefix(v);
   for (const [path, { size, hash }] of manifest) store.put(`${prefix}${path}`, [size, hash]);
   store.put(versionKey(v), { timestamp: new Date().toISOString() });

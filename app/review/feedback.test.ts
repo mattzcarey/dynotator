@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
-import { AnnotationType, globalComment, type Annotation } from "./annotations";
-import { buildFeedback, NO_FEEDBACK } from "./feedback";
+import { globalComment, type Annotation } from "./annotations";
+import { buildFeedback } from "./feedback";
 import { parseMarkdownToBlocks } from "../markdown/blocks";
 import { indexQuestions, type QuestionAnswer } from "../questions/questions";
 import { upsertAnswer } from "../questions/answers";
@@ -28,8 +28,8 @@ const note = (fields: Partial<Annotation>): Annotation => ({
   id: crypto.randomUUID(),
   path: "PLAN.md",
   blockId: "",
-  type: AnnotationType.COMMENT,
-  originalText: "",
+  type: "comment",
+  original: "",
   ...fields,
 });
 const onBlock = (type: string, fields: Partial<Annotation>) => {
@@ -39,29 +39,25 @@ const onBlock = (type: string, fields: Partial<Annotation>) => {
 const answer = (path: string, selected: string[], annotations: Annotation[] = []) => {
   const { key, prompt } = question.question;
   const value: QuestionAnswer = { key, kind: "single", prompt, selected };
-  return upsertAnswer(annotations, path, question.blockId, value, key);
+  return upsertAnswer(annotations, path, question.blockId, undefined, value, key);
 };
 
 describe("one file", () => {
   const files = ["PLAN.md"];
 
-  test("nothing annotated is the fixed sentence", () => {
-    expect(buildFeedback({ mode: "plan", files, questions, annotations: [] })).toBe(NO_FEEDBACK);
-  });
-
   test("comments, deletions and the general comment, in document order with lines", () => {
     const annotations = [
       globalComment("Looks fine\noverall."),
-      onBlock("list-item", { originalText: "Step one", text: "Replace with: Step 1" }),
-      onBlock("paragraph", { type: AnnotationType.DELETION, originalText: "behind a ``` flag" }),
-      onBlock("heading", { originalText: "Plan", text: "Rename\nit" }),
-      onBlock("paragraph", { originalText: "a flag\nand roll", text: "Two lines" }),
+      onBlock("list-item", { type: "replacement", original: "Step one", text: "Step 1" }),
+      onBlock("paragraph", { type: "replacement", original: "behind a ``` flag", text: "" }),
+      onBlock("heading", { original: "Plan", text: "Rename\nit" }),
+      onBlock("paragraph", { original: "a flag\nand roll", text: "Two lines" }),
     ];
-    expect(buildFeedback({ mode: "plan", files, questions, annotations })).toBe(`# Plan Feedback
+    expect(buildFeedback({ files, questions, annotations })).toBe(`# Document Feedback
 
-I've reviewed this plan and have 5 pieces of feedback:
+I've reviewed this document and have 5 pieces of feedback:
 
-## 1. General feedback about the plan
+## 1. General feedback about the document
 > Looks fine
 > overall.
 
@@ -73,7 +69,7 @@ I've reviewed this plan and have 5 pieces of feedback:
 \`\`\`\`
 behind a \`\`\` flag
 \`\`\`\`
-> I don't want this in the plan.
+> I don't want this in the document.
 
 ## 4. (lines 3-4) Feedback on:
 \`\`\`
@@ -91,7 +87,7 @@ and roll
 
   test("answers come first, under their own heading, without a file name", () => {
     const annotations = answer("PLAN.md", ["Postgres"], [onBlock("heading", { text: "ok" })]);
-    const out = buildFeedback({ mode: "annotate", files, questions, annotations });
+    const out = buildFeedback({ files, questions, annotations });
     expect(
       out.startsWith(
         "# Document Feedback\n\n## Answers to your questions\n\n1 of 1 question answered.\n\n### Q1. Which store? (line 9)\nAnswer: Postgres\n\n",
@@ -102,7 +98,6 @@ and roll
 
   test("answers only: no comment section", () => {
     const out = buildFeedback({
-      mode: "plan",
       files,
       questions,
       annotations: answer("PLAN.md", ["Redis"]),
@@ -125,25 +120,25 @@ describe("several files", () => {
       note({
         path: "README.md",
         lines: { start: 3, end: 3 },
-        originalText: "Intro",
+        original: "Intro",
         text: "Shorter.",
       }),
       note({
         path: "worker/api.ts",
         lines: { start: 48, end: 50 },
-        type: AnnotationType.DELETION,
-        originalText: "if (x) {\n  run(`a`);\n}",
+        type: "replacement",
+        text: "",
+        original: "if (x) {\n  run(`a`);\n}",
       }),
       globalComment("Overall fine."),
       note({
         path: "worker/api.ts",
         lines: { start: 42, end: 42 },
-        originalText: "export",
+        original: "export",
         text: "Why\nexported?",
       }),
     ];
-    expect(buildFeedback({ mode: "annotate", files, questions: [], annotations }))
-      .toBe(`# Review Feedback
+    expect(buildFeedback({ files, questions: [], annotations })).toBe(`# Review Feedback
 
 I've reviewed these files and have 4 pieces of feedback:
 
@@ -181,7 +176,7 @@ Intro
 
   test("the same question in two files keeps two answers, each naming its file", () => {
     const annotations = answer("README.md", ["Redis"], answer("docs/PLAN.md", ["Postgres"]));
-    const out = buildFeedback({ mode: "plan", files, questions: twin, annotations });
+    const out = buildFeedback({ files, questions: twin, annotations });
     expect(out).toContain("2 of 2 questions answered.");
     expect(out).toContain("### Q1. Which store? (docs/PLAN.md, line 9)\nAnswer: Postgres\n");
     expect(out).toContain(
@@ -191,7 +186,6 @@ Intro
 
   test("an unanswered question names its file", () => {
     const out = buildFeedback({
-      mode: "plan",
       files,
       questions: twin,
       annotations: answer("README.md", ["Redis"]),
@@ -201,10 +195,10 @@ Intro
 
   test("a file outside the tree (deleted since) comes last; a path cannot break the heading", () => {
     const annotations = [
-      note({ path: "gone\n# x.ts", lines: { start: 1, end: 1 }, originalText: "a", text: "b" }),
-      note({ path: "README.md", lines: { start: 1, end: 1 }, originalText: "c", text: "d" }),
+      note({ path: "gone\n# x.ts", lines: { start: 1, end: 1 }, original: "a", text: "b" }),
+      note({ path: "README.md", lines: { start: 1, end: 1 }, original: "c", text: "d" }),
     ];
-    const out = buildFeedback({ mode: "annotate", files, questions: [], annotations });
+    const out = buildFeedback({ files, questions: [], annotations });
     expect(out.indexOf("## README.md")).toBeLessThan(out.indexOf("## gone # x.ts"));
   });
 });
@@ -216,4 +210,33 @@ test("upsertAnswer replaces in place, scopes by file and removes an emptied answ
   expect(second[1]).toMatchObject({ path: "PLAN.md", questionAnswer: { selected: ["Postgres"] } });
   expect(answer("OTHER.md", ["Redis"], second)).toHaveLength(3);
   expect(answer("PLAN.md", [], second)).toHaveLength(1);
+});
+
+test("diff sides: removed lines name the version they are numbered in", () => {
+  const removed = note({
+    path: "src/a.ts",
+    lines: { start: 12, end: 12 },
+    side: "old",
+    against: 0,
+    original: "x = 1",
+    text: "Why remove this?",
+  });
+  const added = note({
+    path: "src/a.ts",
+    lines: { start: 3, end: 4 },
+    side: "new",
+    original: "y",
+    text: "",
+    type: "replacement",
+  });
+  const files = ["src/a.ts", "README.md"];
+  const out = buildFeedback({ files, questions: [], annotations: [removed, added] });
+  expect(out).toContain("### 1. Lines 3-4: remove this\n```\ny\n```\n> I don't want this.\n");
+  expect(out).toContain("### 2. Line 12 (removed from the base)\n```\nx = 1\n```\n");
+  const later = buildFeedback({
+    files: ["a.ts"],
+    questions: [],
+    annotations: [{ ...removed, path: "a.ts", against: 1 }],
+  });
+  expect(later).toContain('## 1. (line 12, removed from version 1) Feedback on: "x = 1"');
 });

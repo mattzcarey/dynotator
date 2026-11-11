@@ -15,18 +15,17 @@ test("session ids are 160-bit URL-safe and distinct", () => {
 describe("matchRoute", () => {
   const id = newSessionId();
   test.each([
-    ["POST", "/api/sessions", { kind: "create" }],
-    ["GET", "/api/sessions", { kind: "api-not-found" }],
-    ["GET", "/api/anything", { kind: "api-not-found" }],
-    ["GET", `/s/${id}`, { kind: "page", id }],
-    ["GET", `/s/${id}/`, { kind: "page", id }],
-    ["POST", `/s/${id}/api/approve`, { kind: "session-api", id, path: "/api/approve" }],
-    ["GET", "/s/bad/api/review", { kind: "api-not-found" }],
-    ["GET", "/s/bad", { kind: "page-not-found" }],
-    ["GET", `/s/${id}/assets/x.js`, { kind: "asset" }],
-    ["GET", "/assets/index.js", { kind: "asset" }],
-  ] as const)("%s %s", (method, path, expected) => {
-    expect(matchRoute(method, path)).toEqual(expected);
+    ["/api/sessions", { kind: "api-not-found" }],
+    ["/api/anything", { kind: "api-not-found" }],
+    [`/s/${id}`, { kind: "page", id }],
+    [`/s/${id}/`, { kind: "page", id }],
+    [`/s/${id}/api/approve`, { kind: "session-api", id, path: "/api/approve" }],
+    ["/s/bad/api/review", { kind: "api-not-found" }],
+    ["/s/bad", { kind: "page-not-found" }],
+    [`/s/${id}/assets/x.js`, { kind: "asset" }],
+    ["/assets/index.js", { kind: "asset" }],
+  ] as const)("%s", (path, expected) => {
+    expect(matchRoute(path)).toEqual(expected);
   });
 });
 

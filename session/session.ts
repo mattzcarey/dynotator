@@ -28,12 +28,12 @@ export class Session {
   /**
    * Puts a full snapshot up as the next version and appends `revised`; files absent from it are
    * gone in that version. An identical snapshot appends nothing. Refused once the review is
-   * closed, including when it closes while the snapshot is being written.
+   * closed; a `close` that arrives meanwhile waits for it, so `closed` stays last.
    */
   revise(files: Files): Promise<Revision> {
     return this.serially(async () => {
       this.assertOpen();
-      const revision = await addVersion(this.store, this.fs, files, () => this.assertOpen());
+      const revision = await addVersion(this.store, this.fs, files);
       if (!revision.unchanged) this.append({ type: "revised", version: revision.version });
       return revision;
     });
