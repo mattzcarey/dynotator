@@ -1,0 +1,83 @@
+diff --git "caf\303\251.md" "caf\303\251.md"
+index 572eb43..bd4d203 100644
+--- "caf\303\251.md"
++++ "caf\303\251.md"
+@@ -1 +1 @@
+-café
++café!
+diff --git empty-deleted.txt created-empty.txt
+similarity index 100%
+rename from empty-deleted.txt
+rename to created-empty.txt
+diff --git created.txt created.txt
+new file mode 100644
+index 0000000..5786b13
+--- /dev/null
++++ created.txt
+@@ -0,0 +1,2 @@
++brand
++new
+diff --git crlf.txt crlf.txt
+index 6de9d5a..3b03fca 100644
+--- crlf.txt
++++ crlf.txt
+@@ -1,2 +1,2 @@
+ crlf
+-line
++LINE
+diff --git deleted.txt deleted.txt
+deleted file mode 100644
+index d3bc718..0000000
+--- deleted.txt
++++ /dev/null
+@@ -1,2 +0,0 @@
+-gone
+-bye
+diff --git moved.txt dir/moved.txt
+similarity index 100%
+rename from moved.txt
+rename to dir/moved.txt
+diff --git multi.txt multi.txt
+index e031777..b4fecfe 100644
+--- multi.txt
++++ multi.txt
+@@ -1,4 +1,4 @@
+-one
++ONE
+ two
+ three
+ four
+@@ -9,4 +9,4 @@ eight
+ nine
+ ten
+ eleven
+-twelve
++TWELVE
+diff --git old-name.txt new-name.txt
+similarity index 66%
+rename from old-name.txt
+rename to new-name.txt
+index de98044..7be73ce 100644
+--- old-name.txt
++++ new-name.txt
+@@ -1,3 +1,3 @@
+ a
+-b
++B
+ c
+diff --git noeol.txt noeol.txt
+index da58862..a67304f 100644
+--- noeol.txt
++++ noeol.txt
+@@ -1 +1 @@
+-no eol
+\ No newline at end of file
++no eol changed
+\ No newline at end of file
+diff --git with space.txt with space.txt
+index f05367e..ae138b0 100644
+--- with space.txt	
++++ with space.txt	
+@@ -1 +1 @@
+-sp
++sp2

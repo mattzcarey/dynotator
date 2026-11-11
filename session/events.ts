@@ -1,48 +1,37 @@
-import type { ReviewMode } from "./files";
 import { HttpError } from "./http";
 import type { Store } from "./store";
 
 /** One annotation as the browser sends it. Only `id` and `path` are checked; the rest is kept. */
 export interface Annotation {
   id: string;
-  /** "" for a general comment. */
+  /** "" for a comment on the review as a whole. */
   path: string;
-  type: "comment" | "deletion" | "replacement" | "general" | "answer";
-  /** 1-based, inclusive. Absent for general comments. */
+  type: "comment" | "replacement" | "answer";
+  /** 1-based, inclusive. Absent for a comment on the whole review. */
   lines?: { start: number; end: number };
   /** Present when made in a diff. Default "new". */
   side?: "old" | "new";
   /** The exact text selected. */
   original?: string;
-  /** `comment`, `general`: the comment. `replacement`: the proposed text. */
+  /** `comment`: the comment. `replacement`: the proposed text ("" proposes deleting). */
   text?: string;
-  /** `answer`: the question key and the answer. */
+  /** `answer`: the question's key and the answer given. */
   answer?: { key: string; value: string };
 }
-
-export type ReviewEventType =
-  | "approved"
-  | "changes_requested"
-  | "feedback"
-  | "dismissed"
-  | "revised"
-  | "closed";
 
 export interface ReviewEvent {
   /** 1-based, gapless, increasing. The agent's cursor. */
   seq: number;
-  type: ReviewEventType;
+  type: "feedback" | "approved" | "revised" | "closed";
   /** The version the event is about. For `revised`, the new version. */
   version: number;
   /** ISO 8601. */
   at: string;
   /** The reviewer's verified email, when the deployment is behind Cloudflare Access. */
   by?: string;
-  /** Reviewer events: the feedback as markdown for an agent to act on. */
+  /** `feedback`, `approved`: what the reviewer said, as markdown for an agent to act on. */
   feedback?: string;
-  /** `changes_requested` only: the reviewer answered the questions and said nothing else. */
-  answersOnly?: true;
-  /** Reviewer events: the annotations in this submission. */
+  /** `feedback`, `approved`: the annotations in this submission, structured. */
   annotations?: Annotation[];
 }
 
@@ -52,21 +41,21 @@ export interface Revision {
   unchanged: boolean;
 }
 
-/** The browser's submission routes in each mode, and the event each one appends. */
-export const SUBMISSIONS: Record<ReviewMode, Record<string, ReviewEventType>> = {
-  plan: { "/api/approve": "approved", "/api/deny": "changes_requested" },
-  annotate: { "/api/feedback": "feedback", "/api/exit": "dismissed" },
-};
+export type SubmissionType = "feedback" | "approved";
 
 export const MAX_ANNOTATIONS = 2_000;
 
 // One reply (RPC result or JSON body) carries at most this much of the log; a reader whose
-// cursor is further behind calls again. A single event is at most one 2 MB submission.
+// cursor is further behind gets the rest on its next call. One event is at most one 2 MB body.
 const MAX_EVENTS_BYTES = 8 * 1024 * 1024;
 
 const SEQ = "seq";
 const CLOSED = "closed";
 const eventKey = (seq: number) => `event:${String(seq).padStart(9, "0")}`;
+/** Marks an annotation id as logged: what makes an annotation "sent". */
+const sentKey = (id: string) => `sent:${id}`;
+/** The type of the latest reviewer event on a version. */
+const verdictKey = (version: number) => `verdict:${version}`;
 
 export function lastSeq(store: Store): number {
   return store.get<number>(SEQ) ?? 0;
@@ -101,24 +90,22 @@ export function eventsAfter(store: Store, after: number): ReviewEvent[] {
   return out;
 }
 
-export function assertOpen(store: Store): void {
-  if (isClosed(store)) throw new HttpError(409, "This review is closed.", { code: "closed" });
-}
-
 /**
- * Appends the reviewer event a browser request body describes. Refused (409) once the review is
- * closed, or if the reviewer was looking at a version the agent has since replaced.
+ * Appends what a browser submission adds to the log: its annotations whose ids are not logged
+ * yet, and its feedback text. Refused (409) once the review is closed, or if the reviewer was
+ * looking at a version the agent has since replaced. A submission that adds nothing (a retry, a
+ * second tab, an approval of an already approved version) appends nothing, so the answer is the
+ * last `seq` and `event` is absent.
  */
 export function submit(
   store: Store,
-  type: ReviewEventType,
+  type: SubmissionType,
   version: number,
   body: Record<string, unknown>,
   by: string | undefined,
-): ReviewEvent {
-  assertOpen(store);
-  const revision = typeof body.revision === "string" ? Number(body.revision) : body.revision;
-  if (typeof revision === "number" && revision !== version) {
+): { seq: number; event?: ReviewEvent } {
+  if (isClosed(store)) throw new HttpError(409, "This review is closed.", { code: "closed" });
+  if (typeof body.revision === "number" && body.revision !== version) {
     throw new HttpError(
       409,
       "The files were revised while you were reviewing them. Review the new version, then send again.",
@@ -128,15 +115,26 @@ export function submit(
   if (body.feedback !== undefined && typeof body.feedback !== "string") {
     throw new HttpError(400, "feedback must be a string");
   }
-  const annotations = parseAnnotations(body.annotations);
-  return append(store, {
+  const seen = new Set<string>();
+  const annotations = parseAnnotations(body.annotations).filter((a) => {
+    if (seen.has(a.id) || store.get(sentKey(a.id)) !== undefined) return false;
+    seen.add(a.id);
+    return true;
+  });
+  const feedback = body.feedback;
+  const adds = annotations.length > 0 || Boolean(feedback);
+  const approves = type === "approved" && store.get(verdictKey(version)) !== "approved";
+  if (!adds && !approves) return { seq: lastSeq(store) };
+  const event = append(store, {
     type,
     version,
     ...(by && { by }),
-    ...(type !== "dismissed" && body.feedback && { feedback: body.feedback }),
-    ...(type === "changes_requested" && body.answersOnly === true && { answersOnly: true }),
-    ...(type !== "dismissed" && annotations.length > 0 && { annotations }),
+    ...(feedback && { feedback }),
+    ...(annotations.length > 0 && { annotations }),
   });
+  for (const a of annotations) store.put(sentKey(a.id), event.seq);
+  store.put(verdictKey(version), type);
+  return { seq: event.seq, event };
 }
 
 export function parseAnnotations(value: unknown): Annotation[] {

@@ -1,4 +1,4 @@
-import type { Annotation } from "./annotations";
+import { isDeletion, isGeneral, type Annotation } from "./annotations";
 import { codeFenceFor } from "../markdown/structure";
 import {
   formatAnswersSection,
@@ -7,11 +7,7 @@ import {
   type QuestionAnswer,
 } from "../questions/questions";
 
-/** The feedback text when nothing was annotated. Agents key off it. */
-export const NO_FEEDBACK = "User reviewed the document and has no feedback.";
-
 export interface FeedbackInput {
-  mode: "plan" | "annotate";
   /** Every file of the review, in the order the tree shows them. */
   files: readonly string[];
   /** The questions of the markdown files read so far, each with its `path`. */
@@ -44,16 +40,15 @@ const lineLabel = ({ lines, side, against }: Annotation, inline = false): string
 const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
- * The reviewer's feedback as the markdown the agent reads: question answers first, then one
- * numbered entry per annotation, general comments first, each naming the lines it is about.
+ * What the reviewer is sending, as the markdown the agent reads: question answers first, then
+ * one numbered entry per annotation, general comments first, each naming the lines it is about.
  * A review of one file reads as a document review; with several files the entries sit under a
  * `## <path>` heading per file, in tree order, each quoting the selected text in a fence.
  */
-export function buildFeedback({ mode, files, questions, annotations }: FeedbackInput): string {
-  if (annotations.length === 0) return NO_FEEDBACK;
+export function buildFeedback({ files, questions, annotations }: FeedbackInput): string {
   const single = files.length <= 1;
-  const subject = mode === "plan" ? "plan" : single ? "document" : "files";
-  const title = mode === "plan" ? "Plan" : single ? "Document" : "Review";
+  const subject = single ? "document" : "files";
+  const title = single ? "Document" : "Review";
 
   const rank = new Map(files.map((path, index) => [path, index]));
   const notes = annotations
@@ -77,13 +72,13 @@ export function buildFeedback({ mode, files, questions, annotations }: FeedbackI
   let file: string | null = null;
   notes.forEach((ann, index) => {
     const number = `${index + 1}. `;
-    if (ann.type === "general") {
+    if (isGeneral(ann)) {
       out += `## ${number}General feedback about the ${subject}\n${quote(ann.text)}\n`;
       return;
     }
-    const deletion = ann.type === "deletion";
+    const deletion = isDeletion(ann);
     const original = ann.original ?? "";
-    const said = ann.type === "replacement" ? quote(`Replace with: ${ann.text ?? ""}`) : quote(ann.text);
+    const said = ann.type === "replacement" ? quote(`Replace with: ${ann.text}`) : quote(ann.text);
     if (single) {
       out += `## ${number}${ann.lines ? `(${lineLabel(ann, true)}) ` : ""}`;
       if (deletion) {

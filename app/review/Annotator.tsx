@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import Highlighter from "@plannotator/web-highlighter";
-import type { Annotation, AnnotationType } from "./annotations";
+import { isDeletion, type Annotation, type AnnotationType } from "./annotations";
 import { Composer } from "./Composer";
 import { HIGHLIGHT_EVENT } from "../markdown/highlight";
 
@@ -25,7 +25,7 @@ interface Pending {
   action?: Exclude<Action, "delete">;
 }
 
-const classFor = (type: AnnotationType) => (type === "deletion" ? "deletion" : "comment");
+const classFor = (a: Pick<Annotation, "type" | "text">) => (isDeletion(a) ? "deletion" : "comment");
 
 /**
  * One view's content, annotatable. Selecting text offers Comment / Delete / Replace (removed
@@ -114,7 +114,7 @@ export function Annotator({
       if (!highlighter) return;
       const live = new Set<string>();
       for (const ann of list) {
-        if (ann.type === "answer" || ann.type === "general") continue;
+        if (ann.type === "answer" || !ann.lines) continue;
         live.add(ann.id);
         if (paintedRef.current.has(ann.id)) {
           if (highlighter.getDoms(ann.id).length > 0) {
@@ -127,7 +127,7 @@ export function Annotator({
         }
         try {
           if (!paintOne(highlighter, ann)) continue;
-          highlighter.addClass(classFor(ann.type), ann.id);
+          highlighter.addClass(classFor(ann), ann.id);
           if (sentIds.has(ann.id)) highlighter.addClass("sent", ann.id);
           paintedRef.current.add(ann.id);
         } catch {
@@ -196,7 +196,7 @@ export function Annotator({
     });
   }, [locate, readOnly]);
 
-  const commit = (type: AnnotationType, text?: string) => {
+  const commit = (type: AnnotationType, text: string) => {
     const highlighter = highlighterRef.current;
     if (!pending || !highlighter) return;
     const { where } = pending;
@@ -207,7 +207,7 @@ export function Annotator({
     window.getSelection()?.removeAllRanges();
     setPending(null);
     if (!source) return;
-    highlighter.addClass(classFor(type), source.id);
+    highlighter.addClass(classFor({ type, text }), source.id);
     paintedRef.current.add(source.id);
     scrolledRef.current = source.id;
     onAdd({
@@ -217,7 +217,7 @@ export function Annotator({
       ...(where.lines && { lines: where.lines }),
       ...(where.side && { side: where.side }),
       original: where.original ?? source.text,
-      ...(text !== undefined && { text }),
+      text,
       ...(where.blockId && { blockId: where.blockId }),
       ...(where.col !== undefined && { col: where.col }),
       ...(where.against !== undefined && { against: where.against }),
@@ -241,7 +241,7 @@ export function Annotator({
           rect={pending.rect}
           commentOnly={pending.where.side === "old"}
           onAction={(action) =>
-            action === "delete" ? commit("deletion") : setPending({ ...pending, action })
+            action === "delete" ? commit("replacement", "") : setPending({ ...pending, action })
           }
           onClose={dismiss}
         />

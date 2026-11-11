@@ -72,29 +72,29 @@ export interface BaseDelta {
 }
 
 /**
- * Reverses `patches` against the files, which `read` gives as text (`undefined`: not in the
- * files). Every path the patch does not mention is the same in the base.
+ * Reverses `patches` against the files, which `read` gives (`undefined`: not in the files). Every
+ * path the patch does not mention is the same in the base.
  */
-export async function reversePatch(
+export function reversePatch(
   patches: FilePatch[],
-  read: (path: string) => Promise<string | undefined>,
-): Promise<BaseDelta> {
+  read: (path: string) => string | undefined,
+): BaseDelta {
   const delta: BaseDelta = { remove: new Set(), write: new Map() };
-  const current = async (path: string) => {
-    const text = await read(path);
+  const current = (path: string) => {
+    const text = read(path);
     if (text === undefined) throw new PatchError(`${path} is in the patch but not in the files`);
     return text;
   };
   for (const file of patches) {
     const { oldPath, newPath, hunks } = file;
     if (newPath === null) {
-      if ((await read(oldPath!)) !== undefined) {
+      if (read(oldPath!) !== undefined) {
         throw new PatchError(`${oldPath} is deleted by the patch but is in the files`);
       }
       delta.write.set(oldPath!, reverseApply(oldPath!, hunks, ""));
       continue;
     }
-    const old = reverseApply(newPath, hunks, await current(newPath));
+    const old = reverseApply(newPath, hunks, current(newPath));
     if (oldPath === null) {
       if (old !== "") throw new PatchError(`${newPath}: a created file must start empty`);
       delta.remove.add(newPath);

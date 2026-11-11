@@ -26,7 +26,7 @@ export default {
     if (request.method === "GET" && url.pathname === "/") {
       const review = await ctx.exports
         .Dynotator({ props: { origin: url.origin } })
-        .createReview({ mode: "annotate", title: "Dynotator", files, open: "README.md" });
+        .createReview({ title: "Dynotator", files, open: "README.md" });
       return Response.redirect(review.url, 303);
     }
     return dynotator.fetch(request, env, ctx);

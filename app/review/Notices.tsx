@@ -3,6 +3,8 @@ import { useCallback, useState } from "react";
 export interface Notice {
   text: string;
   actions: { label: string; onClick: () => void }[];
+  /** Gone by itself after this many milliseconds. */
+  ttl?: number;
 }
 
 /** Sets (or, with null, clears) the notice in one slot: a later one replaces it. */
@@ -17,6 +19,17 @@ export function useNotices(): [Map<string, Notice>, Notify] {
       else next.delete(slot);
       return next;
     });
+    if (notice?.ttl)
+      setTimeout(
+        () =>
+          setNotices((prev) => {
+            if (prev.get(slot) !== notice) return prev;
+            const next = new Map(prev);
+            next.delete(slot);
+            return next;
+          }),
+        notice.ttl,
+      );
   }, []);
   return [notices, notify];
 }

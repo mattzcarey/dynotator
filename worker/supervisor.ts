@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import bundle from "virtual:session-server";
-import type { Decision, Revision } from "../session/decision";
+import type { ReviewEvent, Revision } from "../session/events";
 import type { Files, ReviewInit } from "../session/files";
 import type { SessionServer } from "../session/index";
 
@@ -20,7 +20,13 @@ export class SessionSupervisor extends DurableObject<Env> {
     const meta: SupervisorMeta = { expiresAt: Date.now() + ttlSeconds * 1000 };
     this.ctx.storage.kv.put("meta", meta);
     await this.ctx.storage.setAlarm(meta.expiresAt);
-    await this.server().init(init);
+    try {
+      await this.server().init(init);
+    } catch (err) {
+      // A review whose content was refused (a patch that does not apply, say) never existed.
+      await this.remove();
+      throw err;
+    }
   }
 
   exists(): boolean {
@@ -29,16 +35,16 @@ export class SessionSupervisor extends DurableObject<Env> {
 
   // Pass-throughs for the RPC entrypoint: a facet stub cannot be returned out of this object.
 
-  decision(): Promise<Decision | null> {
-    return this.session().decision();
-  }
-
-  wait(seconds?: number): Promise<Decision | null> {
-    return this.session().wait(seconds);
-  }
-
   revise(files: Files): Promise<Revision> {
     return this.session().revise(files);
+  }
+
+  events(after?: number, wait?: number): Promise<ReviewEvent[]> {
+    return this.session().events(after, wait);
+  }
+
+  close(): Promise<void> {
+    return this.session().close();
   }
 
   /** The browser's API, with the `/s/:id` prefix already stripped by the host. */
@@ -53,7 +59,12 @@ export class SessionSupervisor extends DurableObject<Env> {
       await this.ctx.storage.setAlarm(meta.expiresAt);
       return;
     }
+    await this.remove();
+  }
+
+  private async remove() {
     this.ctx.facets.delete(FACET);
+    await this.ctx.storage.deleteAlarm();
     await this.ctx.storage.deleteAll();
   }
 

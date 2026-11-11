@@ -1,6 +1,6 @@
 import { parseAnswer, type QuestionAnswer } from "../questions/questions";
 
-export type AnnotationType = "comment" | "deletion" | "replacement" | "general" | "answer";
+export type AnnotationType = "comment" | "replacement" | "answer";
 export type Side = "old" | "new";
 export interface Lines {
   start: number;
@@ -34,7 +34,7 @@ interface Private {
  */
 export interface Annotation extends Private {
   id: string;
-  /** "" for a general comment. */
+  /** "" for a comment on the review as a whole. */
   path: string;
   type: AnnotationType;
   /** 1-based, inclusive: the selected lines in source and diffs, the block's in markdown. */
@@ -43,7 +43,7 @@ export interface Annotation extends Private {
   side?: Side;
   /** The exact text selected. */
   original?: string;
-  /** `comment`, `general`: the comment. `replacement`: the proposed text. */
+  /** `comment`: the comment. `replacement`: the proposed text ("" proposes deleting). */
   text?: string;
   answer?: { key: string; value: string };
 }
@@ -74,7 +74,7 @@ export function toWire(annotation: Annotation): WireAnnotation {
   };
 }
 
-const TYPES = new Set<string>(["comment", "deletion", "replacement", "general", "answer"]);
+const TYPES = new Set<string>(["comment", "replacement", "answer"]);
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const isLine = (value: unknown): value is number =>
@@ -131,9 +131,13 @@ export function fromWire(value: unknown): Annotation | null {
 export const globalComment = (text: string): Annotation => ({
   id: `global-${crypto.randomUUID()}`,
   path: "",
-  type: "general",
+  type: "comment",
   text,
 });
+
+export const isGeneral = (a: Annotation): boolean => a.type === "comment" && a.path === "";
+export const isDeletion = (a: Pick<Annotation, "type" | "text">): boolean =>
+  a.type === "replacement" && !a.text;
 
 /** Everything but question answers: what the panel lists and the counts count. */
 export const isNote = (annotation: Annotation): boolean => annotation.type !== "answer";

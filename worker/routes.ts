@@ -15,15 +15,13 @@ export function isSessionId(value: string): boolean {
 }
 
 export type HostRoute =
-  | { kind: "create" }
   | { kind: "page"; id: string }
   | { kind: "session-api"; id: string; path: string }
   | { kind: "api-not-found" }
   | { kind: "page-not-found" }
   | { kind: "asset" };
 
-export function matchRoute(method: string, pathname: string): HostRoute {
-  if (pathname === "/api/sessions" && method === "POST") return { kind: "create" };
+export function matchRoute(pathname: string): HostRoute {
   if (pathname.startsWith("/api/")) return { kind: "api-not-found" };
   const m = /^\/s\/([^/]+)(\/.*)?$/.exec(pathname);
   if (!m) return { kind: "asset" };

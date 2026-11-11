@@ -2,12 +2,13 @@ import {
   type Files,
   type Manifest,
   type ReviewInit,
-  type ReviewMode,
+  assertTree,
   comparePaths,
   defaultOpen,
   manifestOf,
   sameManifest,
 } from "./files";
+import { parsePatch, reversePatch } from "./patch";
 import type { Store } from "./store";
 
 /** The part of `@cloudflare/computer`'s `workspace.fs` a review uses. */
@@ -19,7 +20,6 @@ export interface Fs {
 }
 
 export interface ReviewMeta {
-  mode: ReviewMode;
   title?: string;
   open?: string;
 }
@@ -38,21 +38,27 @@ export function getMeta(store: Store): ReviewMeta | undefined {
   return store.get<ReviewMeta>(META);
 }
 
-/** The latest version number, starting at 1. The browser echoes it as `revision`. */
+/** The latest version number, starting at 1 (0 is the base). The browser echoes it as `revision`. */
 export function currentVersion(store: Store): number {
   return store.get<number>(HEAD) ?? 0;
 }
 
+/** Whether there is a version 0: the state before the review's patch. */
+export function hasBase(store: Store): boolean {
+  return store.get(versionKey(0)) !== undefined;
+}
+
+/** Every version but the base. */
 export function listVersions(store: Store): Array<{ version: number; timestamp: string }> {
   return Array.from(store.list<{ timestamp: string }>({ prefix: VERSION_PREFIX }), ([key, v]) => ({
     version: Number(key.slice(VERSION_PREFIX.length)),
     timestamp: v.timestamp,
-  }));
+  })).filter((v) => v.version > 0);
 }
 
 /** Version `v`'s paths, sizes and hashes in path order, or `undefined` for an unknown version. */
 export function getManifest(store: Store, v: number): Manifest | undefined {
-  if (!Number.isInteger(v) || v < 1 || !store.get(versionKey(v))) return undefined;
+  if (!Number.isInteger(v) || v < 0 || !store.get(versionKey(v))) return undefined;
   const prefix = filePrefix(v);
   const entries = Array.from(
     store.list<[number, string]>({ prefix }),
@@ -68,11 +74,28 @@ export function openPath(meta: ReviewMeta, manifest: Manifest): string | undefin
     : defaultOpen(manifest.keys());
 }
 
-export async function initReview(store: Store, fs: Fs, { files, ...meta }: ReviewInit) {
+export async function initReview(store: Store, fs: Fs, { files, patch, ...meta }: ReviewInit) {
   if (getMeta(store)) throw new Error("Review already initialised");
+  if (patch !== undefined) {
+    const base = baseOf(files, patch);
+    await writeVersion(store, fs, 0, base, await manifestOf(base), () => {});
+  }
   await writeVersion(store, fs, 1, files, await manifestOf(files), () => {});
   // Last, so that a facet whose init failed part way still reads as uninitialised.
   store.put<ReviewMeta>(META, meta);
+}
+
+/** The files before `patch`: reversed where it touches them, the same everywhere else. */
+export function baseOf(files: Files, patch: string): Files {
+  const { remove, write } = reversePatch(parsePatch(patch), (path) =>
+    Object.hasOwn(files, path) ? files[path] : undefined,
+  );
+  const base = Object.fromEntries(
+    Object.entries(files).filter(([path]) => !remove.has(path) && !write.has(path)),
+  );
+  Object.assign(base, Object.fromEntries(write));
+  assertTree(Object.keys(base));
+  return base;
 }
 
 /**
@@ -131,5 +154,5 @@ async function writeVersion(
   const prefix = filePrefix(v);
   for (const [path, { size, hash }] of manifest) store.put(`${prefix}${path}`, [size, hash]);
   store.put(versionKey(v), { timestamp: new Date().toISOString() });
-  store.put(HEAD, v);
+  if (v > 0) store.put(HEAD, v);
 }

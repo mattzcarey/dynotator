@@ -3,7 +3,7 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import type { Block } from "./blocks";
 import { blockId } from "./BlockRenderer";
-import { followInternal, ImageResolver, LinkResolver } from "./links";
+import { followInternal, LinkResolver } from "./links";
 
 const ALLOWED_TAGS = [
   "sub",
@@ -85,17 +85,13 @@ const ALLOWED_ATTR = [
  */
 function HtmlBlockImpl({ block }: { block: Block }) {
   const ref = useRef<HTMLDivElement>(null);
-  const resolveImage = useContext(ImageResolver);
   const html = useMemo(
     () =>
-      withReviewImages(
-        DOMPurify.sanitize(marked.parse(block.content, { async: false, gfm: true }), {
-          ALLOWED_TAGS,
-          ALLOWED_ATTR,
-        }),
-        resolveImage,
-      ),
-    [block.content, resolveImage],
+      DOMPurify.sanitize(marked.parse(block.content, { async: false, gfm: true }), {
+        ALLOWED_TAGS,
+        ALLOWED_ATTR,
+      }),
+    [block.content],
   );
   const resolve = useContext(LinkResolver);
   useEffect(() => {
@@ -121,29 +117,6 @@ function HtmlBlockImpl({ block }: { block: Block }) {
       className="html-block my-4 text-[15px] leading-relaxed text-foreground/90"
     />
   );
-}
-
-/**
- * Relative media sources resolved to the review's own files, in an inert template so nothing is
- * fetched first; one that names no file of the review is dropped rather than requested.
- */
-function withReviewImages(html: string, resolve: ((src: string) => string | null) | null): string {
-  if (!/\b(?:src|srcset|poster)=/i.test(html)) return html;
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  for (const el of template.content.querySelectorAll("[src], [srcset], [poster]")) {
-    if (!/^https?:\/\//i.test(el.getAttribute("poster") ?? "https://")) el.removeAttribute("poster");
-    const srcset = el.getAttribute("srcset");
-    if (srcset !== null && srcset.split(",").some((part) => !/^\s*https?:\/\//i.test(part)))
-      el.removeAttribute("srcset");
-    if (!el.hasAttribute("src")) continue;
-    const src = el.getAttribute("src") ?? "";
-    if (/^https?:\/\//i.test(src)) continue;
-    const url = el.tagName === "IMG" ? resolve?.(src.trim()) : null;
-    if (url) el.setAttribute("src", url);
-    else el.removeAttribute("src");
-  }
-  return template.innerHTML;
 }
 
 export default React.memo(

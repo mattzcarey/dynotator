@@ -1,27 +1,9 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
-import type { Annotation, ReviewEvent, ReviewEventType, Revision } from "../session/events";
-import type { Files } from "../session/files";
-import {
-  type Content,
-  type FileSource,
-  type ReviewInit,
-  parseContent,
-  parseInit,
-  upload,
-  uploadBase,
-} from "./content";
+import type { Annotation, ReviewEvent, Revision } from "../session/events";
+import { type Files, type ReviewInit, parseFiles, parseInit } from "../session/files";
 import { isSessionId, newSessionId, ttlSeconds } from "./routes";
 
-export type {
-  Annotation,
-  Content,
-  FileSource,
-  Files,
-  ReviewEvent,
-  ReviewEventType,
-  ReviewInit,
-  Revision,
-};
+export type { Annotation, Files, ReviewEvent, ReviewInit, Revision };
 
 export interface Review {
   id: string;
@@ -45,47 +27,34 @@ export interface DynotatorProps {
  */
 export class Dynotator extends WorkerEntrypoint<Env, DynotatorProps> {
   /**
-   * Opens a review and returns the URL to hand to a human. Content is pushed (`files`) or pulled
-   * (`source`, read during this call only); `base` or `patch` makes it a review of a change. If
-   * anything fails, no review is left behind.
+   * Opens a review of `files` and returns the URL to hand to a human. With `patch`, the diff
+   * that produced `files`, the review is of that change; a patch that does not apply in reverse
+   * fails the call and leaves no review behind.
    */
   async createReview(init: ReviewInit): Promise<Review> {
-    const { meta, content, base } = parseInit(init);
+    const review = parseInit(init);
     const id = newSessionId();
-    const review = this.supervisor(id);
-    await review.create(ttlSeconds(this.env.SESSION_TTL_SECONDS));
-    try {
-      const baseInput = await uploadBase(review, base);
-      await review.init(meta, await upload(review, content), baseInput);
-    } catch (err) {
-      await review.destroy();
-      throw err;
-    }
+    await this.supervisor(id).create(review, ttlSeconds(this.env.SESSION_TTL_SECONDS));
     const origin = (this.ctx.props?.origin ?? this.env.PUBLIC_URL).replace(/\/+$/, "");
     return { id, url: `${origin}/s/${id}` };
   }
 
   /**
-   * Puts a full snapshot up as the next version at the same URL and appends `revised`; files
-   * absent from it are deleted in that version. Allowed until the review is closed, approved or
-   * not. An identical snapshot is `unchanged` and appends nothing.
+   * Puts `files`, a full snapshot, up as the next version at the same URL and appends `revised`;
+   * files absent from it are deleted in that version. Allowed until the review is closed. An
+   * identical snapshot is `unchanged` and appends nothing.
    */
-  async revise(id: string, content: Content): Promise<Revision> {
-    const review = this.session(id);
-    return review.revise(await upload(review, parseContent(content)));
-  }
-
-  /** Events with `seq > after` (default 0), in order; a long log may come in several calls. */
-  async getEvents(id: string, after = 0): Promise<ReviewEvent[]> {
-    return this.session(id).events(after);
+  async revise(id: string, files: Files): Promise<Revision> {
+    return this.session(id).revise(parseFiles(files));
   }
 
   /**
-   * Like `getEvents`, but waits up to `seconds` (default 25, at most 55) for at least one event;
-   * `[]` means none yet. Keep a cursor: call, process, set it to the last `seq`.
+   * Events with `seq > after`, in order. With `wait` (seconds, at most 55) and none yet, holds
+   * the call until there is one; `[]` means the time ran out. Keep a cursor: call, process, set it
+   * to the last `seq`. A very long log may arrive over several calls.
    */
-  async waitForEvents(id: string, after: number, seconds?: number): Promise<ReviewEvent[]> {
-    return this.session(id).wait(after, seconds);
+  async getEvents(id: string, after = 0, wait = 0): Promise<ReviewEvent[]> {
+    return this.session(id).events(after, wait);
   }
 
   /** Ends the review: `closed` is appended once, and nothing more is accepted. Reads still work. */
