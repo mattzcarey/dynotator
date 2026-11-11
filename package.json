@@ -1,6 +1,6 @@
 {
   "name": "dynotator",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Human review of plans, documents and repositories for agents on Cloudflare. A Worker with an RPC API; each review's server runs in a Dynamic Worker.",
   "keywords": [
     "agents",
