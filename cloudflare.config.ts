@@ -1,4 +1,5 @@
 import { type WorkerConfig, bindings, defineConfig, exports } from "cf/config";
+import remote from "./examples/remote/cloudflare.config.ts";
 import self from "./examples/self/cloudflare.config.ts";
 import * as entrypoint from "./worker/index.ts" with { type: "cf-worker" };
 
@@ -31,7 +32,10 @@ export const dynotator = {
   },
 } satisfies Omit<WorkerConfig, "name">;
 
-// `--mode self` builds and runs examples/self instead, against the same SPA and Vite config.
-export default defineConfig(({ mode }) =>
-  mode === "self" ? self : { worker: { name: "dynotator", entrypoint, ...dynotator } },
+// `--mode self` and `--mode remote` build and run that example instead, against the same SPA and
+// Vite config.
+const examples: Record<string, typeof self> = { self, remote };
+
+export default defineConfig(
+  ({ mode }) => examples[mode ?? ""] ?? { worker: { name: "dynotator", entrypoint, ...dynotator } },
 );

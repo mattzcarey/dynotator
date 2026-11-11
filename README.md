@@ -96,6 +96,17 @@ and the reviewer can diff any version against it.
 
 Reviews cannot be created over HTTP in production: the service binding is the authorisation.
 
+## Use it from Claude, or from an agent on your laptop
+
+An agent that is not a Worker has no binding. [`examples/remote`](examples/remote) is a Worker
+that embeds Dynotator and serves the four methods as MCP tools at `/mcp`, behind Cloudflare
+Access. Claude connects to that URL. A local coding agent uses the example's CLI:
+
+```sh
+dynotator review --base main    # prints the review URL
+dynotator events --wait 600     # the reviewer's feedback
+```
+
 ## Embed it in your own Worker
 
 Instead of binding to a deployed Dynotator, a Worker can run it itself: re-export the entrypoint

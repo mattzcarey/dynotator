@@ -13,19 +13,20 @@ containers, no local server, no CLI.
 
 ## Layout
 
-| Path                       | What                                                                                                 |
-| -------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `worker/`                  | Host Worker: `Dynotator` RPC entrypoint (`api.ts`), HTTP router, `SessionSupervisor` Durable Object. |
-| `session/`                 | The per-review server. Bundled to a JS string and loaded as a Dynamic Worker.                        |
-| `index.html`, `app/`       | The browser review app (Vite entry `app/index.tsx`, styles and theme tokens in `app/theme.css`).     |
-| `app/review/`              | The review: annotating, panel, sidebar, drafts, decisions, version diff, feedback text.              |
-| `app/files/`               | The file tree, path and hash handling, lazy file loading, the source view with line numbers.         |
-| `app/markdown/`            | Markdown to blocks (`blocks.ts`) and the block and inline renderers, code highlighting, Mermaid.     |
-| `app/questions/`           | `:::question` blocks: grammar and answer export (`questions.ts`, the authoring reference), the card. |
-| `examples/self/`           | A Worker that embeds Dynotator and puts this repository up for review (`npm run dev:self`).          |
-| `cloudflare.config.ts`     | Worker config for the `cf` CLI (bindings, exports, assets); `--mode self` selects the example.       |
-| `vite.config.ts`           | Vite+ config: the build, and the format, lint and test settings.                                     |
-| `scripts/build-session.ts` | Vite plugin that bundles `session/` into `virtual:session-server`.                                   |
+| Path                       | What                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `worker/`                  | Host Worker: `Dynotator` RPC entrypoint (`api.ts`), HTTP router, `SessionSupervisor` Durable Object.    |
+| `session/`                 | The per-review server. Bundled to a JS string and loaded as a Dynamic Worker.                           |
+| `index.html`, `app/`       | The browser review app (Vite entry `app/index.tsx`, styles and theme tokens in `app/theme.css`).        |
+| `app/review/`              | The review: annotating, panel, sidebar, drafts, decisions, version diff, feedback text.                 |
+| `app/files/`               | The file tree, path and hash handling, lazy file loading, the source view with line numbers.            |
+| `app/markdown/`            | Markdown to blocks (`blocks.ts`) and the block and inline renderers, code highlighting, Mermaid.        |
+| `app/questions/`           | `:::question` blocks: grammar and answer export (`questions.ts`, the authoring reference), the card.    |
+| `examples/self/`           | A Worker that embeds Dynotator and puts this repository up for review (`npm run dev:self`).             |
+| `examples/remote/`         | A Worker that embeds Dynotator and adds `/mcp`, plus a CLI: for agents that are not Workers.            |
+| `cloudflare.config.ts`     | Worker config for the `cf` CLI (bindings, exports, assets); `--mode self` or `remote` picks an example. |
+| `vite.config.ts`           | Vite+ config: the build, and the format, lint and test settings.                                        |
+| `scripts/build-session.ts` | Vite plugin that bundles `session/` into `virtual:session-server`.                                      |
 
 Imports are relative; there are no path aliases. npm packages still published under `@plannotator/*`
 are upstream dependencies, not this repo.
@@ -61,6 +62,8 @@ Rules that follow from this:
   by holding the unguessable review URL (>= 128 bits), optionally behind Cloudflare Access.
   Do not add tokens, API keys or secret bindings.
 - Agents never talk HTTP to Dynotator. New agent-facing capability goes on the RPC entrypoint.
+  `examples/remote` is how an agent without a binding gets in: its own Worker embeds Dynotator
+  and exposes the four methods as MCP tools. That stays an example; the core adds no HTTP API.
 - The browser's API is `/s/:id/api/*`: `GET /api/review`, `GET /api/revision`, `GET /api/files`,
   `GET /api/file`, `GET /api/changes`, `GET /api/events`, `POST /api/feedback`,
   `POST /api/approve`, `GET/POST /api/draft`. Nothing else.

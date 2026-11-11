@@ -42,10 +42,12 @@
   "scripts": {
     "dev": "vp dev",
     "dev:self": "vp dev --mode self",
+    "dev:remote": "vp dev --mode remote",
     "build": "vp build",
     "build:self": "vp build --mode self",
     "deploy": "cf deploy",
     "deploy:self": "cf deploy --mode self",
+    "deploy:remote": "cf deploy --mode remote",
     "types": "cf workers types",
     "test": "vp test run",
     "lint": "vp lint",
@@ -67,6 +69,8 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "2.0.0-beta.v.13",
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22",
     "@types/react": "^19.3.0",
@@ -75,7 +79,8 @@
     "cf": "1.0.0-beta.28",
     "tailwindcss": "^4.1.18",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.5.1",
-    "vite-plus": "1.5.1"
+    "vite-plus": "1.5.1",
+    "zod": "^4.6.7"
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.5.1"
