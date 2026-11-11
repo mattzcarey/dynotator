@@ -2,6 +2,7 @@
   "extends": "../../worker/tsconfig.json",
   "include": [
     "index.ts",
+    "access.ts",
     "cloudflare.config.ts",
     "../../worker",
     "../../session",

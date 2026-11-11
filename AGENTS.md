@@ -63,7 +63,8 @@ Rules that follow from this:
   Do not add tokens, API keys or secret bindings.
 - Agents never talk HTTP to Dynotator. New agent-facing capability goes on the RPC entrypoint.
   `examples/remote` is how an agent without a binding gets in: its own Worker embeds Dynotator
-  and exposes the four methods as MCP tools. That stays an example; the core adds no HTTP API.
+  and exposes the four methods as MCP tools. It also validates the Cloudflare Access token, which
+  the core never does. Both stay in the example: the core adds no HTTP API and checks no tokens.
 - The browser's API is `/s/:id/api/*`: `GET /api/review`, `GET /api/revision`, `GET /api/files`,
   `GET /api/file`, `GET /api/changes`, `GET /api/events`, `POST /api/feedback`,
   `POST /api/approve`, `GET/POST /api/draft`. Nothing else.

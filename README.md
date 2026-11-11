@@ -100,7 +100,8 @@ Reviews cannot be created over HTTP in production: the service binding is the au
 
 An agent that is not a Worker has no binding. [`examples/remote`](examples/remote) is a Worker
 that embeds Dynotator and serves the four methods as MCP tools at `/mcp`, behind Cloudflare
-Access. Claude connects to that URL. A local coding agent uses the example's CLI:
+Access. It verifies the Access token, so its events carry the reviewer's email. Claude connects
+to that URL. A local coding agent uses the example's CLI:
 
 ```sh
 dynotator review --base main    # prints the review URL
@@ -172,9 +173,11 @@ URLs handed out over RPC start with it.
 Review URLs are unguessable capabilities: whoever has one can read and answer that review. To also
 require sign-in, put the Worker behind
 [Cloudflare Access](https://developers.cloudflare.com/workers/configuration/cloudflare-access/).
-Then reviewer events carry the signed-in email as `by`, taken from the platform's `ctx.access`;
-a header sent by the browser is never trusted. Without Access there is no `by`. The Worker itself
-holds no secrets and checks no tokens. Reviews expire after 7 days (`SESSION_TTL_SECONDS`).
+Reviewer events carry the signed-in email as `by` when the platform reports it in `ctx.access`;
+a header sent by the browser is never trusted. Today the platform does not pass `ctx.access` to
+Workers with static assets, so a Dynotator deployed as is has no `by` even behind Access. The
+Worker itself holds no secrets and checks no tokens; [`examples/remote`](examples/remote) embeds
+it in a Worker that verifies the Access token and supplies the identity. Reviews expire after 7 days (`SESSION_TTL_SECONDS`).
 
 ## Develop
 

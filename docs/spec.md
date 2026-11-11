@@ -148,11 +148,13 @@ the platform (`ctx.access`, never from a client-supplied header) and reviewer ev
 `by`. Without Access, `by` is absent. There is no self-declared name. The Worker still holds no
 secrets and checks no tokens.
 
-Unverified in production: Cloudflare's docs say a Worker with static assets runs behind a router
-that may not pass `ctx.access` on, and Dynotator always has assets. It works under the dev
-server's Access simulation (`DYNOTATOR_DEV_EMAIL=you@example.com npm run dev`). If it does not
-hold when deployed, `by` is simply absent; the fix would be validating the Access JWT, which is a
-deliberate change to "checks no tokens" and not made here.
+A deployed Dynotator does not get `ctx.access` today, so its events have no `by`: the platform
+does not pass the Access context to Workers with static assets, and Dynotator always has them.
+It works under the dev server's Access simulation
+(`DYNOTATOR_DEV_EMAIL=you@example.com npm run dev`). Dynotator does not validate the Access JWT
+itself: that would end "checks no tokens". A Worker that embeds Dynotator can, and can hand the
+verified identity over as `ctx.access`; [`examples/remote`](../examples/remote) does, and its
+deployed events carry `by`.
 
 ## 5. The browser's API
 

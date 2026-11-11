@@ -1,6 +1,7 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import dynotator, { type Dynotator } from "../../worker/index.ts";
+import { type AccessVars, type Verified, parseAccessConfig, verifyAccess } from "./access.ts";
 
 export { Dynotator, SessionSupervisor } from "../../worker/index.ts";
 
@@ -78,21 +79,64 @@ function createServer(reviews: Service<typeof Dynotator>) {
 }
 
 /**
- * Dynotator, plus `/mcp`: the agent side for agents that are not Workers. This Worker checks no
- * tokens, so anyone who can reach `/mcp` can create reviews. Deploy it behind Cloudflare Access.
+ * `ctx` with the identity this Worker verified, in the place Dynotator reads it from. The
+ * platform fills `ctx.access` itself only for Workers without static assets, and Dynotator
+ * always has them.
+ */
+function withIdentity(
+  ctx: ExecutionContext,
+  verified: Extract<Verified, { ok: true }>,
+): ExecutionContext {
+  const access: CloudflareAccessContext = {
+    aud: verified.aud,
+    getIdentity: async () => (verified.email ? { email: verified.email } : undefined),
+  };
+  return new Proxy(ctx, {
+    get(target, key) {
+      if (key === "access") return access;
+      const value: unknown = Reflect.get(target, key);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+}
+
+const refuse = (status: number, error: string) => Response.json({ error }, { status });
+
+/**
+ * Dynotator, plus `/mcp`: the agent side for agents that are not Workers.
+ *
+ * With `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` set, every request this Worker handles must carry a
+ * valid Cloudflare Access token, and reviewer events carry the signed-in email as `by`. Without
+ * them nothing is checked, so `/mcp` is served only under the dev server.
  */
 export default {
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname !== "/mcp") return dynotator.fetch(request, env, ctx);
+    const access = parseAccessConfig(env);
+    if (access.kind === "invalid") return refuse(500, access.reason);
+
+    let reviewer = ctx;
+    if (access.kind === "on") {
+      const verified = await verifyAccess(request, access);
+      if (!verified.ok) return refuse(403, `Cloudflare Access: ${verified.reason}`);
+      reviewer = withIdentity(ctx, verified);
+    }
+    if (url.pathname !== "/mcp") return dynotator.fetch(request, env, reviewer);
+
+    if (access.kind === "off" && !import.meta.env.DEV) {
+      return refuse(
+        503,
+        "This deployment has no ACCESS_TEAM_DOMAIN and ACCESS_AUD, so its agent side is switched off. See examples/remote/README.md.",
+      );
+    }
     // A page on another site must not drive the agent side with the reviewer's Access cookie.
     const origin = request.headers.get("Origin");
     if (origin !== null && origin !== url.origin) {
-      return Response.json({ error: "Cross-origin requests are not allowed" }, { status: 403 });
+      return refuse(403, "Cross-origin requests are not allowed");
     }
     const reviews = ctx.exports.Dynotator({ props: { origin: url.origin } });
     return createMcpHandler(() => createServer(reviews), {
       maxRequestBodySize: MAX_BODY_BYTES,
     }).fetch(request);
   },
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<Env & AccessVars>;
