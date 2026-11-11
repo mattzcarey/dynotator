@@ -53,8 +53,9 @@ describe("toWire: the spec's Annotation, private fields under ui", () => {
       lines: { start: 12, end: 12 },
       side: "old",
       original: "x = 1",
+      against: 0,
       text: "x = 2",
-      ui: { col: 4, against: 0 },
+      ui: { col: 4 },
     });
   });
 

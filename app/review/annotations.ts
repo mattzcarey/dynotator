@@ -20,8 +20,6 @@ interface Private {
   blockId?: string;
   /** 0-based column of the selection's start in `lines.start`, where the view knows it. */
   col?: number;
-  /** `side: "old"`: the version the removed lines are numbered in (0 is the base). */
-  against?: number;
   /** Web-highlighter positions in the rendered markdown file the selection was made in. */
   startMeta?: TextPosition;
   endMeta?: TextPosition;
@@ -41,6 +39,8 @@ export interface Annotation extends Private {
   lines?: Lines;
   /** Made in a diff. */
   side?: Side;
+  /** With `side: "old"`: the version the removed lines are numbered in (0 is the base). */
+  against?: number;
   /** The exact text selected. */
   original?: string;
   /** `comment`: the comment. `replacement`: the proposed text ("" proposes deleting). */
@@ -53,17 +53,10 @@ export interface WireAnnotation extends Omit<Annotation, keyof Private> {
   ui?: Private;
 }
 
-const PRIVATE_KEYS = [
-  "blockId",
-  "col",
-  "against",
-  "startMeta",
-  "endMeta",
-  "questionAnswer",
-] as const;
+const PRIVATE_KEYS = ["blockId", "col", "startMeta", "endMeta", "questionAnswer"] as const;
 
 export function toWire(annotation: Annotation): WireAnnotation {
-  const { id, path, type, lines, side, original, text, answer } = annotation;
+  const { id, path, type, lines, side, against, original, text, answer } = annotation;
   const ui: Private = {};
   for (const key of PRIVATE_KEYS) {
     if (annotation[key] !== undefined) Object.assign(ui, { [key]: annotation[key] });
@@ -74,6 +67,7 @@ export function toWire(annotation: Annotation): WireAnnotation {
     type,
     ...(lines && { lines: { start: lines.start, end: lines.end } }),
     ...(side && { side }),
+    ...(against !== undefined && { against }),
     ...(original !== undefined && { original }),
     ...(text !== undefined && { text }),
     ...(answer && { answer: { key: answer.key, value: answer.value } }),
@@ -114,6 +108,7 @@ export function fromWire(value: unknown): Annotation | null {
   if (isRecord(lines) && isLine(lines.start) && isLine(lines.end) && lines.end >= lines.start)
     out.lines = { start: lines.start, end: lines.end };
   if (side === "old" || side === "new") out.side = side;
+  if (isCount(value.against)) out.against = value.against;
   if (string(original) !== undefined) out.original = original as string;
   if (string(text) !== undefined) out.text = text as string;
   if (isRecord(answer) && typeof answer.key === "string" && typeof answer.value === "string")
@@ -121,7 +116,6 @@ export function fromWire(value: unknown): Annotation | null {
   const ui = isRecord(value.ui) ? value.ui : {};
   if (string(ui.blockId) !== undefined) out.blockId = ui.blockId as string;
   if (isCount(ui.col)) out.col = ui.col;
-  if (isCount(ui.against)) out.against = ui.against;
   const start = position(ui.startMeta);
   const end = position(ui.endMeta);
   if (start && end) {

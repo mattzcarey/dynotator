@@ -2,7 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { MAX_ANNOTATIONS } from "./events";
 import type { Files, ReviewInit } from "./files";
 import { REVIEWER_HEADER } from "./http";
-import type { Fs } from "./review";
+import { type Fs, currentVersion } from "./review";
 import { Session } from "./session";
 import { MemoryStore } from "./store";
 
@@ -39,7 +39,8 @@ const V2: Files = { "README.md": "# v2", "src/a.ts": "a", "src/c.ts": "c" };
 
 async function session(init: Partial<ReviewInit> = {}) {
   const fs = new MemoryFs();
-  const server = new Session(new MemoryStore(), fs);
+  const store = new MemoryStore();
+  const server = new Session(store, fs);
   await server.init({ files: V1, ...init });
   const call = async (
     method: string,
@@ -47,12 +48,18 @@ async function session(init: Partial<ReviewInit> = {}) {
     body?: unknown,
     headers?: Record<string, string>,
   ) => {
+    // A submission that does not say otherwise is made on the version now under review.
+    const submits = path === "/api/feedback" || path === "/api/approve";
+    const sent =
+      submits && (body === undefined || (typeof body === "object" && !("revision" in body!)))
+        ? { revision: currentVersion(store), ...(body as object | undefined) }
+        : body;
     const res = await server.fetch(
       new Request(`https://facet${path}`, {
         method,
         headers,
         body:
-          body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
+          sent === undefined ? undefined : typeof sent === "string" ? sent : JSON.stringify(sent),
       }),
     );
     // Tests poke at whatever shape a route returns.
@@ -335,6 +342,8 @@ describe("events", () => {
     const bad = [
       { annotations: "nope" },
       { feedback: 5 },
+      { feedback: "no revision", revision: undefined },
+      { feedback: "bad revision", revision: "1" },
       { annotations: [5] },
       { annotations: [[]] },
       { annotations: [{ id: "a" }] },

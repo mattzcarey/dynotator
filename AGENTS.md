@@ -39,18 +39,19 @@ browser ─/s/:id/api/*──────────────▶ host Worker
                                                                          (Dynamic Worker, own SQLite)
 ```
 
-- **`Dynotator`** (`worker/api.ts`, a `WorkerEntrypoint`): the public API. `createReview`,
-  `getDecision`, `waitForDecision`, `revise`. Reachable only through a service binding, which is
+- **`Dynotator`** (`worker/api.ts`, a `WorkerEntrypoint`): the public API, four methods:
+  `createReview`, `revise`, `getEvents`, `close` (`docs/spec.md` is the contract). Reachable only through a service binding, which is
   the authorisation. This is the surface to keep small and stable.
 - **Host Worker** (`worker/index.ts`): routes `/s/:id` to the SPA and `/s/:id/api/*` to the
-  review's supervisor. `POST /api/sessions` exists only under the dev server, to try things locally.
+  review's supervisor. The agent side over HTTP (`worker/dev.ts`: `/api/sessions...`) exists only
+  under the dev server, to try things locally and drive tests.
 - **`SessionSupervisor`** (Durable Object, SQLite): named by review id. Stores only metadata and
   expiry. Loads the session-server bundle with `env.LOADER.get(bundleId, …)`
   (`globalOutbound: null`), takes its `SessionServer` class via `getDurableObjectClass`, and runs
   it as a facet. A facet stub cannot leave the supervisor, so RPC calls go through explicit
   pass-through methods.
 - **`SessionServer`** (`session/`, inside the Dynamic Worker): owns the files, versions, drafts
-  and the decision. The files live in a `@cloudflare/computer` `Workspace` on the facet's own
+  and the event log. The files live in a `@cloudflare/computer` `Workspace` on the facet's own
   storage, one full tree per version (`/v/1/...`, `/v/2/...`), with a small hash index beside it
   so listings and changes need no file reads. No bindings, no network, no execution backends.
 
@@ -61,8 +62,15 @@ Rules that follow from this:
   Do not add tokens, API keys or secret bindings.
 - Agents never talk HTTP to Dynotator. New agent-facing capability goes on the RPC entrypoint.
 - The browser's API is `/s/:id/api/*`: `GET /api/review`, `GET /api/revision`, `GET /api/files`,
-  `GET /api/file`, `GET /api/changes`, `POST /api/approve`, `POST /api/deny`,
-  `POST /api/feedback`, `POST /api/exit`, `GET/POST/DELETE /api/draft`. Nothing else.
+  `GET /api/file`, `GET /api/changes`, `GET /api/events`, `POST /api/feedback`,
+  `POST /api/approve`, `GET/POST /api/draft`. Nothing else.
+- A review is a conversation, not a verdict: everything is appended to an event log, the
+  reviewer can submit repeatedly, and only the agent's `close` (or expiry) ends it. An annotation
+  is sent if its `id` is in the log; submissions are idempotent by id. There are no modes.
+- A change is expressed with `patch` (a unified diff of what produced `files`); the base is
+  derived by reverse-applying it (`session/patch.ts`) and stored as version 0.
+- Reviewer identity (`by` on events) comes only from the platform's Cloudflare Access context
+  (`worker/identity.ts`), never from a client header.
 - A review's content arrives as a full snapshot (`files`: path to UTF-8 text) on `createReview`
   and `revise`. Limits live in `session/files.ts` and keep a snapshot under the 32 MiB RPC
   message limit. Dynotator can also be embedded in another Worker instead of bound
@@ -80,15 +88,16 @@ The SPA is served at `/s/:id` and its API lives at `/s/:id/api`. `app/api.ts` ex
 Only: a file tree (hidden for a single file), markdown files rendered (code highlighting, tables,
 Mermaid) and other files shown as source with line numbers, a location in the URL hash, select
 text and annotate per file and line (comment, deletion, replacement, general comment), the
-annotation panel, question blocks, drafts, versions with changed files and a per-file diff after a
-revision, the decision, light and dark.
+annotation panel with what was already sent, question blocks, drafts, versions with changed files
+and an annotatable per-file diff (after a revision, or against the base in a change review), two
+actions (send feedback, approve) that can be used repeatedly, light and dark.
 
 It is a review surface, not an IDE: no search, editing, download, blame or tabs.
 
 Everything else upstream had is removed on purpose, including: the Inbox, code review, Guided
 Reviews, Shapes, Ask AI, agent terminals, every local-file surface, note-app and editor
 integrations, the archive, sharing, WebMCP, every harness plugin and the CLI, settings and
-preferences, reviewer identity, keyboard-shortcut help, quick labels and templates, export,
+preferences, self-declared reviewer names, modes, keyboard-shortcut help, quick labels and templates, export,
 print, images and uploads, in-place editing, math rendering, the theme catalogue and the mascot.
 
 The rule for anything new: it stays out unless a human needs it to read and annotate a document

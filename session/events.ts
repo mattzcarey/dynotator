@@ -11,6 +11,8 @@ export interface Annotation {
   lines?: { start: number; end: number };
   /** Present when made in a diff. Default "new". */
   side?: "old" | "new";
+  /** With `side: "old"`: the version the removed lines are numbered in (0 is the base). */
+  against?: number;
   /** The exact text selected. */
   original?: string;
   /** `comment`: the comment. `replacement`: the proposed text ("" proposes deleting). */
@@ -105,7 +107,8 @@ export function submit(
   by: string | undefined,
 ): { seq: number; event?: ReviewEvent } {
   if (isClosed(store)) throw new HttpError(409, "This review is closed.", { code: "closed" });
-  if (typeof body.revision === "number" && body.revision !== version) {
+  if (typeof body.revision !== "number") throw new HttpError(400, "revision must be a number");
+  if (body.revision !== version) {
     throw new HttpError(
       409,
       "The files were revised while you were reviewing them. Review the new version, then send again.",

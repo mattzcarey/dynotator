@@ -74,7 +74,9 @@ Rules:
 - `getEvents(id, after = 0, wait = 0)` returns events with `seq > after`, in order. With `wait`
   (seconds, at most 55) it holds the call until there is at least one, and returns `[]` on
   timeout. An agent keeps a cursor: call, process, set the cursor to the last `seq`. Nothing is
-  missed or seen twice.
+  missed or seen twice. A very long log arrives over several calls (about 8 MiB of events each).
+- Unsent annotations survive a revision: when the reviewer loads the new version the page carries
+  them into its draft. Their line numbers may be stale.
 
 ## 2. Reviewing a change
 
@@ -97,6 +99,8 @@ createReview({
   not changes. A plan and its docs ride along with a code change without showing up as added.
 - If the patch does not apply cleanly in reverse, `createReview` fails naming the file and hunk.
   Dynotator never guesses. Binary patches and mode-only changes are rejected with a clear message.
+- Accepted: `git diff` with the default `a/` `b/` prefixes or `--no-prefix`, and plain `diff -u`.
+  Git's mnemonic prefixes (`diff.mnemonicPrefix`) are not recognised.
 - With a patch, the page opens on the changes: the changed-files list, then each file's diff. The
   file tree and full files are one click away. Without one, the page opens on `open`.
 - After a revision the reviewer can diff the current version against version 0 or any earlier
@@ -121,6 +125,8 @@ interface Annotation {
   lines?: { start: number; end: number };
   /** Present when made in a diff. Default "new". */
   side?: "old" | "new";
+  /** With `side: "old"`: the version the removed lines are numbered in (0 is the base). */
+  against?: number;
   /** The exact text selected. */
   original?: string;
   /** `comment`: the comment. `replacement`: the proposed text ("" proposes deleting). */
@@ -142,6 +148,12 @@ the platform (`ctx.access`, never from a client-supplied header) and reviewer ev
 `by`. Without Access, `by` is absent. There is no self-declared name. The Worker still holds no
 secrets and checks no tokens.
 
+Unverified in production: Cloudflare's docs say a Worker with static assets runs behind a router
+that may not pass `ctx.access` on, and Dynotator always has assets. It works under the dev
+server's Access simulation (`DYNOTATOR_DEV_EMAIL=you@example.com npm run dev`). If it does not
+hold when deployed, `by` is simply absent; the fix would be validating the Access JWT, which is a
+deliberate change to "checks no tokens" and not made here.
+
 ## 5. The browser's API
 
 All under `/s/:id/api`.
@@ -154,7 +166,7 @@ All under `/s/:id/api`.
 | `GET /files?v=N`           | `{ files: [{ path, size }] }`                                                                                                           |
 | `GET /file?path=P&v=N`     | `{ path, content }`                                                                                                                     |
 | `GET /changes?from=A&to=B` | `{ files: [{ path, status: "added" \| "modified" \| "deleted" }] }`                                                                     |
-| `POST /feedback`           | body `{ feedback, annotations, revision }` → `{ ok: true, seq }`                                                                        |
+| `POST /feedback`           | body `{ feedback?, annotations?, revision }` → `{ ok: true, seq }`                                                                      |
 | `POST /approve`            | body `{ feedback?, annotations?, revision }` → `{ ok: true, seq }`                                                                      |
 | `GET /draft`               | `{ annotations: Annotation[] }`: the unsent annotations saved for the current version (`[]` if none)                                    |
 | `POST /draft`              | body `{ annotations }` → `{ ok: true }`. Last write wins.                                                                               |
@@ -162,8 +174,11 @@ All under `/s/:id/api`.
 `base` is true when the review was created with a patch; then version 0 can be read through
 `/files`, `/file` and `/changes` like any version. It never appears in `versions`.
 
+`revision` is required on both. A submission that adds nothing (no unsent annotation, no text,
+and for an approval the version is already approved) appends nothing and answers the last `seq`.
+
 Errors: 409 `{ code: "revised", revision }`, 409 `{ code: "closed" }`, 404 unknown path or
-version, 400 invalid input.
+version, 400 invalid input, 413 a body over 2 MB.
 
 Drafts are a convenience, not a source of truth: one blob per version, last write wins, no
 generations or tombstones. The page shows as editable whatever is in the draft and not in the
@@ -184,8 +199,10 @@ back in if a real case appears.
 - **A separate base tree.** `patch` covers it with less work for the agent. Version 0 already
   exists internally, so a `base` input is a small addition later.
 - **Pulling files from a source, bigger limits.** With a patch an agent sends the files it
-  touched plus its plan, which is small. A snapshot is bounded by the 32 MiB RPC message: 5,000
-  files, 1 MiB each, 20 MiB in total. Raise this with a pull API when someone actually hits it.
+  touched plus its plan, which is small. A snapshot is limited to 5,000 files, 1 MiB each and
+  20 MiB in total (the patch counts). The platform also caps one RPC message at 32 MiB, and text
+  with characters above U+00FF serialises at two bytes per character, so such text can hit the
+  platform's cap before Dynotator's. Raise this with a pull API when someone actually hits it.
 - **Binary files and images.** Files are text.
 - **Reviewer image uploads, export, in-place editing.** Feedback is text an agent acts on; a
   proposed replacement gives the agent `path`, `lines`, `original` and `text` to apply exactly,
