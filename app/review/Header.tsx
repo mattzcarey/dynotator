@@ -72,9 +72,15 @@ export function Header({
           <span
             role="status"
             title={[formatWhen(latest.at), latest.by].filter(Boolean).join(" · ")}
+            aria-label={approved ? "Approved" : "Feedback sent"}
             className={`flex h-6 shrink-0 items-center gap-1.5 rounded-full border px-2 font-mono text-[11px] tracking-[0.04em] ${approved ? "border-success/40 text-success" : "border-dashed border-border-strong text-muted-foreground"}`}
           >
-            {approved ? "Approved" : "Feedback sent"}
+            {/* Phones: a dot, so the title keeps its room. */}
+            <span
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 rounded-full sm:hidden ${approved ? "bg-success" : "bg-border-strong"}`}
+            />
+            <span className="hidden sm:inline">{approved ? "Approved" : "Feedback sent"}</span>
             <span className="hidden text-muted-foreground md:inline">
               {formatWhen(latest.at)}
               {latest.by && ` · ${latest.by}`}

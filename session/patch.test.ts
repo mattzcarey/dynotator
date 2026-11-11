@@ -105,6 +105,11 @@ describe("refusals", () => {
     expect(() => baseOf({ a: "y\n" }, patch)).toThrow(/a: hunk @@ -5,1 \+5,1 @@.*shorter/);
   });
 
+  test("old line numbers must line up with the hunks before", () => {
+    const patch = "--- a/a\n+++ b/a\n@@ -3 +1 @@\n-x\n+y\n";
+    expect(() => baseOf({ a: "y\n" }, patch)).toThrow(/old line numbers do not match/);
+  });
+
   test("no newline at the end must match", () => {
     const patch = git;
     expect(() => baseOf({ ...AFTER, "noeol.txt": "no eol changed\n" }, patch)).toThrow(

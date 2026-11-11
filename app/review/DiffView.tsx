@@ -215,6 +215,8 @@ function Side({
   );
 }
 
+const render = (block: Block) => <BlockRenderer block={block} orderedIndex={block.orderedStart} />;
+
 function BlockDiff({ path, heading, base, oldText, newText, notes }: DiffProps) {
   const entries: DiffEntry[] = useMemo(() => diffPlans(oldText, newText), [oldText, newText]);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -244,9 +246,6 @@ function BlockDiff({ path, heading, base, oldText, newText, notes }: DiffProps) 
     );
     return el ? findText(el, annotation.original) : null;
   }, []);
-  const render = (block: Block) => (
-    <BlockRenderer block={block} orderedIndex={block.orderedStart} />
-  );
   return (
     <Annotator
       path={path}
@@ -335,7 +334,9 @@ function LineDiff({ path, heading, base, oldText, newText, notes }: DiffProps) {
     );
   });
   useEffect(() => {
-    rootRef.current?.dispatchEvent(new Event(HIGHLIGHT_EVENT, { bubbles: true }));
+    // An opened fold has new rows to paint.
+    if (opened.size > 0)
+      rootRef.current?.dispatchEvent(new Event(HIGHLIGHT_EVENT, { bubbles: true }));
   }, [opened]);
 
   const locate: Locate = useCallback(

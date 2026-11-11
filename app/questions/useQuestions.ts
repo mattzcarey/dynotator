@@ -28,6 +28,8 @@ export function blocksOf(content: string): Block[] {
   return blocks;
 }
 
+const keyOf = (a: Annotation) => `${a.path}\n${a.questionAnswer?.key}`;
+
 /**
  * The questions of the markdown files read so far (the open one, and in a small review all of
  * them), with their status given the answers in force; and the feedback text for a submission.
@@ -105,7 +107,6 @@ export function useQuestions({
         ),
       ),
     );
-    const keyOf = (a: Annotation) => `${a.path}\n${a.questionAnswer?.key}`;
     const now = new Set(list.filter((a) => a.questionAnswer).map(keyOf));
     const before = new Set(answers.map(keyOf).filter((key) => !now.has(key)));
     const indexed = order.flatMap((file) => {

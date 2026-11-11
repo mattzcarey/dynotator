@@ -113,7 +113,7 @@ function parseGitFile(lines: string[], start: number, files: FilePatch[]): numbe
   const fromHeader = splitGitHeader(lines[start].replace(/\r$/, "").slice("diff --git ".length));
   let oldPath: string | null = fromHeader?.[0] ?? null;
   let newPath: string | null = fromHeader?.[1] ?? null;
-  let renamed: [string | null, string | null] = [null, null];
+  const renamed: [string | null, string | null] = [null, null];
   let copy = false;
   let created = false;
   let deleted = false;
@@ -237,6 +237,10 @@ export function reverseApply(name: string, hunks: Hunk[], text: string): string 
     if (start < at) fail("it overlaps the previous hunk");
     if (start + hunk.newLines > lines.length) fail("the file is shorter");
     out.push(...lines.slice(at, start));
+    const oldLines = hunk.lines.filter((l) => l[0] !== "+").length;
+    if (hunk.oldStart !== (oldLines === 0 ? out.length : out.length + 1)) {
+      fail("its old line numbers do not match the hunks before it");
+    }
     let n = start;
     for (const line of hunk.lines) {
       const body = line.slice(1);

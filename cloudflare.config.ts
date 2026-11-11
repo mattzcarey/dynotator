@@ -13,6 +13,11 @@ export const dynotator = {
     runWorkerFirst: ["/api/*", "/s/*"],
   },
   observability: { enabled: true },
+  // Under the dev server only: simulates Cloudflare Access signing in this reviewer, so events
+  // carry `by`. Deployed, Access itself provides the identity.
+  ...(process.env.DYNOTATOR_DEV_EMAIL && {
+    access: { dev: { aud: "dynotator-dev", identity: { email: process.env.DYNOTATOR_DEV_EMAIL } } },
+  }),
   env: {
     ASSETS: bindings.assets(),
     LOADER: bindings.workerLoader(),

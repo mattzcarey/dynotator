@@ -192,6 +192,11 @@ html:not(.transitions-ready) * {
   background: rgb(255 107 94 / 0.18);
 }
 
+/* Sent: still marked, drawn dashed like its card. */
+.annotation-highlight.comment.sent {
+  border-bottom-style: dashed;
+}
+
 .annotation-highlight.focused {
   background: color-mix(in srgb, var(--focus-highlight) 20%, transparent) !important;
   border-bottom: 2px solid var(--focus-highlight);

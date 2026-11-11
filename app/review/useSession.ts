@@ -57,7 +57,7 @@ async function loadSession(): Promise<Session> {
     open,
     version: review.version,
     versions: review.versions,
-    base: review.base === true,
+    base: review.base,
     files,
     events,
   };

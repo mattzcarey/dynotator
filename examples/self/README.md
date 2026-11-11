@@ -6,7 +6,7 @@ A Worker that embeds Dynotator and puts Dynotator's own repository up for review
 npm run dev:self
 ```
 
-Open <http://localhost:3000/>. Each visit to `/` opens a new annotate-mode review of the repository
+Open <http://localhost:3000/>. Each visit to `/` opens a new review of the repository
 and redirects to it; everything else (`/s/:id`, the review app, its API) is Dynotator's own
 handler.
 

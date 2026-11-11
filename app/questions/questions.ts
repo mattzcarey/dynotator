@@ -509,12 +509,15 @@ export function isRecommendedAnswer(question: Question, answer: QuestionAnswer):
 const oneLine = (value: string): string => value.replace(/\s+/g, " ").trim();
 const quoted = (value: string): string => `> ${value.trim().replace(/\n/g, "\n> ")}\n`;
 
-/** The answer as one line: `Answer: Local only — note: …`, `Skipped`, `Note: …`. */
+/**
+ * The answer as one line, an annotation's `answer.value`: `Local only — note: …`, `Skipped`,
+ * `Note: …`.
+ */
 export function formatAnswerText(answer: QuestionAnswer): string {
   const parts = answer.selected.map(oneLine);
   if (answer.other?.trim()) parts.push(`Other: ${oneLine(answer.other)}`);
   if (answer.text?.trim()) parts.push(oneLine(answer.text));
-  let out = parts.length ? `Answer: ${parts.join("; ")}` : answer.skipped ? "Skipped" : "";
+  let out = parts.length ? parts.join("; ") : answer.skipped ? "Skipped" : "";
   if (answer.note?.trim())
     out = out ? `${out} — note: ${oneLine(answer.note)}` : `Note: ${oneLine(answer.note)}`;
   return out;

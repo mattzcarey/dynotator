@@ -245,7 +245,7 @@ describe("answers", () => {
 
   test("formatAnswerText", () => {
     expect(formatAnswerText(answer("q-0123abcd", { selected: ["A"], note: "n" }))).toBe(
-      "Answer: A — note: n",
+      "A — note: n",
     );
     expect(formatAnswerText(answer("q-0123abcd", { skipped: true }))).toBe("Skipped");
   });

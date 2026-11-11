@@ -86,7 +86,7 @@ function Review({ session }: { session: Session }) {
 
   const [notices, notify] = useNotices();
   const load = () => {
-    draft.flush();
+    draft.flush(true);
     window.location.reload();
   };
   const log = useEvents({ version, initial: session.events, notify, onLoad: load });

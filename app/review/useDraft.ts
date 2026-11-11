@@ -43,9 +43,9 @@ export function useDraft({
       });
   }, []);
 
-  const save = useCallback((list: Annotation[], keepalive = false) => {
+  const save = useCallback((list: Annotation[], keepalive = false, force = false) => {
     const body = JSON.stringify(list.map(toWire));
-    if (body === savedRef.current) return;
+    if (body === savedRef.current && !force) return;
     savedRef.current = body;
     void fetch(api("/api/draft"), {
       method: "POST",
@@ -55,17 +55,23 @@ export function useDraft({
     }).catch(() => {});
   }, []);
 
-  const cancel = () => {
+  const cancel = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = null;
-  };
+  }, []);
 
-  /** Write now: the page is about to reload or hide. */
-  const flush = useCallback(() => {
-    cancel();
-    const { annotations: list, enabled: on } = latestRef.current;
-    if (on && loadedRef.current) save(list, true);
-  }, [save]);
+  /**
+   * Write now: the page is about to hide, or (`carry`) to load a new version, whose draft starts
+   * empty: writing again puts the unsent annotations there.
+   */
+  const flush = useCallback(
+    (carry = false) => {
+      cancel();
+      const { annotations: list, enabled: on } = latestRef.current;
+      if (on && loadedRef.current && (!carry || list.length > 0)) save(list, true, carry);
+    },
+    [cancel, save],
+  );
 
   useEffect(() => {
     if (!enabled || !loadedRef.current) return;
@@ -74,7 +80,7 @@ export function useDraft({
       timerRef.current = null;
       save(annotations);
     }, DEBOUNCE_MS);
-  }, [annotations, enabled, save]);
+  }, [annotations, cancel, enabled, save]);
 
   useEffect(() => {
     const onHide = () => timerRef.current !== null && flush();
@@ -86,7 +92,7 @@ export function useDraft({
       window.removeEventListener("pagehide", onHide);
       cancel();
     };
-  }, [flush]);
+  }, [cancel, flush]);
 
   return { flush };
 }

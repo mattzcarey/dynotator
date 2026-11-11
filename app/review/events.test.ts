@@ -11,6 +11,13 @@ const note = (id: string, text = id): Annotation => ({
   original: "x",
   text,
 });
+const answer = (id: string, selected: string): Annotation => ({
+  id,
+  path: "a.md",
+  type: "answer",
+  answer: { key: "q", value: selected },
+  questionAnswer: { key: "q", kind: "single", prompt: "Q?", selected: [selected] },
+});
 let seq = 0;
 const at = (minute: number) => new Date(Date.UTC(2026, 10, 11, 10, minute)).toISOString();
 const event = (
@@ -87,13 +94,6 @@ describe("partition by ids in the log", () => {
   });
 
   test("answers in force: an unsent one over the latest sent one", () => {
-    const answer = (id: string, selected: string): Annotation => ({
-      id,
-      path: "a.md",
-      type: "answer",
-      answer: { key: "q", value: selected },
-      questionAnswer: { key: "q", kind: "single", prompt: "Q?", selected: [selected] },
-    });
     const order = answersInForce([answer("u", "C")], [answer("s1", "A"), answer("s2", "B")]);
     expect(order.map((a) => a.id)).toEqual(["u", "s2", "s1"]);
     expect(answersInForce([globalComment("x")], [])).toEqual([]);

@@ -19,7 +19,10 @@ export interface ReviewInit {
 
 // A snapshot crosses Workers RPC three times (caller to entrypoint to supervisor to facet), and
 // each message must stay under its 32 MiB limit. A patch rides along, so it counts toward the
-// total.
+// total. 20 MiB of Latin-1 text serialises at about 20 MiB; a string with any character above
+// U+00FF serialises at two bytes per UTF-16 unit, so mostly-ASCII text sprinkled with such
+// characters can reach the message limit first, which fails the agent's own call. The inner hops
+// carry the same values, so whatever reached the entrypoint fits them too.
 export const MAX_FILES = 5_000;
 export const MAX_FILE_BYTES = 1024 * 1024;
 export const MAX_TOTAL_BYTES = 20 * 1024 * 1024;
